@@ -73,8 +73,9 @@ Both plugins are optional — you can hand-author every capability without them.
 
 ## What's in this section
 
-- **[Storage and Scope](./02_storage-and-scope.md)** — where plugin files live, the boolean-per-scope model, why multi-scope enables don't duplicate
+- **[Storage and Scope](./02_storage-and-scope.md)** — where plugin files live, the boolean-per-scope model, why multi-scope enables don't duplicate, and the two plugin path variables
 - **[Installation](./03_installation.md)** — installing via marketplace vs hand-authoring capabilities directly; the five accepted marketplace source formats
-- **[Marketplaces](./04_marketplaces.md)** — what a marketplace is, how to host one
-- **[Creating Plugins](./05_creating-plugins/01_ecosystem-mental-model.md)** — deep dive on building your own
+- **[Marketplaces](./04_marketplaces.md)** — what a marketplace is, how to host one, the five plugin source types, and cross-marketplace dependencies
+- **[Creating Plugins](./05_creating-plugins/01_ecosystem-mental-model.md)** — deep dive on building your own. Includes [Plugin Dependencies](./05_creating-plugins/07_dependencies.md) and the [Soft Fork + Upstream Tracking](./05_creating-plugins/08_soft-fork-and-upstream-tracking.md) pattern for vendoring another plugin's content into yours with a provenance manifest
 - **[Uninstalling](./06_uninstalling.md)** — removing plugins and marketplaces, and why the cache survives (matters for clean-install testing)
+- **[Reference](./07_reference.md)** — nomenclature index for everything else: `/plugin` UI, full CLI surface, LSP/monitors/themes/output-styles/channels, `userConfig`, `${CLAUDE_PLUGIN_DATA}`, auto-update env vars, submission portals — one paragraph each, linked to the canonical official docs

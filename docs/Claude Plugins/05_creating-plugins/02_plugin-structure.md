@@ -53,17 +53,45 @@ The minimum:
 
 ### Field reference
 
+**Identity and metadata:**
+
 | Field | Required | Purpose |
 |---|---|---|
-| `name` | yes | Plugin identifier; appears in `enabledPlugins`, in marketplace install commands |
-| `version` | yes | Semantic version; controls cache folder name and `/plugin update` behaviour |
-| `description` | recommended | Information-dense paragraph shown in the `/plugin` browser. Also useful for the model when reasoning about which plugin's tools/skills to use. |
+| `name` | yes | Plugin identifier; appears in `enabledPlugins`, in marketplace install commands. Only field that's strictly required |
+| `version` | optional | Semantic version. If omitted, Claude Code falls back to the git commit SHA (every commit becomes a new version). See [Versioning and Publishing](./06_versioning-and-publishing.md) |
+| `description` | recommended | Information-dense paragraph shown in the `/plugin` browser. Also useful for the model when reasoning about which plugin's tools/skills to use |
 | `author.name` | recommended | Maintainer attribution |
 | `author.email` | optional | Contact |
 | `homepage` | optional | URL — typically the repo or a documentation site |
 | `repository` | optional | Source repo URL |
 | `license` | optional | SPDX identifier; once you've picked one |
 | `keywords` | optional | Array of search hints for the marketplace browser |
+| `$schema` | optional | JSON Schema URL for editor autocomplete. Ignored at load time |
+
+**Component path overrides** (replace the default discovery directory — see [Reference](../07_reference.md) for path-replacement semantics):
+
+| Field | Type | Purpose |
+|---|---|---|
+| `skills` | string \| array | Custom skill directories containing `<name>/SKILL.md` (replaces default `skills/`) |
+| `commands` | string \| array | Custom flat `.md` files or directories (replaces default `commands/` — legacy form, prefer skills) |
+| `agents` | string \| array | Custom agent files (replaces default `agents/`) |
+| `hooks` | string \| array \| object | Hook config paths or inline config |
+| `mcpServers` | string \| array \| object | MCP config paths or inline config |
+| `lspServers` | string \| array \| object | LSP server configs for code intelligence. See [Reference](../07_reference.md#lsp-servers) |
+| `monitors` | string \| array | Background monitor configs that start automatically when the plugin is active. See [Reference](../07_reference.md#background-monitors) |
+| `themes` | string \| array | Color themes that show up in `/theme`. See [Reference](../07_reference.md#themes) |
+| `outputStyles` | string \| array | Output style files that change how Claude formats responses. See [Reference](../07_reference.md#output-styles) |
+
+**User-facing configuration and dependencies:**
+
+| Field | Type | Purpose |
+|---|---|---|
+| `userConfig` | object | Values Claude Code prompts the user for when the plugin enables (API tokens, endpoints, etc.). See [Reference](../07_reference.md#userconfig) |
+| `channels` | array | Message-injection channels backed by an MCP server (Telegram/Slack/Discord style). See [Reference](../07_reference.md#channels) |
+| `dependencies` | array | Other plugins this plugin requires, optionally with semver version constraints. See [Plugin Dependencies](./07_dependencies.md) |
+
+> [!note]
+> If you omit `.claude-plugin/plugin.json` entirely, Claude Code auto-discovers components from the default directories and derives the plugin name from the folder name. The manifest is only needed when you want to set metadata or override default paths.
 
 Keep the description rich. It's the user's first read in the plugin browser, and a good description meaningfully reduces "what does this plugin do?" friction.
 

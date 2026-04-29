@@ -213,6 +213,32 @@ Tools are namespaced as `mcp__<server>__<tool>`. The puppeteer server's `click` 
 
 Use MCP when you need to add **new tools** the model can call (database queries, browser automation, custom APIs). Use hooks when you want to inject *behaviour* without adding tools.
 
+## Beyond the five — other capability surfaces
+
+The five above are the conceptual core, but a plugin can also ship four other surface types. Each is its own opt-in folder/manifest field. We don't go deep on these here — the [Reference](../07_reference.md) page has nomenclature pointers and links to the canonical official docs.
+
+### LSP servers (`.lsp.json` or `lspServers`)
+
+Configure a Language Server Protocol connection so Claude gets **automatic diagnostics after every edit** and code-navigation primitives (go-to-definition, find-references, hover, symbols). The official marketplace ships pre-built LSP plugins for 11 languages (`pyright-lsp`, `typescript-lsp`, `gopls-lsp`, `rust-analyzer-lsp`, etc.) — install one of those before authoring your own. Custom `.lsp.json` is for languages not already covered. The language server binary must be installed separately on the user's machine. → [LSP servers (official)](https://code.claude.com/docs/en/plugins-reference#lsp-servers)
+
+### Background monitors (`monitors/monitors.json` or `monitors`)
+
+Long-running shell commands the runtime starts at session begin. Each stdout line becomes a notification the model sees as the session runs — useful for tailing logs, polling deploy status, or watching external state. Same trust level as hooks (unsandboxed). Supports a `when` field to gate startup on a specific skill being invoked. → [Monitors (official)](https://code.claude.com/docs/en/plugins-reference#monitors)
+
+### Themes (`themes/`)
+
+Color schemes that appear in `/theme` alongside the built-in presets. Each theme is a JSON file with a `base` preset and a sparse `overrides` color map. Plugin themes are read-only; users can press Ctrl+E in `/theme` to copy one into `~/.claude/themes/` for editing. → [Themes (official)](https://code.claude.com/docs/en/plugins-reference#themes)
+
+### Output styles (`outputStyles`)
+
+Customise how Claude formats responses. The official marketplace ships `explanatory-output-style` (educational annotations) and `learning-output-style` (interactive learning mode) as examples. → [Reference](../07_reference.md#output-styles)
+
+### Channels (`channels`)
+
+Declare message-injection channels backed by an MCP server — Telegram/Slack/Discord-style content piped into the conversation. Each channel binds to a key in `mcpServers` and can prompt for its own per-channel `userConfig` (bot tokens, owner IDs). → [Channels (official)](https://code.claude.com/docs/en/plugins-reference#channels)
+
+These five surfaces plus the original five, together with `bin/` wrappers ([Bin Wrappers](./04_bin-wrappers.md)) and `userConfig` ([Reference](../07_reference.md#userconfig)), are the full menu of what a plugin can carry.
+
 ## Picking the right capability
 
 | Goal | Capability |
@@ -228,6 +254,8 @@ Skills and commands often pair: a skill teaches the *concepts* (what, why, when)
 
 ## See also
 
-- **[Bin Wrappers](./04_bin-wrappers.md)** — the sixth surface (technically capability-adjacent, mechanically a PATH trick)
+- **[Bin Wrappers](./04_bin-wrappers.md)** — the PATH-augmentation pattern (mechanically a PATH trick, not a capability type)
 - **[Plugin Structure](./02_plugin-structure.md)** — folder layout for each capability type
+- **[Plugin Dependencies](./07_dependencies.md)** — building on top of another plugin's capabilities instead of duplicating
 - **[Testing and Benchmarking](./05_testing-and-benchmarking.md)** — iterating on capabilities during development
+- **[Reference](../07_reference.md)** — full nomenclature index for the surfaces touched on above

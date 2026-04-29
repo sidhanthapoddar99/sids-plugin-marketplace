@@ -56,6 +56,20 @@ This split is why you can hand-author a skill at user scope (`~/.claude/skills/<
 
 The decision usually surfaces the second time you copy the same SKILL.md into a new project. That's the signal to package.
 
+## How a new plugin relates to existing ones
+
+Once you've decided to author a plugin, the next question is whether it stands alone or builds on something else. Three patterns, picked per-component (a single plugin can mix all three):
+
+| Pattern | What it is | Use when |
+|---|---|---|
+| **Hand-author original** | Net-new content with no upstream relationship | The capability doesn't exist anywhere, or it's domain-specific to you |
+| **Depend** | Declare a `dependencies` entry; both plugins coexist at install; you cooperate via prose references | Upstream is fresh and well-maintained, you only need to *reference* its skills/agents from your own |
+| **Soft-fork + upstream tracking** | Vendor upstream content into your plugin with a provenance manifest; periodically check for upstream changes and merge selectively | Upstream is stale or you'd rewrite anyway; you want one namespace and one install for users; cross-marketplace allowlist isn't worth the friction |
+
+The composition primitive at runtime is *the whole plugin* — there's no way to import a single skill from another plugin into your namespace. Depending pulls in the whole upstream plugin alongside yours. Soft-forking copies content into your plugin's own namespace.
+
+See [Plugin Dependencies](./07_dependencies.md) for the depend pattern in depth, and [Soft Fork and Upstream Tracking](./08_soft-fork-and-upstream-tracking.md) for the vendor-with-provenance pattern.
+
 ## What capabilities can a plugin combine?
 
 Any subset of these:
@@ -90,3 +104,5 @@ When the same name appears in multiple sources (a hand-authored project skill pl
 - **[Plugin Structure](./02_plugin-structure.md)** — folder layout and the manifest
 - **[Capabilities](./03_capabilities.md)** — deep dive on each capability type
 - **[Bin Wrappers](./04_bin-wrappers.md)** — the `bin/` pattern in detail
+- **[Plugin Dependencies](./07_dependencies.md)** — building on top of another plugin
+- **[Soft Fork and Upstream Tracking](./08_soft-fork-and-upstream-tracking.md)** — vendoring with provenance

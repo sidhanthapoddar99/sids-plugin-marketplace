@@ -31,6 +31,29 @@ Use semantic versioning (`MAJOR.MINOR.PATCH`). The convention:
 
 The `version` field is what the runtime reads to decide whether `/plugin update` has new content to fetch. Bump it whenever you push a change you want consumers to see.
 
+## Version resolution order
+
+The `version` in `plugin.json` isn't the only way to assign a version — Claude Code resolves a plugin's version from the first of these that's set:
+
+1. The `version` field in the plugin's `plugin.json`
+2. The `version` field in the plugin's marketplace entry in `marketplace.json`
+3. The **git commit SHA** of the plugin's source (for `github`, `url`, `git-subdir`, and relative-path sources hosted in a git-backed marketplace)
+4. `unknown` — for `npm` sources or local directories not inside a git repo
+
+This gives you two practical strategies:
+
+| Strategy | How | Update behaviour | Best for |
+|---|---|---|---|
+| **Explicit version** | Set `"version": "2.1.0"` in `plugin.json` | Users get updates only when you bump this field. New commits without a bump have no effect — `/plugin update` reports "already at the latest" | Published plugins with stable release cycles |
+| **Commit-SHA version** | Omit `version` from both `plugin.json` and the marketplace entry | Every new commit on the plugin's branch becomes a new version automatically | Internal/team plugins under active development |
+
+> [!warning]
+> If you set `version` in `plugin.json`, you **must** bump it for every change you want consumers to receive. Pushing new commits alone is not enough — Claude Code sees the same version string and keeps the cached copy. If you're iterating quickly, leave `version` unset so the commit SHA is used instead.
+
+If both `plugin.json` and the marketplace entry set `version`, `plugin.json` wins.
+
+The version (whatever it resolves to) is also the **cache-folder name**, which is why multiple versions can coexist in `~/.claude/plugins/cache/<mkt>/<plugin>/<version>/`. For commit-SHA versioning, the cache folder name includes a 12-character SHA suffix.
+
 ## How `/plugin update` works
 
 ```
@@ -115,4 +138,7 @@ Or update everything:
 
 - **[Marketplaces](../04_marketplaces.md)** — what the marketplace is doing on the consumer side
 - **[Storage and Scope](../02_storage-and-scope.md)** — how versioned cache folders coexist
+- **[Plugin Dependencies](./07_dependencies.md)** — version constraints, the `claude plugin tag` convention, and tag-based release resolution
 - **[Testing and Benchmarking](./05_testing-and-benchmarking.md)** — the iteration loop before publishing
+- **[Reference](../07_reference.md)** — submission portals, `/plugin-hints`, auto-update env vars
+- Official: [Version management](https://code.claude.com/docs/en/plugins-reference#version-management)
