@@ -12,10 +12,10 @@ Push the repo containing `.claude-plugin/marketplace.json`. Users add it with th
 /plugin marketplace add owner/repo
 ```
 
-Pin to a tag or branch with `@ref`:
+Pin to a tag or branch with `#<ref>`:
 
 ```
-/plugin marketplace add owner/repo@v2.0
+/plugin marketplace add owner/repo#v2.0
 ```
 
 ### Arbitrary git host

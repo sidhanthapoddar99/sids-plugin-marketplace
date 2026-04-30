@@ -1,5 +1,5 @@
 ---
-name: skill-redirect
+name: skill
 description: Stub — redirects readers to the top-level `skill-creator` skill for skill authoring. Not a real topic; do not load this in lieu of `skill-creator`.
 ---
 

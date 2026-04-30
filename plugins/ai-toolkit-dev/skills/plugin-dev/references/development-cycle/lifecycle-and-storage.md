@@ -1,166 +1,168 @@
 # Plugin lifecycle and storage
 
-The canonical reference for "where does this plugin live and how does it actually run". Other docs cross-link here for storage paths, scope rules, and activation mechanics.
+The canonical reference for "where does this plugin live and how does it actually run". Other docs cross-link here.
 
-## Three filesystem locations
+## The model: cache vs registration
 
-A plugin's footprint splits across three places:
+Two independent things:
 
-| Location | Purpose | Survives plugin updates? |
-|---|---|---|
-| `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` | The plugin's installed code (read-only at runtime). `${CLAUDE_PLUGIN_ROOT}` resolves here | **No** — replaced on every version bump |
-| `~/.claude/plugins/data/<plugin>/` | Mutable state, caches, dep installs. `${CLAUDE_PLUGIN_DATA}` resolves here | **Yes** |
-| `~/.claude/settings.json` | Per-user activation state (`enabledPlugins`, marketplace refs). User-edited via `/plugin` UI | **Yes** |
+- **The cache.** Plugin files live **once**, at user-level, regardless of which scope enabled them.
+- **The registration.** A boolean per scope's `settings.json` (`enabledPlugins.<plugin-id> = true|false`).
 
-Project-scope and managed-scope settings live at `<project>/.claude/settings.json` and `/etc/claude/settings.json` respectively.
+Multiple scopes can enable the same plugin — files don't duplicate. Resolution at session start is the **union** across all applicable scopes' `enabledPlugins`. Each plugin loads once even if multiple scopes enable it.
 
-## Cache layout in detail
+## Filesystem layout
 
 ```
-~/.claude/plugins/
-├── cache/
-│   ├── <marketplace-name>/
-│   │   ├── marketplace.json                    # cached marketplace manifest
-│   │   ├── <plugin-name>/
-│   │   │   ├── <version-1>/                    # one tree per installed version
-│   │   │   │   ├── .claude-plugin/plugin.json
-│   │   │   │   └── ... plugin contents ...
-│   │   │   └── <version-2>/
-│   │   └── ...
-│   └── ...
-└── data/
-    └── <plugin-name>/
-        └── ... plugin's mutable state ...
+~/.claude/
+├── settings.json                              ← User-scope enabledPlugins
+└── plugins/
+    └── cache/
+        └── <marketplace-name>/
+            └── <plugin-name>/
+                └── <version>/                 ← THE plugin files, once
+                    ├── .claude-plugin/plugin.json
+                    └── ...
+
+# Project scope (committed to git)
+<repo>/.claude/settings.json                   ← Project enabledPlugins
+
+# Local scope (gitignored, project-local, per-developer)
+<repo>/.claude/settings.local.json             ← Local enabledPlugins
 ```
 
-Notes:
-- Multiple versions of the same plugin can coexist in cache (e.g. while resolving deps that pin different versions). Only one is *active* per scope.
-- Data dirs are keyed by plugin name only — they're shared across all marketplaces and all versions of that plugin.
-- The cache is fully reconstructable from the marketplace + ref. Deleting it just forces re-fetching on next install.
+Project-scope folders have **no `plugins/` directory** — there's no per-project cache. Plugin files only live at user-level. A teammate cloning the repo gets the project-scope `enabledPlugins` boolean from committed `settings.json`; the plugin files download to *their* user-level cache the first time they open the project.
 
-## Activation flow
+Multiple **versions** can coexist: `<plugin>/0.1.0/` and `<plugin>/0.2.0/` sit side-by-side. `/plugin update` adds new version folders; older ones are GC'd (see below).
 
-When the user runs `/plugin install <plugin>@<marketplace>`:
+## Two plugin paths: `${CLAUDE_PLUGIN_ROOT}` vs `${CLAUDE_PLUGIN_DATA}`
 
-1. **Resolve.** Read `cache/<marketplace>/marketplace.json`. Find the entry. Resolve `version` (or marketplace HEAD) to a specific tag/commit.
-2. **Fetch.** If `cache/<marketplace>/<plugin>/<version>/` is missing, fetch from the source (git clone, npm install, etc.) and unpack.
-3. **Resolve dependencies.** Recursively repeat steps 1–2 for every entry in `dependencies[]`. Cross-marketplace deps require `allowCrossMarketplaceDependenciesOn` on both sides.
-4. **Validate.** Each plugin's `plugin.json` is checked against the JSON schema. Schema failures abort the install.
-5. **Compute install set.** Detect version conflicts and name collisions. Abort or prompt the user.
-6. **Activate.** Set `enabledPlugins["<plugin-name>"] = true` in the active scope's `settings.json`. Same for any transitive dependencies (marked as transitive, see "Transitive cleanup" below).
-7. **Load.** On the *next* SessionStart (or immediately, for hot-swappable component types — see below), Claude Code re-scans enabled plugins and loads their components.
-
-## Hot-swap vs restart matrix
-
-When a plugin's code changes (install, update, uninstall, edit during dev), some component types pick up the change immediately, others require a session restart.
-
-| Component | Hot-swap on enable/disable? | Hot-swap on code change? |
+| Variable | Resolves to | Lifetime |
 |---|---|---|
-| Skills | Yes (next prompt) | Yes (next prompt re-reads SKILL.md) |
-| Commands | Yes (immediate) | Yes (immediate) |
-| Agents | Yes (next agent invocation re-reads frontmatter) | Yes (next invocation) |
-| Hooks (config in `hooks.json`) | Restart required | Restart required |
-| Hooks (script content) | Hot — next event re-execs the script | Hot |
-| MCP servers | Restart required | Restart required (the MCP process is long-running) |
-| LSP servers | Restart required | Restart required |
-| Monitors | Restart required | Hot (the watcher process re-execs) |
-| `bin/` entries | Hot (next subprocess sees new `$PATH`) | Hot |
-| `userConfig` schema | Hot for *new* fields, but existing field values aren't re-validated | n/a |
+| `${CLAUDE_PLUGIN_ROOT}` | `~/.claude/plugins/cache/<mkt>/<plugin>/<version>/` | **Replaced on every plugin update** |
+| `${CLAUDE_PLUGIN_DATA}` | `~/.claude/plugins/data/<plugin-id>/` | **Survives plugin updates** |
 
-When a restart is required, Claude Code surfaces a "Plugin changes pending — restart to apply" notice in the UI.
+The `<plugin-id>` is the install identifier with non-`[a-zA-Z0-9_-]` characters replaced with `-`. For `formatter@my-marketplace`, the data dir is `~/.claude/plugins/data/formatter-my-marketplace/`.
 
-## Scope union
+Use `${CLAUDE_PLUGIN_ROOT}` for bundled scripts, executables, config files, templates — anything that ships with the plugin and should change when the plugin updates.
 
-Plugins are enabled at one or more **scopes**. Scopes form a stack with later scopes overriding earlier ones for any plugin that appears in multiple:
+Use `${CLAUDE_PLUGIN_DATA}` for installed dependencies (`node_modules`, Python venvs), generated code, caches, log files — anything to persist across updates. Standard pattern: on `SessionStart`, diff the bundled manifest against a copy in the data dir, reinstall deps if they differ.
 
-| Scope | Settings file | Typical owner |
+Both substitute inline in skill content, agent content, hook commands, monitor commands, and MCP/LSP server configs. Both are also exported as env vars to hook processes and MCP/LSP server subprocesses.
+
+## Scope precedence
+
+Resolution order — **higher wins**:
+
+| Scope | Settings file | Visibility |
 |---|---|---|
-| Managed | `/etc/claude/settings.json` (or platform equivalent) | IT / org admin |
-| Local | Per-machine, e.g. `~/.config/claude/local.json` | Power user |
-| Project | `<project>/.claude/settings.json` | Per-project, in-repo |
-| User | `~/.claude/settings.json` | Per-user default |
+| **Managed** | Set by admin (platform-specific path) | Locked, can't be overridden |
+| **Local** | `<repo>/.claude/settings.local.json` | This project, just this developer (gitignored) |
+| **Project** | `<repo>/.claude/settings.json` | This project, all teammates (committed) |
+| **User** | `~/.claude/settings.json` | All projects, this machine |
 
-**Resolution order** (highest priority first): **Managed > Local > Project > User**.
+`Managed > Local > Project > User`. Higher-priority scopes' booleans win when they conflict.
 
-If a plugin is enabled at User scope but disabled at Project scope, the Project setting wins for that project. If Managed scope sets `enabledPlugins["foo"] = false`, no other scope can override it.
+`--plugin-dir` (used during dev — see [`testing.md`](testing.md)) is a session-only Local-scope override that doesn't write to any settings file.
 
-`--plugin-dir` (used in development) acts as a temporary "Local" scope override — it doesn't write to any settings file but injects the plugin into the active set for the duration of that session.
+## `enabledPlugins` shape
 
-## `enabledPlugins`
+Boolean values, keyed by `<plugin-name>@<marketplace>`:
 
 ```json
 {
   "enabledPlugins": {
-    "<plugin-name>": true,
-    "<another-plugin>": false,
-    "<transitive-dep>": { "enabled": true, "transitive": true }
+    "documentation-guide@documentation-template": true,
+    "rust-analyzer-lsp@claude-plugins-official": false
   }
 }
 ```
 
-The `transitive` marker distinguishes user-requested installs from dependencies pulled in indirectly. Used by `claude plugin prune` to cleanup orphaned transitives.
+`/plugin enable | disable` flip these. `/plugin install` adds an entry set to `true`. `/plugin uninstall` removes the entry.
 
-## Disable vs uninstall
+## Activation flow
 
-| Action | Cache | `enabledPlugins` | Data dir |
-|---|---|---|---|
-| `/plugin disable <plugin>` | unchanged | flipped to `false` | unchanged |
-| `/plugin uninstall <plugin>` | unchanged (GC after 7 days) | entry removed | unchanged |
-| `/plugin uninstall --purge <plugin>` | removed immediately | entry removed | **removed** |
+When the user runs `/plugin install <plugin>@<mkt>`:
 
-A re-install picks up where the user left off — `${CLAUDE_PLUGIN_DATA}` is preserved across uninstall/install cycles unless `--purge` is used. This is the "venv survives a clean reinstall" property.
+1. **Resolve.** Read the marketplace's `marketplace.json` from cache (or fetch). Find the entry. Resolve `version` to a specific tag if pinned.
+2. **Fetch.** If `cache/<mkt>/<plugin>/<version>/` is missing, download from the source.
+3. **Resolve dependencies.** Recursively for each `dependencies[]` entry. Cross-marketplace deps require the root marketplace's `allowCrossMarketplaceDependenciesOn` to list the dep's marketplace.
+4. **Compute install set.** Detect range conflicts (intersected ranges, see [`../config/dependencies.md`](../config/dependencies.md)). Auto-installed deps are tracked separately from user-requested installs.
+5. **Activate.** Write `enabledPlugins[<plugin-id>] = true` in the active scope's `settings.json`.
+6. **Load.** On the next prompt (or after `/reload-plugins`), Claude Code re-scans enabled plugins and registers components.
 
-## Garbage collection
+## Hot-swap matrix
 
-Cached plugin versions are GC'd when:
-- No installed plugin references the version, AND
-- The version's directory mtime is older than 7 days
+What requires a session restart vs what `/reload-plugins` picks up:
 
-Marketplace caches are GC'd when:
-- No installed plugin references the marketplace, AND
-- The marketplace cache is older than 7 days
+| Component | `/reload-plugins` picks up edits? |
+|---|---|
+| Skills | Yes |
+| Commands | Yes |
+| Agents | Yes |
+| MCP servers | Yes |
+| LSP servers | Yes |
+| Hooks | **No — hooks load at session start, full restart required** |
 
-`claude plugin prune` runs GC on demand without waiting 7 days.
+Hooks are the consistent exception. Source: [`/reload-plugins`](https://code.claude.com/docs/en/plugins-reference) explicitly excludes hook changes.
 
-GC never touches `~/.claude/plugins/data/` — data dirs survive until the user explicitly purges them.
+## Updates
 
-## Schema validation at load
+```
+/plugin update                           # all installed plugins
+/plugin update <plugin>@<marketplace>    # specific plugin
+```
 
-Every time a plugin's `plugin.json` is loaded (install, refresh, SessionStart for an enabled plugin), it's validated against the `plugin.schema.json` shipped with Claude Code. Failures:
+Refetches from the marketplace. Drops the new version into a sibling `<version>/` folder under the cache. Switches the active version.
 
-- **Install path** — install aborts with a clear error pointing at the failed field
-- **SessionStart for an already-installed plugin** — the plugin is auto-disabled and a warning is shown; other plugins continue to load. The user must edit and re-enable, or roll back to a working version
+## Garbage collection — orphan marking
 
-The schema is closed (unknown top-level fields are rejected). This catches typos like `userconfig` instead of `userConfig`.
+**Old versions are auto-GC'd 7 days after orphaning.** The mechanism:
+
+- Every `install` or `update` marks the **previous** version directory as orphaned.
+- Claude Code removes orphaned directories 7 days later.
+- Glob and Grep skip orphaned directories during searches.
+
+The 7-day grace window lets concurrent sessions that already loaded the old version keep running without errors. There's no on-demand "wipe orphans" — the timer runs automatically.
+
+`claude plugin prune` is a different operation: it removes **auto-installed dependencies** that no installed plugin requires. It does not affect cache-version GC.
+
+## Disabling vs uninstalling
+
+| Action | Command | Cache | `enabledPlugins` | Data dir |
+|---|---|---|---|---|
+| Disable | `/plugin disable` | unchanged | flipped to `false` | unchanged |
+| Enable | `/plugin enable` | unchanged | flipped to `true` | unchanged |
+| Uninstall | `/plugin uninstall` | (orphaned, 7-day GC) | entry removed | **deleted** if uninstalling from the *last* scope |
+| Uninstall + keep data | `/plugin uninstall --keep-data` | (orphaned, 7-day GC) | entry removed | preserved |
+
+The data dir is deleted automatically when the plugin is uninstalled from the last scope where it was registered. `--keep-data` preserves it (useful when reinstalling a different version for testing).
+
+## Schema validation
+
+`plugin.json` is validated against Claude Code's schema at install time and at every `/reload-plugins`. Validation failures at install abort with a clear error pointing at the failed field.
 
 ## Multi-plugin `.mcp.json` merging
 
-Multiple plugins can each ship their own `.mcp.json`. At load:
+Multiple enabled plugins can each ship their own `.mcp.json` (or declare `mcpServers` in `plugin.json`). MCP server names are merged across plugins. Name collisions are surfaced as load errors in the `/plugin` Errors tab — by convention, server names should be plugin-prefixed to avoid this (see [`../config/naming.md`](../config/naming.md)).
 
-1. Claude Code reads every enabled plugin's `.mcp.json`
-2. MCP server names are checked for collisions across plugins
-3. On collision, Claude Code aborts with `MCP server name conflict: '<name>' declared by <plugin-a> and <plugin-b>`
-
-There is no automatic prefixing or namespacing — the rule is "first plugin to claim a server name wins, unless another plugin tries the same name, in which case both fail". This is why MCP server names should be plugin-prefixed by convention (see `config/naming.md`).
-
-User-level `.mcp.json` (in `~/.claude/`) and project-level (in `<project>/.mcp.json`) merge with plugin-shipped MCP configs the same way: name collisions abort. Project-level wins over plugin-level for collisions on the *user's own* MCP entries (the project owner is overriding a plugin's choice intentionally).
+User-level `.mcp.json` (in `~/.claude/`) and project-level (in `<project>/.mcp.json`) merge with plugin-shipped MCP configs the same way.
 
 ## Diagnostic paths
-
-For debugging "why isn't my plugin loading?":
 
 ```bash
 # What plugins does Claude Code think are enabled?
 claude plugin list --json
 
-# What's in the cache for a specific plugin?
-ls ~/.claude/plugins/cache/<marketplace>/<plugin>/
-
-# What does the plugin's data dir contain?
-ls ~/.claude/plugins/data/<plugin>/
-
-# Where is enabledPlugins resolved from?
-claude plugin scope <plugin>
+# Health overview (errors, missing tags, range conflicts)
+# (use the slash command in an interactive session)
+/doctor
 ```
 
-See `troubleshooting.md` for failure-mode walkthroughs.
+For "why isn't my plugin loading?" walkthroughs, see [`troubleshooting.md`](troubleshooting.md).
+
+## Reference
+
+- Docs: `docs/Claude Plugins/02_storage-and-scope.md` (ground truth for the cache/scope model)
+- Official: [Plugin caching and file resolution](https://code.claude.com/docs/en/plugins-reference#plugin-caching-and-file-resolution)
+- Official: [Environment variables](https://code.claude.com/docs/en/plugins-reference#environment-variables)

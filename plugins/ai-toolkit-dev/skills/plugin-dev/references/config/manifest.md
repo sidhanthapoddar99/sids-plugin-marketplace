@@ -27,19 +27,35 @@ That's enough to load. Claude Code will auto-discover `commands/`, `agents/`, `s
 | `keywords` | array of strings, optional | Search tags |
 | `$schema` | string, optional | JSON Schema URL for editor validation |
 
-## Component path overrides
+## Component path overrides — replacement vs additive
 
-By default, components are auto-discovered at conventional paths. If you want to point Claude Code at non-standard paths, use these fields. Each accepts either an array of paths or `false` to disable discovery for that capability.
+By default, components are auto-discovered at conventional paths. To point Claude Code at non-standard paths, use these fields. Path semantics differ depending on the field:
 
-| Field | Default discovery | Override |
+**Replacement** — setting a custom path **replaces** the default scan. To keep the default *and* add more, you must include both:
+
+```json
+{ "skills": ["./skills/", "./extras/"] }
+```
+
+Replacement applies to: `skills`, `commands`, `agents`, `outputStyles`, `themes`, `monitors`.
+
+**Additive** — custom paths supplement the default scan. The default is always scanned in addition to whatever you list.
+
+Additive applies to: `hooks`, `mcpServers`, `lspServers`.
+
+| Field | Default discovery | Semantics |
 |---|---|---|
-| `commands` | `commands/*.md` | Array of `.md` paths or `false` |
-| `agents` | `agents/*.md` | Array of `.md` paths or `false` |
-| `skills` | `skills/*/SKILL.md` | Array of skill directory paths or `false` |
-| `hooks` | `hooks/hooks.json` | Array of hook config file paths or `false` |
-| `mcpServers` | `.mcp.json` | Object mapping server name → config, or array of config paths, or `false` |
+| `commands` | `commands/*.md` | replacement |
+| `agents` | `agents/*.md` | replacement |
+| `skills` | `skills/*/SKILL.md` | replacement |
+| `outputStyles` | `outputStyles/*.md` | replacement |
+| `themes` | `themes/*.json` | replacement |
+| `monitors` | `monitors/monitors.json` | replacement |
+| `hooks` | `hooks/hooks.json` | additive |
+| `mcpServers` | `.mcp.json` | additive |
+| `lspServers` | `.lsp.json` | additive |
 
-Most plugins should leave these unset and use the conventional layout. Override only when the layout is genuinely incompatible (e.g. monorepo subpackage).
+Most plugins should leave these unset and use the conventional layout.
 
 ## Modern manifest fields
 
@@ -47,13 +63,14 @@ These fields enable newer Claude Code capabilities. None are required.
 
 | Field | Type | Purpose |
 |---|---|---|
-| `lspServers` | object | Bundle language servers — see `topics/lsp-integration/SKILL.md` |
-| `monitors` | object | Long-running watcher processes — see `topics/monitor-development/SKILL.md` |
-| `themes` | object | Editor color theme bundles — see `topics/theme-and-output-style/SKILL.md` |
-| `outputStyles` | object | Output rendering styles for `claude` CLI — see `topics/theme-and-output-style/SKILL.md` |
-| `channels` | object | Notification routing surfaces — see `topics/channel-development/SKILL.md` |
-| `userConfig` | object | Schema for user-facing plugin settings — see `user-config.md` |
-| `dependencies` | array | Other plugins this plugin depends on — see `dependencies.md` |
+| `lspServers` | object | Bundle language servers — see [`../topics/lsp-integration/SKILL.md`](../topics/lsp-integration/SKILL.md) |
+| `monitors` | array | Long-running watcher processes — see [`../topics/monitor-development/SKILL.md`](../topics/monitor-development/SKILL.md) |
+| `themes` | path / array of paths | Color theme bundles — see [`../topics/theme-and-output-style/SKILL.md`](../topics/theme-and-output-style/SKILL.md) |
+| `outputStyles` | path / array of paths | Response-formatting styles — see [`../topics/theme-and-output-style/SKILL.md`](../topics/theme-and-output-style/SKILL.md) |
+| `channels` | array | Bind MCP servers to messaging surfaces — see [`../topics/channel-development/SKILL.md`](../topics/channel-development/SKILL.md) |
+| `userConfig` | object | User-facing plugin settings — see [`user-config.md`](user-config.md) |
+| `dependencies` | array | Other plugins this plugin depends on — see [`dependencies.md`](dependencies.md) |
+| `settings` | object | Default Claude Code settings the plugin applies when enabled (`agent`, `subagentStatusLine` only). A plugin-shipped root-level `settings.json` takes priority over this field |
 
 ## Path conventions
 

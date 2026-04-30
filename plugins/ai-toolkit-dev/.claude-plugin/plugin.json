@@ -1,8 +1,13 @@
 {
   "name": "ai-toolkit-dev",
-  "description": "Toolkit for authoring Claude Code plugins, marketplaces, and skills (work in progress)",
+  "description": "Toolkit for authoring Claude Code plugins, marketplaces, and skills",
   "author": {
     "name": "Sid",
     "email": "developer@neuralabs.org"
-  }
+  },
+  "skills": [
+    "./skills/marketplace/",
+    "./skills/plugin-dev/",
+    "./skills/skill-creator/"
+  ]
 }

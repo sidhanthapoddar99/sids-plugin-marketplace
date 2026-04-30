@@ -1,95 +1,71 @@
 ---
 name: monitor-development
-description: Use when authoring `monitors` — long-running watcher processes spawned by Claude Code while a session is active. Covers the manifest declaration, lifecycle (start/restart/stop), output handling, when to use a monitor vs a hook vs a bin, and patterns for filesystem watchers, log tailers, and background sync processes.
+description: Use when authoring `monitors` — long-running shell processes Claude Code spawns for the lifetime of a session, where each stdout line becomes a notification the model sees. Covers the manifest declaration, the four required and optional fields, the `when` gate (`always` vs `on-skill-invoke:<skill>`), trust model (unsandboxed), and patterns for filesystem watchers, log tailers, and skill-gated triggers.
 ---
 
 # Authoring monitors
 
-A **monitor** is a long-running process Claude Code spawns when a plugin is enabled and a session is active. Unlike hooks (event-driven, short-lived) or bins (user-invoked), monitors run continuously alongside the session.
+A **monitor** is a shell command Claude Code spawns at session start (or skill-invoke time) and keeps running for the lifetime of the session. Each stdout line is delivered to the model as a notification. Monitors require Claude Code v2.1.105+.
 
 ## When to use
 
-- Watch the filesystem for changes the model should know about
-- Tail an external log and surface relevant lines
-- Maintain a background sync (project state ↔ external service)
-- Run a periodic refresh of cached data the model relies on
+- Watch the filesystem and surface meaningful changes
+- Tail an external log and emit relevant lines
+- Run a periodic health check whose output the model should see
 
-When NOT to use:
-- One-shot operations → a hook is lighter
-- User-invoked tools → a bin or slash command
-- Real-time I/O channels → see `topics/channel-development` for `channels`, which are more structured
+## When NOT to use
+
+- One-shot side effects → a hook (PreToolUse, PostToolUse, etc.) is lighter
+- Notifications to external surfaces → a `Notification` hook with a webhook script
+- Bidirectional conversation surfaces → channels (see [`../channel-development/SKILL.md`](../channel-development/SKILL.md))
 
 ## Manifest shape
 
+Either inline in `plugin.json`:
+
 ```json
 {
-  "name": "my-plugin",
-  "monitors": {
-    "file-watcher": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/watch-files.sh",
-      "args": ["${CLAUDE_PROJECT_ROOT}"],
-      "outputHandling": "log",
-      "restart": "on-failure",
-      "startupTimeout": 5000
+  "monitors": [
+    {
+      "name": "file-watcher",
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/watch-files.sh ${CLAUDE_PROJECT_DIR}",
+      "description": "Notify on src/ changes",
+      "when": "always"
     }
-  }
+  ]
 }
 ```
 
-| Field | Purpose |
-|---|---|
-| `command` | Path to the executable or script |
-| `args` | Args passed at start. Env vars are interpolated |
-| `outputHandling` | `"log"` (write to plugin log file), `"prompt"` (inject as user-visible context), `"silent"` (discard) |
-| `restart` | `"never"`, `"on-failure"` (default), `"always"` (restart even on clean exit) |
-| `startupTimeout` | Milliseconds to wait for the process to print its readiness signal (see "Readiness" below) |
-| `env` | Optional env-var overrides |
+Or as a separate file at `monitors/monitors.json` (an array of the same shape).
+
+## Required and optional fields
+
+| Field | Required | Notes |
+|---|---|---|
+| `name` | yes | Identifier. Used in error messages and `/doctor` output |
+| `command` | yes | Shell command to run. `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_PROJECT_DIR}`, `${user_config.<key>}` all substitute |
+| `description` | yes | One-line description shown in `/plugin` and used by the model to interpret the notifications |
+| `when` | optional | `"always"` (default — start at session start) or `"on-skill-invoke:<skill-name>"` (start when the named skill is dispatched) |
+
+The full set is just those four. There is **no** `args`, `env`, `outputHandling`, `restart`, `startupTimeout`, or readiness signal — Claude Code uses the command verbatim and treats every stdout line as a notification.
 
 ## Lifecycle
 
-1. **Start.** When a session begins (or the plugin is enabled mid-session, after a restart), Claude Code spawns the monitor process. Stdin is closed; stdout/stderr are captured per `outputHandling`.
-2. **Run.** The process is expected to run until killed. Print readiness signal on stdout once initialized (see below).
-3. **Restart.** Per `restart` policy, with exponential backoff (1s, 2s, 4s, max 30s) capped at 5 restarts in 60s. After that, monitor is disabled with a warning.
-4. **Stop.** On session end, plugin disable, or plugin uninstall. Claude Code sends SIGTERM, waits 5s, then SIGKILL.
+- **Spawned** when the gating condition is met (`always` = at session start; `on-skill-invoke:<x>` = when skill `<x>` first dispatches in the session).
+- **Running** for the lifetime of the session. **Doesn't stop mid-session if the plugin is disabled** — only on session end.
+- **Stopped** when the session ends (SIGTERM).
 
-## Readiness signal
+There's no auto-restart, no exponential backoff. If the process exits, it's gone for the rest of the session.
 
-By default Claude Code assumes a monitor is ready as soon as it spawns. For monitors that have meaningful initialization (file scan, network connect), print a single line:
+## Output semantics
 
-```
-::ready::
-```
+Each line printed to stdout is delivered to the model as a separate notification. The model sees them prefixed with the monitor's `name` (and possibly `description`). Plan accordingly:
 
-To stdout (or whatever `outputHandling` directs to). Claude Code will wait up to `startupTimeout` ms for this line; if it doesn't appear, the monitor is killed and restarted.
+- Don't emit one line per filesystem event in a busy directory — the model will drown
+- Throttle or batch
+- Send a *summary* line periodically rather than raw events
 
-## Output handling modes
-
-### `"log"` (default)
-
-stdout/stderr go to `~/.claude/logs/plugins/<plugin>-<monitor>.log`. Useful for diagnostics; not visible to the model. Most monitors should use this — the model only needs to know about meaningful events, not raw output.
-
-### `"prompt"`
-
-stdout lines are injected as user-visible context messages, prefixed with `[<plugin>:<monitor>]`. Use sparingly — too much output drowns the conversation. Throttle in your monitor:
-
-```bash
-# emit a summary line every 30s, not per-event
-while inotifywait -e modify .; do
-  count=$((count + 1))
-done &
-
-while true; do
-  if [[ $count -gt 0 ]]; then
-    echo "[$(date +%T)] $count files changed since last update"
-    count=0
-  fi
-  sleep 30
-done
-```
-
-### `"silent"`
-
-Output discarded. Use for monitors that side-effect via the filesystem or network and have nothing useful to print.
+stderr is captured for debugging but not surfaced to the model.
 
 ## Patterns
 
@@ -97,98 +73,67 @@ Output discarded. Use for monitors that side-effect via the filesystem or networ
 
 ```bash
 #!/usr/bin/env bash
+# watch-files.sh
 set -euo pipefail
 PROJECT="$1"
 
-echo "::ready::"
-
-inotifywait -m -r -e create,modify,delete --format '%w%f %e' "$PROJECT" |
+# Throttle: aggregate events for 5s, then emit a summary
+{ inotifywait -m -r -e create,modify,delete --format '%w%f %e' "$PROJECT" 2>/dev/null \
+    | grep -v -E '/(\.git|node_modules)/' ; } |
   while read -r path event; do
-    case "$path" in
-      */.git/*) continue ;;        # ignore git noise
-      */node_modules/*) continue ;;
-    esac
-    echo "[$event] $path"
+    last_event="$path ($event)"
+    if [[ -z "$timer_pid" ]] || ! kill -0 "$timer_pid" 2>/dev/null; then
+      ( sleep 5; echo "Files changed; latest: $last_event" ) &
+      timer_pid=$!
+    fi
   done
 ```
 
-### Log tailer
+### Periodic summary
 
 ```bash
 #!/usr/bin/env bash
-LOG_PATH="$1"
-echo "::ready::"
-exec tail -F "$LOG_PATH" 2>/dev/null
-```
-
-### Periodic refresh
-
-```bash
-#!/usr/bin/env bash
-echo "::ready::"
+# poll-status.sh
 while true; do
-  sleep 300                           # 5 min
-  ./refresh-cache.sh "$CLAUDE_PLUGIN_DATA"
+  status=$(curl -s "${CLAUDE_PLUGIN_OPTION_STATUSURL}" | jq -r .summary)
+  echo "[$(date +%T)] status: $status"
+  sleep 300
 done
 ```
 
-## Vs hooks
+### Skill-gated monitor
 
-| Concern | Monitor | Hook |
-|---|---|---|
-| When it runs | Always while session is active | On a specific event |
-| Process model | Long-running daemon | Short-lived (per event) |
-| Cost | Memory + CPU continuously | Negligible when idle |
-| Use case | "Watch X" | "On Y, do Z" |
-
-If your need can be expressed as a hook (e.g. "on PreToolUse, check whether the file's been modified externally"), use a hook. Monitors should be reserved for genuinely continuous work.
-
-## Resource limits
-
-Monitors compete with the user's session for CPU. Best practices:
-
-- Use `nice` or set a low priority
-- Avoid busy loops; sleep generously between checks
-- Don't read large files repeatedly — cache reads, watch for filesystem events
-- Memory should stay under ~50 MB for a typical monitor
-
-If a monitor needs more resources, it might belong as a separate user-managed daemon that the plugin merely *talks to* via a socket or IPC mechanism.
-
-## Multiple monitors
-
-A plugin can declare multiple monitors. They run independently:
+A monitor with `when: "on-skill-invoke:my-skill"` only starts when `my-skill` is dispatched. Useful for expensive monitors you only want running when relevant:
 
 ```json
 {
-  "monitors": {
-    "watcher": { ... },
-    "syncer": { ... }
-  }
+  "monitors": [
+    {
+      "name": "build-watcher",
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/watch-build.sh",
+      "description": "Watch the build for failures",
+      "when": "on-skill-invoke:debug-build"
+    }
+  ]
 }
 ```
 
-Each gets its own log file, its own restart policy, its own readiness signal. Communication between monitors should go through `${CLAUDE_PLUGIN_DATA}` — there's no IPC contract Claude Code mediates.
+## Trust and security
 
-## Disabling a monitor without disabling the plugin
+Monitors run **unsandboxed at the same privilege as the user's shell**. Same trust class as hooks. They can execute arbitrary code; users should only enable plugins from sources they trust.
 
-Currently no first-class way; the plugin author can expose a `userConfig` flag the monitor checks at startup:
+## Multiple monitors
 
-```bash
-if [[ "$(jq -r .enableWatcher "$CLAUDE_PLUGIN_CONFIG")" != "true" ]]; then
-  echo "watcher disabled in config; exiting"
-  exit 0
-fi
-```
+A plugin can declare multiple monitors. They run independently, each with its own process and `when` gate. Communication between them goes through `${CLAUDE_PLUGIN_DATA}` — no IPC contract Claude Code mediates.
 
-A clean exit + `restart: "never"` means the monitor stays off until the session restarts.
+## Common pitfalls
 
-## Testing locally
+- **Inventing fields.** `outputHandling`, `args`, `env`, `restart`, `::ready::` sentinels are not part of the monitor schema. Use what's listed above; everything else is just shell pipeline plumbing inside `command`.
+- **Verbose output.** Each line is a notification. A monitor that streams 100 lines/s will drown the conversation.
+- **Long startup.** Claude Code spawns and proceeds; long startup means initial output is delayed but doesn't block session readiness.
+- **Assuming auto-restart.** It doesn't restart. If your monitor needs resilience, build the loop inside the script.
 
-```bash
-claude --plugin-dir ./my-plugin
+## Reference
 
-# Check monitor status
-> /monitor list
-> /monitor logs <plugin>:<monitor>      # tail log file
-> /monitor restart <plugin>:<monitor>
-```
+- Docs: `docs/Claude Plugins/07_reference.md` § Background monitors (ground truth)
+- Official: [Monitors](https://code.claude.com/docs/en/plugins-reference#monitors)

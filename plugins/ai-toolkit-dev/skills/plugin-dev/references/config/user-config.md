@@ -1,112 +1,142 @@
 # Plugin user configuration
 
-Two ways to expose plugin settings to users: the modern `userConfig` field in `plugin.json`, and the legacy `.claude/<plugin-name>.local.md` pattern. Use `userConfig` for new plugins.
+The `userConfig` field in `plugin.json` declares values Claude Code prompts the user for when the plugin is enabled. It replaces hand-editing `settings.json` and gives plugin authors a structured way to expose configurable settings.
 
-## `userConfig` (modern)
+> [!important]
+> `userConfig` is **NOT** standard JSON Schema. It uses a custom shape with a fixed set of types and option fields. The vocabulary below is the full set.
 
-The `userConfig` field declares a JSON Schema that Claude Code uses to render a settings UI for the plugin. Values entered by the user are persisted per-scope and exposed to the plugin at runtime.
-
-### Declaration
+## Shape
 
 ```json
 {
   "name": "my-plugin",
   "userConfig": {
-    "type": "object",
-    "properties": {
-      "apiKey": {
-        "type": "string",
-        "description": "API key for the external service",
-        "format": "password"
-      },
-      "logLevel": {
-        "type": "string",
-        "enum": ["debug", "info", "warn", "error"],
-        "default": "info"
-      },
-      "enableExperimentalFeatures": {
-        "type": "boolean",
-        "default": false
-      }
+    "apiKey": {
+      "type": "string",
+      "title": "API key",
+      "description": "Token for the upstream service",
+      "sensitive": true,
+      "required": true
     },
-    "required": ["apiKey"]
+    "logLevel": {
+      "type": "string",
+      "default": "info",
+      "description": "One of: debug, info, warn, error"
+    },
+    "scanDirs": {
+      "type": "directory",
+      "multiple": true,
+      "description": "Directories to scan"
+    },
+    "timeoutSeconds": {
+      "type": "number",
+      "default": 30,
+      "min": 1,
+      "max": 600
+    }
   }
 }
 ```
 
-### What Claude Code does with this
+Each top-level key is the option's identifier. Identifiers must be valid (alphanumeric + underscore). Each option is an object describing one setting.
 
-- Renders a settings panel in `/plugin` UI (the Settings tab)
-- Validates user input against the schema before saving
-- Persists per-scope: User > Project > Local > Managed (last write wins per scope)
-- Passes the resolved config to plugin components at runtime
+## Option fields
 
-### Reading config at runtime
+| Field | Type | Notes |
+|---|---|---|
+| `type` | required | One of: `string`, `number`, `boolean`, `directory`, `file` |
+| `title` | optional | Human-readable label shown in `/plugin` |
+| `description` | optional | Help text shown in `/plugin` |
+| `sensitive` | boolean, optional | Masks input. Stored in OS keychain (not `settings.json`) |
+| `required` | boolean, optional | Plugin can't enable until this is set |
+| `default` | optional | Pre-fill value. Type must match `type` |
+| `multiple` | boolean, optional | For `string` and `directory`/`file` types — value is an array |
+| `min` / `max` | number, optional | For `type: "number"` — range bounds |
 
-In a script run by the plugin:
+There is no `enum`, no `format: password` (use `sensitive: true`), no `oneOf`/`anyOf`/`allOf`, no nested object shapes. Stay within the vocabulary above.
+
+## Where values live
+
+| Kind | Storage |
+|---|---|
+| `sensitive: true` values | OS keychain (~2 KB total cap, shared with OAuth tokens) |
+| All other values | `~/.claude/settings.json` under `pluginConfigs[<plugin-id>].options` |
+
+`<plugin-id>` is the install identifier (`<plugin-name>` slugified with `-` for `@`); see [`../development-cycle/lifecycle-and-storage.md`](../development-cycle/lifecycle-and-storage.md).
+
+## Reading values from plugin code
+
+Two ways:
+
+### 1. Inline substitution: `${user_config.KEY}`
+
+Substituted in:
+- Skill content (the body of `SKILL.md`, including frontmatter values)
+- Agent content
+- Hook commands
+- Monitor commands
+- MCP and LSP server configs
+
+```json
+// In .mcp.json
+{
+  "mcpServers": {
+    "my-server": {
+      "command": "node",
+      "args": ["server.js"],
+      "env": {
+        "API_KEY": "${user_config.apiKey}"
+      }
+    }
+  }
+}
+```
+
+For `sensitive: true` values, substitution does NOT happen in skill or agent content (they're kept out of model-facing context). They DO substitute in commands, env vars, and MCP/LSP configs that flow only to subprocess.
+
+### 2. Subprocess env vars: `CLAUDE_PLUGIN_OPTION_<KEY>`
+
+All `userConfig` values are exported as env vars to subprocesses launched by hooks, monitors, and MCP/LSP servers. Variable names are uppercased with non-alphanumerics replaced by `_`:
+
+| `userConfig` key | Env var |
+|---|---|
+| `apiKey` | `CLAUDE_PLUGIN_OPTION_APIKEY` |
+| `log_level` | `CLAUDE_PLUGIN_OPTION_LOG_LEVEL` |
+| `scanDirs` | `CLAUDE_PLUGIN_OPTION_SCANDIRS` (newline-joined for `multiple: true`) |
+
+In a hook script:
 
 ```bash
-# The merged config is exposed as JSON at $CLAUDE_PLUGIN_CONFIG
-api_key=$(jq -r .apiKey "$CLAUDE_PLUGIN_CONFIG")
+#!/usr/bin/env bash
+api_key="$CLAUDE_PLUGIN_OPTION_APIKEY"
+if [[ -z "$api_key" ]]; then
+  echo "error: apiKey not set — run /plugin → Settings → my-plugin" >&2
+  exit 3
+fi
 ```
 
-In a hook script, the config is also passed in the JSON payload on stdin (see `topics/hook-development/SKILL.md`).
+## When you'd use `.claude/<plugin-name>.local.md` instead
 
-In an agent or skill's prompt content, you can interpolate `${CLAUDE_PLUGIN_CONFIG.apiKey}` — Claude Code substitutes before loading the prompt.
+The legacy pattern is a YAML-frontmatter + Markdown file at `.claude/<plugin-name>.local.md` (gitignored, project-local) read by the plugin's hooks/commands/agents at runtime. Superseded by `userConfig` for most cases — `userConfig` integrates with `/plugin`'s enable flow and uses the OS keychain for secrets.
 
-### Schema features supported
+The `.local.md` pattern is still useful for:
+- Stateful per-session data the plugin writes back at runtime (`userConfig` is read-only from the plugin's perspective)
+- Genuinely free-form prose (e.g. "describe your team's coding style") where structured fields are awkward
 
-- All standard JSON Schema types: `string`, `number`, `integer`, `boolean`, `object`, `array`, `null`
-- `enum`, `default`, `description`, `required`
-- `format`: `password` (input masked), `date`, `email`, `uri`, `path`
-- Nested `object` properties (rendered as expandable groups)
-- `oneOf` / `anyOf` / `allOf` for conditional fields
-- `$schema` for live editor validation
+The vendored `topics/plugin-settings/` skill (under `references/topics/`) covers the legacy pattern in depth — go there if you specifically need to use it.
 
-### Validation failures
+## Migration notes
 
-If a user enters config that doesn't match the schema, Claude Code rejects the save and shows the validation errors. Plugin code receives only schema-valid config — no runtime validation needed.
+- A plugin that previously used `.local.md` can add `userConfig` for new fields and keep reading the legacy file for existing ones, with a deprecation warning. Claude Code does not provide an automatic migration helper — plugin authors must hand-roll the conversion.
+- `.local.md` is gitignored by Claude Code; `userConfig` values live in `~/.claude/settings.json` (or the keychain for sensitive). Neither pattern leaks values into the project repo.
 
-## `.claude/<plugin-name>.local.md` (legacy)
+## Common mistakes
 
-Older plugins use a free-form Markdown file to surface settings:
+- **Using JSON Schema vocabulary.** `format: password`, `oneOf`, `properties`, etc. are not recognized. Use the option-field set above.
+- **Defaulting credentials.** Don't put `default` on a `sensitive: true` field — the user should enter their own credential explicitly.
+- **Logging resolved options wholesale.** Mask `sensitive` values before logging. The OS keychain entry exists precisely to keep these out of `settings.json` and casual logs.
 
-```
-~/.claude/<plugin-name>.local.md
-```
+## Reference
 
-The plugin loaded the file at runtime, parsed its own conventions out of the markdown, and applied them. This pattern predates `userConfig`.
-
-### Why it's deprecated
-
-- No schema validation — plugins had to hand-roll parsing
-- No UI integration — users edited the markdown by hand
-- Per-scope merging was ad-hoc; many plugins only honored User scope
-- Path was outside `${CLAUDE_PLUGIN_DATA}`, so it didn't survive a clean reinstall
-
-### When you'd still use it
-
-- Maintaining a plugin that's already shipped with this pattern and you don't want to break existing users mid-version
-- The setting is intentionally free-form prose (e.g. "describe your team's coding style"), in which case JSON Schema is awkward
-
-### Migration path
-
-If you have a plugin using `.local.md` and want to move to `userConfig`:
-
-1. Add `userConfig` to `plugin.json` for new fields
-2. Keep reading the legacy file for one major version, with a deprecation warning
-3. Provide a `claude plugin migrate-config <plugin>` script (or a SessionStart hook) that reads the legacy file and writes equivalent `userConfig` values
-4. Remove the legacy reader in the next major version
-
-## Choosing between the two
-
-- **New plugin?** `userConfig`, always.
-- **Existing plugin with `.local.md`?** Migrate when you do a major version bump.
-- **Setting is genuinely a free-form chunk of prose?** Keep `.local.md` for that field; use `userConfig` for the rest.
-
-## Security considerations
-
-- Mark sensitive fields with `"format": "password"` so the UI masks input
-- Avoid `default` values for credentials — let the user enter them explicitly
-- Don't log resolved config wholesale; mask `password`-format values before logging
-- Never check resolved config into git — `.local.md` is gitignored by Claude Code; `userConfig` values live in `~/.claude/settings.json` which is similarly outside the project tree
+- Docs: `docs/Claude Plugins/07_reference.md` § `userConfig` (ground truth)
+- Official: [User configuration](https://code.claude.com/docs/en/plugins-reference#user-configuration)

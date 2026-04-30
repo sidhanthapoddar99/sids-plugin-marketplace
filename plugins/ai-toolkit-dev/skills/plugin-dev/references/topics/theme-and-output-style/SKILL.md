@@ -1,107 +1,82 @@
 ---
 name: theme-and-output-style
-description: Use when authoring `themes` (editor / terminal color schemes) or `outputStyles` (rendering modes for the `claude` CLI's output — tone, verbosity, formatting). Covers manifest declaration, theme schema (foreground / background / syntax tokens), output-style frontmatter (description, instructions, when-to-trigger), how users select between bundled options, and the difference between the two.
+description: Use when authoring `themes` (color schemes shipped via `themes/<name>.json` with a `base` preset and a sparse `overrides` map) or `outputStyles` (response-formatting styles configured via `outputStyles` in `plugin.json`). Covers both schemas, how users select between bundled options (`/theme`, **Ctrl+E** to copy for editing), and what the official marketplace ships for reference (`explanatory-output-style`, `learning-output-style`).
 ---
 
 # Themes and output styles
 
-Two related but distinct manifest fields. **`themes`** controls *visual* appearance; **`outputStyles`** controls *how the model is asked to write*. Both are user-selectable via `/theme` and `/output-style`.
+Two related but distinct manifest fields. **`themes`** controls visual color schemes; **`outputStyles`** controls how Claude formats responses. Both are user-selectable.
 
-## `themes`
+## Themes
 
-A theme is a color scheme applied to Claude Code's TUI / terminal output. Plugins can ship multiple.
+A theme is a JSON file at `themes/<name>.json` (or any path declared in `themes` in `plugin.json`). Each theme starts from a built-in **base preset** and applies a sparse map of color **overrides**.
 
-### Manifest shape
-
-```json
-{
-  "name": "my-themes",
-  "themes": {
-    "midnight": {
-      "displayName": "Midnight",
-      "description": "Dark theme inspired by city skylines at night",
-      "definition": "${CLAUDE_PLUGIN_ROOT}/themes/midnight.json"
-    },
-    "dawn": {
-      "displayName": "Dawn",
-      "description": "Light theme for daytime use",
-      "definition": "${CLAUDE_PLUGIN_ROOT}/themes/dawn.json"
-    }
-  }
-}
-```
-
-### Theme definition file
+### Theme file shape
 
 ```json
 {
   "name": "midnight",
-  "type": "dark",
-  "colors": {
-    "background": "#0d1117",
-    "foreground": "#c9d1d9",
-    "selection": "#264f78",
-    "cursor": "#79c0ff",
-    "accent": "#58a6ff"
-  },
-  "syntax": {
-    "comment": { "fg": "#8b949e", "italic": true },
-    "string": { "fg": "#a5d6ff" },
-    "keyword": { "fg": "#ff7b72", "bold": true },
-    "function": { "fg": "#d2a8ff" },
-    "number": { "fg": "#79c0ff" },
-    "type": { "fg": "#ffa657" },
-    "variable": { "fg": "#c9d1d9" },
-    "operator": { "fg": "#ff7b72" },
-    "constant": { "fg": "#79c0ff" }
-  },
-  "ui": {
-    "border": "#30363d",
-    "highlight": "#1f6feb",
-    "muted": "#6e7681",
-    "warning": "#d29922",
-    "error": "#f85149"
+  "base": "dark",
+  "overrides": {
+    "comment": "#8b949e",
+    "string": "#a5d6ff",
+    "keyword": "#ff7b72",
+    "function": "#d2a8ff"
   }
 }
 ```
 
-| Section | Purpose |
+| Field | Notes |
 |---|---|
-| `colors` | Top-level color palette |
-| `syntax` | Per-token styling for code blocks. Supports `fg`, `bg`, `bold`, `italic`, `underline` |
-| `ui` | Decorations: borders, highlights, error/warning colors |
+| `name` | Theme identifier |
+| `base` | A built-in preset name. Inherited tokens you don't override come from this base |
+| `overrides` | Sparse map of color tokens → hex / named color. Only the tokens you customize need to appear |
 
-`type: "dark"` or `"light"` is metadata Claude Code uses for fallback logic if a token isn't styled.
+There is no nested `colors`/`syntax`/`ui` object structure, no per-token `bold`/`italic`/`underline` flags, no `displayName`/`description`/`definition` indirect-pointer pattern. The shape above is the full vocabulary.
+
+### Discovery
+
+Default scan: `themes/*.json`. Override via `"themes"` in `plugin.json` (this is a **path-replacement** field — see [`../../config/manifest.md`](../../config/manifest.md), include `./themes/` in the array if you want to keep the default scan plus add more).
 
 ### Activation
 
-Users select via `/theme <plugin>:<theme-name>`. Claude Code persists the choice per-scope.
+Users select via `/theme`. Plugin-shipped themes appear alongside built-in presets and the user's local themes.
 
-## `outputStyles`
+When a plugin theme is selected, the choice persists as `custom:<plugin-name>:<theme-name>` in the user's config.
 
-An output style is a *prompting policy* for how the model should respond. Use cases:
-- Concise mode — terse responses, no narration
-- Tutorial mode — explain steps verbosely as you go
-- Roleplay personas — "respond as a senior engineer doing code review"
+### Editing a plugin theme
+
+Plugin themes are read-only in `/theme`. To customize:
+- Press **Ctrl+E** on a plugin theme in the picker → Claude Code copies it into `~/.claude/themes/`
+- The user can edit the copy freely
+
+This way the plugin's authoritative version stays clean across plugin updates and the user can iterate on their copy.
+
+## Output styles
+
+An output style is a prompting policy that changes how Claude formats responses. Configured via `outputStyles` in `plugin.json`.
 
 ### Manifest shape
 
 ```json
 {
-  "outputStyles": {
-    "concise": {
-      "displayName": "Concise",
-      "description": "Direct, minimal-prose responses",
-      "definition": "${CLAUDE_PLUGIN_ROOT}/output-styles/concise.md"
-    },
-    "tutorial": {
-      "displayName": "Tutorial",
-      "description": "Walk through steps and explain reasoning",
-      "definition": "${CLAUDE_PLUGIN_ROOT}/output-styles/tutorial.md"
-    }
-  }
+  "outputStyles": "./output-styles/"
 }
 ```
+
+Or specific files:
+
+```json
+{
+  "outputStyles": ["./styles/concise.md", "./styles/tutorial.md"]
+}
+```
+
+The value is a path string or array of paths. Each output style is a Markdown file with frontmatter; its body is appended to Claude Code's system prompt when the style is active.
+
+### Discovery
+
+Default scan: `outputStyles/*.md` (or wherever the plugin places them). `outputStyles` in `plugin.json` is a path-replacement field — to keep the default plus add more, include both.
 
 ### Definition file (Markdown with frontmatter)
 
@@ -111,27 +86,27 @@ name: concise
 description: Direct, minimal-prose responses
 ---
 
-# Concise output style
-
-You are operating in concise mode. Apply these rules to every response:
+You are operating in concise mode. Apply these rules:
 
 - No preamble, no recap of the user's question
-- Use bullet points over prose where possible
-- Skip code comments unless they're load-bearing
+- Bullet points over prose where possible
+- Skip code comments unless load-bearing
 - One-line summary at the end of long responses
-
-When the user asks a question, give the answer first; supporting reasoning second; alternatives last.
 ```
 
-The body is appended to Claude Code's system prompt when the style is active. Treat it like CLAUDE.md content — actionable rules the model will internalize.
+Treat the body like CLAUDE.md content — actionable rules the model internalizes.
 
 ### Activation
 
-Users select via `/output-style <plugin>:<style-name>`. Active style affects every prompt until changed.
+Users select via `/output-style`. The active style affects every prompt until changed. Plugin-shipped styles appear alongside built-in styles.
 
-### Default styles
+### Examples in the official marketplace
 
-Claude Code ships a default style. Plugin output styles override it when selected. Resetting to default: `/output-style default`.
+`claude-plugins-official` ships:
+- `explanatory-output-style` — adds educational annotations on code
+- `learning-output-style` — interactive learning-mode formatting
+
+Read those for worked examples.
 
 ## When to use which
 
@@ -140,11 +115,10 @@ Claude Code ships a default style. Plugin output styles override it when selecte
 | Colors, syntax highlighting | `themes` |
 | Tone, verbosity, response shape | `outputStyles` |
 | What the model can do | A skill or agent (not these) |
-| When the model proactively does something | Hooks or proactive agents |
 
 ## Combining
 
-Themes and output styles are independent — users can mix any theme with any output style. A plugin shipping both should keep them in separate folders:
+Themes and output styles are independent — users can mix any theme with any output style. Ship them as separate files in separate directories:
 
 ```
 my-plugin/
@@ -159,17 +133,12 @@ my-plugin/
 
 ## Common pitfalls
 
-- **Themes too low-contrast.** Test on multiple terminals; what looks elegant on iTerm may be unreadable on plain xterm.
-- **Output styles too prescriptive.** A 500-word style description is in *every* prompt — that's expensive. Aim for under 100 words of concrete rules.
-- **Output styles over-specifying format.** Telling Claude to "always use exactly 3 bullet points" leads to weird outputs when 3 isn't natural. Specify shape only when it genuinely matters.
-- **Themes + output style with same `name`.** They're separate namespaces, but a plugin shipping both with overlapping names confuses users. Use distinct names.
+- **Inventing nested theme structure.** Don't ship `themes/<name>.json` with `colors`/`syntax`/`ui` objects — Claude Code doesn't read that shape. Use `name` / `base` / `overrides`.
+- **Over-prescribing in output styles.** A 500-word style is in *every* prompt — expensive. Aim for under 100 words of concrete rules.
+- **Format-rigid output styles.** Telling Claude "always use exactly 3 bullet points" leads to weird outputs when 3 isn't natural. Specify shape only when it genuinely matters.
 
-## Testing locally
+## Reference
 
-```bash
-claude --plugin-dir ./my-plugin
-> /theme my-plugin:midnight
-> /output-style my-plugin:concise
-
-# Then run any prompt and verify the visual + tone changes
-```
+- Docs: `docs/Claude Plugins/07_reference.md` § Themes and § Output styles (ground truth)
+- Official: [Themes](https://code.claude.com/docs/en/plugins-reference#themes)
+- Official: [Output styles](https://code.claude.com/docs/en/discover-plugins#output-styles)

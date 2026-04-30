@@ -1,6 +1,6 @@
 ---
 name: bin-development
-description: Use when authoring scripts under a plugin's `bin/` directory — wrapper script conventions, `$PATH` exposure, env-var conventions (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_PLUGIN_CONFIG}`), when to ship a bin vs a hook script, dispatcher patterns, OS portability, and naming to avoid collisions across plugins.
+description: Use when authoring scripts under a plugin's `bin/` directory — wrapper script conventions, `$PATH` exposure, env-var conventions (`${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`, `${CLAUDE_PROJECT_DIR}`, `CLAUDE_PLUGIN_OPTION_<KEY>` for `userConfig`), when to ship a bin vs a hook script, dispatcher patterns, OS portability, and naming to avoid collisions across plugins.
 ---
 
 # Authoring `bin/` scripts
@@ -42,15 +42,12 @@ Avoid generic names: `build`, `test`, `lint`, `serve` will collide with project 
 
 | Variable | Resolves to | Use for |
 |---|---|---|
-| `${CLAUDE_PLUGIN_ROOT}` | The plugin's installed root | Path to your bundled assets, scripts, templates |
-| `${CLAUDE_PLUGIN_DATA}` | The plugin's persistent data dir | Read/write state |
-| `${CLAUDE_PLUGIN_CONFIG}` | Path to a JSON file with the plugin's resolved `userConfig` | Read user-set config values |
-| `${CLAUDE_SESSION_ID}` | Current session's unique ID | Per-session caching |
-| `${CLAUDE_PROJECT_ROOT}` | Project working directory | Per-project state |
+| `CLAUDE_PLUGIN_ROOT` | The plugin's installed cache root (`~/.claude/plugins/cache/<mkt>/<plugin>/<version>/`) | Bundled assets, scripts, templates |
+| `CLAUDE_PLUGIN_DATA` | The plugin's persistent data dir (`~/.claude/plugins/data/<plugin-id>/`) | Read/write state across plugin updates |
+| `CLAUDE_PROJECT_DIR` | Current project working directory | Per-project state |
+| `CLAUDE_PLUGIN_OPTION_<KEY>` | Resolved value of a `userConfig` option (one env var per key) | Read user-set config — see [`../../config/user-config.md`](../../config/user-config.md) |
 
-These are set by Claude Code before invoking your bin. They're available transitively to subprocesses the bin spawns.
-
-Don't `export` them yourself — they're already in the environment. Don't shell-quote them with single quotes (won't expand) — use double quotes.
+These are set by Claude Code before invoking your bin and propagate transitively to subprocesses. Don't `export` them yourself — they're already in the environment.
 
 ## Boilerplate
 
@@ -84,14 +81,16 @@ The `${CLAUDE_PLUGIN_ROOT:?...}` form fails fast with a useful error if the bin 
 ## Reading user config
 
 ```bash
-api_key=$(jq -r .apiKey "$CLAUDE_PLUGIN_CONFIG")
-if [[ "$api_key" == "null" ]]; then
-  echo "error: apiKey not set — run /plugin → Settings → my-plugin" >&2
+api_key="${CLAUDE_PLUGIN_OPTION_APIKEY:-}"
+if [[ -z "$api_key" ]]; then
+  echo "error: apiKey not set — run /plugin and configure my-plugin" >&2
   exit 3
 fi
 ```
 
-`jq` should be assumed present in most environments, but if your plugin must work in stripped-down containers, vendor a static `jq` binary in `${CLAUDE_PLUGIN_ROOT}/vendor/`.
+For `multiple: true` options (string/directory/file arrays), values are newline-joined in the env var. Split with `IFS=$'\n'`.
+
+See [`../../config/user-config.md`](../../config/user-config.md) for the full `userConfig` schema and substitution model.
 
 ## OS portability
 
