@@ -1,0 +1,8 @@
+{
+  "name": "ai-toolkit-dev",
+  "description": "Toolkit for authoring Claude Code plugins, marketplaces, and skills (work in progress)",
+  "author": {
+    "name": "Sid",
+    "email": "developer@neuralabs.org"
+  }
+}

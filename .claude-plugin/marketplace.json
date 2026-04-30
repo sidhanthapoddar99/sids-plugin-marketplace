@@ -13,9 +13,9 @@
   ],
   "plugins": [
     {
-      "name": "plugin-dev",
-      "source": "plugin-dev",
-      "description": "End-to-end Claude Code plugin development toolkit (work in progress)"
+      "name": "ai-toolkit-dev",
+      "source": "ai-toolkit-dev",
+      "description": "Toolkit for authoring Claude Code plugins, marketplaces, and skills (work in progress)"
     },
     {
       "name": "monorepo-setup",

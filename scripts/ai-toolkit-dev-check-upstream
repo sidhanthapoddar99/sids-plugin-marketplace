@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# ai-toolkit-dev-check-upstream — report drift between vendored soft-fork
+# content in plugins/ai-toolkit-dev and the upstream sources.
+#
+# Reads plugins/ai-toolkit-dev/.upstream/manifest.json, queries the upstream
+# commit SHA for each tracked path via `gh api`, and prints a per-file drift
+# table {tracked-path, vendored-sha, upstream-sha, status}.
+#
+# Marketplace-internal — not packaged with the plugin. Per-plugin scoped: if
+# another plugin grows soft-fork tracking, give it its own
+# scripts/<plugin>-check-upstream. See CLAUDE.md at the marketplace root for
+# the trigger context.
+#
+# Requires: gh, jq.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+if ! command -v gh >/dev/null; then
+  echo "error: gh CLI required" >&2; exit 1
+fi
+if ! command -v jq >/dev/null; then
+  echo "error: jq required" >&2; exit 1
+fi
+
+PLUGIN="ai-toolkit-dev"
+manifest="plugins/$PLUGIN/.upstream/manifest.json"
+
+if [[ ! -f "$manifest" ]]; then
+  echo "No manifest at $manifest."
+  echo "Soft-fork for $PLUGIN hasn't been performed yet — see plugins/$PLUGIN/README.md § 2 for the plan."
+  exit 0
+fi
+
+manifests=( "$manifest" )
+
+printf "%-60s %-12s %-12s %s\n" "TRACKED PATH" "VENDORED" "UPSTREAM" "STATUS"
+printf "%-60s %-12s %-12s %s\n" "------------" "--------" "--------" "------"
+
+for manifest in "${manifests[@]}"; do
+  repo=$(jq -r '.upstream.repo' "$manifest")
+  ref=$(jq -r '.upstream.ref // "main"' "$manifest")
+  count=$(jq '.entries | length' "$manifest")
+  for i in $(seq 0 $((count - 1))); do
+    local_path=$(jq -r ".entries[$i].local" "$manifest")
+    upstream_path=$(jq -r ".entries[$i].upstream" "$manifest")
+    vendored_sha=$(jq -r ".entries[$i].sha" "$manifest")
+
+    upstream_sha=$(gh api "repos/$repo/commits?path=$upstream_path&sha=$ref&per_page=1" 2>/dev/null \
+                    | jq -r '.[0].sha[0:7]' || echo "ERR")
+
+    if [[ "$upstream_sha" == "${vendored_sha:0:7}" ]]; then
+      status="up to date"
+    elif [[ "$upstream_sha" == "ERR" ]]; then
+      status="lookup failed"
+    else
+      status="DRIFT"
+    fi
+
+    printf "%-60s %-12s %-12s %s\n" "$local_path" "${vendored_sha:0:7}" "$upstream_sha" "$status"
+  done
+done

@@ -1,8 +1,0 @@
-{
-  "name": "plugin-dev",
-  "description": "End-to-end Claude Code plugin development toolkit (work in progress)",
-  "author": {
-    "name": "Sid",
-    "email": "developer@neuralabs.org"
-  }
-}
