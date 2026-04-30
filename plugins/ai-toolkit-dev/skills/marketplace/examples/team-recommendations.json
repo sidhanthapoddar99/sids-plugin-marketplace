@@ -1,0 +1,25 @@
+{
+  "_comment": "This is a .claude/settings.json file, NOT a marketplace.json. Commit it at the root of a project repo to recommend marketplaces and pre-enable plugins for everyone who trusts the project. extraKnownMarketplaces does not belong inside marketplace.json.",
+
+  "extraKnownMarketplaces": {
+    "team-foundation": {
+      "source": {
+        "source": "github",
+        "repo": "myteam/foundation-marketplace"
+      }
+    },
+    "team-frontend": {
+      "source": {
+        "source": "github",
+        "repo": "myteam/frontend-marketplace",
+        "ref": "v3"
+      }
+    }
+  },
+
+  "enabledPlugins": {
+    "code-formatter@team-foundation": true,
+    "deployment-tools@team-foundation": true,
+    "react-helpers@team-frontend": true
+  }
+}

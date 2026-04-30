@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "upstream": {
+    "repo": "anthropics/claude-plugins-official",
+    "ref": "main",
+    "vendored_commit": "0742692199b49af5c6c33cd68ee674fb2e679d50",
+    "vendored_at": "2026-05-01",
+    "license": "Apache-2.0",
+    "license_file": ".upstream/LICENSE-plugin-dev"
+  },
+  "entries": [
+    {
+      "local": "skills/plugin-dev/references/topics/plugin-structure/",
+      "upstream": "plugins/plugin-dev/skills/plugin-structure/",
+      "sha": "2438937",
+      "vendored_at": "2026-05-01",
+      "modifications": []
+    },
+    {
+      "local": "skills/plugin-dev/references/topics/agent-development/",
+      "upstream": "plugins/plugin-dev/skills/agent-development/",
+      "sha": "ce721c1",
+      "vendored_at": "2026-05-01",
+      "modifications": []
+    },
+    {
+      "local": "skills/plugin-dev/references/topics/command-development/",
+      "upstream": "plugins/plugin-dev/skills/command-development/",
+      "sha": "6b70f99",
+      "vendored_at": "2026-05-01",
+      "modifications": []
+    },
+    {
+      "local": "skills/plugin-dev/references/topics/hook-development/",
+      "upstream": "plugins/plugin-dev/skills/hook-development/",
+      "sha": "2438937",
+      "vendored_at": "2026-05-01",
+      "modifications": []
+    },
+    {
+      "local": "skills/plugin-dev/references/topics/mcp-integration/",
+      "upstream": "plugins/plugin-dev/skills/mcp-integration/",
+      "sha": "2438937",
+      "vendored_at": "2026-05-01",
+      "modifications": []
+    },
+    {
+      "local": "skills/plugin-dev/references/topics/plugin-settings/",
+      "upstream": "plugins/plugin-dev/skills/plugin-settings/",
+      "sha": "2438937",
+      "vendored_at": "2026-05-01",
+      "modifications": []
+    },
+    {
+      "local": "skills/skill-creator/",
+      "upstream": "plugins/skill-creator/skills/skill-creator/",
+      "sha": "2a40fd2",
+      "vendored_at": "2026-05-01",
+      "modifications": []
+    }
+  ],
+  "dropped": [
+    {
+      "upstream": "plugins/plugin-dev/skills/skill-development/",
+      "reason": "Superseded by skills/skill-creator/ (vendored separately) to avoid two skill-authoring entry points"
+    }
+  ]
+}

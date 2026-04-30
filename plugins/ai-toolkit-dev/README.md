@@ -2,8 +2,8 @@
 
 Toolkit for authoring Claude Code plugins, marketplaces, and skills — consolidated into three triggerable skills with progressive disclosure.
 
-> [!warning]
-> **Work in progress.** Only the plugin scaffold and provenance plan exist at this point. The skills below are not yet vendored or written.
+> [!note]
+> **First release scaffolded** on 2026-05-01. All three skills are present with substantive content; soft-fork content is vendored from upstream `claude-plugins-official` at commit `0742692`. License decision still pending before public release.
 
 ---
 
@@ -40,8 +40,9 @@ This plugin is rarely loaded — most projects don't author plugins — but when
 
 Soft-forked content is maintained manually. The schedule is **roughly monthly** — the maintainer pulls upstream, diffs, and refreshes the vendored copies plus `.upstream/manifest.json`. Plugin consumers don't see this work; they just get whatever was last vendored.
 
-- **Last upstream check:** 2026-04-30
-- **Last local modification:** 2026-04-30 (initial scaffold)
+- **Last upstream check:** 2026-05-01
+- **Last local modification:** 2026-05-01 (initial vendor + in-house authoring)
+- **Vendored at:** upstream HEAD `0742692` (2026-04-29)
 
 ### Upstream sources
 
@@ -53,15 +54,17 @@ Soft-forked content is maintained manually. The schedule is **roughly monthly** 
 
 ### Vendored content
 
+SHAs are **per-file last-modification** (the commit that last touched the upstream path). Drift = "Source commit" differs from "Latest upstream".
+
 | Name | Status | Local path | Source | Source commit | Latest upstream | Last updated |
 |---|---|---|---|---|---|---|
-| `plugin-structure` | Pending sync | `skills/plugin-dev/references/topics/plugin-structure/` | `plugins/plugin-dev/skills/plugin-structure/` | — | `2438937` (2026-02-05) | — |
-| `agent-development` | Pending sync | `skills/plugin-dev/references/topics/agent-development/` | `plugins/plugin-dev/skills/agent-development/` | — | `ce721c1` (2026-04-28) | — |
-| `command-development` | Pending sync | `skills/plugin-dev/references/topics/command-development/` | `plugins/plugin-dev/skills/command-development/` | — | `6b70f99` (2026-03-17) | — |
-| `hook-development` | Pending sync | `skills/plugin-dev/references/topics/hook-development/` | `plugins/plugin-dev/skills/hook-development/` | — | `2438937` (2026-02-05) | — |
-| `mcp-integration` | Pending sync | `skills/plugin-dev/references/topics/mcp-integration/` | `plugins/plugin-dev/skills/mcp-integration/` | — | `2438937` (2026-02-05) | — |
-| `plugin-settings` | Pending sync | `skills/plugin-dev/references/topics/plugin-settings/` | `plugins/plugin-dev/skills/plugin-settings/` | — | `2438937` (2026-02-05) | — |
-| `skill-creator` | Pending sync | `skills/skill-creator/` | `plugins/skill-creator/skills/skill-creator/` | — | `2a40fd2` (2026-04-23) | — |
+| `plugin-structure` | Up to date | `skills/plugin-dev/references/topics/plugin-structure/` | `plugins/plugin-dev/skills/plugin-structure/` | `2438937` | `2438937` (2026-02-05) | 2026-05-01 |
+| `agent-development` | Up to date | `skills/plugin-dev/references/topics/agent-development/` | `plugins/plugin-dev/skills/agent-development/` | `ce721c1` | `ce721c1` (2026-04-28) | 2026-05-01 |
+| `command-development` | Up to date | `skills/plugin-dev/references/topics/command-development/` | `plugins/plugin-dev/skills/command-development/` | `6b70f99` | `6b70f99` (2026-03-17) | 2026-05-01 |
+| `hook-development` | Up to date | `skills/plugin-dev/references/topics/hook-development/` | `plugins/plugin-dev/skills/hook-development/` | `2438937` | `2438937` (2026-02-05) | 2026-05-01 |
+| `mcp-integration` | Up to date | `skills/plugin-dev/references/topics/mcp-integration/` | `plugins/plugin-dev/skills/mcp-integration/` | `2438937` | `2438937` (2026-02-05) | 2026-05-01 |
+| `plugin-settings` | Up to date | `skills/plugin-dev/references/topics/plugin-settings/` | `plugins/plugin-dev/skills/plugin-settings/` | `2438937` | `2438937` (2026-02-05) | 2026-05-01 |
+| `skill-creator` | Up to date | `skills/skill-creator/` | `plugins/skill-creator/skills/skill-creator/` | `2a40fd2` | `2a40fd2` (2026-04-23) | 2026-05-01 |
 | ~~`skill-development`~~ | Dropped | — | `plugins/plugin-dev/skills/skill-development/` | — | — | — |
 
 Column meanings:
@@ -127,12 +130,10 @@ How to test, iterate on, and ship a plugin. **All in-house, not soft-forked.**
 | File | Covers |
 |---|---|
 | `lifecycle-and-storage.md` | Foundational reference. Install → activate → GC flow; cache layout (`~/.claude/plugins/cache/<mkt>/<plugin>/<version>/`); data dir (`~/.claude/plugins/data/<plugin>/`); settings (`~/.claude/settings.json`'s `enabledPlugins`, `extraKnownMarketplaces`); scope union (Managed > Local > Project > User); hot-swap vs restart split per component type; schema validation at load; multi-plugin `.mcp.json` merging behavior |
-| `local-testing.md` | `--plugin-dir` workflow for iterating without an install. Storage-layout details live in `lifecycle-and-storage.md` |
-| `headless-and-bench.md` | Headless `claude -p`, subagent A/B, multi-run benchmarking with metric capture |
-| `clean-install-loop.md` | Cache wipe + reinstall + smoke test |
+| `testing.md` | `--plugin-dir` for fast iteration + headless `claude -p`, subagent A/B, multi-run benchmarking with metric capture. Storage-layout details live in `lifecycle-and-storage.md` |
 | `cli.md` | Full `claude plugin` CLI surface, `/plugin` 4-tab UI, env vars |
 | `release.md` | Version resolution order, `claude plugin tag`, dogfood release loop |
-| `troubleshooting.md` | Common failure modes and how to diagnose them. Hot-swap and GC mechanics live in `lifecycle-and-storage.md` |
+| `troubleshooting.md` | Verification (clean-install loop) + failure-mode walkthroughs (load issues, stale state, dep resolution, MCP conflicts, etc.). Hot-swap and GC mechanics live in `lifecycle-and-storage.md` |
 
 ### 4.3 `references/topics/` — capability authoring (mixed source)
 
@@ -140,18 +141,18 @@ One topic per plugin capability. Six are soft-forked from upstream `plugin-dev`;
 
 | Topic | Source | Status | Description |
 |---|---|---|---|
-| `plugin-structure` | soft-fork (upstream) | Pending sync | Plugin directory layout, `.claude-plugin/plugin.json`, how Claude discovers plugin components |
-| `agent-development` | soft-fork (upstream) | Pending sync | Authoring `agents/*.md` — frontmatter, tools, when descriptions trigger proactive use |
-| `command-development` | soft-fork (upstream) | Pending sync | Authoring `commands/*.md` slash commands — frontmatter, argument parsing, exec model |
-| `hook-development` | soft-fork (upstream) | Pending sync | Hook events, JSON I/O contract, exit codes, prompt-based hooks, env vars (`$CLAUDE_PLUGIN_DATA`, `$CLAUDE_ENV_FILE`) |
-| `mcp-integration` | soft-fork (upstream) | Pending sync | Bundling MCP servers via `.mcp.json`, transports (stdio/HTTP/SSE/WebSocket), tool naming, `/mcp` UI |
-| `plugin-settings` | soft-fork (upstream) | Pending sync | Settings file (`.claude/<name>.local.md`, legacy) and how it relates to `userConfig` (modern, see § 4.1) |
-| `bin-development` | in-house | Planned | Authoring the `bin/` folder — wrapper script conventions, `$PATH` exposure, `${CLAUDE_PLUGIN_ROOT}` / `${CLAUDE_PLUGIN_DATA}` use, when to ship a bin vs a hook script |
-| `lsp-integration` | in-house | Planned | The `lspServers` manifest field — bundling a language server, launch flags, common LSP integration pitfalls |
-| `monitor-development` | in-house | Planned | The `monitors` manifest field — long-running watchers, lifecycle, output handling |
-| `theme-and-output-style` | in-house | Planned | The `themes` and `outputStyles` manifest fields — what they each control, authoring patterns |
-| `channel-development` | in-house | Planned | The `channels` manifest field — notification routing surfaces |
-| `skill` | redirect | n/a | Stub topic that points readers to the top-level `skill-creator` skill — the canonical entry point for skill authoring (we deliberately don't duplicate that content here) |
+| `plugin-structure` | soft-fork (upstream) | Up to date | Plugin directory layout, `.claude-plugin/plugin.json`, how Claude discovers plugin components |
+| `agent-development` | soft-fork (upstream) | Up to date | Authoring `agents/*.md` — frontmatter, tools, when descriptions trigger proactive use |
+| `command-development` | soft-fork (upstream) | Up to date | Authoring `commands/*.md` slash commands — frontmatter, argument parsing, exec model |
+| `hook-development` | soft-fork (upstream) | Up to date | Hook events, JSON I/O contract, exit codes, prompt-based hooks, env vars (`$CLAUDE_PLUGIN_DATA`, `$CLAUDE_ENV_FILE`) |
+| `mcp-integration` | soft-fork (upstream) | Up to date | Bundling MCP servers via `.mcp.json`, transports (stdio/HTTP/SSE/WebSocket), tool naming, `/mcp` UI |
+| `plugin-settings` | soft-fork (upstream) | Up to date | Settings file (`.claude/<name>.local.md`, legacy) and how it relates to `userConfig` (modern, see § 4.1) |
+| `bin-development` | in-house | Authored | Authoring the `bin/` folder — wrapper script conventions, `$PATH` exposure, `${CLAUDE_PLUGIN_ROOT}` / `${CLAUDE_PLUGIN_DATA}` use, when to ship a bin vs a hook script |
+| `lsp-integration` | in-house | Authored | The `lspServers` manifest field — bundling a language server, launch flags, common LSP integration pitfalls |
+| `monitor-development` | in-house | Authored | The `monitors` manifest field — long-running watchers, lifecycle, output handling |
+| `theme-and-output-style` | in-house | Authored | The `themes` and `outputStyles` manifest fields — what they each control, authoring patterns |
+| `channel-development` | in-house | Authored | The `channels` manifest field — notification routing surfaces |
+| `skill` | redirect | Authored | Stub topic that points readers to the top-level `skill-creator` skill — the canonical entry point for skill authoring (we deliberately don't duplicate that content here) |
 
 > Soft-fork rows are summarised in § 2's vendored-content table; their per-file provenance lives in `.upstream/manifest.json`. In-house rows are tracked only by status here.
 

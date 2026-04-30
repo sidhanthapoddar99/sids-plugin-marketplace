@@ -1,0 +1,10 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "my-marketplace",
+  "description": "Smallest valid marketplace — no plugins yet",
+  "owner": {
+    "name": "Your Name",
+    "email": "you@example.com"
+  },
+  "plugins": []
+}

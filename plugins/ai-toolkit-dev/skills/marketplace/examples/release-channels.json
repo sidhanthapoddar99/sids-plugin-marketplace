@@ -1,0 +1,39 @@
+{
+  "_comment": "This file shows TWO marketplaces side-by-side as separate JSON objects under _stable and _latest. Each one is a valid marketplace.json on its own — split into two repos (or two refs of one repo) when you actually publish. Each plugin must resolve to a different version per channel; either the refs declare different `version` values in their plugin.json, or you omit `version` entirely and rely on the distinct commit SHAs.",
+
+  "_stable": {
+    "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+    "name": "stable-tools",
+    "description": "Stable release channel — slow-moving, production-ready",
+    "owner": { "name": "Acme" },
+    "plugins": [
+      {
+        "name": "code-formatter",
+        "source": {
+          "source": "github",
+          "repo": "acme-corp/code-formatter",
+          "ref": "stable"
+        },
+        "description": "Code formatter (stable channel)"
+      }
+    ]
+  },
+
+  "_latest": {
+    "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+    "name": "latest-tools",
+    "description": "Early-access channel — tracks main",
+    "owner": { "name": "Acme" },
+    "plugins": [
+      {
+        "name": "code-formatter",
+        "source": {
+          "source": "github",
+          "repo": "acme-corp/code-formatter",
+          "ref": "main"
+        },
+        "description": "Code formatter (latest channel)"
+      }
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "inline-defined-marketplace",
+  "description": "A marketplace where one entry defines its plugin entirely inline — the plugin source has no plugin.json. Set strict:false to make the marketplace entry the authoritative component definition.",
+  "owner": { "name": "Inline Author" },
+  "plugins": [
+    {
+      "name": "enterprise-tools",
+      "source": { "source": "github", "repo": "company/enterprise-plugin" },
+      "description": "Enterprise workflow automation tools — defined entirely by this marketplace entry",
+      "version": "2.1.0",
+      "author": { "name": "Enterprise Team", "email": "enterprise@example.com" },
+      "homepage": "https://docs.example.com/plugins/enterprise-tools",
+      "repository": "https://github.com/company/enterprise-plugin",
+      "license": "MIT",
+      "keywords": ["enterprise", "workflow", "automation"],
+      "category": "productivity",
+      "strict": false,
+      "commands": [
+        "./commands/core/",
+        "./commands/enterprise/",
+        "./commands/experimental/preview.md"
+      ],
+      "agents": [
+        "./agents/security-reviewer.md",
+        "./agents/compliance-checker.md"
+      ],
+      "skills": [
+        "./skills/audit-trail",
+        "./skills/policy-check"
+      ],
+      "hooks": {
+        "PostToolUse": [
+          {
+            "matcher": "Write|Edit",
+            "hooks": [
+              {
+                "type": "command",
+                "command": "${CLAUDE_PLUGIN_ROOT}/scripts/validate.sh"
+              }
+            ]
+          }
+        ]
+      },
+      "mcpServers": {
+        "enterprise-db": {
+          "command": "${CLAUDE_PLUGIN_ROOT}/servers/db-server",
+          "args": ["--config", "${CLAUDE_PLUGIN_ROOT}/config.json"]
+        }
+      },
+      "lspServers": {
+        "go": {
+          "command": "gopls",
+          "args": ["serve"],
+          "extensionToLanguage": { ".go": "go" }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "my-team-plugins",
+  "description": "Plugins maintained by my team, hosted in this same repo",
+  "owner": {
+    "name": "My Team",
+    "email": "team@example.com"
+  },
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "code-formatter",
+      "source": "code-formatter",
+      "description": "Format code on save",
+      "version": "1.2.0",
+      "author": { "name": "My Team" },
+      "category": "development",
+      "keywords": ["formatting", "code-style"],
+      "license": "MIT"
+    },
+    {
+      "name": "deploy-tools",
+      "source": "deploy-tools",
+      "description": "Deployment automation",
+      "version": "0.4.1",
+      "author": { "name": "My Team" },
+      "category": "devops",
+      "license": "MIT"
+    }
+  ]
+}

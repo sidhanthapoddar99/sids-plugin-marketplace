@@ -1,0 +1,30 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "my-marketplace",
+  "description": "A marketplace whose plugins are allowed to depend on plugins in other named marketplaces",
+  "owner": { "name": "Me", "email": "me@example.com" },
+  "allowCrossMarketplaceDependenciesOn": [
+    "claude-plugins-official",
+    "team-foundation"
+  ],
+  "metadata": { "pluginRoot": "./plugins" },
+  "plugins": [
+    {
+      "name": "my-toolkit",
+      "source": "my-toolkit",
+      "description": "Depends on skill-creator from the official marketplace. The dependency itself is declared in plugins/my-toolkit/.claude-plugin/plugin.json — see the snippet in the comment below."
+    }
+  ],
+  "_dependency_declaration_in_plugin_json": {
+    "_note": "This block is illustrative only — copy into the plugin's plugin.json, not here.",
+    "name": "my-toolkit",
+    "version": "1.0.0",
+    "dependencies": [
+      {
+        "name": "skill-creator",
+        "marketplace": "claude-plugins-official",
+        "version": "^1.0"
+      }
+    ]
+  }
+}
