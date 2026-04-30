@@ -1,0 +1,26 @@
+{
+  "name": "sids-plugin-marketplace",
+  "description": "Sid's Claude Code plugin marketplace",
+  "owner": {
+    "name": "Sid",
+    "email": "developer@neuralabs.org"
+  },
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "allowCrossMarketplaceDependenciesOn": [
+    "claude-plugins-official"
+  ],
+  "plugins": [
+    {
+      "name": "plugin-dev",
+      "source": "plugin-dev",
+      "description": "End-to-end Claude Code plugin development toolkit (work in progress)"
+    },
+    {
+      "name": "monorepo-setup",
+      "source": "monorepo-setup",
+      "description": "Personal monorepo conventions: env vars, config files, docker-compose, scripts, database/alembic, secrets management (work in progress)"
+    }
+  ]
+}

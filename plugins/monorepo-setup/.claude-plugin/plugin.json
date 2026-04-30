@@ -1,0 +1,8 @@
+{
+  "name": "monorepo-setup",
+  "description": "Personal monorepo conventions: env vars, config files, docker-compose, scripts, database/alembic, secrets management (work in progress)",
+  "author": {
+    "name": "Sid",
+    "email": "developer@neuralabs.org"
+  }
+}
