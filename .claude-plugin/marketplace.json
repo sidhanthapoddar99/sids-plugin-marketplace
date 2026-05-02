@@ -21,6 +21,15 @@
       "name": "monorepo-setup",
       "source": "monorepo-setup",
       "description": "Personal monorepo conventions: env vars, config files, docker-compose, scripts, database/alembic, secrets management (work in progress)"
+    },
+    {
+      "name": "documentation-guide",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/sidhanthapoddar99/documentation-template.git",
+        "path": "plugins/documentation-guide"
+      },
+      "description": "Operating manual for the documentation-template Astro framework — writing markdown, configuring site.yaml/navbar.yaml/footer.yaml, the folder-per-issue tracker, blog posts, themes. Triages tasks to domain-specific reference files (writing, docs-layout, blog-layout, issue-layout, settings-layout). Ships 11 CLI wrappers (docs-list/show/subtasks/agent-logs/set-state/add-comment/add-agent-log/review-queue plus docs-check-blog/config/section validators) and 2 slash commands (/docs-init to bootstrap a new docs project, /docs-add-section to scaffold a new section)."
     }
   ]
 }
