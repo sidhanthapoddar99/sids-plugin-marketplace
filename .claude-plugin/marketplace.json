@@ -1,4 +1,5 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "sids-plugin-marketplace",
   "description": "Sid's Claude Code plugin marketplace",
   "owner": {

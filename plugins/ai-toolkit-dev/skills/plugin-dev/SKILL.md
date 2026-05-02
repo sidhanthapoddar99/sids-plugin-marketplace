@@ -1,6 +1,6 @@
 ---
 name: plugin-dev
-description: Use when authoring, configuring, testing, or shipping a Claude Code plugin. Covers the `plugin.json` manifest (all fields including `lspServers`, `monitors`, `themes`, `outputStyles`, `userConfig`, `channels`, `dependencies`, `$schema`), naming conventions, plugin lifecycle and storage (`${CLAUDE_PLUGIN_ROOT}` vs `${CLAUDE_PLUGIN_DATA}`, scope union, hot-swap, GC, `--keep-data`), local testing with `--plugin-dir`, headless benchmarking, the `claude plugin` CLI, releases, troubleshooting, and per-capability authoring (agents, commands, hooks, MCP, bins, LSP, monitors, themes, output styles, channels). Triggers on "create plugin", "build a plugin", "scaffold plugin", "plugin manifest", "plugin.json", "${CLAUDE_PLUGIN_ROOT}", "${CLAUDE_PLUGIN_DATA}", "add a hook", "add a command", "add an agent", "add a skill to my plugin", "make a skill", "bundle MCP server", "add LSP", "plugin dependencies", "test my plugin locally", "plugin not loading".
+description: Use when authoring, configuring, testing, or shipping a Claude Code plugin. Covers the `plugin.json` manifest (all fields including `lspServers`, `monitors`, `themes`, `outputStyles`, `userConfig`, `channels`, `dependencies`, `$schema`, plus the `disable-model-invocation` frontmatter flag and plugin-shipped root-level `settings.json`), naming conventions, plugin lifecycle and storage (`${CLAUDE_PLUGIN_ROOT}` vs `${CLAUDE_PLUGIN_DATA}`, scope union, hot-swap, GC, `--keep-data`), local testing with `--plugin-dir`, headless benchmarking, the `claude plugin` CLI, releases, uninstalling, troubleshooting, the depend/soft-fork/hand-author composition decision, and per-capability authoring (agents, commands, hooks, MCP, bins, LSP, monitors, themes, output styles, channels, plugin-hints). Triggers on "create plugin", "build a plugin", "scaffold plugin", "plugin manifest", "plugin.json", "${CLAUDE_PLUGIN_ROOT}", "${CLAUDE_PLUGIN_DATA}", "add a hook", "add a command", "add an agent", "add a skill to my plugin", "make a skill", "bundle MCP server", "add LSP", "plugin dependencies", "soft-fork", "depend on a plugin", "test my plugin locally", "uninstall a plugin", "plugin not loading", "disable-model-invocation".
 ---
 
 # Claude Code plugin development
@@ -51,6 +51,21 @@ Both substitute in skill / agent content, hook / monitor commands, and MCP / LSP
 
 `/reload-plugins` picks up edits to skills, commands, agents, MCP, LSP, themes, output styles, bin wrappers. **Hooks and monitors always require a full session restart** — both load at session start and aren't refreshed by `/reload-plugins`. See [`references/development-cycle/lifecycle-and-storage.md`](references/development-cycle/lifecycle-and-storage.md) for details.
 
+### Where to write? Scope decision
+
+Before scaffolding a new skill, command, or agent, ask the user where they want it to live. Four options, ordered loosely from "narrowest" to "widest":
+
+| Option | Path | When to use |
+|---|---|---|
+| **Local** | `<repo>/.claude/{skills,commands,agents}/...` (gitignored via `.claude/settings.local.json`) | Personal experiment in this one repo, not shared with teammates |
+| **Project** | `<repo>/.claude/{skills,commands,agents}/...` (committed) | Convention everyone working on the repo should have |
+| **User** | `~/.claude/{skills,commands,agents}/...` | Personal capability that follows you across all projects on this machine |
+| **Plugin** | New plugin scaffold under `plugins/<name>/` (or a separate repo) | Shared across 3+ projects, or you want versioning, updates, or distribution |
+
+Defaults if the user gives no signal: project-scope when working inside a specific repo on a repo-specific capability, user-scope when authoring something general for the user's own workflow. **Hand-author at scope first; package as a plugin only when copy-paste across projects becomes painful** — that's usually the second time you'd duplicate the same skill into a new repo.
+
+For the trade-offs in depth (versioning, updates, discoverability, `bin/` PATH augmentation, etc.), the marketplace's reference docs at <https://github.com/sidhanthapoddar99/sids-plugin-marketplace/tree/main/Documentation/ClaudePlugin/02_mental-model> and `…/08_composition-patterns/01_hand-author.md` cover the full decision matrix.
+
 ### When you're really creating a skill
 
 The top-level [`skill-creator`](../skill-creator/SKILL.md) skill is the canonical entry point for skill authoring (description tuning, progressive disclosure, evals). This `plugin-dev` skill covers plugin-level concerns; for *just* writing a skill, use `skill-creator` instead.
@@ -62,8 +77,9 @@ The top-level [`skill-creator`](../skill-creator/SKILL.md) skill is the canonica
 | If the user wants to… | Read |
 |---|---|
 | Configure the plugin | [`references/config/`](references/config/) — manifest, deps, naming, settings, persistent data |
-| Test, iterate on, debug, or ship | [`references/development-cycle/`](references/development-cycle/) — `--plugin-dir`, CLI, releases, troubleshooting, runtime mechanics |
-| Author a specific capability | [`references/topics/`](references/topics/) — agents, commands, hooks, MCP, bins, LSP, monitors, themes, channels |
+| Test, iterate on, debug, ship, or uninstall | [`references/development-cycle/`](references/development-cycle/) — `--plugin-dir`, CLI, releases, uninstalling, troubleshooting, runtime mechanics |
+| Author a specific capability | [`references/topics/`](references/topics/) — agents, commands, hooks, MCP, bins, LSP, monitors, themes, channels, plugin-hints |
+| Decide how this plugin relates to existing ones | [`references/composition-decisions.md`](references/composition-decisions.md) — depend / soft-fork / hand-author trade-offs |
 
 ### `references/config/`
 
@@ -83,6 +99,7 @@ The top-level [`skill-creator`](../skill-creator/SKILL.md) skill is the canonica
 | [`development-cycle/testing.md`](references/development-cycle/testing.md) | `--plugin-dir` for fast iteration, headless `claude -p`, A/B benchmarking |
 | [`development-cycle/cli.md`](references/development-cycle/cli.md) | Full `claude plugin` CLI, the `/plugin` 4-tab UI (Discover / Installed / Marketplaces / Errors), built-in slash commands |
 | [`development-cycle/release.md`](references/development-cycle/release.md) | Cutting a release — `claude plugin tag`, version resolution, dogfood loop |
+| [`development-cycle/uninstalling.md`](references/development-cycle/uninstalling.md) | Uninstall mechanics, the cache-survives-uninstall wrinkle, `--keep-data`, marketplace-remove cascade, when to wipe |
 | [`development-cycle/troubleshooting.md`](references/development-cycle/troubleshooting.md) | Clean-install verification + failure-mode walkthroughs |
 
 ### `references/topics/` — per-capability
@@ -102,6 +119,7 @@ Six are vendored verbatim from upstream `claude-plugins-official` (Apache 2.0, s
 | [`topics/monitor-development/`](references/topics/monitor-development/) | in-house | `monitors` (`when: always`/`on-skill-invoke:<x>`) |
 | [`topics/theme-and-output-style/`](references/topics/theme-and-output-style/) | in-house | `themes` (`base` + `overrides`) and `outputStyles` |
 | [`topics/channel-development/`](references/topics/channel-development/) | in-house | `channels` — bind MCP servers to messaging surfaces |
+| [`topics/plugin-hints/`](references/topics/plugin-hints/) | in-house | `/plugin-hints` — recommend a plugin from an external CLI |
 | [`topics/skill/`](references/topics/skill/) | redirect | **Stub — go to the top-level [`skill-creator`](../skill-creator/SKILL.md) skill instead** |
 
 ## Load order recommendation

@@ -70,7 +70,7 @@ These fields enable newer Claude Code capabilities. None are required.
 | `channels` | array | Bind MCP servers to messaging surfaces — see [`../topics/channel-development/SKILL.md`](../topics/channel-development/SKILL.md) |
 | `userConfig` | object | User-facing plugin settings — see [`user-config.md`](user-config.md) |
 | `dependencies` | array | Other plugins this plugin depends on — see [`dependencies.md`](dependencies.md) |
-| `settings` | object | Default Claude Code settings the plugin applies when enabled (`agent`, `subagentStatusLine` only). A plugin-shipped root-level `settings.json` takes priority over this field |
+| `settings` | object | Default Claude Code settings the plugin applies when enabled (`agent`, `subagentStatusLine` only). A plugin-shipped root-level `settings.json` file takes priority over this field — see "Plugin-shipped settings.json" below |
 
 ## Path conventions
 
@@ -84,6 +84,86 @@ Inside any plugin file, two environment variables are interpolated:
 Use `${CLAUDE_PLUGIN_ROOT}` for paths to bundled assets, scripts, or config that ship with the plugin (read-only at runtime). Use `${CLAUDE_PLUGIN_DATA}` for state that must persist: caches, learned models, user-modified data, dependency installs.
 
 See `persistent-data.md` for design patterns and `development-cycle/lifecycle-and-storage.md` for the path resolution rules.
+
+## Plugin-shipped `settings.json`
+
+A `settings.json` file at the **plugin root** (alongside `.claude-plugin/`, *not* inside it) supplies default Claude Code settings that apply when the plugin is enabled. Two keys are honoured:
+
+| Key | Effect |
+|---|---|
+| `agent` | Activates one of the plugin's `agents/<name>.md` agents as the **main thread** for the session. The agent's system prompt, tool restrictions, and model become Claude Code's identity while this plugin is enabled |
+| `subagentStatusLine` | Configures the status line shown when a subagent is running. Same shape as the user-side [`subagentStatusLine`](https://code.claude.com/docs/en/statusline#subagent-status-lines) settings key |
+
+**Other keys are silently ignored.** A plugin cannot ship default values for the user's main `statusLine`, `permissions`, `keybindings`, `model`, `theme`, `env`, or `hooks` — those belong to the user. The two keys above are the entire plugin-shippable settings surface.
+
+### Worked example
+
+```
+my-plugin/
+├── .claude-plugin/plugin.json
+├── settings.json                  ← plugin-shipped defaults
+├── agents/
+│   └── security-reviewer.md
+└── skills/
+    └── ...
+```
+
+`my-plugin/settings.json`:
+
+```json
+{
+  "agent": "security-reviewer",
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "echo 'sec-review: $(git rev-parse --short HEAD)'"
+  }
+}
+```
+
+When this plugin is enabled, every session activates the `security-reviewer` agent as the main thread until the plugin is disabled.
+
+### Priority over the manifest's `settings` field
+
+Both `plugin.json` (`"settings": {...}`) and a root-level `settings.json` file can carry the same keys. **The root-level file wins.** Practical implication: don't set the same key in both — pick one. Convention is to use the `settings.json` file when you have multiple keys (cleaner formatting in JSON), and the manifest field when you have just one (avoids an extra file).
+
+### When to use this surface
+
+| Plugin purpose | Use plugin-shipped settings? |
+|---|---|
+| A specialised assistant (security-only, docs-only, etc.) that should *replace* default Claude Code behaviour while enabled | Yes — set `agent` |
+| A subagent-heavy workflow where the parent should see distinct status-line cues | Yes — set `subagentStatusLine` |
+| Any other "I want my plugin to set X by default" need | No — those keys aren't honoured. Document the recommendation in your README and let the user opt in to their own `settings.json` |
+
+## Frontmatter flags
+
+These aren't `plugin.json` fields — they live in the YAML frontmatter at the top of `SKILL.md`, command markdown files, and agent markdown files. Each capability has its own set of recognised keys; unknown keys are silently ignored. Full reference: official [Plugins reference](https://code.claude.com/docs/en/plugins-reference). Two flags are commonly load-bearing for plugin authors:
+
+### `disable-model-invocation` (skill / command)
+
+```markdown
+---
+name: dangerous-utility
+description: Reset all caches, clear sessions, and rebuild from scratch
+disable-model-invocation: true
+---
+```
+
+When `true`, the skill or slash command **cannot be triggered by the model autonomously** — only by the user typing `/dangerous-utility` (or whatever the name is). The skill is still loaded; the description still appears in the registry; but the model's own decision to fire it is suppressed.
+
+Use for any capability that is destructive, expensive, or otherwise needs explicit user intent — anything where "the model decided to run this on a weak signal" is a regression you want to prevent. The description should still be informative so users know what the command does when they invoke it manually.
+
+Default: `false` (model can fire when its description matches).
+
+### `allowed-tools` (skill / command / agent)
+
+Restricts the tools the capability is allowed to call. Different shape per surface:
+
+- **Commands**: CSV string — `allowed-tools: Read, Edit, Bash`
+- **Agents**: YAML array — `tools: [Read, Grep, Bash]`
+
+(The asymmetry between command CSV and agent array is real — both are documented in the official frontmatter reference.)
+
+A capability with no `allowed-tools` defaults to the agent's parent tool set. Setting an empty value (`allowed-tools:` with nothing after) revokes all tools.
 
 ## Common mistakes
 

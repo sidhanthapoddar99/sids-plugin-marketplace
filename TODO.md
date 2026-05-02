@@ -19,7 +19,7 @@ Two streams of work, agreed on after the audit-driven revision pass.
 | Phase 1.5d | Delete `docs/Claude Plugins/` | ✅ Done. |
 | Phase 1.5e | Agent 11 — plugin-content audit (`plugins/ai-toolkit-dev/skills/`) | ✅ Done. 9 CRITICAL + 10 HIGH + MEDIUM/LOW returned. |
 | Phase 1.5f | Apply fixes from Agent 11 punch list | ✅ Done. All invented CLI surface (`bump`, `info`, `path`, `scope`, `--purge`, `--version`, `--verbose`, `/plugin validate`, `~/.claude/logs/plugins.log`) swept; `extensionToLanguage` leading-dot fixed; LSP count corrected to 12 (added `ruby-lsp`); `format: password` replaced with `sensitive: true`; `userConfig` `title`/`description` corrected to required; plugin-id derivation corrected; manifest `description` correctly marked optional; hot-swap matrix updated to include monitors as session-lifetime; reserved-marketplace-names softened. |
-| Phase 2 | Plugin additions B1–B6 (see below) | ⏳ Pending |
+| Phase 2 | Plugin additions B1–B6 | ✅ Done. New files: `references/development-cycle/uninstalling.md` (B1), `references/topics/plugin-hints/SKILL.md` (B2), `references/composition-decisions.md` (B6). New sections in `references/config/manifest.md`: "Plugin-shipped `settings.json`" (B4) and "Frontmatter flags" with `disable-model-invocation` (B3). New "Where to write? Scope decision" callout in `plugin-dev/SKILL.md` Quick essentials (B5). Routing tables and `description` in `plugin-dev/SKILL.md` updated to reference all new content. |
 | Phase 3 | Cross-link sweep between docs and plugin | ⏳ Pending |
 
 ---
