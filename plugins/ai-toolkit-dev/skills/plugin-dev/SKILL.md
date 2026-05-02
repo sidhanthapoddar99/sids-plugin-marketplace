@@ -49,7 +49,7 @@ Both substitute in skill / agent content, hook / monitor commands, and MCP / LSP
 
 ### Hot-swap one-liner
 
-`/reload-plugins` picks up edits to skills, commands, agents, MCP, LSP. **Hooks always require a full session restart.** See [`references/development-cycle/lifecycle-and-storage.md`](references/development-cycle/lifecycle-and-storage.md) for details.
+`/reload-plugins` picks up edits to skills, commands, agents, MCP, LSP, themes, output styles, bin wrappers. **Hooks and monitors always require a full session restart** — both load at session start and aren't refreshed by `/reload-plugins`. See [`references/development-cycle/lifecycle-and-storage.md`](references/development-cycle/lifecycle-and-storage.md) for details.
 
 ### When you're really creating a skill
 

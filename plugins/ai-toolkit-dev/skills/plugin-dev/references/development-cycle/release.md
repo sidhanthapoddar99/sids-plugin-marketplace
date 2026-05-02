@@ -33,8 +33,10 @@ cd plugins/my-plugin
 git add .
 git commit -m "feat: add foo handling"
 
-# 2. Bump version in plugin.json + tag
-claude plugin bump minor                   # or `tag <X.Y.Z>` for explicit version
+# 2. Bump version in plugin.json by hand, then tag
+$EDITOR .claude-plugin/plugin.json         # set "version": "1.3.0"
+git add .claude-plugin/plugin.json && git commit -m "chore: bump version to 1.3.0"
+claude plugin tag                          # auto-derives the tag from plugin.json + marketplace entry
 
 # 3. Pin in marketplace.json
 cd ../..
@@ -61,7 +63,9 @@ If you bumped multiple plugins in one batch, do step 3 per plugin:
 ```bash
 for plugin in plugin-a plugin-b; do
   cd plugins/$plugin
-  claude plugin bump patch
+  $EDITOR .claude-plugin/plugin.json     # bump "version" by hand
+  git add .claude-plugin/plugin.json && git commit -m "chore($plugin): bump"
+  claude plugin tag --push               # tag derives from plugin.json
   cd ../..
 done
 
@@ -82,7 +86,7 @@ For dependents:
 
 ## Tagging conventions
 
-`claude plugin tag <X.Y.Z>` creates the tag `<plugin-name>--v<X.Y.Z>`. The double-dash + `v` prefix is required — it disambiguates plugin tags in monorepos where one repo hosts multiple plugins (each with their own version stream).
+`claude plugin tag` (run from inside a plugin folder) creates the tag `<plugin-name>--v<X.Y.Z>` — auto-derived from the plugin's `plugin.json` `version` field and its marketplace entry. The double-dash + `v` prefix is required — it disambiguates plugin tags in monorepos where one repo hosts multiple plugins (each with their own version stream). Useful flags: `--push` (push to remote after creating), `--dry-run` (print without creating), `-f/--force` (override dirty tree or existing tag).
 
 Manual tagging without `claude plugin tag` is fine as long as the format matches:
 
@@ -101,23 +105,19 @@ my-plugin--v1.2.3-beta.2
 my-plugin--v2.0.0-alpha
 ```
 
-By default, `claude plugin install` ignores pre-releases unless explicitly requested:
+By default, semver ranges in `dependencies` exclude pre-releases (e.g. `^2.0.0` will NOT match `2.0.0-rc.1`). To opt in, declare the dependency range with an explicit pre-release suffix (`^2.0.0-0` or `>=2.0.0-rc`).
 
-```
-claude plugin install my-plugin --version 2.0.0-alpha
-```
-
-Or the marketplace pins to a pre-release version, in which case it's used as-is.
+There is no `--version` flag on `claude plugin install`. To distribute a pre-release to consumers, either pin the marketplace entry's `version` to the pre-release tag or expose pre-releases on a separate marketplace channel (a `beta` branch alongside `main`). See the docs `04_marketplaces/04_release-channels.md`.
 
 ## Release checklist
 
 For a public release:
 
-1. `claude plugin validate` passes
+1. Plugin loads cleanly (`claude plugin list --json | jq '.errors'` returns empty for this plugin; `/doctor` reports no health issues)
 2. Clean-install loop passes (see `troubleshooting.md`, Part 1)
 3. Headless smoke test passes (see `testing.md`)
 4. CHANGELOG.md updated with the new version
-5. `claude plugin tag <X.Y.Z> --push` (or `bump`)
+5. Bump `version` in `plugin.json` then `claude plugin tag --push`
 6. Marketplace `marketplace.json` updated with the new version
 7. Marketplace ref bumped + pushed
 8. Verify via consumer-side install
@@ -128,7 +128,7 @@ For a personal plugin you only use yourself, steps 4 and 8 are optional.
 
 There's no formal "yank" mechanism. To pull a bad release:
 
-1. Bump again with the fix: `claude plugin bump patch`
+1. Bump `version` in `plugin.json` again with the fix, commit, then `claude plugin tag --push`
 2. Update the marketplace pin to the new version
 3. Push
 
@@ -143,8 +143,9 @@ For plugins with multiple supported major versions, you can maintain release bra
 ```
 git checkout -b release/v1.x main
 git cherry-pick <hotfix-commit>
-claude plugin tag 1.4.5
-git push origin release/v1.x --tags
+$EDITOR .claude-plugin/plugin.json    # set version to "1.4.5"
+git add . && git commit -m "chore: bump 1.4.5"
+claude plugin tag --push
 ```
 
 Then in the marketplace, pin separate plugin entries (with different `name`s if you want both major versions installable side-by-side, or just the latest at the existing entry).

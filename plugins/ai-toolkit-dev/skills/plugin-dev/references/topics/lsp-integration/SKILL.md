@@ -1,15 +1,15 @@
 ---
 name: lsp-integration
-description: Use when bundling a Language Server Protocol (LSP) server with a plugin via the `lspServers` manifest field or `.lsp.json`. Covers required fields (`command`, `extensionToLanguage`), all optional fields, transport modes, capability negotiation, the binary-distribution model, and the relationship to the official `*-lsp` plugins for 11 languages (`pyright-lsp`, `typescript-lsp`, etc.).
+description: Use when bundling a Language Server Protocol (LSP) server with a plugin via the `lspServers` manifest field or `.lsp.json`. Covers required fields (`command`, `extensionToLanguage`), all optional fields, transport modes, capability negotiation, the binary-distribution model, and the relationship to the official `*-lsp` plugins for 12 languages (`pyright-lsp`, `typescript-lsp`, etc.).
 ---
 
 # LSP server integration
 
-A plugin can bundle a Language Server Protocol (LSP) server. Claude Code uses it for **automatic diagnostics after every edit** plus go-to-definition, find-references, and hover. The official marketplace already ships LSP plugins for 11 languages; before writing your own, check whether one exists.
+A plugin can bundle a Language Server Protocol (LSP) server. Claude Code uses it for **automatic diagnostics after every edit** plus go-to-definition, find-references, and hover. The official marketplace already ships LSP plugins for 12 languages; before writing your own, check whether one exists.
 
 ## Pre-built LSP plugins
 
-`claude-plugins-official` ships LSP plugins for: `clangd-lsp`, `csharp-lsp`, `gopls-lsp`, `jdtls-lsp`, `kotlin-lsp`, `lua-lsp`, `php-lsp`, `pyright-lsp`, `rust-analyzer-lsp`, `swift-lsp`, `typescript-lsp`. Install one of those before authoring your own.
+`claude-plugins-official` ships LSP plugins for: `clangd-lsp`, `csharp-lsp`, `gopls-lsp`, `jdtls-lsp`, `kotlin-lsp`, `lua-lsp`, `php-lsp`, `pyright-lsp`, `ruby-lsp`, `rust-analyzer-lsp`, `swift-lsp`, `typescript-lsp`. Install one of those before authoring your own.
 
 Press **Ctrl+O** when the "diagnostics found" indicator appears to view diagnostics inline.
 
@@ -30,8 +30,8 @@ Either inline in `plugin.json` under `lspServers`, or in a separate `.lsp.json` 
       "command": "pyright-langserver",
       "args": ["--stdio"],
       "extensionToLanguage": {
-        "py": "python",
-        "pyi": "python"
+        ".py": "python",
+        ".pyi": "python"
       },
       "settings": {
         "python": {
@@ -50,7 +50,7 @@ Either inline in `plugin.json` under `lspServers`, or in a separate `.lsp.json` 
 | Field | Notes |
 |---|---|
 | `command` | Path to the LSP server binary or entry script. Resolves via `$PATH` if not absolute |
-| `extensionToLanguage` | Object mapping file extension (no leading dot) → LSP language ID. Tells Claude Code which files this server claims |
+| `extensionToLanguage` | Object mapping file extension (with leading dot — e.g. `".py"`, `".go"`) → LSP language ID. Tells Claude Code which files this server claims |
 
 ### Optional
 

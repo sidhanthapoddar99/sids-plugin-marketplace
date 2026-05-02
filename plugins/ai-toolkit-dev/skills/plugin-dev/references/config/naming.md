@@ -5,10 +5,11 @@ What's enforced by Claude Code, and what's idiomatic but flexible.
 ## Plugin names
 
 **Enforced:**
-- Must be globally unique within a marketplace
-- Must match `[a-z][a-z0-9-]*` (kebab-case, ASCII)
-- No leading or trailing dashes; no consecutive dashes
-- Length 3–64 characters
+- Must be unique within its marketplace
+- Kebab-case, ASCII — `[a-z][a-z0-9-]*` is the typical shape
+- No leading or trailing dashes; no consecutive dashes (the schema rejects "ugly" forms)
+
+(Length bounds aren't formally documented in the official schema; in practice keep it short — the name appears in `<plugin>@<marketplace>` identifiers, in `/plugin install` UI rows, and in the cache directory path.)
 
 **Idiomatic:**
 - Descriptive, not branded — `markdown-tools` over `mdx-pro`

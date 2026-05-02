@@ -61,7 +61,9 @@ Resolution order — **higher wins**:
 | **Project** | `<repo>/.claude/settings.json` | This project, all teammates (committed) |
 | **User** | `~/.claude/settings.json` | All projects, this machine |
 
-`Managed > Local > Project > User`. Higher-priority scopes' booleans win when they conflict.
+`Managed > Local > Project > User`. The active set is the **union** of scopes: a plugin enabled at *any* scope is loaded, unless a higher-precedence scope explicitly sets it to `false`. So a project-scope `true` enables the plugin even if the user scope says nothing; a local-scope `false` disables it even if the user scope says `true`. The precedence chain only matters when two scopes set the same plugin's flag to different values.
+
+> **Note on filesystem slugification.** `enabledPlugins` keys are the literal install identifier `<name>@<marketplace>` (with `@`). Filesystem-side keys (the data dir, `pluginConfigs[<plugin-id>]`) slugify the `@` to `-`: `formatter@my-marketplace` → `formatter-my-marketplace`. Two different keying conventions for the same plugin, depending on whether you're looking at settings booleans or filesystem layout.
 
 `--plugin-dir` (used during dev — see [`testing.md`](testing.md)) is a session-only Local-scope override that doesn't write to any settings file.
 
@@ -100,11 +102,13 @@ What requires a session restart vs what `/reload-plugins` picks up:
 | Skills | Yes |
 | Commands | Yes |
 | Agents | Yes |
-| MCP servers | Yes |
-| LSP servers | Yes |
-| Hooks | **No — hooks load at session start, full restart required** |
+| MCP servers | Yes — subprocess restarted on reload |
+| LSP servers | Yes — subprocess restarted on reload |
+| Themes / output styles / bin wrappers | Yes |
+| Hooks | **No — load at session start; full restart required for any hook change** |
+| Background monitors | **No — session-lifetime; not started, stopped, or restarted by `/reload-plugins`. Disabling a plugin mid-session also doesn't stop running monitors** |
 
-Hooks are the consistent exception. Source: [`/reload-plugins`](https://code.claude.com/docs/en/plugins-reference) explicitly excludes hook changes.
+Hooks and monitors are the consistent exceptions — both are wired up at session start and not refreshed afterward.
 
 ## Updates
 

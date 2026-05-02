@@ -79,12 +79,7 @@ Stdout gets the assistant's response. Add `--json` for a structured envelope:
 claude --plugin-dir ./my-plugin -p "..." --json | jq .
 ```
 
-The JSON includes:
-- `response` — the model's textual reply
-- `tool_uses` — list of tools called, with inputs/outputs
-- `usage` — token counts and cost estimate
-- `model` — the model ID actually used
-- `latency_ms`
+The envelope typically includes the model's textual reply, the tool calls made (with inputs/outputs), token usage, and the model ID. Exact field names depend on the Claude Code release — inspect with `jq .` once and write your assertions against the keys you actually see, rather than hard-coding the schema below.
 
 This is what lets you script assertions:
 
@@ -97,8 +92,8 @@ version=$(echo "$result" | jq -r .response | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 ### Pre-publish smoke test
 
 ```bash
-# Validate the manifest
-claude plugin validate ./my-plugin
+# Surface manifest / load errors via the structured CLI output
+claude --plugin-dir ./my-plugin plugin list --json | jq '.errors'
 
 # Headless: confirm components register
 claude --plugin-dir ./my-plugin -p "list available skills" --json
@@ -153,8 +148,10 @@ OUT=${4:-bench-results.jsonl}
 while IFS= read -r prompt; do
   for trial in $(seq 1 $RUNS); do
     result=$(claude --plugin-dir "$PLUGIN_DIR" -p "$prompt" --json)
+    # Field names below are illustrative — inspect your CLI's --json output once
+    # and adjust paths to match the keys you actually see.
     echo "$result" | jq -c --arg p "$prompt" --arg t "$trial" \
-      '{prompt: $p, trial: $t, latency: .latency_ms, tokens: .usage.input_tokens, used_skill: (.tool_uses | any(.name == "Skill"))}' \
+      '{prompt: $p, trial: $t, tokens: (.usage.input_tokens // 0)}' \
       >> "$OUT"
   done
 done < "$PROMPT_SET"
@@ -182,12 +179,12 @@ The third is hardest — usually you need a human evaluator or a separate Claude
 
 ### Cost-aware benchmarking
 
-`--json` exposes `usage.input_tokens`, `usage.output_tokens`, and `usage.cost_usd_estimate`. For a plugin used regularly, run a representative-load benchmark and project monthly cost:
+`--json` exposes token usage in a `usage` object — typically with input/output token counts (exact field names vary by release; inspect once with `jq .` to confirm). For a plugin used regularly, run a representative-load benchmark and project cost from the token totals against your model's pricing:
 
 ```bash
-total_cost=$(jq -s '[.[].usage.cost_usd_estimate] | add' "$OUT")
-calls_per_day=...  # estimate
-echo "Projected: \$$(echo "$total_cost * $calls_per_day * 30 / $RUNS" | bc) /month"
+input_tok=$(jq -s '[.[].usage.input_tokens // 0] | add' "$OUT")
+output_tok=$(jq -s '[.[].usage.output_tokens // 0] | add' "$OUT")
+# Apply your model's $/1M-token rate, then scale by calls_per_day * 30
 ```
 
 This catches plugins that ship a 10kb SKILL.md by accident — context cost compounds across every session.

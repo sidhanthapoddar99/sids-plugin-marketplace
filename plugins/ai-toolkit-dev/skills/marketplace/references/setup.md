@@ -89,11 +89,14 @@ See [`../examples/inline-plugin.json`](../examples/inline-plugin.json) for a ful
 
 ## Step 5: validate before publishing
 
+Add the marketplace locally and surface errors:
+
 ```bash
-claude plugin validate .
+claude plugin marketplace add ./
+claude plugin list --available --json | jq '.errors'
 ```
 
-Catches duplicate plugin names, JSON syntax errors, malformed YAML frontmatter in skills/agents/commands, broken `hooks/hooks.json`, and `..` in relative paths. See [`schema.md`](schema.md#validation) for the error catalogue.
+The structured `errors` field surfaces duplicate plugin names, JSON syntax errors, malformed YAML frontmatter, broken `hooks/hooks.json`, and `..` in relative paths. The `/plugin` UI's Errors tab shows the same set interactively. See [`schema.md`](schema.md#validation) for the error catalogue.
 
 ## Step 6: install locally and smoke-test
 

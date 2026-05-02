@@ -42,7 +42,7 @@ Default scan: `themes/*.json`. Override via `"themes"` in `plugin.json` (this is
 
 Users select via `/theme`. Plugin-shipped themes appear alongside built-in presets and the user's local themes.
 
-When a plugin theme is selected, the choice persists as `custom:<plugin-name>:<theme-name>` in the user's config.
+When a plugin theme is selected, the choice persists as `custom:<plugin-name>:<slug>` in the user's config — where `<slug>` is derived from the theme file (typically the file's basename or the `name` field). Don't hard-code this format; let `/theme` write it.
 
 ### Editing a plugin theme
 

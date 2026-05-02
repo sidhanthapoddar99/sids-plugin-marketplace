@@ -143,4 +143,4 @@ Only safe if the cache is genuinely derived — not user-modified data.
 - **Writing to `${CLAUDE_PLUGIN_ROOT}`.** It's wiped on update; your writes vanish.
 - **Putting the data dir under the project root.** Shared across the plugin's installs in any project; doesn't survive `git clean`.
 - **Creating absolute paths to `~/.claude/plugins/data/...`.** The cache layout is internal; the env var is the contract.
-- **Storing secrets in `${CLAUDE_PLUGIN_DATA}` unencrypted.** It's outside the project tree but on local disk. For credentials, prefer `userConfig` with `format: password` (which is also unencrypted but at least centrally managed by Claude Code) or a system credential helper.
+- **Storing secrets in `${CLAUDE_PLUGIN_DATA}` unencrypted.** It's outside the project tree but on local disk. For credentials, prefer `userConfig` with `sensitive: true` — Claude Code stores those values in the OS keychain (or `~/.claude/.credentials.json` where the keychain is unavailable) instead of `settings.json`. See [`user-config.md`](user-config.md).

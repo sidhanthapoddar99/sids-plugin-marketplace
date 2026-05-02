@@ -28,7 +28,7 @@ Authoritative field reference for `.claude-plugin/marketplace.json`. Cross-check
 
 ### Reserved marketplace names
 
-These names are reserved for official Anthropic use and rejected by Claude.ai's marketplace sync: `claude-code-marketplace`, `claude-code-plugins`, `claude-plugins-official`, `anthropic-marketplace`, `anthropic-plugins`, `agent-skills`, `knowledge-work-plugins`, `life-sciences`. Names that impersonate official marketplaces (e.g. `official-claude-plugins`, `anthropic-tools-v2`) are also blocked.
+Names that impersonate official Anthropic marketplaces (e.g. `claude-plugins-official`, `anthropic-marketplace`, `anthropic-plugins`, `claude-code-plugins`, anything prefixed `anthropic-` or matching the official catalogues) will be rejected if you submit them to the official marketplace registry. The exact list of reserved names isn't formally published — when in doubt, prefix with your org or username (`acme-tools`, `sid-plugins`) and avoid words like `official`, `anthropic`, `claude-code`.
 
 ## Plugin entries
 
@@ -196,10 +196,17 @@ For git-based sources (`github`, `url`, `git-subdir`, relative paths in a git-ho
 
 ## Validation
 
+The marketplace JSON gets validated when Claude Code reads it (at `marketplace add` time and at startup). To surface failures:
+
 ```bash
-claude plugin validate .          # CLI
-/plugin validate .                # in-session
+# Errors land in the /plugin UI's Errors tab, and in:
+claude plugin list --json | jq '.errors'
+
+# At session start, run with debug logging to see validation details:
+claude --debug
 ```
+
+`/doctor` also surfaces marketplace-related issues. There's no dedicated standalone validator command in the canonical CLI (older Claude Code versions referenced `claude plugin validate` in troubleshooting docs; treat its availability as version-dependent).
 
 Common errors the validator catches:
 
@@ -214,4 +221,4 @@ Non-blocking warnings:
 
 - `Marketplace has no plugins defined`
 - `No marketplace description provided`
-- `Plugin name "x" is not kebab-case` — Claude Code accepts other forms, but Claude.ai's marketplace sync rejects them
+- `Plugin name "x" is not kebab-case` — kebab-case is the convention enforced by the schema; non-kebab names will be rejected

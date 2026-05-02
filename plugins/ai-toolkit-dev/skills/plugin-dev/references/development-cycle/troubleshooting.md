@@ -93,13 +93,14 @@ Usually one of:
 - A dependency tag that doesn't exist upstream (e.g. `claude plugin tag` was never run for that version).
 - A `source` field pointing at a path/repo that no longer exists.
 
-Re-run with `--verbose`:
+Re-run under `claude --debug` to see plugin-loading details:
 
 ```bash
-claude plugin install my-plugin --verbose 2>&1 | tee install.log
+claude --debug 2>&1 | tee install.log
+# inside the session: /plugin install my-plugin
 ```
 
-The log will tell you which step failed and what was being looked for.
+The debug output names the failing step. For non-interactive failure surfaces, `claude plugin list --json | jq '.errors'` exposes per-plugin error objects, and `/doctor` surfaces dep-resolution / range-conflict / missing-tag issues.
 
 ---
 
@@ -119,25 +120,23 @@ Look for your plugin's name. If absent, the plugin isn't installed or enabled. I
 
 #### Check scope
 
+There's no dedicated `scope` subcommand — read the per-scope `enabledPlugins` directly:
+
 ```bash
-claude plugin scope <plugin>
+grep -H enabledPlugins ~/.claude/settings.json <repo>/.claude/settings.json <repo>/.claude/settings.local.json 2>/dev/null
 ```
 
-Output names which scope holds the enable flag. If a higher-priority scope has it disabled (e.g. project scope sets `false` and you're trying to enable at user scope), the project scope wins. See `lifecycle-and-storage.md` for the scope union order.
+If a higher-priority scope has it set to `false` (precedence is Managed > Local > Project > User for explicit-`false` overrides), that scope wins. See `lifecycle-and-storage.md` for the union semantics.
 
 #### Check for schema validation failures
 
-Schema failures auto-disable a plugin at SessionStart with a warning. Check `~/.claude/logs/plugins.log` (or wherever the platform logs):
+Schema failures land in the `/plugin` Errors tab and in the structured `errors` field of `claude plugin list --json`:
 
 ```bash
-tail -100 ~/.claude/logs/plugins.log | grep -i "schema\|validat"
+claude plugin list --json | jq '.errors'
 ```
 
-Or run validation directly:
-
-```bash
-claude plugin validate $(claude plugin path <plugin>)
-```
+For richer logs at session-start, run `claude --debug` and look for "loading plugin" / "validation error" lines.
 
 ### "Components don't appear (skill / command / agent missing)"
 
@@ -165,15 +164,17 @@ Two causes:
 
 #### Symptom: edits to plugin don't show up
 
-| Component | Hot-swap? | Fix |
+| Component | Hot-swap via `/reload-plugins`? | Fix |
 |---|---|---|
-| Skill | Yes (next prompt) | Send next prompt; no action needed |
-| Command | Yes (immediate) | Should appear immediately |
-| Hook script | Yes (next event) | Trigger the event |
-| Hook config | No | Restart `claude` |
-| MCP server | No | Restart `claude` |
-| LSP server | No | Restart `claude` |
-| `userConfig` schema (new field) | Yes | Should appear; user needs to set value |
+| Skill | Yes | Run `/reload-plugins`, then prompt |
+| Command | Yes | Run `/reload-plugins` |
+| Subagent | Yes | Run `/reload-plugins` |
+| MCP server | Yes (subprocess restarted on reload) | Run `/reload-plugins` |
+| LSP server | Yes (subprocess restarted on reload) | Run `/reload-plugins` |
+| Theme / output style / bin wrapper | Yes | Run `/reload-plugins` |
+| Hook (any change — script, matcher, event) | **No — session-lifetime** | Restart `claude` |
+| Background monitor (any change) | **No — session-lifetime; not restarted by `/reload-plugins`** | Restart `claude` |
+| `userConfig` schema (new field) | Yes | Reload; user re-prompted on enable for new field |
 
 If a hot-swappable component still shows stale, clear cache and reinstall:
 
@@ -186,26 +187,28 @@ For `--plugin-dir` mode, just restart `claude` — there's no cache to clear.
 
 #### Symptom: old version persists after update
 
-Most likely the `enabledPlugins` is pinning the old version. Check:
+Inspect the resolved version:
 
 ```bash
-claude plugin info <plugin>
+claude plugin list --json | jq '.plugins[] | select(.name == "<plugin>")'
 ```
 
-If the version is wrong, force the update:
+Force a marketplace refresh and re-install:
 
 ```bash
-claude plugin install <plugin> --version <correct-version>
+claude plugin marketplace update <marketplace>
+claude plugin update <plugin>
 ```
 
-Or wipe and reinstall:
+Or wipe cache + data and reinstall:
 
 ```bash
-claude plugin uninstall <plugin> --purge
+claude plugin uninstall <plugin>            # default: removes the plugin AND its data dir
+rm -rf ~/.claude/plugins/cache/<marketplace>/<plugin>/   # optional — wipes all cached versions
 claude plugin install <plugin>
 ```
 
-(Without `--purge`, `${CLAUDE_PLUGIN_DATA}` survives.)
+`uninstall`'s default behavior IS to delete `${CLAUDE_PLUGIN_DATA}` when uninstalling from the last scope. Pass `--keep-data` if you want the data dir preserved (e.g. when reinstalling after testing a new version).
 
 ### "Dependencies fail to resolve"
 
@@ -217,11 +220,7 @@ Common causes:
 2. **Cross-marketplace not allowed.** The dep is in another marketplace, but the dependent plugin's marketplace doesn't list it in `allowCrossMarketplaceDependenciesOn`.
 3. **Marketplace not installed.** The dep references a marketplace the user hasn't added.
 
-Run with `--verbose` to see which step fails:
-
-```bash
-claude plugin install <plugin> --verbose
-```
+Run under `claude --debug` to see which resolution step fails. `/doctor` also surfaces dep resolution errors, range conflicts, and missing tags with the constraining plugin named.
 
 ### "MCP server name conflict"
 
@@ -238,14 +237,14 @@ There's no per-user override for this — the conflict is at load time.
 
 ### "userConfig won't accept my value"
 
-The schema rejected it. Check the `/plugin` Settings UI for inline error messages, or run:
+The runtime rejected it. Check the `/plugin` UI's option-editing dialog for inline error messages. Common causes:
 
-```bash
-echo '<your config json>' | jq -e '.' && \
-  ajv validate -s <(jq .userConfig "$(claude plugin path <plugin>)/.claude-plugin/plugin.json") -d /dev/stdin
-```
+- Missing `required: true` field — the dialog won't let you save until it's filled.
+- Type mismatch — e.g. you typed a string for a `type: number` field, or a non-existent path for `type: directory`/`file`.
+- Value outside `min`/`max` bounds (numbers only).
+- For sensitive values: the OS keychain rejected the write (rare; usually a 2 KB total-cap issue if you're stuffing many large secrets).
 
-Most common: missing `required` field, type mismatch, or value not in `enum` list.
+Note that `userConfig` is **NOT** JSON Schema — there's no `enum`, `pattern`, `oneOf`, etc. Real types are `string | number | boolean | directory | file`. See [`../config/user-config.md`](../config/user-config.md).
 
 ### "Plugin works locally but breaks in CI / on another machine"
 
@@ -270,33 +269,35 @@ If a plugin makes every session feel sluggish:
 ## Diagnostic command cheat sheet
 
 ```bash
-# What's installed and enabled
+# What's installed and enabled (full structured output, including .errors)
 claude plugin list --json
 
-# Plugin's manifest, version, scope
-claude plugin info <plugin>
-claude plugin scope <plugin>
+# Pull a plugin out of the list output
+claude plugin list --json | jq '.plugins[] | select(.name == "<plugin>")'
 
-# Filesystem locations
-claude plugin path <plugin>           # cache root
-claude plugin path <plugin> --data    # data dir
-ls $(claude plugin path <plugin>)
+# Per-scope enable flags
+grep -H enabledPlugins ~/.claude/settings.json <repo>/.claude/settings.json <repo>/.claude/settings.local.json 2>/dev/null
 
-# Validate manifest
-claude plugin validate $(claude plugin path <plugin>)
+# Filesystem locations (by convention — derive from name + marketplace)
+ls ~/.claude/plugins/cache/<marketplace>/<plugin>/         # all cached versions
+ls ~/.claude/plugins/data/<plugin>-<marketplace>/          # persistent data dir (slugified id)
 
-# Verbose install for debugging dep / fetch issues
-claude plugin install <plugin> --verbose
+# In-session diagnostics
+# /plugin                Errors tab surfaces validation + load failures
+# /doctor                surfaces dep / range / tag / auto-update issues
+# /hooks                 lists hooks loaded for the session
+# /mcp                   lists MCP servers (and their tools)
+# /reload-plugins        re-reads plugins from cache (skill/cmd/agent/MCP/LSP/theme; NOT hooks/monitors)
 
-# Logs (location is platform-specific)
-ls ~/.claude/logs/
+# Verbose plugin loading at session start
+claude --debug
 ```
 
 ## Escalation
 
 If none of the above helps:
 
-1. Capture `claude plugin install <plugin> --verbose 2>&1 | tee debug.log`
-2. Capture `claude plugin info <plugin> --json`
-3. Capture relevant chunk of `~/.claude/logs/plugins.log`
+1. Capture `claude --debug` output for the failing session
+2. Capture `claude plugin list --json` (especially `.errors`)
+3. Capture `/doctor` output if it's a dep/version issue
 4. File an issue on the plugin's repo (or Claude Code's, if the failure is in plugin loading itself rather than plugin code)

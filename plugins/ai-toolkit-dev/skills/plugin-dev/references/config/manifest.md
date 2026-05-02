@@ -17,8 +17,8 @@ That's enough to load. Claude Code will auto-discover `commands/`, `agents/`, `s
 
 | Field | Type | Notes |
 |---|---|---|
-| `name` | string, required | Plugin identifier. Globally unique within a marketplace. Kebab-case |
-| `description` | string, required | One-line description shown in `/plugin install` UI |
+| `name` | string, required | Plugin identifier. Globally unique within a marketplace. Kebab-case. **The only strictly required field** — every other field is optional |
+| `description` | string, optional | One-line description shown in `/plugin install` UI. Strongly recommended |
 | `version` | string, optional | SemVer. Bumped per release; resolved via `<plugin-name>--v<version>` upstream tag |
 | `author` | object, optional | `{ name, email, url? }`. Falls back to marketplace `owner` if absent |
 | `homepage` | string, optional | Project URL — repo, docs, etc. |
@@ -96,9 +96,11 @@ See `persistent-data.md` for design patterns and `development-cycle/lifecycle-an
 
 `plugin.json` is validated against a JSON schema at install time. If the schema URL is referenced via `$schema`, editors will validate live. Common validation failures:
 
-- Missing required `name` or `description`
-- `version` not a valid SemVer string
-- Unknown top-level field (rejected — schema is closed)
+- Missing required `name` (the only strictly-required field)
+- `version` not a valid SemVer string (only fires when `version` is set; the field itself is optional)
 - `dependencies` entry missing required `name`
+- `userConfig` option's `type` not one of `string|number|boolean|directory|file`
+
+Unknown top-level fields are typically ignored rather than rejected — the schema is permissive enough that consumers can attach metadata that older Claude Code versions won't recognise. Stick to the documented fields above.
 
 See `development-cycle/lifecycle-and-storage.md` for what happens at load time when validation fails.

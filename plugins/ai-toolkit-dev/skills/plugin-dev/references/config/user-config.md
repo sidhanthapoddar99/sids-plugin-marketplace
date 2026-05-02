@@ -45,12 +45,12 @@ Each top-level key is the option's identifier. Identifiers must be valid (alphan
 | Field | Type | Notes |
 |---|---|---|
 | `type` | required | One of: `string`, `number`, `boolean`, `directory`, `file` |
-| `title` | optional | Human-readable label shown in `/plugin` |
-| `description` | optional | Help text shown in `/plugin` |
+| `title` | required | Human-readable label shown in `/plugin` |
+| `description` | required | Help text shown in `/plugin` |
 | `sensitive` | boolean, optional | Masks input. Stored in OS keychain (not `settings.json`) |
 | `required` | boolean, optional | Plugin can't enable until this is set |
 | `default` | optional | Pre-fill value. Type must match `type` |
-| `multiple` | boolean, optional | For `string` and `directory`/`file` types — value is an array |
+| `multiple` | boolean, optional | For `type: "string"` — value is an array of strings |
 | `min` / `max` | number, optional | For `type: "number"` — range bounds |
 
 There is no `enum`, no `format: password` (use `sensitive: true`), no `oneOf`/`anyOf`/`allOf`, no nested object shapes. Stay within the vocabulary above.
@@ -62,7 +62,7 @@ There is no `enum`, no `format: password` (use `sensitive: true`), no `oneOf`/`a
 | `sensitive: true` values | OS keychain (~2 KB total cap, shared with OAuth tokens) |
 | All other values | `~/.claude/settings.json` under `pluginConfigs[<plugin-id>].options` |
 
-`<plugin-id>` is the install identifier (`<plugin-name>` slugified with `-` for `@`); see [`../development-cycle/lifecycle-and-storage.md`](../development-cycle/lifecycle-and-storage.md).
+`<plugin-id>` is the install identifier `<plugin-name>@<marketplace>` slugified with non-`[a-zA-Z0-9_-]` characters replaced by `-`. So `formatter@my-marketplace` becomes `formatter-my-marketplace`. See [`../development-cycle/lifecycle-and-storage.md`](../development-cycle/lifecycle-and-storage.md).
 
 ## Reading values from plugin code
 

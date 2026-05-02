@@ -141,8 +141,9 @@ Full file: [`../examples/release-channels.json`](../examples/release-channels.js
 
 After `/plugin marketplace add`:
 
-- The manifest is cached at `~/.claude/plugins/marketplaces/<name>/`.
+- Marketplace registration metadata lives in `~/.claude/plugins/known_marketplaces.json` (a single registry file, not a per-marketplace directory).
 - Plugin sources are cached at `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`.
+- The marketplace's git repo is cloned for `github`, `url`, and `git-subdir` source forms; the exact clone location is internal — don't hand-edit it.
 
 ```
 /plugin marketplace update <name>     # refresh one
@@ -173,11 +174,15 @@ At runtime, set `CLAUDE_CODE_PLUGIN_SEED_DIR=/opt/claude-seed`. The seed is read
 
 ## Validation at publish time
 
+Quick smoke test:
+
 ```bash
-claude plugin validate .
+# Add the marketplace from a local path; surface errors via the structured CLI output
+claude plugin marketplace add ./
+claude plugin list --available --json | jq '.errors'
 ```
 
-Recommended: include `"$schema": "https://anthropic.com/claude-code/marketplace.schema.json"` in your `marketplace.json` so editors validate as you type.
+If the marketplace.json has issues, they'll appear in the `errors` field and in the `/plugin` UI's Errors tab. Recommended: include `"$schema": "https://anthropic.com/claude-code/marketplace.schema.json"` in your `marketplace.json` so editors validate as you type.
 
 ## Network resilience
 
