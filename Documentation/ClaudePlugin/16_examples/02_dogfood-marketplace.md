@@ -32,14 +32,10 @@ The marketplace's `.claude-plugin/marketplace.json` lives at the repo root, and 
 ```json
 {
   "name": "my-marketplace",
+  "description": "Your personal plugin marketplace",
   "owner": {
     "name": "Your Name",
     "email": "you@example.com"
-  },
-  "metadata": {
-    "description": "Your personal plugin marketplace",
-    "version": "1.0.0",
-    "pluginRoot": "./plugins"
   },
   "plugins": [
     {
@@ -62,10 +58,9 @@ Key fields:
 |---|---|
 | `name` | Marketplace identifier — used in install commands as `<plugin>@<marketplace>` |
 | `owner` | Falls through as the `author` for any plugin that doesn't set its own |
-| `metadata.pluginRoot` | Directory under the marketplace root containing plugins. `./plugins` is conventional |
-| `plugins[]` | One entry per plugin. Each `source` is a relative path under `pluginRoot` (or absolute) |
+| `plugins[]` | One entry per plugin. Each `source` is an explicit relative path starting with `./` |
 
-`metadata.pluginRoot` is documentation for the discovery convention — it tells consumers (and humans browsing the repo) where the plugins live. The `source` field on each entry is what actually points to the plugin.
+The `source` field on each entry points at the plugin folder relative to the marketplace root (the directory containing `.claude-plugin/`). The `./` prefix is required.
 
 ## Plugin manifests
 

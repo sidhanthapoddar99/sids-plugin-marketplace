@@ -6,7 +6,7 @@ This is the task flow for creating a new `.claude-plugin/marketplace.json` from 
 
 Three common shapes:
 
-1. **Self-hosted (dogfood)** — plugins live in the same repo as the marketplace. Use relative-path sources, optionally with `metadata.pluginRoot`. Example: [`../examples/dogfood.json`](../examples/dogfood.json).
+1. **Self-hosted (dogfood)** — plugins live in the same repo as the marketplace. Use relative-path sources (`"./plugins/<name>"`). Example: [`../examples/dogfood.json`](../examples/dogfood.json).
 2. **Catalogue** — marketplace points at plugins hosted in other repos / npm. Use `github`, `url`, `git-subdir`, or `npm` sources. Example: [`../examples/catalogue.json`](../examples/catalogue.json).
 3. **Hybrid** — some plugins hosted in-repo, some external. Mix relative-path entries with object-source entries in the same `plugins` array.
 
@@ -60,25 +60,7 @@ Minimal entry:
 
 Add `version`, `author`, `category`, `keywords`, `tags`, `homepage`, `license` etc. as needed. See [`schema.md`](schema.md#standard-metadata-fields-optional) for the full optional-field list.
 
-## Step 3: pick a `pluginRoot` strategy (dogfood only)
-
-Dogfood marketplaces often host every plugin under a `plugins/` directory. Set `metadata.pluginRoot` to drop the prefix on every entry:
-
-```json
-{
-  "metadata": { "pluginRoot": "./plugins" },
-  "plugins": [
-    { "name": "plugin-a", "source": "plugin-a", "description": "..." },
-    { "name": "plugin-b", "source": "plugin-b", "description": "..." }
-  ]
-}
-```
-
-Without `pluginRoot`, the same entries would each need `"source": "./plugins/plugin-a"` etc. Both forms work — `pluginRoot` just trims boilerplate.
-
-> Without `pluginRoot`, relative-path sources **must** start with `./`. Bare names (`"my-plugin"`) are only legal when `pluginRoot` is set.
-
-## Step 4: decide who owns the components
+## Step 3: decide who owns the components
 
 Two modes:
 
@@ -87,7 +69,7 @@ Two modes:
 
 See [`../examples/inline-plugin.json`](../examples/inline-plugin.json) for a fully inline definition.
 
-## Step 5: validate before publishing
+## Step 4: validate before publishing
 
 Add the marketplace locally and surface errors:
 
@@ -98,7 +80,7 @@ claude plugin list --available --json | jq '.errors'
 
 The structured `errors` field surfaces duplicate plugin names, JSON syntax errors, malformed YAML frontmatter, broken `hooks/hooks.json`, and `..` in relative paths. The `/plugin` UI's Errors tab shows the same set interactively. See [`schema.md`](schema.md#validation) for the error catalogue.
 
-## Step 6: install locally and smoke-test
+## Step 5: install locally and smoke-test
 
 ```bash
 claude plugin marketplace add ./my-marketplace

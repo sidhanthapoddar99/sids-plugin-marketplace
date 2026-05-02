@@ -147,7 +147,6 @@ A single marketplace can mix both — some entries with relative-path `source` (
 ```json
 {
   "name": "mixed-marketplace",
-  "metadata": { "pluginRoot": "./plugins" },
   "plugins": [
     {
       "name": "my-plugin",

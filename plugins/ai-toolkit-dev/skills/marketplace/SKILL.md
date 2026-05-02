@@ -1,6 +1,6 @@
 ---
 name: marketplace
-description: Use when authoring, publishing, or composing Claude Code plugin marketplaces. Covers `marketplace.json` schema and field reference, the five plugin source types (relative path, github, url, git-subdir, npm), `pluginRoot`, `category`, `tags`, `keywords`, `strict` mode, hosting and ref/sha pinning, version resolution, release channels, listing external plugins as a catalogue or plugin catalog, recommending marketplaces via `extraKnownMarketplaces`, and cross-marketplace dependencies via `allowCrossMarketplaceDependenciesOn`. Triggers on "create marketplace", "publish marketplace", "register a marketplace", "host a marketplace", "marketplace.json", "marketplace structure", "add plugin to marketplace", "share plugins with my team", "list someone else's plugin in my marketplace", "combine multiple marketplaces", "cross-marketplace dependency", "release channels", "stable vs latest plugin".
+description: Use when authoring, publishing, or composing Claude Code plugin marketplaces. Covers `marketplace.json` schema and field reference, the five plugin source types (relative path, github, url, git-subdir, npm), `category`, `tags`, `keywords`, `strict` mode, hosting and ref/sha pinning, version resolution, release channels, listing external plugins as a catalogue or plugin catalog, recommending marketplaces via `extraKnownMarketplaces`, and cross-marketplace dependencies via `allowCrossMarketplaceDependenciesOn`. Triggers on "create marketplace", "publish marketplace", "register a marketplace", "host a marketplace", "marketplace.json", "marketplace structure", "add plugin to marketplace", "share plugins with my team", "list someone else's plugin in my marketplace", "combine multiple marketplaces", "cross-marketplace dependency", "release channels", "stable vs latest plugin".
 ---
 
 # Claude Code marketplace authoring
@@ -13,7 +13,7 @@ A **marketplace** is a catalogue of plugins. It's a single JSON file (`.claude-p
 - Plugins are referenced by `name`. The **`source`** field tells Claude Code how to fetch each one. Five source forms exist (string, `github`, `url`, `git-subdir`, `npm`).
 - All git-based source types (`github`, `url`, `git-subdir`) share the same pinning fields: `ref?` (branch/tag) and `sha?` (exact commit).
 - A marketplace can list **plugins it doesn't host** (catalogue) and **plugins from other marketplaces** can be depended on if both sides opt in via `allowCrossMarketplaceDependenciesOn`.
-- A marketplace can dogfood itself: list its own plugins via relative-path sources (optionally simplified by `metadata.pluginRoot`).
+- A marketplace can dogfood itself: list its own plugins via relative-path sources (`"./plugins/<name>"`).
 
 ## When to use which reference
 
@@ -31,7 +31,7 @@ Full, valid `marketplace.json` files in [`examples/`](examples/) — copy and ad
 | File | Pattern |
 |---|---|
 | [`minimal.json`](examples/minimal.json) | Smallest valid marketplace |
-| [`dogfood.json`](examples/dogfood.json) | Self-hosted, plugins in same repo with `pluginRoot` |
+| [`dogfood.json`](examples/dogfood.json) | Self-hosted, plugins in same repo via `"./plugins/<name>"` sources |
 | [`catalogue.json`](examples/catalogue.json) | Third-party listings; one of every source type |
 | [`release-channels.json`](examples/release-channels.json) | Two marketplaces pointing at stable vs latest refs |
 | [`cross-marketplace-deps.json`](examples/cross-marketplace-deps.json) | `allowCrossMarketplaceDependenciesOn` opt-in |

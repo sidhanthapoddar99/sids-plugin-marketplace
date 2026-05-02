@@ -1,6 +1,6 @@
 # Plugin source types
 
-The `source` field on a plugin entry tells Claude Code where to fetch the plugin from. It accepts one of five forms — one bare-string form for in-repo plugins, and four object forms for remote ones. Object forms always carry a `source` discriminator key.
+The `source` field on a plugin entry tells Claude Code where to fetch the plugin from. It accepts one of five forms — one relative-path string form for in-repo plugins, and four object forms for remote ones. Object forms always carry a `source` discriminator key.
 
 ## Quick reference
 
@@ -18,16 +18,7 @@ The `source` field on a plugin entry tells Claude Code where to fetch the plugin
 { "name": "my-plugin", "source": "./plugins/my-plugin" }
 ```
 
-Resolves relative to the marketplace root (the directory containing `.claude-plugin/`), regardless of where `marketplace.json` itself lives. The `./` prefix is required unless `metadata.pluginRoot` is set:
-
-```json
-{
-  "metadata": { "pluginRoot": "./plugins" },
-  "plugins": [
-    { "name": "formatter", "source": "formatter" }
-  ]
-}
-```
+Resolves relative to the marketplace root (the directory containing `.claude-plugin/`), regardless of where `marketplace.json` itself lives. The `./` prefix is **required** — bare names like `"my-plugin"` are not accepted.
 
 > **Caveat.** Relative paths only work for marketplaces added via Git or local directory. They do **not** resolve when a marketplace is added via a static URL pointing at `marketplace.json` directly — in that case only the JSON file is downloaded, not the surrounding repo. Use `github`/`url`/`npm` for URL-distributed marketplaces.
 

@@ -19,7 +19,6 @@ Authoritative field reference for `.claude-plugin/marketplace.json`. Cross-check
 | `$schema` | string | JSON Schema URL for editor autocomplete. Claude Code ignores it at load time |
 | `description` | string | Brief marketplace description |
 | `version` | string | Marketplace manifest version |
-| `metadata.pluginRoot` | string | Base directory for relative-path plugin sources. With `"./plugins"`, `"source": "formatter"` resolves to `./plugins/formatter`. Without it, relative sources must start with `./` and resolve against the marketplace root (the directory containing `.claude-plugin/`) |
 | `allowCrossMarketplaceDependenciesOn` | array of strings | Other marketplace names that plugins in *this* marketplace are allowed to depend on. See `referencing.md` |
 
 `description` and `version` are also accepted under `metadata` for backward compatibility.
@@ -83,7 +82,7 @@ Local directory inside the marketplace repo. The string must start with `./`. Re
 { "name": "my-plugin", "source": "./plugins/my-plugin" }
 ```
 
-If `metadata.pluginRoot` is set, a bare-name source like `"my-plugin"` resolves to `<pluginRoot>/my-plugin`. Without `pluginRoot`, the `./` prefix is required.
+The `./` prefix is **required** — bare names are not accepted.
 
 > Relative paths only work for marketplaces added via git (GitHub, git URL, local directory). They do **not** work when the marketplace is added via a static URL pointing at `marketplace.json` directly — only the JSON file is downloaded, not the surrounding repo.
 

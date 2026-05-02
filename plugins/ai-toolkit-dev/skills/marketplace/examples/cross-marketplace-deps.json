@@ -7,11 +7,10 @@
     "claude-plugins-official",
     "team-foundation"
   ],
-  "metadata": { "pluginRoot": "./plugins" },
   "plugins": [
     {
       "name": "my-toolkit",
-      "source": "my-toolkit",
+      "source": "./plugins/my-toolkit",
       "description": "Depends on skill-creator from the official marketplace. The dependency itself is declared in plugins/my-toolkit/.claude-plugin/plugin.json — see the snippet in the comment below."
     }
   ],

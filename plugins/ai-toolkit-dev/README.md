@@ -87,7 +87,7 @@ In-house skill. Triggers on marketplace authoring, publishing, and cross-marketp
 skills/marketplace/
   SKILL.md                       # entry; description triggers on marketplace work
   references/
-    setup.md                     # marketplace.json schema, 5 source types, pluginRoot, dogfood pattern
+    setup.md                     # marketplace.json schema, 5 source types, dogfood pattern
     publishing.md                # hosting, ref pinning, claude plugin tag, version resolution
     referencing.md               # extraKnownMarketplaces, allowCrossMarketplaceDependenciesOn, listing external plugins, "merger" patterns
 ```

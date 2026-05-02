@@ -6,21 +6,18 @@
     "name": "Sid",
     "email": "developer@neuralabs.org"
   },
-  "metadata": {
-    "pluginRoot": "./plugins"
-  },
   "allowCrossMarketplaceDependenciesOn": [
     "claude-plugins-official"
   ],
   "plugins": [
     {
       "name": "ai-toolkit-dev",
-      "source": "ai-toolkit-dev",
+      "source": "./plugins/ai-toolkit-dev",
       "description": "Toolkit for authoring Claude Code plugins, marketplaces, and skills (work in progress)"
     },
     {
       "name": "monorepo-setup",
-      "source": "monorepo-setup",
+      "source": "./plugins/monorepo-setup",
       "description": "Personal monorepo conventions: env vars, config files, docker-compose, scripts, database/alembic, secrets management (work in progress)"
     },
     {

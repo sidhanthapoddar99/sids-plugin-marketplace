@@ -9,7 +9,7 @@ The companion plugin at `plugins/ai-toolkit-dev/` in this same repository is its
 | File | What it shows |
 |---|---|
 | [`01_minimal-plugin.md`](./01_minimal-plugin.md) | The smallest valid plugin — a directory with `.claude-plugin/plugin.json` containing only `name` and `description`. Auto-discovery picks up everything else |
-| [`02_dogfood-marketplace.md`](./02_dogfood-marketplace.md) | A self-hosted marketplace where plugins live in the same repo as the marketplace manifest. `metadata.pluginRoot: "./plugins"` and `source: "./plugins/<name>"` |
+| [`02_dogfood-marketplace.md`](./02_dogfood-marketplace.md) | A self-hosted marketplace where plugins live in the same repo as the marketplace manifest. Each entry uses `source: "./plugins/<name>"` |
 | [`03_catalogue-marketplace.md`](./03_catalogue-marketplace.md) | A marketplace that *lists* third-party plugins it doesn't host. Every entry is an object source pointing at a different external repo |
 | [`04_soft-fork-plugin.md`](./04_soft-fork-plugin.md) | A worked soft-fork plugin with `.upstream/manifest.json`, the README PROVENANCE table, and the per-plugin drift-check script that lives at the marketplace root |
 

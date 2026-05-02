@@ -43,7 +43,6 @@ Plugins listed by Git URL (rather than relative path) can live in entirely separ
 | `$schema` | optional | JSON Schema URL for editor autocomplete; ignored at load time |
 | `description` | optional | Marketplace-level description |
 | `version` | optional | Marketplace manifest version (the marketplace itself, not its plugins) |
-| `metadata.pluginRoot` | optional | Base directory prepended to relative plugin sources. With `"./plugins"`, `"source": "formatter"` resolves to `./plugins/formatter` |
 | `allowCrossMarketplaceDependenciesOn` | optional | Array of marketplace names whose plugins this marketplace's plugins are allowed to depend on. See [`08_cross-marketplace-deps.md`](./08_cross-marketplace-deps.md) |
 
 `description` and `version` are also accepted under a `metadata` object for backward compatibility.

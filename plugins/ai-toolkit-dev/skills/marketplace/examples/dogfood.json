@@ -6,13 +6,10 @@
     "name": "My Team",
     "email": "team@example.com"
   },
-  "metadata": {
-    "pluginRoot": "./plugins"
-  },
   "plugins": [
     {
       "name": "code-formatter",
-      "source": "code-formatter",
+      "source": "./plugins/code-formatter",
       "description": "Format code on save",
       "version": "1.2.0",
       "author": { "name": "My Team" },
@@ -22,7 +19,7 @@
     },
     {
       "name": "deploy-tools",
-      "source": "deploy-tools",
+      "source": "./plugins/deploy-tools",
       "description": "Deployment automation",
       "version": "0.4.1",
       "author": { "name": "My Team" },
