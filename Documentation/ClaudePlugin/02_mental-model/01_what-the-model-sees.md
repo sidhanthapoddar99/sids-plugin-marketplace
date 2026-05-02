@@ -9,7 +9,7 @@ The model — Claude inside the session — has no concept of "the plugin." It s
 | **Skill** | Name + description in a system reminder; body loads on trigger | Description: always. Body: when the model decides to use it |
 | **Slash command** | Name + description in available-commands list | Body: when fired by the user, or model invokes it |
 | **Subagent** | Name + description in available-agents list | Spawned via `Agent` tool; runs in fresh context |
-| **MCP tool** | `mcp__<server>__<tool>` in the tool list | Server starts at session init; tools always visible |
+| **MCP tool** | `mcp__plugin_<plugin>_<server>__<tool>` in the tool list (plain `mcp__<server>__<tool>` for non-plugin MCP servers) | Server starts at session init; tools always visible |
 | **`bin/` wrapper** | An executable in `$PATH` | Always callable via `Bash` |
 
 Each of these the model can decide to use. For skills and commands, the decision is description-driven — the description is the entire signal until the model commits to using the capability.
@@ -43,9 +43,12 @@ Description quality is therefore load-bearing: a vague description means the ski
 
 ## How MCP tools appear
 
-Every MCP server registered via `.mcp.json` exposes tools that the runtime translates into entries in the model's tool list, namespaced as `mcp__<server>__<tool>`. From the model's perspective, an MCP tool is indistinguishable from a built-in tool — same calling conventions, same JSON-schema-typed inputs.
+Every MCP server registered via `.mcp.json` exposes tools that the runtime translates into entries in the model's tool list. From the model's perspective, an MCP tool is indistinguishable from a built-in tool — same calling conventions, same JSON-schema-typed inputs.
 
-The puppeteer server's `click` tool, for example, appears as `mcp__puppeteer__puppeteer_click`. The double-prefix (server name + tool name) lets multiple MCP servers coexist without name collisions in the model's tool list.
+Naming differs by source:
+
+- **Plugin-shipped MCP servers**: `mcp__plugin_<plugin-name>_<server-name>__<tool-name>`. The `plugin_<plugin>_` infix ensures two plugins can each ship a server named `puppeteer` without colliding. So plugin `browse-tools`'s `puppeteer` server's `click` tool appears as `mcp__plugin_browse-tools_puppeteer__click`.
+- **User-configured MCP servers** (registered in `~/.claude/settings.json` or a project `.mcp.json` outside any plugin): `mcp__<server-name>__<tool-name>`.
 
 ## How `bin/` wrappers appear
 

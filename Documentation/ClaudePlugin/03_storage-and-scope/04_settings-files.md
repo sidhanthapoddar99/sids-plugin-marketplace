@@ -50,7 +50,7 @@ This file should be **gitignored** — Claude Code does not add it to `.gitignor
 For organisations:
 
 - Force-enable required plugins (compliance, security)
-- Restrict allowed marketplaces via `enabledMarketplaces`
+- Restrict allowed marketplaces via `strictKnownMarketplaces`
 - Lock down permissions, env vars, model selection
 
 Managed values can't be overridden by other scopes.
@@ -82,7 +82,7 @@ Keys are `<plugin-name>@<marketplace-name>`. Values are booleans:
 | `enabledPlugins` | Boolean per `<plugin>@<mkt>` | Any scope |
 | `extraKnownMarketplaces` | Marketplace source suggestions for this project | Typically project scope |
 | `pluginConfigs.<plugin-id>.options` | Non-sensitive `userConfig` values | Where the user opted into the plugin |
-| `enabledMarketplaces` | Allowlist of marketplaces (managed restriction) | Typically managed scope |
+| `strictKnownMarketplaces` | Array of marketplace source-pattern objects forming an allowlist (managed restriction) | Managed scope only |
 
 The `pluginConfigs` block is what `userConfig` declarations write to after the user fills out the prompt. Sensitive values go to the OS keychain, not into the JSON.
 

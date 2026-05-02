@@ -41,4 +41,4 @@ Every chapter has a `00_index.md` that introduces the chapter and lists its sub-
 
 ## Authority
 
-Where this doc disagrees with the [official Claude Code documentation](https://code.claude.com/docs/en/plugins-reference), the official docs win. Where this doc covers a concept the official docs only mention in passing, the in-house doc set at [`docs/Claude Plugins/`](../../docs/Claude%20Plugins/) is the upstream source — those pages are fact-checked against live behaviour.
+Where this doc disagrees with the [official Claude Code documentation](https://code.claude.com/docs/en/plugins-reference), the official docs win. The plugin-side how-to surface (task-oriented authoring guidance) lives in [`plugins/ai-toolkit-dev/skills/`](../../plugins/ai-toolkit-dev/skills/) — `marketplace/`, `plugin-dev/`, and `skill-creator/` — which this reference set links to where appropriate.

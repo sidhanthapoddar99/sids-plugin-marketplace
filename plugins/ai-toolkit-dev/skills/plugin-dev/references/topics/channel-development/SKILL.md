@@ -107,6 +107,5 @@ Each binds independently. The user can enable/disable each via `/plugin`.
 
 ## Reference
 
-- Docs: `docs/Claude Plugins/07_reference.md` § Channels (ground truth)
-- Official: [Channels](https://code.claude.com/docs/en/plugins-reference#channels)
+- Official: [Channels](https://code.claude.com/docs/en/plugins-reference#channels) (ground truth)
 - Look at an existing channel plugin (e.g. the `slack-channel` plugin in `claude-plugins-official`) for a worked example of the MCP server + channel binding pair.

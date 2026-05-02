@@ -199,7 +199,7 @@ If the wrapper isn't on `$PATH` after `/reload-plugins`:
 ## See also
 
 - Authoring guide: `plugins/ai-toolkit-dev/skills/plugin-dev/references/topics/bin-development/`
-- Source: `docs/Claude Plugins/05_creating-plugins/04_bin-wrappers.md` — ground truth
+- Official: [File locations — Executables](https://code.claude.com/docs/en/plugins-reference#file-locations-reference) — `bin/` and the Bash tool's `$PATH`
 - [Hooks](./04_hooks.md) — for event-driven equivalents
 - [Slash commands](./02_slash-commands.md) — for templated prompts (not shell tooling)
 - [Capabilities index](./00_index.md)

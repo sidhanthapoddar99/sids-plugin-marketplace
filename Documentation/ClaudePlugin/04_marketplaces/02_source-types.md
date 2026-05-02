@@ -131,6 +131,8 @@ Plugin lives in a subdirectory of a (typically monorepo) git repo. Claude Code p
 
 The plugin's `ref`/`sha` is **independent** of the marketplace's own ref. A marketplace at `acme/catalog#v1.0.0` can list a plugin at `acme/formatter#v2.3.0` — the marketplace and the plugin track different versions. See [`03_ref-and-sha-pinning.md`](./03_ref-and-sha-pinning.md).
 
+> **Note on `commit` vs `sha`.** Some entries in the wild (including a handful in `anthropics/claude-plugins-official`) use `commit` instead of `sha` to specify the pinned hash. Both names resolve to the same field. Prefer `sha` for new manifests — it's the canonical name in the official schema.
+
 ## See also
 
 - [`03_ref-and-sha-pinning.md`](./03_ref-and-sha-pinning.md) — what `ref` vs `sha` mean and when to use each

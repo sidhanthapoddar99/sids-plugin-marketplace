@@ -15,6 +15,7 @@ The interactive surface for plugin operations. Each command works inside an acti
 | `/agents` | Built-in scaffolder for one-off agents at user/project scope |
 | `/theme` | Theme picker — built-in presets plus plugin-shipped themes |
 | `/doctor` | Surface plugin-related health issues |
+| `/plugin-hints` | Recommend a marketplace + plugins to other Claude Code users from the prompt. See [`../14_distribution/02_plugin-hints.md`](../14_distribution/02_plugin-hints.md) |
 
 ## `/plugin`
 

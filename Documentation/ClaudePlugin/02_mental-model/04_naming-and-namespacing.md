@@ -75,11 +75,13 @@ Every enabled plugin's `bin/` is prepended to `$PATH`. If two plugins both ship 
 
 ### MCP server name collisions
 
-In `.mcp.json`, server names are keys in the `mcpServers` object. The model sees tools as `mcp__<server>__<tool>`. If two plugins both register a server named `puppeteer`, the resulting tool names collide (`mcp__puppeteer__click` × 2).
+In `.mcp.json`, server names are keys in the `mcpServers` object. Plugin-shipped tools are namespaced by the plugin: the model sees them as `mcp__plugin_<plugin-name>_<server-name>__<tool-name>`. The `plugin_<plugin>_` infix means two plugins can each ship a server named `puppeteer` without their tools colliding — they appear as `mcp__plugin_a-tools_puppeteer__click` and `mcp__plugin_b-tools_puppeteer__click`.
 
-The runtime's resolution behaviour for duplicate MCP server names isn't well-documented; treat it as undefined. Practically:
+Non-plugin MCP servers (configured by the user directly in `~/.claude/settings.json` or a project `.mcp.json` outside any plugin) lack the infix and appear as `mcp__<server>__<tool>`. A plugin server and a user server with matching names won't share a tool namespace.
 
-- **Prefix MCP server names with your plugin's namespace** if there's any risk of collision.
+Practical guidance:
+
+- **Prefix MCP server names within your plugin** for clarity even though the plugin infix already prevents tool collisions — server names show up in `/mcp` listings and debug output.
 - **For widely-used MCP servers** (e.g. `@modelcontextprotocol/server-puppeteer`), expect users to install them via a single dedicated plugin, not bundled into multiple.
 
 ### LSP server collisions

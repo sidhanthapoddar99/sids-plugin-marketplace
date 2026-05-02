@@ -138,5 +138,4 @@ The vendored `topics/plugin-settings/` skill (under `references/topics/`) covers
 
 ## Reference
 
-- Docs: `docs/Claude Plugins/07_reference.md` § `userConfig` (ground truth)
-- Official: [User configuration](https://code.claude.com/docs/en/plugins-reference#user-configuration)
+- Official: [User configuration](https://code.claude.com/docs/en/plugins-reference#user-configuration) (ground truth)

@@ -39,23 +39,22 @@ This means consumers on `^2.0.0` won't accidentally pick up `2.0.0-rc.1` even if
 
 ## Installing a pre-release
 
-For consumers who want to test a pre-release tag, install with an explicit version on the install command:
+There's no `--version` flag on `/plugin install`. To pull a specific pre-release tag, consumers pin via one of:
 
-```
-/plugin install deploy-kit@my-marketplace --version 2.0.0-rc.1
-```
+- **Marketplace entry's `version` or `ref`/`sha`** — for plugin authors who want to expose pre-releases as a separate channel:
 
-Or pin the marketplace entry's `version` field for that plugin:
+  ```json
+  {
+    "name": "deploy-kit",
+    "source": { "source": "github", "repo": "acme/deploy-kit", "ref": "v2.0.0-rc.1" }
+  }
+  ```
 
-```json
-{
-  "name": "deploy-kit",
-  "source": { "source": "github", "repo": "acme/deploy-kit" },
-  "version": "2.0.0-rc.1"
-}
-```
+- **Separate beta marketplace** — keep stable on `main` and pre-releases on a `beta` branch; consumers who want pre-releases add the marketplace at `#beta`. See [`04_marketplaces/04_release-channels.md`](../04_marketplaces/04_release-channels.md).
 
-The pre-release stays installed until the consumer updates and a stable version overwrites it.
+- **Consumer's own dependency range** — if the pre-release is a dependency of another plugin, declaring `^2.0.0-0` or `>=2.0.0-rc` opts in to pre-release versions during dependency resolution.
+
+The pre-release stays installed until the consumer runs `/plugin update` and a newer version overwrites it.
 
 ## Hotfixes — just patch bumps
 
@@ -101,7 +100,7 @@ The full loop for shipping a release candidate:
 
 ```
 edit → bump plugin.json to 2.0.0-rc.1 → commit → claude plugin tag --push
-→ (test in your own project, in a separate beta marketplace channel, or via --version install)
+→ (test via a separate beta marketplace channel, or by depending on the pre-release from another plugin)
 → if good, bump to 2.0.0 → commit → claude plugin tag --push
 → if more iteration needed, bump to 2.0.0-rc.2 and repeat
 ```
@@ -114,7 +113,7 @@ A common pattern is to keep a `beta` branch on the marketplace that points at pr
 |---|---|
 | Pre-release tags accumulating | They're harmless; keep them for traceability or delete with `git tag -d` and a force push if needed |
 | Old cache folders for pre-release versions | `~/.claude/plugins/cache/<mkt>/<plugin>/2.0.0-rc.1/` stays until uninstall or manual deletion |
-| Switching between stable and pre-release on a consumer | `/plugin install <plugin> --version <v>` overwrites the active version; old cache stays unless manually cleared |
+| Switching between stable and pre-release on a consumer | Switch to the marketplace channel that points at the desired tag, then `/plugin update`. Old cache stays unless manually cleared |
 
 ## See also
 

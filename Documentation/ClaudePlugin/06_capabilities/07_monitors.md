@@ -181,8 +181,7 @@ A monitor **cannot**:
 ## See also
 
 - Authoring guide: `plugins/ai-toolkit-dev/skills/plugin-dev/references/topics/monitor-development/`
-- [Reference](../../../docs/Claude%20Plugins/07_reference.md) § Background monitors — ground truth
 - [Hooks](./04_hooks.md) — for one-shot event-driven logic
 - [Channels](./08_channels.md) — for bidirectional messaging
-- Official: [Monitors](https://code.claude.com/docs/en/plugins-reference#monitors)
+- Official: [Monitors](https://code.claude.com/docs/en/plugins-reference#monitors) — ground-truth schema
 - [Capabilities index](./00_index.md)

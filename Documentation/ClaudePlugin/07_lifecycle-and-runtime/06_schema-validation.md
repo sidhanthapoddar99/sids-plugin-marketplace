@@ -19,9 +19,9 @@ The full schema is published at the [official plugin reference](https://code.cla
 
 | Field | Constraint |
 |---|---|
-| `name` | Required. String. Used as the plugin's identifier (combined with marketplace name) |
-| `version` | Required. Semver string |
-| `description` | Required. String |
+| `name` | **Required.** String, kebab-case. The only strictly required field — every other field is optional. Used as the plugin's identifier (combined with marketplace name) |
+| `version` | Optional. Semver string. If omitted, Claude Code falls back to the git commit SHA, so every commit is treated as a new version |
+| `description` | Optional. String. Shown in the `/plugin install` UI |
 | `author` | Optional. Object with `name`, `email`, `url` |
 | `commands`, `agents`, `skills`, `hooks`, `mcpServers`, `lspServers`, `monitors`, `outputStyles`, `themes`, `channels` | Optional. Each has its own sub-schema |
 | `userConfig` | Optional. Object; each key must be a valid identifier; each value is an option declaration |
@@ -33,7 +33,7 @@ The full schema is published at the [official plugin reference](https://code.cla
 | Error | Cause |
 |---|---|
 | `"name" is required` | Missing top-level `name` field |
-| `"version" must match semver pattern` | `version: "1.0"` instead of `"1.0.0"` |
+| `"version" must match semver pattern` | `version: "1.0"` instead of `"1.0.0"` (only fires when `version` is set; the field itself is optional) |
 | `"userConfig.api_key.type" must be one of [string, number, boolean, directory, file]` | Typo in the type field |
 | `"commands[0].path" does not exist` | Pointed at a missing file |
 | `"hooks.events[0]" must be one of [...]` | Hook event name typo |

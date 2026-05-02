@@ -177,7 +177,6 @@ An LSP server **cannot**:
 ## See also
 
 - Authoring guide: `plugins/ai-toolkit-dev/skills/plugin-dev/references/topics/lsp-integration/`
-- [Reference](../../../docs/Claude%20Plugins/07_reference.md) § LSP servers — ground-truth schema
-- Official: [LSP servers](https://code.claude.com/docs/en/plugins-reference#lsp-servers)
+- Official: [LSP servers](https://code.claude.com/docs/en/plugins-reference#lsp-servers) — ground-truth schema
 - Official: [Code intelligence (pre-built)](https://code.claude.com/docs/en/discover-plugins#code-intelligence)
 - [Capabilities index](./00_index.md)

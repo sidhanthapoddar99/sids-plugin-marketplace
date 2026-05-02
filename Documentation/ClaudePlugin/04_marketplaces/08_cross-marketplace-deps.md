@@ -123,7 +123,7 @@ When the user uninstalls `plugin-handbook`, `plugin-dev` stays unless they pass 
 | Build on top of an upstream plugin without copy-pasting | Yes |
 | Auto-install a related plugin alongside yours | Yes |
 | Recommend an external plugin in your README | No — there's no formal "recommend" mechanism, just document it |
-| Vendor upstream content into your own plugin | No — use the soft-fork pattern instead. See `docs/Claude Plugins/05_creating-plugins/08_soft-fork-and-upstream-tracking.md` |
+| Vendor upstream content into your own plugin | No — use the soft-fork pattern instead. See [`../08_composition-patterns/03_soft-fork.md`](../08_composition-patterns/03_soft-fork.md) |
 
 ## See also
 

@@ -20,7 +20,7 @@ my-plugin/
 
 Default scan: `commands/<name>.md`. Subdirectories namespace the command in `/help` output.
 
-> **Note on layout convention.** The flat `commands/` directory is the **legacy** format. The modern convention for plugin authors is `skills/<name>/SKILL.md`. Both load identically — the difference is purely file layout. New plugins should prefer the skills layout where possible. The `commands/` folder remains fully supported. → [Skills](./01_skills.md), [Reference legacy section](../../../docs/Claude%20Plugins/07_reference.md)
+> **Note on layout convention.** The flat `commands/` directory is the **legacy** format. The modern convention for plugin authors is `skills/<name>/SKILL.md`. Both load identically — the difference is purely file layout. New plugins should prefer the skills layout where possible. The `commands/` folder remains fully supported. → [Skills](./01_skills.md), [`../15_reference/04_legacy-and-migration.md`](../15_reference/04_legacy-and-migration.md)
 
 ## Schema — frontmatter
 

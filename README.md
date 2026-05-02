@@ -53,7 +53,7 @@ Open: <https://github.com/sidhanthapoddar99/sids-plugin-marketplace/issues/new>
 
 ### Other source forms
 
-The `github` form above is the most common. The `source` field also accepts `url`, `git-subdir`, `npm`, or a relative string (only relevant for plugins hosted *inside this repo*). See the marketplace docs for the full schema: [`docs/Claude Plugins/04_marketplaces.md`](docs/Claude%20Plugins/04_marketplaces.md).
+The `github` form above is the most common. The `source` field also accepts `url`, `git-subdir`, `npm`, or a relative string (only relevant for plugins hosted *inside this repo*). See the marketplace source-types reference: [`Documentation/ClaudePlugin/04_marketplaces/02_source-types.md`](Documentation/ClaudePlugin/04_marketplaces/02_source-types.md).
 
 ### Submission review
 
@@ -80,7 +80,7 @@ Approval = your snippet is appended to `marketplace.json` and the marketplace re
 
 `ai-toolkit-dev` vendors content from upstream [`anthropics/claude-plugins-official`](https://github.com/anthropics/claude-plugins-official) using the soft-fork + upstream tracking pattern. Drift detection lives at the **marketplace level** (`scripts/ai-toolkit-dev-check-upstream`), not inside the plugin — consumers of the plugin shouldn't have to think about this.
 
-See [`CLAUDE.md`](CLAUDE.md) for when Claude triggers a drift check, and [`docs/Claude Plugins/05_creating-plugins/08_soft-fork-and-upstream-tracking.md`](docs/Claude%20Plugins/05_creating-plugins/08_soft-fork-and-upstream-tracking.md) for the pattern itself.
+See [`CLAUDE.md`](CLAUDE.md) for when Claude triggers a drift check, and [`Documentation/ClaudePlugin/08_composition-patterns/03_soft-fork.md`](Documentation/ClaudePlugin/08_composition-patterns/03_soft-fork.md) for the pattern itself.
 
 ---
 
@@ -90,7 +90,9 @@ See [`CLAUDE.md`](CLAUDE.md) for when Claude triggers a drift check, and [`docs/
 .
 ├── .claude-plugin/marketplace.json   # the marketplace manifest
 ├── CLAUDE.md                         # agent guidance (upstream check, scope rules)
-├── docs/Claude Plugins/              # reference docs on plugin/marketplace internals
+├── Documentation/                    # reference docs on plugin/marketplace internals + Claude Code settings
+│   ├── ClaudePlugin/                 #   16 chapters on the plugin ecosystem
+│   └── ClaudeSettings/               #   companion: settings.json keys at the user/project/managed boundary
 ├── plugins/
 │   ├── ai-toolkit-dev/               # plugin authoring toolkit
 │   └── monorepo-setup/               # personal monorepo conventions

@@ -111,6 +111,5 @@ A theme **cannot**:
 
 - Authoring guide: `plugins/ai-toolkit-dev/skills/plugin-dev/references/topics/theme-and-output-style/`
 - [Output styles](./10_output-styles.md) — the related but distinct response-shape surface
-- [Reference](../../../docs/Claude%20Plugins/07_reference.md) § Themes — ground truth
-- Official: [Themes](https://code.claude.com/docs/en/plugins-reference#themes)
+- Official: [Themes](https://code.claude.com/docs/en/plugins-reference#themes) — ground-truth schema
 - [Capabilities index](./00_index.md)

@@ -155,6 +155,5 @@ Some LSP features require specific server capabilities (e.g. `textDocument/codeA
 
 ## Reference
 
-- Docs: `docs/Claude Plugins/07_reference.md` § LSP servers (ground truth)
-- Official: [LSP servers](https://code.claude.com/docs/en/plugins-reference#lsp-servers)
+- Official: [LSP servers](https://code.claude.com/docs/en/plugins-reference#lsp-servers) (ground truth)
 - Official: [Code intelligence (pre-built LSPs)](https://code.claude.com/docs/en/discover-plugins#code-intelligence)

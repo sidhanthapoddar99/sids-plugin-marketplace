@@ -142,5 +142,4 @@ Removes `deploy-kit` plus any auto-installed deps it leaves orphaned.
 
 ## Reference
 
-- Docs: `docs/Claude Plugins/05_creating-plugins/07_dependencies.md` (ground truth)
-- Official: [Constrain plugin dependency versions](https://code.claude.com/docs/en/plugin-dependencies)
+- Official: [Constrain plugin dependency versions](https://code.claude.com/docs/en/plugin-dependencies) (ground truth)

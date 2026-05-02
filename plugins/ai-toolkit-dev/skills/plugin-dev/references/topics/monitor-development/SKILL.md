@@ -135,5 +135,4 @@ A plugin can declare multiple monitors. They run independently, each with its ow
 
 ## Reference
 
-- Docs: `docs/Claude Plugins/07_reference.md` § Background monitors (ground truth)
-- Official: [Monitors](https://code.claude.com/docs/en/plugins-reference#monitors)
+- Official: [Monitors](https://code.claude.com/docs/en/plugins-reference#monitors) (ground truth)

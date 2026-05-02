@@ -40,25 +40,38 @@ The runtime computes the union across scopes (Local OR Project OR User). One sco
 {
   "extraKnownMarketplaces": {
     "team-tools": {
-      "type": "github",
-      "owner": "acme-corp",
-      "repo": "claude-marketplace"
+      "source": {
+        "source": "github",
+        "repo": "acme-corp/claude-marketplace"
+      }
     }
   }
 }
 ```
 
-Object that pre-populates marketplace suggestions for teammates. When a teammate trusts the repo folder, Claude Code prompts them to add the listed marketplaces and install any plugins listed in `enabledPlugins`. Without this, they'd need to `/plugin marketplace add <url>` manually.
+Object that pre-populates marketplace suggestions for teammates. Each value is an object with a single `source` key, whose value uses the same shape as a marketplace plugin source (`github`, `url`, `git-subdir`, `npm`, relative path). Marketplace sources support `ref` but not `sha`.
 
-The shape mirrors a marketplace `source` entry. See [`../04_marketplaces/06_extra-known-marketplaces.md`](../04_marketplaces/06_extra-known-marketplaces.md).
+When a teammate trusts the repo folder, Claude Code prompts them to add the listed marketplaces and install any plugins listed in `enabledPlugins`. Without this, they'd need to `/plugin marketplace add <url>` manually. See [`../04_marketplaces/06_extra-known-marketplaces.md`](../04_marketplaces/06_extra-known-marketplaces.md).
 
 Typically lives in the project's `.claude/settings.json` (committed).
 
-### `strictKnownMarketplaces`
+### `strictKnownMarketplaces` (managed only)
 
-Boolean. When `true`, Claude Code treats `extraKnownMarketplaces` as an **allowlist** — only those marketplaces (plus official Anthropic marketplaces) can be added in this scope. Used by managed/org deployments to restrict which marketplaces users can install plugins from.
+**Array** of marketplace source-pattern objects. When set in *managed* settings, restricts which marketplaces users can add — the value is honoured only at managed scope; setting it in user/project/local scope is ignored.
 
-Pairs with the managed-restrictions feature; see [`../04_marketplaces/07_managed-restrictions.md`](../04_marketplaces/07_managed-restrictions.md).
+```json
+{
+  "strictKnownMarketplaces": [
+    { "source": "github", "repo": "acme-corp/approved-plugins" },
+    { "source": "github", "repo": "acme-corp/security-tools", "ref": "v2.0" },
+    { "source": "url", "url": "https://plugins.example.com/marketplace.json" },
+    { "source": "hostPattern", "hostPattern": "^github\\.example\\.com$" },
+    { "source": "pathPattern", "pathPattern": "^/opt/approved/" }
+  ]
+}
+```
+
+An empty array `[]` disables non-allowlisted marketplace adds entirely. Pairs with the managed-restrictions feature; see [`../04_marketplaces/07_managed-restrictions.md`](../04_marketplaces/07_managed-restrictions.md).
 
 ### `pluginConfigs`
 
@@ -77,7 +90,7 @@ Pairs with the managed-restrictions feature; see [`../04_marketplaces/07_managed
 
 Where non-sensitive `userConfig` values land. Sensitive values (marked `sensitive: true` in the plugin's `userConfig`) go to the OS keychain instead, not here.
 
-`<plugin-id>` is the plugin's name (without the `@<marketplace>` suffix). The key under `options` matches the `userConfig` declaration's identifier.
+`<plugin-id>` is the install identifier `<name>@<marketplace>` with non-`[a-zA-Z0-9_-]` characters replaced by `-`. So `formatter@my-marketplace` becomes `formatter-my-marketplace`. The key under `options` matches the `userConfig` declaration's identifier.
 
 Generally Claude Code writes this for you when the user enables a plugin — hand-editing is rare. The modern alternative to the legacy `.claude/<plugin-name>.local.md` pattern; see [`04_legacy-and-migration.md`](./04_legacy-and-migration.md).
 

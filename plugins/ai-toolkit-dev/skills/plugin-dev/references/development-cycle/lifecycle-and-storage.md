@@ -163,6 +163,5 @@ For "why isn't my plugin loading?" walkthroughs, see [`troubleshooting.md`](trou
 
 ## Reference
 
-- Docs: `docs/Claude Plugins/02_storage-and-scope.md` (ground truth for the cache/scope model)
-- Official: [Plugin caching and file resolution](https://code.claude.com/docs/en/plugins-reference#plugin-caching-and-file-resolution)
+- Official: [Plugin caching and file resolution](https://code.claude.com/docs/en/plugins-reference#plugin-caching-and-file-resolution) (ground truth for the cache/scope model)
 - Official: [Environment variables](https://code.claude.com/docs/en/plugins-reference#environment-variables)

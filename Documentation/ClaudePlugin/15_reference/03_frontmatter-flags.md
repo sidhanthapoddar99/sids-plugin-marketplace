@@ -139,7 +139,7 @@ Not strictly frontmatter, but a frequent confusion source — documented in deta
 - **`allowed-tools` typo** — silent. The skill loads but no tools are permitted; the model gets stuck.
 - **Forgetting `disable-model-invocation` on a destructive utility** — the model fires it on weak signals.
 - **`tools` on agents written as a CSV string** — must be a YAML array (`tools: [Read, Grep]`) for agents, while commands use a CSV string. The asymmetry is real.
-- **`color` invalid value** — the agent loads but no accent shows. Stick to documented values (`red`, `blue`, `green`, `yellow`, `purple`, `cyan`, `pink`).
+- **`color` invalid value** — the agent loads but no accent shows. Valid values are `blue`, `cyan`, `green`, `yellow`, `magenta`, `red`.
 
 ## See also
 

@@ -139,6 +139,5 @@ my-plugin/
 
 ## Reference
 
-- Docs: `docs/Claude Plugins/07_reference.md` § Themes and § Output styles (ground truth)
-- Official: [Themes](https://code.claude.com/docs/en/plugins-reference#themes)
+- Official: [Themes](https://code.claude.com/docs/en/plugins-reference#themes) (ground truth for theme schema)
 - Official: [Output styles](https://code.claude.com/docs/en/discover-plugins#output-styles)

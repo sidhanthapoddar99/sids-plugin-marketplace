@@ -41,7 +41,7 @@ my-plugin/
 │   └── plugin-dependencies/SKILL.md ← in-house original
 │
 ├── agents/
-│   ├── plugin-validator.md          ← soft-imported, extended
+│   ├── plugin-validator.md          ← soft-imported, extended (illustrative — your soft-fork picks whichever upstream agents you want)
 │   └── release-manager.md           ← in-house original
 │
 ├── bin/                             ← OPTIONAL — see "the three small bin scripts"

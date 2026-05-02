@@ -33,8 +33,8 @@ That's it. No `plugins/` folder, because the plugins live elsewhere.
     {
       "name": "plugin-dev",
       "source": {
-        "source": "github",
-        "repo": "anthropics/claude-plugins-official",
+        "source": "git-subdir",
+        "url": "https://github.com/anthropics/claude-plugins-official.git",
         "path": "plugins/plugin-dev"
       },
       "description": "Official plugin authoring toolkit"
@@ -42,26 +42,27 @@ That's it. No `plugins/` folder, because the plugins live elsewhere.
     {
       "name": "documentation-guide",
       "source": {
-        "source": "git",
-        "url": "https://github.com/sidhantha/documentation-template",
-        "path": "."
+        "source": "github",
+        "repo": "sidhantha/documentation-template",
+        "ref": "main"
       },
       "description": "Documentation site authoring toolkit"
     },
     {
       "name": "ralph-loop",
       "source": {
-        "source": "github-release",
+        "source": "github",
         "repo": "sidhantha/ralph-loop",
-        "asset": "ralph-loop-{version}.tar.gz"
+        "ref": "v1.0.0"
       },
-      "description": "Iteration-loop plugin via GitHub releases"
+      "description": "Iteration-loop plugin"
     },
     {
       "name": "deploy-tools",
       "source": {
         "source": "npm",
-        "package": "@acme/deploy-tools-claude-plugin"
+        "package": "@acme/deploy-tools-claude-plugin",
+        "version": "^2.0.0"
       },
       "description": "Deployment tooling published to npm"
     },
@@ -69,27 +70,29 @@ That's it. No `plugins/` folder, because the plugins live elsewhere.
       "name": "team-utils",
       "source": {
         "source": "url",
-        "url": "https://plugins.example.com/team-utils.tar.gz"
+        "url": "https://gitlab.internal/devops/team-utils.git",
+        "ref": "main"
       },
-      "description": "Internal team utilities served from a URL"
+      "description": "Internal team utilities on a non-GitHub git host"
     }
   ]
 }
 ```
 
-The catalogue lists five plugins from five different source types — none of which live in this repo.
+The catalogue lists five plugins from four different source types — none of which live in this repo.
 
 ## Source types
 
-| `source.source` | Required fields | Purpose |
-|---|---|---|
-| `github` | `repo`, `path` | Plugin lives at a path inside a GitHub repo |
-| `git` | `url`, `path` | Plugin lives at a path inside any Git repo (SSH, HTTPS, custom hosts) |
-| `github-release` | `repo`, `asset` | Plugin published as a release asset on GitHub |
-| `npm` | `package` | Plugin published to npm |
-| `url` | `url` | Plugin tarball at any HTTPS URL |
+| `source.source` | Required fields | Optional | Purpose |
+|---|---|---|---|
+| `github` | `repo` (`owner/name`) | `ref`, `sha` | Plugin in a GitHub repo |
+| `url` | `url` | `ref`, `sha` | Plugin in any git repo (GitLab, Bitbucket, internal Gerrit, etc.) |
+| `git-subdir` | `url`, `path` | `ref`, `sha` | Plugin in a subdirectory of a git monorepo (sparse clone) |
+| `npm` | `package` | `version`, `registry` | Plugin published to npm |
 
-See [`../04_marketplaces/02_source-types.md`](../04_marketplaces/02_source-types.md) for the full specification of each source type, including `ref` pinning, asset templating, and version resolution.
+(Plus the bare-string relative-path form for plugins in the same repo as the marketplace.)
+
+See [`../04_marketplaces/02_source-types.md`](../04_marketplaces/02_source-types.md) for the full specification.
 
 ## Ref pinning and version resolution
 
@@ -97,12 +100,10 @@ Each source type supports its own version-resolution mechanism:
 
 | Source | Pinning |
 |---|---|
-| `github`, `git` | `ref: "main"` (branch), `ref: "v1.2.3"` (tag), or `ref: "abc123"` (SHA). Combined with the `<plugin-name>--v<version>` tag convention for `dependencies` resolution |
-| `github-release` | `tag` field selects a specific release; `asset` template substitutes `{version}` |
+| `github`, `url`, `git-subdir` | `ref: "main"` (branch), `ref: "v1.2.3"` (tag); plus `sha: "<40-char>"` for an exact-commit pin. Combined with the `<plugin-name>--v<version>` tag convention for `dependencies` resolution |
 | `npm` | `version` field accepts a semver range, like a normal npm dependency |
-| `url` | No pinning — the URL is fetched verbatim. Use a versioned URL (`/v1.2.3/plugin.tar.gz`) for stability |
 
-For tag-based dependency resolution to work, the upstream repo must follow the `<plugin-name>--v<version>` tag convention. If it doesn't, you can still install at a fixed `ref` but `dependencies` constraints won't have version data to resolve against.
+For tag-based dependency resolution to work, the upstream repo must follow the `<plugin-name>--v<version>` tag convention. If it doesn't, you can still install at a fixed `ref`/`sha` but `dependencies` constraints won't have version data to resolve against.
 
 ## Cross-marketplace dependencies
 
@@ -156,8 +157,7 @@ A single marketplace can mix both — some entries with relative-path `source` (
       "name": "external-plugin",
       "source": {
         "source": "github",
-        "repo": "someone/their-plugin",
-        "path": "."
+        "repo": "someone/their-plugin"
       }
     }
   ]
@@ -174,9 +174,10 @@ If your catalogue is for a team, drop a snippet in your project's `.claude/setti
 {
   "extraKnownMarketplaces": {
     "my-catalogue": {
-      "source": "github",
-      "repo": "your-org/my-catalogue",
-      "path": "."
+      "source": {
+        "source": "github",
+        "repo": "your-org/my-catalogue"
+      }
     }
   },
   "enabledPlugins": {

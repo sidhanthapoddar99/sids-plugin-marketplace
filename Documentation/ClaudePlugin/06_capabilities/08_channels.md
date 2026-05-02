@@ -161,7 +161,6 @@ A channel **cannot**:
 
 - Authoring guide: `plugins/ai-toolkit-dev/skills/plugin-dev/references/topics/channel-development/`
 - [MCP servers](./05_mcp-servers.md) — the underlying surface channels build on
-- [Reference](../../../docs/Claude%20Plugins/07_reference.md) § Channels — ground truth
-- Official: [Channels](https://code.claude.com/docs/en/plugins-reference#channels)
+- Official: [Channels](https://code.claude.com/docs/en/plugins-reference#channels) — ground-truth schema
 - Worked example: `slack-channel` plugin in `claude-plugins-official`
 - [Capabilities index](./00_index.md)

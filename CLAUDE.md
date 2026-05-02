@@ -22,7 +22,9 @@ Drift checks are **per-plugin scoped**. If another plugin grows soft-fork tracki
 
 ## Doc reference
 
-The structural plan and authoring conventions live in `docs/Claude Plugins/`. The soft-fork pattern itself is documented in `docs/Claude Plugins/05_creating-plugins/08_soft-fork-and-upstream-tracking.md`.
+The structural reference for the plugin ecosystem lives in `Documentation/ClaudePlugin/` (16 chapters: overview, mental model, storage, marketplaces, anatomy, capabilities, lifecycle, composition, versioning, trust, testing, CLI, distribution, uninstall, examples, reference appendix). The companion `Documentation/ClaudeSettings/` covers settings-side keys. The soft-fork pattern is documented in `Documentation/ClaudePlugin/08_composition-patterns/03_soft-fork.md`.
+
+Task-oriented authoring how-to lives in the plugin under `plugins/ai-toolkit-dev/skills/{marketplace,plugin-dev,skill-creator}/`.
 
 ## What to NOT do
 

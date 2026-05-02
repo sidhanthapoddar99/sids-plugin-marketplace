@@ -11,7 +11,7 @@
 | **Subagent** (`agents/<name>.md`) | Yes | Same |
 | **MCP server** (`.mcp.json` / `mcpServers`) | Yes | Subprocess restarted, tool list refetched |
 | **LSP server** (`.lsp.json` / `lspServers`) | Yes | Subprocess restarted |
-| **Background monitor** (`monitors/...`) | Yes | Subprocess restarted (long-running monitors are killed and re-spawned) |
+| **Background monitor** (`monitors/...`) | **No — session-lifetime** | A monitor process started at session start runs until session end. `/reload-plugins` does not stop, restart, or start monitors. New monitor configs in a freshly-enabled plugin won't fire until the next session |
 | **Theme** (`themes/<name>.json`) | Yes | New themes appear in `/theme` |
 | **Output style** | Yes | |
 | **Channel** | Yes | Subprocess restarted |
@@ -32,7 +32,7 @@ In practice this means:
 - Removed a hook? Restart (the old one will keep firing until restart).
 - Just enabled a plugin that ships hooks? Restart.
 
-Skill, agent, command, MCP, LSP, and monitor edits don't require restart — `/reload-plugins` is sufficient.
+Skill, agent, command, MCP, and LSP edits don't require restart — `/reload-plugins` is sufficient. Monitors are session-lifetime: edits land on the next session start, not on `/reload-plugins`.
 
 ## What `/reload-plugins` actually does
 
@@ -40,7 +40,7 @@ Skill, agent, command, MCP, LSP, and monitor edits don't require restart — `/r
 2. Re-scans `~/.claude/plugins/cache/` for each enabled plugin
 3. Re-validates each `plugin.json` against the schema
 4. Tears down and rebuilds: skill registry, command registry, agent registry, theme list, output style list
-5. Restarts MCP, LSP, monitor, channel subprocesses (graceful where possible)
+5. Restarts MCP, LSP, and channel subprocesses (graceful where possible). Monitors are NOT restarted — they're session-lifetime
 6. Refreshes `$PATH` for `bin/` wrappers
 7. Reports aggregate counts: `Reloaded: 5 plugins · 4 skills · 5 agents · 1 hook · 0 plugin MCP servers · 1 plugin LSP server`
 
@@ -56,6 +56,7 @@ The hook count in the output is informational — the dispatcher built at sessio
 | Add a new skill / command / agent to enabled plugin | `/reload-plugins` |
 | Edit MCP server `command` or `args` | `/reload-plugins` |
 | Edit LSP server config | `/reload-plugins` |
+| Edit monitor command or add a new monitor | **Restart session** |
 | Edit a hook command, matcher, or event | **Restart session** |
 | Add a hook to a plugin (any) | **Restart session** |
 | Enable a plugin that ships hooks | **Restart session** |

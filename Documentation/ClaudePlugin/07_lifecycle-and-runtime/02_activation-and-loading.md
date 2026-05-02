@@ -14,7 +14,7 @@ For each enabled plugin, the runtime registers components in roughly the followi
 | **MCP servers** | `.mcp.json` or `mcpServers` in `plugin.json` | Yes — subprocess spawned | Yes — subprocess restarted on reload |
 | **LSP servers** | `.lsp.json` or `lspServers` in `plugin.json` | Yes — subprocess spawned | Yes |
 | **Hooks** | `hooks/hooks.json` or `hooks` in `plugin.json` | **Yes — only at session start** | **No — full restart required** |
-| **Background monitors** | `monitors/monitors.json` or `monitors` in `plugin.json` | Yes — subprocess spawned for the session | Yes — subprocess restarted on reload |
+| **Background monitors** | `monitors/monitors.json` or `monitors` in `plugin.json` | Yes — subprocess spawned for the session | **No — session-lifetime; not restarted by `/reload-plugins`** |
 | **Themes** | `themes/<name>.json` | Yes — appear in `/theme` picker | Yes |
 | **Output styles** | `outputStyles/` or `outputStyles` in `plugin.json` | Yes | Yes |
 | **Channels** | `channels` in `plugin.json` | Yes — subprocess spawned | Yes |

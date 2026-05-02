@@ -160,6 +160,6 @@ See [`../15_reference/04_legacy-and-migration.md`](../15_reference/04_legacy-and
 
 - [`02_manifest-fields.md`](./02_manifest-fields.md) — `userConfig` as a manifest field
 - [`05_plugin-shipped-settings.md`](./05_plugin-shipped-settings.md) — *not* the same thing; `settings.json` ships defaults, `userConfig` prompts the user
-- [`../15_reference/01_env-vars.md`](../15_reference/01_env-vars.md) — `CLAUDE_PLUGIN_OPTION_<KEY>` and other plugin env vars
+- [`../15_reference/01_env-vars-cheatsheet.md`](../15_reference/01_env-vars-cheatsheet.md) — `CLAUDE_PLUGIN_OPTION_<KEY>` and other plugin env vars
 - [`../15_reference/04_legacy-and-migration.md`](../15_reference/04_legacy-and-migration.md) — the `.local.md` pattern
 - Official: [User configuration](https://code.claude.com/docs/en/plugins-reference#user-configuration)
