@@ -28,6 +28,24 @@
         "path": "plugins/documentation-guide"
       },
       "description": "Operating manual for the documentation-template Astro framework — writing markdown, configuring site.yaml/navbar.yaml/footer.yaml, the folder-per-issue tracker, blog posts, themes. Triages tasks to domain-specific reference files (writing, docs-layout, blog-layout, issue-layout, settings-layout). Ships 11 CLI wrappers (docs-list/show/subtasks/agent-logs/set-state/add-comment/add-agent-log/review-queue plus docs-check-blog/config/section validators) and 2 slash commands (/docs-init to bootstrap a new docs project, /docs-add-section to scaffold a new section)."
+    },
+    {
+      "name": "dstack",
+      "source": {
+        "source": "github",
+        "repo": "dstackai/dstack"
+      },
+      "description": "Upstream dstack skill (vendor-tracked from dstackai/dstack). dstack is an open-source control plane for GPU provisioning and orchestration across GPU clouds, Kubernetes, and on-prem clusters — running dev environments, tasks, and services, managing fleets/volumes/gateways, and applying `*.dstack.yml` configurations via the `dstack` CLI.",
+      "homepage": "https://dstack.ai/docs",
+      "repository": "https://github.com/dstackai/dstack",
+      "author": {
+        "name": "dstack",
+        "email": "hello@dstack.ai"
+      },
+      "license": "MPL-2.0",
+      "category": "cloud-orchestration",
+      "tags": ["gpu", "orchestration", "kubernetes", "cloud", "inference", "training", "fine-tuning"],
+      "keywords": ["dstack", "gpu", "ml-infra", "agentic-workloads"]
     }
   ]
 }
