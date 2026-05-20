@@ -2,6 +2,8 @@
 
 `.mise.toml` at repo root pins every runtime the project needs. `mise install` from a clean clone must produce a working toolchain.
 
+> **Versions in this file are illustrative, not prescriptive.** `python = "3.14"`, `node = "22"`, `rust = "1.83"`, `go = "1.23"` reflect what was current at write-time. When `/ps-setup` runs, **check the latest stable** for each runtime the project actually uses (`mise ls-remote python | tail`, `mise ls-remote node | tail`, etc.) and **ask the user** which to pin to. Different projects have different upgrade tolerance; never inherit a stale default from this file.
+
 ## `.mise.toml` shape
 
 ```toml

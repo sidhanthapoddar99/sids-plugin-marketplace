@@ -87,12 +87,32 @@ Run this in order before proposing any layout. **Skip what you already know**, b
     - Redis (default for cache, sessions, streams)
     - MongoDB / Neo4j / Kuzu / SeaweedFS — per requirement
     - Migrations: Alembic by default (Python); when not Alembic, see `references/python/when-not-alembic.md`
-21. **Docs**: in-repo `docs/` (recommended for monorepo) or separate docs repo?
+21. **Image versions**: **never inherit defaults silently.** For each database / runtime selected, **check the current latest stable** and ask the user which to pin to. The versions in this skill's references are illustrative only.
+22. **Docs**: in-repo `docs/` (recommended for monorepo) or separate docs repo?
     - In-repo → hand off to `/docs-init` (documentation-guide plugin)
     - Separate → confirm repo name and add to `examples-index.md`
-22. **`.claude/`**: confirm it stays empty initially. The bootstrapper creates the folder and a `CLAUDE.md` next to it; we build up agents/commands/settings as patterns emerge.
-23. **`.mise.toml`**: which runtime versions to pin?
-    - Default Python 3.14, Bun (latest stable), Rust (`rust-toolchain.toml`), Go 1.23+
+23. **`.claude/`**: confirm it stays empty initially. The bootstrapper creates the folder and a `CLAUDE.md` next to it; we build up agents/commands/settings as patterns emerge.
+24. **`.mise.toml`**: which runtime versions to pin? **Check `mise ls-remote python | tail`, `mise ls-remote node | tail`, etc. for current options.** Ask the user which to pin — defaults are illustrative.
+25. **Pre-commit hooks (lefthook)?** Recommended for any project with a team. Default yes for Topology 02–05; ask for Topology 01 / 07.
+26. **`.vscode/` configs?** Optional. If yes, drop `launch.json` / `settings.json` / `extensions.json` per `references/tooling/vscode-debugger.md`.
+
+## Batch 7 — ML orchestration (only for Topology 07 ML projects)
+
+27. **Cloud orchestration**: dstack / SkyPilot / both / neither / custom?
+    - Default **dstack** — already a sibling plugin; defer to its skill for CLI mechanics.
+    - SkyPilot if the team's already there or needs heavier k8s integration.
+    - Custom only with strong justification (`references/ml-orchestration/custom-orchestrator.md`).
+28. **Spot or on-demand**? Both is fine — spot for training/sweeps, on-demand for inference SLAs / final paper-result training.
+29. **Training cadence**: one-shot / sweep / continuous / batch?
+    - One-shot + sweep → spot + checkpoints + retry (`spot-instances-and-checkpoints.md`)
+    - Continuous → managed service mode (`inference-autoscaling.md`)
+30. **Inference**: none / batch (queue+workers) / online (web endpoint + autoscale)?
+31. **Remote dev**: does the user want a one-command "spin up GPU box + SSH + VS Code Remote" flow?
+    - If yes → `references/ml-orchestration/remote-dev-ssh-vscode.md`
+32. **Agent access to remote**: does an agent (Claude) need to operate the remote box on the user's behalf?
+    - If yes → `references/ml-orchestration/agent-ssh-access.md`; configure `.claude/settings.local.json` permissions explicitly
+33. **CI/CD for ML**: which tiers — cheap (every PR) / medium (nightly) / expensive (on tag)?
+    - `references/ml-orchestration/cicd-for-ml.md` has templates per tier
 
 ## Special — never assume, always ask
 

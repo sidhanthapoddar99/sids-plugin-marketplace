@@ -4,19 +4,23 @@ The distilled spec for this plugin. `Notes.md` is the raw braindump; this is the
 
 ## Mission
 
-When Sid (or anyone using his conventions) starts a new project, or works inside an existing one, Claude should follow established conventions for layout, configuration, tooling, and runtime — rather than inventing fresh patterns each time.
+This skill owns the **structural and architectural side** of every repo decision Sid (or anyone using his conventions) makes. Bootstrap a new repo, audit an existing one, restructure a half-done one — and also answer **single-question, mid-work decisions** like "where should this `init.sql` go", "should I split this backend in two", "is `apps/` the right place for this", "do I need a `packages/` yet", "Postgres or MongoDB here", "Tauri or Electron", "should design tokens move to a shared package now".
 
-But: **there is no single ideal structure**. What's right depends on shape questions (mono vs poly, how many backends, how many frontends, app vs ML, deployment surface). So this plugin is built around three things, in order:
+Engage whenever **any** decision in the architectural surface area is being made — not only at bootstrap.
 
-1. A **knowledge base** of recognised topologies and the conventions that apply to each.
+There is **no single ideal structure**. What's right depends on shape (mono vs poly, how many backends, how many frontends, app vs ML, deployment surface, theming requirements, sibling repos). The skill is built around four things:
+
+1. A **knowledge base** of recognised topologies and the conventions that apply to each (`references/topologies/` + topic folders).
 2. A **question-asker** that interrogates before recommending. Unknowns → ask, don't presume.
-3. A **layout proposer** that, only after the questions are answered, produces concrete output.
+3. A **decision engine** for individual architectural questions, surfacing the relevant 1–3 references and explaining the trade-off.
+4. A **layout proposer** that, when invoked for a full bootstrap, produces concrete output.
 
-The same machinery powers three modes:
+The same machinery powers four user-facing modes:
 
 - **init** — bootstrap a new repo
 - **audit** — scan an existing repo, report drift from conventions
 - **suggest** — propose an ideal structure for a half-done repo
+- **inline** — single-question lookups during regular work, no slash command needed (the skill triggers on architectural language; see SKILL.md description for trigger surface)
 
 ## Shape of the plugin
 
@@ -38,6 +42,8 @@ The same machinery powers three modes:
 | 07 | ML project | uvenv-driven global env, `requirements.txt`, no frontend, no compose. | — |
 | 08 | infra orchestrator | Docker compose tree driven by a Go CLI. | chimere multinode |
 
+ML projects (Topology 07) also pull in the **`ml-orchestration/` references** — dstack (default; composes with the sibling plugin's `dstack` skill), SkyPilot (alternative), custom orchestrator (placeholder), spot+checkpoints, inference autoscaling, remote dev via SSH+VS Code, agent SSH access, and CI/CD for ML.
+
 Each topology has a reference file under `skills/project-setup/references/topologies/`.
 
 ## Decisions locked in (the answers I had to ask)
@@ -50,6 +56,10 @@ Each topology has a reference file under `skills/project-setup/references/topolo
 | Setup vs dev scripts | Fold both into one `./dev` script with subcommands. No separate `setup.dev.sh`. |
 | `config.yaml` schema | No mandatory schema. Teach `${VAR}` interpolation and ship illustrative example sections (db / redis / app / auth / search) so the skill has concrete patterns to cite. Examples non-prescriptive. |
 | `src/` location | **Never at repo root.** Always nested inside `apps/<name>/src/` (or `packages/<name>/src/`) so there's room to grow without restructuring. |
+| Image / runtime versions | **Illustrative, not prescriptive.** The references show what was current at write-time; `/ps-setup` must check latest stable and ask the user which to pin to. |
+| ML cloud orchestrator | Default **dstack** (sibling plugin in this marketplace; defer to its skill for CLI mechanics). SkyPilot is an equally-supported alternative. Custom only with strong justification. |
+| Snippet folder structure | Grouped by domain (`frontend/`, `docker/`, `infra/`, `python/`, `env/`, `scripts/`, `claude/`) rather than flat. |
+| Docs handoff | Always defer to the `documentation-guide` plugin's skill. `project-setup` only scaffolds the `docs/` slot; `/docs-init` does the rest. |
 
 ## Conventions encoded (the skill teaches these)
 

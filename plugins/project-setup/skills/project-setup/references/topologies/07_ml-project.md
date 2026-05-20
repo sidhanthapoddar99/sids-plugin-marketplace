@@ -116,3 +116,45 @@ No canonical Sid ML repo right now; the conventions are derived from the Notes +
 
 - Need reproducible builds with exact deps → move to `pyproject.toml` + `uv.lock` (Topology 01)
 - Ship inference as a service → add an app project (Topology 02), import model from this one
+
+## See also — cloud orchestration
+
+Topology 07 defines the **repo shape**. For **how training, inference, sweeps, and remote dev actually run on cloud GPUs**, see `references/ml-orchestration/`:
+
+- `overview.md` — when to reach for cloud orchestration; tools recognised (dstack / SkyPilot / custom)
+- `dstack.md` — default; composes with the dstack sibling plugin's skill
+- `skypilot.md` — alternative; multi-cloud + k8s strengths
+- `custom-orchestrator.md` — placeholder for Sid's own future tool
+- `spot-instances-and-checkpoints.md` — surviving spot preemption
+- `inference-autoscaling.md` — long-running inference, scale up/down, auto-redeploy
+- `remote-dev-ssh-vscode.md` — one-command remote GPU box with SSH + VS Code Remote
+- `agent-ssh-access.md` — running Claude (or another agent) on or via the remote
+- `cicd-for-ml.md` — cheap/medium/expensive pipeline tiers for ML
+
+When `/ps-setup` runs for an ML project, after the standard Topology 07 questions, also run Batch 7 in `01_question-flow.md` (cloud orchestration questions).
+
+## Cloud-aware repo additions
+
+If the user opts into cloud orchestration, add to the layout:
+
+```
+my-ml/
+├── tasks/                          # *.dstack.yml configs per job
+│   ├── dev.dstack.yml              # remote dev environment
+│   ├── train.dstack.yml
+│   ├── sweep.dstack.yml
+│   ├── eval.dstack.yml
+│   └── serve.dstack.yml
+├── .dstack/profiles.yml            # backend / GPU type / max price
+└── scripts/
+    └── cloud/
+        ├── remote-dev.sh
+        ├── train-spot.sh
+        ├── sweep.sh
+        ├── eval.sh
+        ├── serve.sh
+        ├── teardown.sh             # safety net — `dstack stop --all -y`
+        └── wait-for-run.sh
+```
+
+If SkyPilot instead, replace `tasks/` with `sky/<task>.yaml` and `.dstack/profiles.yml` with the SkyPilot equivalent.

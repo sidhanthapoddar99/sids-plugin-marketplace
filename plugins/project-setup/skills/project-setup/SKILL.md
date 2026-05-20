@@ -1,11 +1,20 @@
 ---
 name: project-setup
-description: Use when bootstrapping a new project, auditing an existing one for layout conventions, or proposing an ideal structure for a half-done repo. Covers mono- and poly-repo apps, single and multi backend/frontend, ML projects, and infra-orchestrator topologies. Triggers on "init a project", "setup a new repo", "scaffold a monorepo", "what should this repo look like", "audit my layout", "structure this project", "where should config.yaml live", "how should I split docker-compose", "single .env or per-service", "multi-frontend monorepo", "design tokens setup", anything around `./dev` wrapper conventions, mise, design tokens, the `apps/`, `packages/`, `infra/`, `data/`, `docker/` folder split, secrets matrix, modularity rules.
+description: Use whenever ANY architectural or structural decision is being made about a repo — new or existing. Bootstrapping, auditing, restructuring, adding a service, splitting a backend, introducing a second frontend, picking a database, choosing a deployment mode, moving compose into `docker/`, deciding mono- vs poly-repo, wiring secrets, picking design tokens, choosing an ML orchestrator (dstack / SkyPilot), adding remote dev, deciding where `config.yaml` lives, where `.env` belongs, what goes in `apps/`/`packages/`/`infra/`/`data/`, how to wire the `./dev` wrapper, how to split docker-compose by deployment mode, when to escalate to a Go CLI, how to lay out the `docs/` slot, modularity rules — all of it. NOT only for greenfield init; equally relevant when modifying an established codebase. TRIGGER eagerly on "should I", "where should", "how do I structure", "is this the right place for", "split this into", "add a backend", "add a frontend", "set up docker", "set up the dev script", "monorepo or", "polyrepo or", "env vars", "config layout", "secrets", "Postgres vs", "Redis or", "design tokens", "light/dark", "dstack", "SkyPilot", "spot instance", "remote GPU", "Tauri or Electron", "iOS Android layout", "lefthook", "VS Code debug", "alembic", "uv vs requirements", or any reference to `apps/`, `packages/`, `infra/`, `data/`, `docker/`, `tokens.css`, `./dev`, `config.yaml`, `.env.example`, `.mise.toml`, `compose.yaml`. Defers to the sibling `dstack` skill for dstack CLI mechanics and the sibling `documentation-guide` skill for docs work, but owns the structural / placement / convention side of every decision.
 ---
 
 # project-setup
 
-You are inside Sid's `project-setup` plugin. Your job is to help the user lay out, configure, or audit a project according to Sid's conventions — without inventing fresh patterns each time.
+You are inside Sid's `project-setup` plugin. Your job is to **own every architectural / structural decision** for a repo: layout, config split, env, docker, deployment modes, design tokens, modularity, ML orchestration, mono- vs poly-repo, where each file should live.
+
+This applies to **two situations equally**:
+
+1. **Bootstrapping a new repo** — `/ps-setup` init
+2. **Modifying an existing repo** — any time the user asks "should I add X", "where does Y belong", "is this the right place for Z", "split this", "introduce a package", "move compose into `docker/`", "switch to a multi-frontend workspace", "add a second backend", "pick a database", "set up remote GPU dev"
+
+Don't wait to be asked for a wholesale bootstrap. Engage when **any** decision in the architectural surface area is being considered.
+
+Goal: stop the user inventing fresh patterns each time. Encode the conventions; apply them; explain the trade-offs when the user pushes back.
 
 ## Hard rules
 
@@ -18,9 +27,27 @@ You are inside Sid's `project-setup` plugin. Your job is to help the user lay ou
 7. **README documents three startup paths** — wrapper script, raw docker compose, no-docker host run.
 8. **Examples are evidence, not gospel.** They evolved at different times. Cite them, do not blindly copy.
 
-## Workflow
+## Two workflows
 
-When the user asks anything in scope, walk this flow:
+### A — wholesale bootstrap / audit / suggest (user invokes `/ps-setup`)
+
+Walk the full flow: decision tree → question flow → topology → cross-cutting conventions → propose → apply.
+
+### B — single architectural decision (user is in the middle of work)
+
+A surgical version: identify the smallest set of references that bear on the question, surface the convention, explain the trade-off, propose an action. Don't drag the user through the whole question flow when they're asking "where does this `init.sql` belong" — answer from `references/databases/infra-vs-data-folder.md`, cite the rule, suggest the placement.
+
+Pattern for B:
+
+1. Identify the decision (placement / split / pick / rename / introduce / remove).
+2. Find the 1–3 references that apply.
+3. State the convention + the why.
+4. Propose the change (with file paths).
+5. Ask before editing if the change is non-trivial.
+
+Both workflows draw from the same references library — A is the all-in-one tour, B is the targeted lookup.
+
+## Workflow A — wholesale
 
 ### Step 1 — read the decision tree
 
@@ -56,12 +83,15 @@ For every topology, the same conventions apply (with topology-specific adjustmen
 - `references/scripts/` — `./dev` wrapper pattern, subscripts, dev-without-docker, three startup paths, setup folded in
 - `references/python/` — `uv` for apps, `uvenv` for ML, Alembic conventions
 - `references/frontend/` — Vite/proxy/nginx pair, multi-frontend workspaces, design tokens, light/dark
-- `references/databases/` — `infra/` vs `data/`, postgres/redis/seaweed/mongo/neo4j conventions
+- `references/databases/` — `infra/` vs `data/`, postgres/redis/seaweed/mongo/neo4j conventions (versions illustrative — check latest)
+- `references/ml-orchestration/` — dstack (composes with the dstack plugin's skill) / SkyPilot / spot+checkpoints / inference autoscaling / remote dev via SSH+VS Code / agent SSH access / CI/CD for ML
 - `references/modularity/` — 500/300 line caps, folders by feature, extract on third use
-- `references/mise.md` — version pinning contract
+- `references/platforms/` — mobile (Kotlin/Swift), desktop (Tauri default, Electron alt)
+- `references/tooling/` — lefthook (pre-commit), VS Code debugger setup
+- `references/mise.md` — version pinning contract (versions illustrative — check latest)
 - `references/claude-folder.md` — `.claude/` conventions (empty by default)
 - `references/readme-three-paths.md` — README contract
-- `references/docs-integration.md` — hand off to `/docs-init` for docs
+- `references/docs-integration.md` — defer all docs work to the `documentation-guide` skill; `/docs-init` to scaffold
 - `references/ci-cd-future.md` — placeholder, GitHub Actions / Vault notes
 - `references/examples-index.md` — pointers to the real-world examples (atheneum, NeuraSutra, plane, chimere)
 
@@ -98,6 +128,9 @@ Never edit files in `audit` mode. In `suggest` mode, only edit after explicit co
 | Deployment targets (WSL / bare server / cloud / Traefik present) | Ask before generating prod compose. |
 | Build-time vs runtime for each env var | Walk through each `.env.example` line with the user. |
 | Existing `.env` content (when auditing) | Do not read `.env` files — they contain secrets. Read `.env.example` only. |
+| Image / runtime versions (postgres:?, redis:?, python:?) | Always — versions in this skill's references are illustrative. Check latest stable, surface options, let the user pick. |
+| ML cloud orchestrator (dstack / SkyPilot / custom / none) | Always ask for ML projects. If dstack, also consult the `dstack` skill in the sibling plugin. |
+| Remote dev / agent SSH access for ML projects | Always ask — different topology surface (`apps/cloud/`, `tasks/`, `scripts/cloud/`) |
 
 ## What you do not do
 

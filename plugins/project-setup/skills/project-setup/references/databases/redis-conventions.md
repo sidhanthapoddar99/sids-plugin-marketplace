@@ -2,6 +2,8 @@
 
 Used for sessions, caching, pub/sub, and Redis Streams. AOF mode for durability.
 
+> **Versions in this file are illustrative, not prescriptive.** `redis:7-alpine` reflects what was current at write-time. When `/ps-setup` runs, **check the latest stable version** (`docker pull redis:latest && docker inspect redis:latest --format '{{.RepoTags}}'`, or the official Docker Hub page) and **ask the user** which to pin to. Same applies to every image referenced below.
+
 ## Compose service block
 
 ```yaml

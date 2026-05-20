@@ -18,7 +18,7 @@
     {
       "name": "project-setup",
       "source": "./plugins/project-setup",
-      "description": "Project bootstrapper for mono- and poly-repo apps — asks the right questions and proposes a layout. Covers env/config split, docker-compose deployment modes, ./dev wrapper, per-service config.yaml, multi-frontend workspaces, design tokens, modularity, mise, secrets matrix (work in progress)."
+      "description": "Architectural decision-maker for repos — new and existing. Owns the structural / placement / convention side of every decision: repo + project structure, frontend + backend architecture, database picks, docker / compose layout, deployment modes, env-config split, secrets matrix, design tokens, modularity, ML cloud orchestration, mobile + desktop targets, mono- vs poly-repo. Bootstrap and restructure both. One slash command (/ps-setup) with init | audit | suggest modes. Composes with sibling dstack and documentation-guide skills (work in progress)."
     },
     {
       "name": "documentation-guide",

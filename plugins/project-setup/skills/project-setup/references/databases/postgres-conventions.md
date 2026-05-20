@@ -2,6 +2,8 @@
 
 The default relational database for new projects.
 
+> **Versions in this file are illustrative, not prescriptive.** `postgres:16-alpine`, `pgvector/pgvector:pg16` reflect what was current at write-time. When `/ps-setup` runs, **check the latest stable version** and **ask the user** which to pin to. Major-version upgrades have migration implications — the user should choose deliberately, not inherit a stale default from this file.
+
 ## Image
 
 ```yaml

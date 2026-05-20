@@ -7,13 +7,16 @@ Personal project bootstrapping plugin. Encodes Sid's conventions for laying out,
 
 ## Purpose
 
-There is **no single ideal structure** — what's "right" depends on whether the project is mono- or poly-repo, has one or many backends, one or many frontends, ships ML or app code, and many other shape questions. So this plugin is not a template generator. It's:
+This plugin owns the **structural and architectural side** of every repo decision. Not just "scaffold a new project" — equally **"should I add this here", "where does this belong", "split this into a package", "move compose into a folder", "add a second backend", "pick a database"**, and everything else in that surface area.
+
+There is **no single ideal structure** — what's "right" depends on whether the project is mono- or poly-repo, has one or many backends, one or many frontends, ships ML or app code, what's getting deployed where, and a dozen other shape questions. So this plugin is not a template generator. It's:
 
 1. A **knowledge base** of recognised project topologies and the conventions that apply to each.
 2. A **question-asker** that interrogates the user (or the existing repo) before recommending anything.
-3. A **layout proposer** that, only after the questions are answered, suggests a concrete tree and the few snippets needed to wire it up.
+3. A **decision engine** for individual architectural questions when the user is mid-work: surfaces the convention, explains the trade-off, proposes a concrete action.
+4. A **layout proposer** that, when invoked for a full bootstrap, produces a concrete tree and the snippets to wire it up.
 
-The same machinery powers initialising a new project, auditing an existing one for convention drift, and suggesting an ideal structure for a half-done repo.
+The same machinery powers initialising a new project, auditing an existing one for convention drift, suggesting an ideal structure for a half-done repo, and answering "where should this go" questions during day-to-day work.
 
 ## What gets shipped
 
@@ -37,6 +40,20 @@ The same machinery powers initialising a new project, auditing an existing one f
 | 06 | polyrepo with deploy aggregator | Each service in its own repo plus a `-deploy` repo aggregating env + compose. |
 | 07 | ML project | uvenv-driven global envs, `requirements.txt`, no frontend, no compose. |
 | 08 | infra orchestrator | Docker compose tree driven by a Go CLI (e.g. chimere multinode blockchain). |
+
+## ML cloud orchestration
+
+For Topology 07 (ML projects), the skill also covers cloud GPU orchestration. Default is **dstack** — a sibling plugin in this marketplace. The `project-setup` skill defers to the `dstack` skill for CLI mechanics, focuses on the **structural** side (repo layout, `tasks/*.dstack.yml`, `scripts/cloud/`). Same support for **SkyPilot** as an alternative.
+
+Subtopics:
+
+- Spot-friendly training with checkpoint recovery
+- Inference autoscaling + auto-redeploy on preemption
+- Remote dev via SSH + VS Code Remote, Claude Code on the box
+- Agent SSH access (running an agent against a remote GPU)
+- ML CI/CD tiers (cheap / medium / expensive)
+
+See `skills/project-setup/references/ml-orchestration/`.
 
 ## Key conventions encoded
 

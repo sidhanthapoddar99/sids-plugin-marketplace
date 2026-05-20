@@ -1,5 +1,5 @@
 ---
-description: Bootstrap, audit, or propose-a-layout for a project using Sid's conventions. Modes — `/ps-setup` (init), `/ps-setup audit` (drift report), `/ps-setup suggest` (propose for current repo).
+description: Bootstrap, audit, or propose a layout — using Sid's conventions for repo structure, frontend / backend architecture, databases, docker / compose, deployment, env / config, design tokens, modularity, ML orchestration. For one-off architectural questions ("where should X go", "should I split Y"), the `project-setup` skill triggers automatically — no slash command needed. Use `/ps-setup` only for the wholesale bootstrap / audit / suggest flow.
 argument-hint: "[init | audit | suggest]"
 ---
 

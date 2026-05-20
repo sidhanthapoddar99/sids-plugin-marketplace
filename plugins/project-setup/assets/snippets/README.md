@@ -1,31 +1,89 @@
 # Snippets
 
-Fragments the `project-setup` skill cites and `/ps-setup` can drop into a new or existing project. **Not** a full project template — focused pieces.
+Fragments the `project-setup` skill cites and `/ps-setup` can drop into a new or existing project. **Not** a full project template — focused pieces grouped by domain.
+
+## Layout
+
+```
+assets/snippets/
+├── frontend/          # CSS tokens, theme wiring, vite config
+├── docker/            # compose overlays per deployment mode
+├── infra/             # config baked into containers (nginx)
+├── python/            # alembic helpers + shim template
+├── env/               # .env.example + .mise.toml templates
+├── scripts/           # ./dev wrapper
+└── claude/            # CLAUDE.md template
+```
 
 ## Index
 
-| File | What it is | Where it lands |
+### `frontend/`
+
+| File | What it is | Drops at |
 |---|---|---|
-| `tokens.css` | Design tokens — `--bg-*`, `--fg-*`, `--space-*`, `--radius-*`, light + dark | `apps/<frontend>/src/styles/tokens.css` (or `packages/styles/src/tokens.css`) |
-| `globals.css` | Base resets, tailwind directives, shadcn alias map | `apps/<frontend>/src/styles/globals.css` |
-| `light-dark.css` | Theme transitions + scrollbar/selection styling | `apps/<frontend>/src/styles/light-dark.css` |
-| `dev-wrapper.sh` | `./dev` wrapper template | repo root, renamed to `dev`, `chmod +x` |
-| `env.example.template` | `.env.example` with categories and `openssl rand` instructions | repo root, renamed to `.env.example` |
-| `mise.toml.example` | `.mise.toml` template | repo root, renamed to `.mise.toml` |
-| `compose-base.yaml` | `docker/compose.yaml` — base, no host ports | `docker/compose.yaml` |
-| `compose-database-only.yaml` | Standalone postgres + redis | `docker/compose.database-only.yaml` |
-| `compose-dev.yaml` | Overlay — adds host ports | `docker/compose.dev.yaml` |
-| `compose-prod.yaml` | Overlay — production overrides | `docker/compose.prod.yaml` |
-| `compose-traefik.yaml` | Overlay — external Traefik network | `docker/compose.traefik.yaml` |
-| `compose-no-ports.yaml` | Overlay — removes host ports | `docker/compose.no-ports.yaml` |
-| `vite-proxy.config.ts` | `vite.config.ts` with `/api/*` proxy | `apps/frontend/vite.config.ts` |
-| `nginx-api-route.conf` | `nginx.conf` routing `/api/*` to backend, serving SPA | `infra/nginx/nginx.conf` |
-| `alembic-shim.py` | Three-file revision pattern shim | `apps/backend/alembic/versions/<name>.py` (template) |
-| `alembic_helpers.py` | The `run_sql` helper for the shim | `apps/backend/alembic_helpers.py` |
-| `claude-md.template` | `CLAUDE.md` agent brief template | repo root, renamed to `CLAUDE.md` |
+| `tokens.css` | Design tokens — `--bg-*`, `--fg-*`, `--space-*`, `--radius-*`, light + dark | Topology 02/03: `apps/<frontend>/src/styles/tokens.css`. Topology 04: `packages/styles/src/tokens.css` |
+| `globals.css` | Base resets + tailwind directives + shadcn alias mapping | `apps/<frontend>/src/styles/globals.css` |
+| `light-dark.css` | Theme transitions, scrollbar styling, selection | `apps/<frontend>/src/styles/light-dark.css` |
+| `vite-proxy.config.ts` | `vite.config.ts` with `/api/*` + `/ws` proxy | `apps/<frontend>/vite.config.ts` |
+
+### `docker/`
+
+| File | What it is | Drops at |
+|---|---|---|
+| `compose.yaml` | Base — services declared, no host ports, internal network | `docker/compose.yaml` |
+| `compose.database-only.yaml` | Standalone postgres + redis (dev mode A: apps on host) | `docker/compose.database-only.yaml` |
+| `compose.dev.yaml` | Overlay — adds host port exposure | `docker/compose.dev.yaml` |
+| `compose.prod.yaml` | Overlay — production (images, resource limits) | `docker/compose.prod.yaml` |
+| `compose.traefik.yaml` | Overlay — external Traefik network + labels | `docker/compose.traefik.yaml` |
+| `compose.no-ports.yaml` | Overlay — removes host ports (behind external proxy) | `docker/compose.no-ports.yaml` |
+
+### `infra/`
+
+| File | What it is | Drops at |
+|---|---|---|
+| `nginx.conf` | Routes `/api/*` to backend container, serves SPA, handles `/ws/*` | `infra/nginx/nginx.conf` |
+
+### `python/`
+
+| File | What it is | Drops at |
+|---|---|---|
+| `alembic-shim.py` | Three-file revision pattern shim (atheneum-style) | `apps/backend/alembic/versions/<rev>.py` (per migration) |
+| `alembic_helpers.py` | `run_sql` helper imported by the shim | `apps/backend/alembic_helpers.py` |
+
+### `env/`
+
+| File | What it is | Drops at |
+|---|---|---|
+| `env.example.template` | `.env.example` with categories + `openssl rand` instructions | `.env.example` at repo root |
+| `mise.toml.example` | `.mise.toml` template (versions illustrative) | `.mise.toml` at repo root |
+
+### `scripts/`
+
+| File | What it is | Drops at |
+|---|---|---|
+| `dev-wrapper.sh` | `./dev` global wrapper, executable | `./dev` at repo root (rename, chmod +x) |
+
+### `claude/`
+
+| File | What it is | Drops at |
+|---|---|---|
+| `CLAUDE.md.template` | Agent-facing brief template | `CLAUDE.md` at repo root |
 
 ## Conventions
 
-- Names in this folder use `-` separators and human-readable extensions (`compose-base.yaml`, `tokens.css`). When dropped into a project, they are renamed to the convention (`compose.yaml`, etc.).
-- Templates use `<PROJECT>` / `<placeholder>` placeholders the slash command substitutes.
-- All snippets are illustrative defaults — adapt per project. The category structure (sections / token names / file roles) is the contract; the specific values are not.
+- File names mirror their **drop name** where possible (`compose.dev.yaml`, not `compose-dev.yaml`).
+- Templates use `<PROJECT>` / `<placeholder>` markers the slash command substitutes.
+- All snippets are **illustrative defaults** — adapt per project. The category structure is the contract; the specific values are not.
+- Image tags and runtime versions are illustrative — see the `references/databases/` and `references/mise.md` notes about checking latest and asking the user.
+
+## What's NOT here
+
+This folder is intentionally small. Things deliberately not snippeted:
+
+- **A full project tree** — see `references/topologies/` instead
+- **ML training scripts** — too project-specific; see `references/ml-orchestration/`
+- **Backend `pyproject.toml`** — see `references/python/pyproject-uv-sync-for-apps.md` for the shape
+- **`Dockerfile`s for backend/frontend** — too stack-specific; the references cover the patterns
+- **Cloud orchestrator configs** (`*.dstack.yml`, `sky/*.yaml`) — examples live in `references/ml-orchestration/`
+
+If you find yourself wanting a snippet that isn't here, ask: does it have a small focused job and apply to most projects of its topology? If yes, add it. If no, leave it as a reference example.

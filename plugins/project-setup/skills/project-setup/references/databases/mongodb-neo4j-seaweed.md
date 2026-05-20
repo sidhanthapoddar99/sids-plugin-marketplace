@@ -1,5 +1,7 @@
 # Other databases — quick reference
 
+> **Versions in this file are illustrative, not prescriptive.** `mongo:7`, `neo4j:5-community`, `getmeili/meilisearch:v1.10`, `chrislusf/seaweedfs:latest` reflect what was current at write-time. When `/ps-setup` runs, **check the latest stable** and **ask the user** which to pin to. The `latest` tag is fine for trying things; never pin `latest` in production compose files — always resolve to a specific version.
+
 ## MongoDB
 
 ```yaml
