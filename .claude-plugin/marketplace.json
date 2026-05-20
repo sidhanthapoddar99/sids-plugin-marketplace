@@ -47,6 +47,25 @@
       "category": "cloud-orchestration",
       "tags": ["gpu", "orchestration", "kubernetes", "cloud", "inference", "training", "fine-tuning"],
       "keywords": ["dstack", "gpu", "ml-infra", "agentic-workloads"]
+    },
+    {
+      "name": "uvenv",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/sidhanthapoddar99/uvenv.git",
+        "path": "plugin"
+      },
+      "description": "Operating manual for uvenv — Sid's bash/zsh wrapper around mise + uv that adds conda-style named global Python venvs you can activate from any directory. Covers the flags-first grammar (uvenv <subcommand> [uvenv-flags] <action> [verbatim args passed to uv/mise]), the four env kinds (base mise python, uv-managed tools, named global venvs, local in-tree venvs), confirm-on-create UX, conda→uvenv command translation, doctor-first diagnostics, and the safety rails. Triggers on any mention of `uvenv`, named global Python venvs, conda replacement, or migrating off conda/miniconda/anaconda/mamba while keeping conda-like ergonomics.",
+      "homepage": "https://github.com/sidhanthapoddar99/uvenv",
+      "repository": "https://github.com/sidhanthapoddar99/uvenv",
+      "author": {
+        "name": "Sidhantha Poddar",
+        "url": "https://github.com/sidhanthapoddar99"
+      },
+      "license": "MIT",
+      "category": "python-tooling",
+      "tags": ["python", "venv", "mise", "uv", "shell", "conda-replacement"],
+      "keywords": ["uvenv", "python", "venv", "global-envs", "conda-style", "named-venvs"]
     }
   ]
 }
