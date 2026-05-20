@@ -143,6 +143,6 @@ Never edit files in `audit` mode. In `suggest` mode, only edit after explicit co
 
 ## See also
 
-- Spec: `summary.md` at the plugin root.
 - Snippets: `assets/snippets/` for fragments to drop in.
 - Slash command: `commands/ps-setup.md` (the user-facing entrypoint).
+- Examples cited: `references/examples-index.md`.

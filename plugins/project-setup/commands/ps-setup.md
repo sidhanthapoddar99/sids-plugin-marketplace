@@ -86,5 +86,5 @@ If you find yourself guessing, stop and ask.
 ## See also
 
 - `skills/project-setup/SKILL.md` — the full skill instructions
-- `summary.md` — the spec
+- `skills/project-setup/references/` — the full conventions library
 - `assets/snippets/` — fragments to drop in

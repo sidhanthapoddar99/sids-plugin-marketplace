@@ -167,7 +167,7 @@ Then `Ctrl+Shift+P → Tasks: Run Task` surfaces them.
 
 ## Real-world reference
 
-Notes.md mentions VS Code debugger setup as optional. None of Sid's example repos currently ship full `.vscode/` configs — the snippet here is the recommendation, not an extant pattern.
+None of Sid's example repos currently ship full `.vscode/` configs — the snippet here is the recommendation, not an extant pattern.
 
 ## Anti-patterns
 

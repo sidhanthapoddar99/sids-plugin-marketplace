@@ -67,7 +67,7 @@ See `skills/project-setup/references/ml-orchestration/`.
 - **mise** is mandatory; `.mise.toml` is the runtime version contract.
 - **Modularity caps**: 500-line hard, 300-line soft; folders by feature, not by kind; extract on third use.
 
-Full spec: [`summary.md`](summary.md).
+Full spec: distributed across [`skills/project-setup/references/`](skills/project-setup/references/).
 
 ## Installation (when complete)
 

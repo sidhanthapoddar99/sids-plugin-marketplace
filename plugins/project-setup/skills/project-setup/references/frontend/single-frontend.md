@@ -126,7 +126,7 @@ Plus whatever shadcn pulls in (Radix primitives, etc.) and the project-specific 
 
 ## Anti-patterns
 
-- `src/` at repo root, not under `apps/frontend/` — see `src` rule in summary.md
+- `src/` at repo root, not under `apps/frontend/` — see the "no src/ at root" hard rule in `SKILL.md` and `references/00_decision-tree.md`
 - Component files past 500 lines — split
 - Putting `tokens.css` outside `src/styles/` — keep design system files together
 - Per-component CSS files with raw hex — use `var(--token)`
