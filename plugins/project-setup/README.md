@@ -87,4 +87,6 @@ These are not perfect — they evolved at different times with different constra
 
 ## License
 
-TBD — pending decision before first release.
+[PolyForm Noncommercial License 1.0.0](LICENSE). Any noncommercial use is a permitted purpose — personal projects, study, hobby work, education, public research, charitable / public-interest organisations. **Commercial use is not permitted.** For commercial-use licensing, contact `developer@neuralabs.org`.
+
+The full license text is in [`LICENSE`](LICENSE); canonical version at <https://polyformproject.org/licenses/noncommercial/1.0.0>.

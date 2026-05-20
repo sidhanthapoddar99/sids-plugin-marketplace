@@ -1,8 +1,15 @@
 {
   "name": "project-setup",
-  "description": "Architectural decision-maker for repos — new and existing. Covers any decision about repo / project structure, frontend or backend architecture, database choices, docker / compose layout, deployment modes, env-config split, secrets, design tokens, modularity, ML cloud orchestration, mobile / desktop targets, mono- vs poly-repo. Not just bootstrap: equally for restructuring an established repo, adding a service, splitting a backend, introducing a second frontend, picking a database, moving from compose-at-root to docker/, etc. One slash command (/ps-setup) with init | audit | suggest modes. Composes with sibling dstack and documentation-guide skills.",
+  "description": "Architectural decision-maker for repos — new and existing. Triggers when the user makes any layout, structural, or convention decision: where a file or folder belongs, monorepo vs polyrepo, adding or splitting services, picking a database or ML orchestrator, docker / compose layout, env-config split, secrets, design tokens, modularity, mobile / desktop targets. Not only bootstrap — equally for restructuring established repos. One slash command (/ps-setup) with init | audit | suggest modes. Composes with sibling `dstack` and `documentation-guide` skills.",
   "author": {
     "name": "Sid",
     "email": "developer@neuralabs.org"
-  }
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "skills": [
+    "./skills/project-setup/"
+  ],
+  "commands": [
+    "./commands/ps-setup.md"
+  ]
 }
