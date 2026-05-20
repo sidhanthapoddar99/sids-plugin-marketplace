@@ -1,0 +1,84 @@
+# <project-name>
+
+<One-paragraph elevator pitch — what this project is, who uses it.>
+
+GitHub: <url>
+
+## Architecture in one paragraph
+
+<Two or three sentences naming the main components and how they talk. Examples:
+"Python/FastAPI control plane + Rust/Axum data plane, coordinating via Postgres + Redis Streams. React/Vite frontend; nginx fronts both in prod."
+>
+
+## Repository layout
+
+```
+<project>/
+├── apps/
+│   ├── backend/         # <one-line>
+│   └── frontend/        # <one-line>
+├── docker/              # compose files per deployment mode
+├── infra/               # config baked into containers (nginx, postgres init)
+├── data/                # bind-mount targets, gitignored except .gitkeep
+├── docs/                # documentation-template site
+├── scripts/             # subscripts called by ./dev
+├── dev                  # one-command boot
+├── .env                 # secrets, gitignored
+├── .env.example         # the contract, committed
+└── README.md / CLAUDE.md
+```
+
+## Hard rules
+
+(Replace with the 3–7 rules that override defaults for this project.)
+
+- **Every component uses `var(--token)` from `tokens.css`** — no hex, no raw px in component CSS.
+- **Per-service `config.yaml`** reads root `.env` via `${VAR}` interpolation; never put secrets in `config.yaml`.
+- **Frontend env is scoped** — `apps/frontend/.env` holds `VITE_*` only; backend secrets stay in root `.env`.
+- **No `src/` at repo root** — always nested under `apps/<name>/src/`.
+- **`./dev` is the only entrypoint** — setup folds in. No separate `setup.dev.sh`.
+- **File size cap: 500 hard / 300 soft.** Split before committing.
+- **Folders by feature, not by kind.** `auth/`, `workspaces/`, `blocks/` each own routes + models + service.
+
+## Get started
+
+See [README.md](README.md#get-started). Quick:
+
+```bash
+mise install
+cp .env.example .env       # fill REQUIRED blanks
+./dev
+```
+
+## Where to learn more
+
+- Design docs: `docs/data/issues/<issue-name>/notes/`
+- Issue tracker: `docs/data/issues/`
+- Run the docs site locally: `cd docs/documentation-template && ./start`
+
+## Migrations
+
+(Adapt if Alembic + raw SQL shim pattern is in use.)
+
+Alembic — `apps/backend/alembic/versions/`. Commands:
+
+```bash
+./dev migrate new "<message>"
+./dev migrate up
+./dev migrate down
+./dev migrate status
+```
+
+## Tech stack
+
+| Area | Pick |
+|---|---|
+| Backend | <fill> |
+| Frontend | <fill> |
+| Database | Postgres 16 (+ extensions if any) |
+| Cache / events | Redis 7+ |
+| Migrations | Alembic |
+| Containers | Docker + docker-compose for databases (apps on host in dev) |
+| Config | Root .env + per-service config.yaml |
+| Theme | Light + dark, design tokens in <path>/tokens.css |
+| Dev | mise (runtime versions) + (optional) lefthook (pre-commit) |

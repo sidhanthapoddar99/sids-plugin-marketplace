@@ -1,0 +1,15 @@
+# .mise.toml — runtime version contract
+#
+# `mise install` from a clean clone should produce a working toolchain.
+
+[tools]
+python = "3.14"
+node   = "22"
+bun    = "latest"
+# rust   = "1.83"            # if using rust; or pin via rust-toolchain.toml inside the rust folder
+# go     = "1.23"
+
+[env]
+# Optional — project-scoped env vars applied when entering the directory.
+# Prefer .env for runtime config; this is for shell ergonomics.
+PYTHONDONTWRITEBYTECODE = "1"

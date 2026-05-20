@@ -1,0 +1,36 @@
+# docker/compose.prod.yaml — production overrides.
+# Combine with: docker compose -f docker/compose.yaml -f docker/compose.prod.yaml --env-file .env.production up -d
+#
+# Then stack one of:
+#   + docker/compose.traefik.yaml      (behind external Traefik)
+#   + docker/compose.no-ports.yaml     (behind nginx-as-edge inside compose)
+
+services:
+  backend:
+    image: ghcr.io/${GITHUB_REPOSITORY:-OWNER/REPO}/backend:${VERSION:-latest}
+    # Replace `build:` from base with `image:` for prod
+    build: !reset null
+    env_file:
+      - ../.env.production
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY:-OWNER/REPO}/frontend:${VERSION:-latest}
+    build: !reset null
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  postgres:
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    # Optional: pin to a node label for managed deployments
+    # deploy:
+    #   placement:
+    #     constraints: [node.labels.db == true]

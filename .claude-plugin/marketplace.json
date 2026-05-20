@@ -16,9 +16,9 @@
       "description": "Toolkit for authoring Claude Code plugins, marketplaces, and skills (work in progress)"
     },
     {
-      "name": "monorepo-setup",
-      "source": "./plugins/monorepo-setup",
-      "description": "Personal monorepo conventions: env vars, config files, docker-compose, scripts, database/alembic, secrets management (work in progress)"
+      "name": "project-setup",
+      "source": "./plugins/project-setup",
+      "description": "Project bootstrapper for mono- and poly-repo apps — asks the right questions and proposes a layout. Covers env/config split, docker-compose deployment modes, ./dev wrapper, per-service config.yaml, multi-frontend workspaces, design tokens, modularity, mise, secrets matrix (work in progress)."
     },
     {
       "name": "documentation-guide",

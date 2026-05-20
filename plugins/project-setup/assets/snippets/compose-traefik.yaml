@@ -1,0 +1,21 @@
+# docker/compose.traefik.yaml — overlay.
+# Joins external `traefik-proxy` network, adds Traefik labels.
+# Usage: docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml up -d
+
+services:
+  nginx:
+    networks:
+      - traefik-proxy
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-proxy"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-myapp}.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-myapp}.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME:-myapp}.tls.certresolver=letsencrypt"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME:-myapp}.loadbalancer.server.port=80"
+
+networks:
+  traefik-proxy:
+    external: true
+    name: traefik-proxy

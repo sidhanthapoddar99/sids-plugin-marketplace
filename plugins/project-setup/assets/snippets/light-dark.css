@@ -1,0 +1,55 @@
+/*
+ * Globals + light/dark theme wiring.
+ * Pair with tokens.css. Import order in main.tsx:
+ *   1. tokens.css
+ *   2. globals.css
+ *   3. light-dark.css (this file) — already merged into tokens.css's [data-theme="dark"]
+ *
+ * This file is kept as a separate slot if you want to extend dark-mode-specific
+ * overrides (e.g. images, scrollbars) without bloating tokens.css.
+ */
+
+/* Smooth theme transitions for non-jarring toggles.
+   Skip elements where you specifically don't want it (e.g. images).
+*/
+* {
+  transition:
+    background-color var(--duration-fast) var(--easing-standard),
+    border-color     var(--duration-fast) var(--easing-standard),
+    color            var(--duration-fast) var(--easing-standard);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scrollbar follows theme */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-2);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-2);
+  border-radius: var(--radius-pill);
+  border: 3px solid var(--bg-2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-3);
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-1);
+  color: var(--bg-1);
+}

@@ -6,7 +6,7 @@ A community-friendly Claude Code plugin marketplace, maintained by Sid.
 
 A marketplace is a catalogue of plugins that Claude Code users can install with one command. **This** marketplace serves three purposes:
 
-1. **Distribute Sid's in-house plugins** — `ai-toolkit-dev` (a toolkit for authoring plugins, marketplaces, and skills) and `monorepo-setup` (personal monorepo conventions). Both are kept in this repo under `plugins/`.
+1. **Distribute Sid's in-house plugins** — `ai-toolkit-dev` (a toolkit for authoring plugins, marketplaces, and skills) and `project-setup` (personal project / monorepo conventions). Both are kept in this repo under `plugins/`.
 2. **Curate community plugins** — once submissions land, third-party plugins are listed alongside the in-house ones. Users get a single `add` command for everything in the catalogue.
 3. **Carry a substantive reference doc set** — `Documentation/ClaudePlugin/` and `Documentation/ClaudeSettings/` are open-source references for the Claude Code plugin ecosystem, fact-checked against the official Anthropic docs and the upstream `anthropics/claude-plugins-official` repo. Useful to anyone authoring plugins, not just consumers of this marketplace.
 
@@ -24,7 +24,7 @@ Then install whichever plugins you want:
 
 ```
 /plugin install ai-toolkit-dev@sids-plugin-marketplace
-/plugin install monorepo-setup@sids-plugin-marketplace
+/plugin install project-setup@sids-plugin-marketplace
 ```
 
 The `@sids-plugin-marketplace` suffix is optional if no other registered marketplace ships a plugin of the same name.
@@ -42,7 +42,7 @@ To pin to a specific marketplace ref:
 | Plugin | Description | Status |
 |---|---|---|
 | [`ai-toolkit-dev`](plugins/ai-toolkit-dev) | Toolkit for authoring Claude Code plugins, marketplaces, and skills | Work in progress |
-| [`monorepo-setup`](plugins/monorepo-setup) | Personal monorepo conventions: env vars, config files, docker-compose, scripts, database/alembic, secrets management | Work in progress |
+| [`project-setup`](plugins/project-setup) | Project bootstrapper — asks the right questions, proposes a layout from 8 topologies (single-app / mono-1be1fe / multi-backend / multi-frontend / microservices / polyrepo-aggregator / ML / infra-orchestrator) | Work in progress |
 
 ---
 
@@ -153,7 +153,7 @@ For task-oriented authoring (the *how-to* rather than the *what exists*), the `a
 │   └── ClaudeSettings/               # companion: settings.json keys at the user/project/managed boundary
 ├── plugins/
 │   ├── ai-toolkit-dev/               # plugin authoring toolkit
-│   └── monorepo-setup/               # personal monorepo conventions
+│   └── project-setup/                # personal project / monorepo conventions
 ├── scripts/                          # marketplace-level maintainer tooling
 └── LICENSE                           # MIT
 ```

@@ -1,0 +1,41 @@
+/* Globals — base resets + body. Imports tokens.css; consumed via var(--token). */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Shadcn-expected aliases mapped to our tokens */
+  :root {
+    --background: var(--bg-1);
+    --foreground: var(--fg-1);
+    --muted: var(--bg-2);
+    --muted-foreground: var(--fg-2);
+    --border: var(--border-1);
+    --input: var(--border-1);
+    --ring: var(--accent-1);
+    --primary: var(--accent-1);
+    --primary-foreground: var(--bg-1);
+    --secondary: var(--bg-2);
+    --secondary-foreground: var(--fg-1);
+    --accent: var(--bg-3);
+    --accent-foreground: var(--fg-1);
+    --destructive: var(--danger);
+    --destructive-foreground: var(--bg-1);
+    --radius: var(--radius-md);
+  }
+
+  body {
+    font-family: var(--font-family-base);
+    font-size: var(--text-md);
+    line-height: var(--leading-normal);
+    color: var(--fg-1);
+    background: var(--bg-1);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  code, pre {
+    font-family: var(--font-family-mono);
+    font-size: var(--text-sm);
+  }
+}

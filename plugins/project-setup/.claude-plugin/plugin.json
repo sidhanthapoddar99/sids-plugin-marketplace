@@ -1,0 +1,8 @@
+{
+  "name": "project-setup",
+  "description": "Project bootstrapper for mono- and poly-repo apps. Asks the right questions, then proposes a layout from a library of recognised topologies (single-app, monorepo 1be+1fe, multi-backend microservices, multi-frontend workspaces, polyrepo + aggregator, ML, infra orchestrator). Encodes Sid's conventions for env/config split, docker-compose deployment modes, the ./dev wrapper, per-service config.yaml, design tokens, modularity caps, mise, and the secrets matrix. One slash command (/ps-setup) with init | audit | suggest modes.",
+  "author": {
+    "name": "Sid",
+    "email": "developer@neuralabs.org"
+  }
+}

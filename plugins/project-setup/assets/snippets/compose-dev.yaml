@@ -1,0 +1,24 @@
+# docker/compose.dev.yaml — overlay on base.
+# Adds host port exposure for full-stack-in-containers dev mode.
+# Usage: docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d
+
+services:
+  backend:
+    ports:
+      - "${PYTHON_PORT:-8000}:8000"
+
+  frontend:
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+
+  nginx:
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
