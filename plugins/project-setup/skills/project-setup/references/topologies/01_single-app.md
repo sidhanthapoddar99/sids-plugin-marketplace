@@ -11,18 +11,22 @@ A single CLI, library, or tool. No frontend, no microservices. Examples: `uvenv`
 
 ## Tree
 
+**One service total → the code folder sits at the top level, NOT under `apps/`.** `apps/` is for grouping *multiple* services (Topology 02+).
+
+Distributable tool / library (src-layout earns its keep for packaging):
+
 ```
 my-tool/
 ├── .env / .env.example              # only if the tool reads env vars at runtime
 ├── .mise.toml                       # runtime version contract
-├── dev                              # global wrapper (small)
-├── apps/
-│   └── <tool-name>/                 # always nested, never src/ at root
-│       ├── pyproject.toml + uv.lock   # or Cargo.toml, go.mod, package.json
-│       ├── config.yaml              # optional
-│       ├── src/<package>/
-│       ├── tests/
-│       └── Dockerfile               # optional
+├── dev                              # global wrapper (small), if needed
+├── <tool-name>/                     # top-level service folder (name is free)
+│   ├── pyproject.toml + uv.lock     # or Cargo.toml, go.mod, package.json
+│   ├── config.yaml                  # optional
+│   ├── src/<package>/               # ← src-layout: distributable package/CLI
+│   ├── tests/
+│   ├── Dockerfile                   # optional
+│   └── README.md                    # this service's host dev loop
 ├── docker/                          # optional — only if the tool needs infra
 │   ├── compose.yaml
 │   └── compose.dev.yaml
@@ -34,11 +38,35 @@ my-tool/
 └── LICENSE
 ```
 
-## Why nest under `apps/<tool-name>/`?
+Lone run-service (a backend with no frontend yet) — **flat `app/`, no `src/`**:
 
-Because today it's one tool, tomorrow there's a partner repo or a companion service. Nesting now means no restructuring later. The cost is one extra `cd` per command; the cost saved is renaming every import in every file.
+```
+my-api/
+├── .mise.toml
+├── dev
+├── api/                             # top-level (name is free: api / backend / …)
+│   ├── pyproject.toml + uv.lock
+│   ├── config.yaml
+│   ├── app/                         # ← flat: run-service, never packaged
+│   │   ├── main.py
+│   │   └── …
+│   ├── alembic/                     # if it owns a DB
+│   ├── tests/
+│   ├── Dockerfile
+│   └── README.md
+├── docker/  data/  docs/  .claude/  CLAUDE.md  README.md  LICENSE
+```
 
-The single exception is **languages where workspace nesting fights the toolchain** (e.g. plain Cargo project with one binary). Even then, default to `apps/<tool>/Cargo.toml` and use a workspace `Cargo.toml` at root for orchestration if a second crate appears.
+## Why top-level, not `apps/`?
+
+`apps/` is a grouping folder — it earns its place once there are 2+ services to group. For a single service it's empty ceremony. Keep the root clean (config + README + folders) and put the one service folder directly at the top level. If a second service appears later, *that's* when you introduce `apps/` and move both under it (Topology 02 escalation).
+
+## Why `app/` (flat) for a run-service and `src/<pkg>/` for a distributable?
+
+- A **run-service** (FastAPI/Flask/worker) is launched, never built into a wheel. `src/` only adds `PYTHONPATH` / `prepend_sys_path` plumbing for zero benefit. Flat `app/` matches the official full-stack FastAPI template.
+- A **distributable package/CLI** (like `uvenv`-as-a-package) benefits from src-layout: it forces tests to import the *installed* package, catching "works in dev because of cwd, breaks when installed" bugs.
+
+Pick by what the thing *is*, not by habit. See `references/python/pyproject-uv-sync-for-apps.md`.
 
 ## What's different from Topology 02
 
@@ -49,7 +77,7 @@ The single exception is **languages where workspace nesting fights the toolchain
 
 ## Real-world reference
 
-- `uvenv` — `~/projects/02_OpenSource/02_dev_tools/uvenv` — does NOT yet follow this pattern (predates the convention; `src/` is at root). When the convention applies to it, migrate `src/` → `apps/uvenv/src/`.
+- `uvenv` — `~/projects/02_OpenSource/02_dev_tools/uvenv` — a shell tool (its code is `src/` + `lib/` at root, which is normal for a shell project, not the Python layout above). Cited as a single-tool example; the Python `app/` vs `src/` distinction applies to Python services, not shell scripts.
 
 ## Escalation triggers
 
@@ -61,6 +89,8 @@ Move to Topology 02 when:
 
 ## Common mistakes to avoid
 
-- Putting `src/` at repo root "because it's just one app." Don't. Nest.
+- Putting loose code (`main.py`, `app/`, `src/`) directly in the repo root "because it's just one app." Don't — keep the root clean; the code goes in a top-level service folder (`./<name>/`).
+- Nesting a single service under `apps/<name>/`. `apps/` is for 2+ services; for one, use top-level `./<name>/`.
+- Using `src/` for a run-service backend. Flat `app/` — `src/` is for distributable packages and frontends.
 - Adding `docker/`, `infra/`, `data/`, `scripts/` proactively. Add when needed.
 - Writing a 200-line `./dev` wrapper for a tool. Keep it tight; if it grows, split subcommands into `scripts/`.

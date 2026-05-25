@@ -41,27 +41,41 @@ Is this a single repo, or multiple repos working together?
 
 ## Per-topology cross-cutting decisions
 
-### Where does `src/` live?
+### Where does code live? (`app/` vs `src/`)
+
+`src/` is **not** universal — it's an ecosystem convention. The rule:
+
+| Code kind | Inner layout | `src/`? | Why |
+|---|---|---|---|
+| Python backend / service (FastAPI, Flask, worker) | `<name>/app/` | **No** | Run, never packaged into a wheel — `src/` only adds `PYTHONPATH` / `prepend_sys_path` plumbing for no benefit |
+| Frontend (Vite / React / Next) | `<name>/src/` | **Yes** | Bundler / tooling convention |
+| Distributable package / library | `<name>/src/<pkg>/` | **Yes** | src-layout forces clean packaging — the one place it earns its keep |
+
+**Nesting follows service count:**
+
+- **One service total** → top-level `./<name>/` (name is free)
+- **More than one service** → group all under `apps/<name>/`
 
 | Topology | Path pattern |
 |---|---|
-| 01 | `apps/<tool>/src/` |
-| 02 | `apps/backend/src/` and `apps/frontend/src/` |
-| 03 | `apps/backend-<lang>/src/` per backend; `apps/frontend/src/` |
-| 04 | `apps/<app>/src/` per app; `packages/<pkg>/src/` per shared package |
-| 05 | `apps/<service>/src/` per service |
-| 06 | `src/` inside each individual repo |
-| 07 | `apps/<tool>/src/` (single tool) or `packages/<lib>/src/` |
-| 08 | `apps/<service>/src/` for services; orchestrator binary at `cchain/` or similar |
+| 01 (single backend service) | `./<name>/app/` — top-level, flat, no `src/` |
+| 01 (single distributable tool/lib) | `./<name>/src/<pkg>/` — top-level, src-layout |
+| 02 | `apps/<backend>/app/` (flat) and `apps/<frontend>/src/` |
+| 03 | `apps/<backend-lang>/app/` per backend; `apps/<frontend>/src/` |
+| 04 | `apps/<app>/src/` per frontend; `packages/<pkg>/src/<pkg>/` per shared package |
+| 05 | `apps/<service>/app/` per Python service (or `src/` if it's a frontend) |
+| 06 | per individual repo — apply the same rule inside each |
+| 07 (ML) | `apps/<project>/src/<pkg>/` for the package, or flat scripts; ML tooling varies |
+| 08 | `apps/<service>/app|src/` per service; orchestrator binary at `cchain/` or similar |
 
-**Never `src/` at repo root.** Always nested.
+**Never loose code at repo root.** Always inside a service/app (or package) folder. One-liner: **flat `app/` for run-services, `src/` for frontends and packages, nothing loose in root.**
 
 ### Where does `config.yaml` live?
 
 | Topology | Path |
 |---|---|
-| 01 | `apps/<tool>/config.yaml` |
-| 02 | `apps/backend/config.yaml`, `apps/frontend/config.yaml` (optional) |
+| 01 | `./<name>/config.yaml` (single service, top-level) |
+| 02 | `apps/<backend>/config.yaml`, `apps/<frontend>/config.yaml` (optional) |
 | 03 | `apps/backend-<lang>/config.yaml` per backend |
 | 04 | `apps/<app>/config.yaml` per app |
 | 05 | `apps/<service>/config.yaml` per service |

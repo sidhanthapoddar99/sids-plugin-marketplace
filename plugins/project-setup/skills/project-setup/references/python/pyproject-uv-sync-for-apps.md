@@ -2,15 +2,41 @@
 
 For app projects (Topology 01–06, 08). **Different from ML projects** — see `requirements-uvenv-for-ml.md`.
 
-## The flow
+## First decision — run-service or distributable package?
+
+The layout differs, and it matters:
+
+| | **Run-service** (FastAPI / Flask / worker) | **Distributable package / library / CLI** |
+|---|---|---|
+| Layout | **flat `app/`** | **`src/<pkg>/`** (src-layout) |
+| `[tool.uv] package` | `false` (or omit) — it's run, not built | `true` — it's built into a wheel |
+| Why | Launched via `uvicorn app.main:app`; never installed. `src/` would only add `PYTHONPATH` / `prepend_sys_path` plumbing for no benefit. | src-layout forces tests to import the *installed* package — catches "works because of cwd, breaks when installed" bugs |
+| `pythonpath` (pytest) | `["."]` | `["src"]` |
+| Examples | the backend in Topologies 02/03/05; the official full-stack FastAPI template (`backend/app/`) | a published CLI, a shared library, an SDK |
+
+**Default for a backend is the run-service column.** Only reach for src-layout when the thing is genuinely distributable.
+
+## The flow — run-service (the common case)
 
 ```bash
-# from inside apps/backend/
-uv init --package <name>           # one-time, scaffolds pyproject.toml
-uv add fastapi uvicorn asyncpg pydantic
-uv add --dev pytest ruff mypy
+# from inside the service folder (top-level ./api/ if one service, or apps/api/ if several)
+uv init --bare                     # pyproject.toml without forcing a package layout
+uv add fastapi "uvicorn[standard]" asyncpg pydantic pyyaml alembic
+uv add --dev pytest pytest-asyncio ruff mypy httpx
 uv sync                            # creates .venv, resolves, writes uv.lock
 uv run uvicorn app.main:app --reload
+```
+
+Code lives in `app/` next to `pyproject.toml`; nothing is "installed" — `app.main:app` resolves because cwd is the service root.
+
+## The flow — distributable package
+
+```bash
+uv init --package <name>           # scaffolds src/<name>/ + package metadata
+uv add <runtime-deps>
+uv add --dev pytest ruff mypy
+uv sync
+uv run <entry-point>
 ```
 
 ## Files committed vs gitignored
@@ -51,12 +77,14 @@ dev = [
     "httpx>=0.27",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+# [build-system] is only needed for a DISTRIBUTABLE package:
+# [build-system]
+# requires = ["hatchling"]
+# build-backend = "hatchling.build"
 
 [tool.uv]
-package = true                 # treat as an installable package
+package = false                # run-service: NOT built into a wheel.
+                               # set true ONLY for a distributable package.
 default-groups = ["dev"]
 
 [tool.ruff]
@@ -64,14 +92,15 @@ line-length = 100
 target-version = "py312"
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["."]             # run-service: code is in ./app, importable from service root.
+                               # a distributable package uses ["src"] instead.
 asyncio_mode = "auto"
 ```
 
-## Layout under `apps/backend/`
+## Layout — run-service (the default for a backend)
 
 ```
-apps/backend/
+<service>/                    # top-level ./<name>/ if one service; apps/<name>/ if several
 ├── pyproject.toml
 ├── uv.lock
 ├── .venv/                    # gitignored, created by uv sync
@@ -79,39 +108,62 @@ apps/backend/
 ├── config.local.yaml         # gitignored
 ├── alembic/
 │   ├── env.py
-│   ├── versions/
-│   └── alembic.ini
-├── src/
-│   └── <package_name>/       # the actual code, importable as <package_name>
-│       ├── __init__.py
-│       ├── main.py
-│       └── …
+│   └── versions/
+├── alembic.ini
+├── app/                      # ← FLAT. The code. Importable as `app` from service root.
+│   ├── __init__.py
+│   ├── main.py               # FastAPI app object → `app.main:app`
+│   ├── api/
+│   ├── core/
+│   ├── models/
+│   └── …
 ├── tests/
-└── Dockerfile
+├── Dockerfile
+└── README.md                 # this service's host dev loop
 ```
 
-`src/<package_name>/` is the **src-layout** Python style. Tests import the installed package, not in-tree code. Catches accidental "works in dev because of cwd, broken when installed" bugs.
+No `src/`. The service runs from its own root, so `app.main:app` resolves with no `PYTHONPATH` plumbing. This matches the official full-stack FastAPI template.
 
-## Dockerfile (multi-stage with uv)
+## Layout — distributable package (only when it's actually shipped)
+
+```
+<pkg>/
+├── pyproject.toml            # with [build-system] + [tool.uv] package = true
+├── uv.lock
+├── src/
+│   └── <pkg>/                # src-layout — tests import the INSTALLED package
+│       ├── __init__.py
+│       └── …
+├── tests/
+└── README.md
+```
+
+`src/<pkg>/` forces clean packaging and catches "works because of cwd, breaks when installed" bugs. Use this **only** for things you build into a wheel / publish.
+
+## Dockerfile (multi-stage with uv) — run-service
 
 ```dockerfile
 FROM python:3.12-slim AS base
 RUN pip install --no-cache-dir uv
 
 FROM base AS deps
-WORKDIR /app
+WORKDIR /srv
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 FROM base AS runtime
-WORKDIR /app
-COPY --from=deps /app/.venv /app/.venv
-COPY src/ ./src/
+WORKDIR /srv
+COPY --from=deps /srv/.venv /srv/.venv
+COPY app/ ./app/             # ← the code (flat), not src/
 COPY alembic/ ./alembic/
 COPY alembic.ini ./
-ENV PATH="/app/.venv/bin:$PATH"
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY config.yaml ./
+ENV PATH="/srv/.venv/bin:$PATH"
+# dev uses `uvicorn --reload`; prod uses gunicorn — see references/production/app-server-and-workers.md
+CMD ["gunicorn", "app.main:app", "-c", "gunicorn.conf.py"]
 ```
+
+(A distributable package's Dockerfile would `COPY src/ ./src/` and typically `uv sync` *with* `--no-install-project` dropped so the package itself installs.)
 
 ## Why `uv` over `pip` / `poetry` / `pipenv` / `pdm`
 
@@ -139,6 +191,8 @@ Different shapes, different tooling. Don't force one onto the other.
 
 ## Anti-patterns
 
+- **src-layout for a run-service** — adds `PYTHONPATH` / `prepend_sys_path` plumbing for zero benefit. Flat `app/` for services; `src/<pkg>/` only for distributables.
+- `package = true` on a backend that's never built into a wheel — it's not a package, don't pretend
 - Committing `.venv/` — gigantic, host-specific
 - Editing `uv.lock` by hand — let `uv add` / `uv sync` do it
 - Mixing `pip install` and `uv add` in the same project — pick one

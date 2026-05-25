@@ -19,9 +19,9 @@ my-ml/
 ├── requirements.txt                # human-authored, broad ranges, with comments
 ├── uvenv-name                      # plain file containing the env name (e.g. "ml-recommender")
 ├── dev                             # ./dev — task subcommands
-├── apps/                           # always nested, never src/ at root
+├── apps/                           # code in a package folder, never loose in root
 │   └── <project-name>/
-│       ├── src/<package>/          # python package — utilities, model wrappers
+│       ├── src/<package>/          # ML utilities/wrappers are an importable lib → src-layout ok
 │       └── tests/
 ├── notebooks/                      # exploratory notebooks
 │   ├── 01_data-exploration.ipynb

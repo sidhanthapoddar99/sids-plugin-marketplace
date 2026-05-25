@@ -96,9 +96,14 @@ networks:
 - `NeuraSutra` has the four-mode split (`docker-compose-database.yaml`, `-ports.yaml`, `-traefik.yaml`, base) at repo root. The convention here moves them into `docker/` and renames consistently (`compose.dev.yaml` is clearer than `-ports.yaml`).
 - `chimere` has `docker/{singlenode,multinode,prod}/` — that's Topology 08, where modes are folders not files.
 
+## What the prod overlay carries
+
+`compose.prod.yaml` is more than image tags — it's where production serving config lands: the app-server worker env (`WEB_CONCURRENCY`, `MAX_REQUESTS`), resource limits, restart policy, `stop_grace_period`, and (often) a one-shot `migrate` service. See `references/production/app-server-and-workers.md` and `references/production/production-readiness.md` for what belongs in it.
+
 ## Anti-patterns
 
 - One huge `docker-compose.yaml` with environment-branching tricks ("if $ENV == prod then …") — not supported
 - Auto-loaded `compose.override.yaml` as the only dev variant — hidden behaviour
 - Splitting by concern (`compose.frontend.yaml`, `compose.backend.yaml`) — modes, not concerns
 - Forgetting to test that overlays stack (`prod + traefik`) before deploying
+- A prod overlay that only swaps image tags but leaves dev's `uvicorn --reload` CMD and no resource limits — see the production references

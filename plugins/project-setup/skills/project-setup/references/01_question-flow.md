@@ -66,6 +66,10 @@ Run this in order before proposing any layout. **Skip what you already know**, b
     - Traefik present → include `docker/compose.traefik.yaml` overlay
     - nginx-as-edge → include `infra/nginx/nginx.conf` and route `/api/*`
     - Raw ports → `docker/compose.dev.yaml` only
+14a. **Production serving**: how does the backend run in prod (vs the dev hot-reload process)?
+    - Python → gunicorn + uvicorn workers; set worker count (≈ matches CPU limit), recycling (`--max-requests` + jitter), `--graceful-timeout`. See `references/production/app-server-and-workers.md`.
+    - Rust / Go → one process, scale via replicas (no worker-process model). Node → replicas, not PM2-in-container.
+    - Confirm: liveness `/health` + readiness `/ready` endpoints, graceful shutdown, resource limits, migrations as a pre-traffic step. Walk `references/production/production-readiness.md`.
 15. **Secrets**:
     - Local: confirm `.env` + `.env.local` + `config.local.yaml` gitignored, generated via `openssl rand -hex 32` (instructions at top of `.env.example`)
     - CI: GitHub Actions secrets, self-hosted runner env, or none?
@@ -82,11 +86,11 @@ Run this in order before proposing any layout. **Skip what you already know**, b
 
 ## Batch 6 — supporting infra
 
-20. **Databases needed?**
-    - Postgres (default for relational)
-    - Redis (default for cache, sessions, streams)
+20. **Databases needed? — pick the right floor, don't over-provision** (see `references/databases/choosing-a-database.md`)
+    - **Relational**: SQLite (single service, modest data, low write concurrency — e.g. auth/config/metadata) vs Postgres (concurrent writers, cross-service sharing, large data, extensions). Start SQLite; move to Postgres when you need concurrent writers or sharing.
+    - **Cache / shared state**: in-process memory (single worker, ephemeral, small — a dict rebuilt on boot) vs Redis (shared across workers/services, TTL, persistence, pub/sub). This is coupled to worker count (Q14a) — N workers with coherence needs → Redis.
     - MongoDB / Neo4j / Kuzu / SeaweedFS — per requirement
-    - Migrations: Alembic by default (Python); when not Alembic, see `references/python/when-not-alembic.md`
+    - Migrations: Alembic by default (Python); SQLite needs `render_as_batch=True`; when not Alembic, see `references/python/when-not-alembic.md`
 21. **Image versions**: **never inherit defaults silently.** For each database / runtime selected, **check the current latest stable** and ask the user which to pin to. The versions in this skill's references are illustrative only.
 22. **Docs**: in-repo `docs/` (recommended for monorepo) or separate docs repo?
     - In-repo → hand off to `/docs-init` (documentation-guide plugin)

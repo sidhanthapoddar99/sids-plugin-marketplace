@@ -149,6 +149,56 @@ cd docs/documentation-template
 <MIT / Apache-2.0 / Proprietary>
 ```
 
+## Two README levels — root and per-service
+
+There are **two kinds of README**, with a clean division of labour:
+
+| README | Scope |
+|---|---|
+| **Root `README.md`** | Cross-cutting: the three startup paths, architecture overview, `./dev`, where everything lives. |
+| **`<service>/README.md`** (one per backend, one per frontend) | That single service's **host (non-Docker) dev loop** — the IDE-debugging path for *this* service. |
+
+**Every backend and every frontend ships its own `README.md`.** The root README tells you how to run the whole stack; the service README tells you how to work on that one service directly on the host (the path a developer attaching a debugger actually takes).
+
+A `<service>/README.md` covers:
+
+```markdown
+# <service-name>
+
+<one line: what this service is>
+
+## Run on the host (dev)
+
+\`\`\`bash
+# from this directory
+uv sync                              # or bun install
+cp .env.example .env                 # this service's own env (if it has one)
+uv run alembic upgrade head          # if it owns a DB
+uv run uvicorn app.main:app --reload --port 8000
+\`\`\`
+
+## Required env vars
+
+| Var | Purpose | Where it comes from |
+|---|---|---|
+| DATABASE_URL | … | root `.env` / this service's `.env` |
+
+## Tests
+
+\`\`\`bash
+uv run pytest          # or bun test
+\`\`\`
+
+## Migrations (if applicable)
+
+\`\`\`bash
+uv run alembic revision -m "…"
+uv run alembic upgrade head
+\`\`\`
+```
+
+The root README's "no-docker host run" section can then be brief and **point at each service's README** for the detail, rather than duplicating it.
+
 ## Audit checks for the README
 
 `/ps-setup audit` should check:
@@ -161,6 +211,7 @@ cd docs/documentation-template
 - [ ] Migrations section (if Alembic is used)
 - [ ] Documentation pointer
 - [ ] License mention
+- [ ] **Each backend and frontend has its own `README.md`** documenting its host dev loop
 
 Missing any → drift report flags it.
 
@@ -171,3 +222,5 @@ Missing any → drift report flags it.
 - Outdated commands in README that don't match `./dev help` — keep in sync
 - Hidden setup steps in a separate wiki — concentrate in the README
 - Multi-page README via heavy `[!IMPORTANT]` admonitions — keep it scannable
+- A service with no README of its own — the host dev loop lives nowhere, and the root README bloats trying to cover every service's specifics
+- Duplicating the full host setup in both the root and the service README — root points, service details

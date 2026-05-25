@@ -23,9 +23,10 @@ my-app/
 │   │   ├── pyproject.toml + uv.lock
 │   │   ├── config.yaml
 │   │   ├── alembic/                 # ← migrations live here; ONLY Python writes DDL
-│   │   ├── src/<package>/
+│   │   ├── app/                     # ← FLAT — run-service, no src/
 │   │   ├── tests/
-│   │   └── Dockerfile
+│   │   ├── Dockerfile
+│   │   └── README.md                # host dev loop for this backend
 │   ├── backend-rust/                # data plane
 │   │   ├── Cargo.toml + Cargo.lock
 │   │   ├── rust-toolchain.toml

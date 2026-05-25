@@ -81,7 +81,7 @@ Whatever language: load YAML, run `${VAR}` substitution against `os.environ`, pa
 Python (illustrative):
 
 ```python
-# apps/backend/src/<package>/config.py
+# apps/backend/app/config.py
 import os, re, yaml
 from pydantic import BaseModel
 

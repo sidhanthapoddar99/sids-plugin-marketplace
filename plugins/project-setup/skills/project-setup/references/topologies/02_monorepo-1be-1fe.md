@@ -29,8 +29,8 @@ my-app/
 │   ├── db-init.sh
 │   ├── check-env.sh
 │   └── …
-├── apps/
-│   ├── backend/
+├── apps/                           # 2+ services → grouped under apps/
+│   ├── backend/                    # (name is free: api / backend / …)
 │   │   ├── pyproject.toml + uv.lock          # modern Python flow
 │   │   ├── config.yaml                       # per-service; reads root .env via ${VAR}
 │   │   ├── config.local.yaml                 # gitignored override
@@ -38,10 +38,17 @@ my-app/
 │   │   │   ├── env.py
 │   │   │   ├── versions/
 │   │   │   └── alembic.ini
-│   │   ├── src/<package>/                    # ← src ALWAYS nested
+│   │   ├── alembic.ini
+│   │   ├── app/                              # ← FLAT — run-service, no src/
+│   │   │   ├── main.py
+│   │   │   ├── api/
+│   │   │   ├── core/
+│   │   │   ├── models/
+│   │   │   └── …
 │   │   ├── tests/
-│   │   └── Dockerfile
-│   └── frontend/
+│   │   ├── Dockerfile
+│   │   └── README.md                         # ← this backend's host dev loop
+│   └── frontend/                   # (name is free: web / frontend / …)
 │       ├── package.json + bun.lockb
 │       ├── .env                              # ← frontend's OWN env (VITE_* only)
 │       ├── .env.example
@@ -49,7 +56,7 @@ my-app/
 │       ├── vite.config.ts                    # proxies /api/* in dev
 │       ├── tailwind.config.ts
 │       ├── tsconfig.json
-│       ├── src/
+│       ├── src/                              # ← src/ — bundler convention
 │       │   ├── styles/
 │       │   │   ├── tokens.css                # ← single source of design tokens
 │       │   │   ├── globals.css
@@ -57,7 +64,8 @@ my-app/
 │       │   ├── components/
 │       │   ├── lib/
 │       │   └── pages/
-│       └── Dockerfile
+│       ├── Dockerfile
+│       └── README.md                         # ← this frontend's host dev loop
 ├── infra/                          # CONFIG only (not data)
 │   ├── nginx/
 │   │   └── nginx.conf              # routes /api/* to backend in prod
@@ -136,6 +144,13 @@ Documents three startup paths:
 ## Real-world reference
 
 - `NeuraSutra/neurasutra-api-management` — `~/projects/06_04_NeuraSutra/neurasutra-api-management` — close to this pattern; compose files are at root rather than in `docker/` (older convention; ok to migrate when revisited).
+
+## Production serving
+
+The dev flow runs `uvicorn --reload`; production runs gunicorn + uvicorn workers with recycling, behind nginx. The `apps/backend/Dockerfile` `CMD` and the `docker/compose.prod.yaml` overlay differ from dev. See:
+
+- `references/production/app-server-and-workers.md` — worker count, `--max-requests` recycling, timeouts, preload, the per-language concurrency model
+- `references/production/production-readiness.md` — liveness/readiness endpoints, graceful shutdown, resource limits, migrations-on-deploy, the pre-deploy checklist
 
 ## Escalation triggers
 

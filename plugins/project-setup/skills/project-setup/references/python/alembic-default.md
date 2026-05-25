@@ -16,19 +16,39 @@ apps/backend/
 └── alembic.ini
 ```
 
-## Initial setup
+## Initial setup — the concrete recipe
 
 ```bash
-cd apps/backend
+# from the backend dir (flat layout — see python/pyproject-uv-sync-for-apps.md)
+cd apps/backend            # or ./api for a single service
 uv add alembic sqlalchemy asyncpg
-uv run alembic init -t async alembic   # async template
+alembic init alembic       # creates alembic/ + alembic.ini
+
+# 1) alembic.ini:
+#      script_location = alembic
+#      prepend_sys_path = .          # so `app` is importable (flat layout; use `src` only for a package)
+#      # leave sqlalchemy.url EMPTY — env.py sets it from config (one source of truth)
+
+# 2) alembic/env.py:
+#      from app.db import Base                 # your declarative Base
+#      import app.models                       # noqa — importing registers tables on Base.metadata
+#      from app.config import settings
+#      config.set_main_option("sqlalchemy.url", settings.db_url)   # one source of truth
+#      target_metadata = Base.metadata
+#      # in BOTH the online AND offline configure() calls:
+#      #   render_as_batch=True               # REQUIRED for SQLite ALTERs (no-op on Postgres)
+
+# 3) first migration:
+alembic revision -m "initial"   # hand-write the DDL, or add --autogenerate
+alembic upgrade head
 ```
 
-Edit `alembic/env.py` to:
+Why each line:
 
-1. Load database URL from `config.yaml` (with `${VAR}` substitution) or directly from env
-2. Set target metadata to your SQLAlchemy `Base.metadata`
-3. Use async engine
+- **`prepend_sys_path = .`** — makes `app` importable when alembic runs from the backend root. The **flat `app/` layout makes this trivial** — no `PYTHONPATH` gymnastics, no `src` on the path. (A distributable package would use `prepend_sys_path = src`.) This is a concrete payoff of the run-service layout.
+- **`import app.models`** — importing the module is what registers every table on `Base.metadata`. Without it, `--autogenerate` sees an empty schema and "drops" all your tables.
+- **`config.set_main_option("sqlalchemy.url", settings.db_url)`** — the URL comes from your config (which reads root `.env` via `${VAR}`), so there's exactly one source of truth and no secret in `alembic.ini`.
+- **`render_as_batch=True`** — SQLite can't do most `ALTER TABLE`s in place; batch mode rebuilds the table transparently. Harmless on Postgres, mandatory if SQLite is in the mix. Set it in both the online and offline `context.configure(...)` blocks.
 
 ## `alembic.ini` essentials
 
@@ -64,6 +84,29 @@ keys = root,sqlalchemy,alembic
 # check current
 ./dev migrate status
 ```
+
+## Migrations in Docker — the container migrates itself
+
+For the containerized path, **don't leave migrations as a manual human step.** The backend container's **entrypoint runs `alembic upgrade head` on boot**, before launching the server, so the schema on the mounted volume is brought up to date automatically — first run *and* every subsequent boot (idempotent: if already at head, it's a no-op).
+
+```sh
+# apps/backend/docker-entrypoint.sh
+#!/bin/sh
+set -e
+alembic upgrade head            # bring the mounted DB to head; no-op if already current
+exec "$@"                       # then run the CMD (gunicorn / uvicorn)
+```
+
+```dockerfile
+# in the backend Dockerfile
+COPY docker-entrypoint.sh /usr/local/bin/
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["gunicorn", "app.main:app", "-c", "gunicorn.conf.py"]
+```
+
+This is the **simple default** — correct for single-replica deployments, dev, and SQLite/single-Postgres setups. First `docker compose up` and the schema just exists; no separate migrate command.
+
+**The multi-replica caveat:** if you run **N replicas of the backend**, having every replica race to `alembic upgrade head` on boot is a problem (concurrent migrations, lock contention). At that scale, switch to a **separate one-shot migrate service that runs before the app replicas start** — see `references/production/production-readiness.md` § "Migrations on deploy". Rule of thumb: **entrypoint-migrates for single-replica; one-shot migrate service for multi-replica.** Same `alembic upgrade head`, different orchestration.
 
 ## Autogenerate vs hand-write
 
