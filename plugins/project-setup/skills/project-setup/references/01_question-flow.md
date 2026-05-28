@@ -58,7 +58,7 @@ Run this in order before proposing any layout. **Skip what you already know**, b
     - Confirm: bun dev / uvicorn --reload / cargo-watch — all run on host
 12. **`ctl` subcommands**: which day-to-day flows need shortcuts?
     - Suggest defaults: `ctl dev` (host dev loop), `ctl up [profile…] [--config=…]` (containers — bare = data core, `ctl up app edge --config=prod` = production), `ctl down`, `ctl migrate {up|down|new}`, `ctl test`, `ctl clean`, `ctl help`.
-    - Profiles (which services) vs `--config` overlays (how they run) are the two `ctl up` axes — see `references/repo-setup/runtime/docker-compose-structure.md`.
+    - `ctl up` has three axes — profiles (which services), at most one `--config=prod`, and stackable `.m.` modifiers (`--expose` / `--traefik`); see `references/repo-setup/runtime/docker-compose-structure.md`.
     - Add language-specific: `ctl sqlx-prepare` (if Rust), `ctl train` (if ML).
 
 ## Batch 4 — deployment + secrets
@@ -67,9 +67,9 @@ Run this in order before proposing any layout. **Skip what you already know**, b
     - Single (e.g. one bare server)
     - Multiple (e.g. WSL dev / bare server / cloud — generates multiple `docker-compose-*.yml`)
 14. **Reverse proxy**: external Traefik present? nginx-as-edge? raw ports?
-    - Traefik present → ship `docker/compose.traefik.yaml`, used via `--config=traefik`
+    - Traefik present → ship a `--traefik` modifier (`compose.m.traefik.yaml`)
     - nginx-as-edge → include `infra/nginx/nginx.conf` and route `/api/*`
-    - Raw ports → `--config=expose` (no separate dev compose file)
+    - Raw ports → the `--expose` modifier (no separate config file)
 14a. **Production serving**: how does the backend run in prod (vs the dev hot-reload process)?
     - Python → gunicorn + uvicorn workers; set worker count (≈ matches CPU limit), recycling (`--max-requests` + jitter), `--graceful-timeout`. See `references/architecture/production/app-server-and-workers.md`.
     - Rust / Go → one process, scale via replicas (no worker-process model). Node → replicas, not PM2-in-container.

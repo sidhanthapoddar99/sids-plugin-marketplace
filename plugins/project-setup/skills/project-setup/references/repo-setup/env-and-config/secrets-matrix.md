@@ -51,7 +51,7 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
 └── ctl                       # `ctl up app edge --config=prod` runs the deploy
 ```
 
-`ctl up app edge --config=prod` wraps: `docker compose -f compose.yaml -f compose.prod.yaml -f compose.traefik.yaml --profile app --profile edge --env-file .env.production up -d`
+The secrets-relevant part: the `--config=prod` config switches the compose `--env-file` to `.env.production` (it also pins image tags + resource limits). The exact assembled `docker compose` line is the dispatcher's to own — see `references/repo-setup/runtime/script-usage.md`.
 
 Or, with `env_file:` declared inside each service in the compose:
 

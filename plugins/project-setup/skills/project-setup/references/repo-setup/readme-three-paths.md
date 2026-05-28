@@ -1,6 +1,6 @@
 # README contract — three startup paths
 
-The README must document three ways to start the project. Same content as `references/repo-setup/runtime/script-three-startup-paths.md`, surfaced as a top-level convention so the audit checks it.
+The README must document three ways to start the project. The three paths themselves — including the exact raw `docker compose` / host-run commands — are owned by `references/repo-setup/runtime/script-usage.md`; this doc is the **full README contract** (structure, command table, audit checklist) that surfaces them as a top-level convention.
 
 ## The three paths
 
@@ -119,36 +119,7 @@ ctl setup                  # interactive .env wizard — prompts for missing key
 
 ## Other ways to start
 
-### Raw docker compose
-
-\`\`\`bash
-# data core only — apps on host (what `ctl dev` does)
-docker compose -f docker/compose.yaml -f docker/compose.expose.yaml up -d
-
-# app services in containers, with host ports
-docker compose -f docker/compose.yaml -f docker/compose.expose.yaml --profile app up -d
-
-# prod (what `ctl up app edge --config=prod` builds)
-docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml --profile app --profile edge --env-file .env.production up -d
-\`\`\`
-
-### No docker — host run
-
-\`\`\`bash
-# 1. data core (compose or locally installed)
-docker compose -f docker/compose.yaml -f docker/compose.expose.yaml up -d
-
-# 2. backend
-cd apps/backend
-uv sync
-uv run alembic upgrade head
-uv run uvicorn app.main:app --reload --port 8000
-
-# 3. frontend (new terminal)
-cd apps/frontend
-bun install
-bun dev
-\`\`\`
+Besides `ctl dev`, the README's "Other ways to start" carries **two** more paths — raw `docker compose -f …` and a no-docker host run. Don't hand-write the `-f` lines here: the exact commands (with the current `.m.` modifier filenames) are owned by **`references/repo-setup/runtime/script-usage.md`** and kept in sync with the dispatcher. Paste them from there into the generated README so this template never drifts when the compose layout changes.
 
 ---
 

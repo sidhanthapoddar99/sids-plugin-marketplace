@@ -1,4 +1,4 @@
-# docker/compose.traefik.yaml — config overlay.  ctl up app edge --config=prod --config=traefik
+# docker/compose.m.traefik.yaml — MODIFIER (--traefik).  ctl up app edge --config=prod --traefik
 # Joins external `traefik-proxy` network, adds Traefik labels on the edge service (nginx).
 # Pair with the `edge` profile so nginx is actually started.
 

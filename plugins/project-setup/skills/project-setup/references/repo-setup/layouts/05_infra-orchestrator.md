@@ -22,10 +22,7 @@ my-chain/
 │   │   └── compose.yaml
 │   ├── multinode/
 │   │   ├── compose.yaml            # base
-│   │   ├── compose.no-ports.yaml   # overlay
-│   │   ├── compose.reset.yaml      # overlay — fresh-state mode
-│   │   ├── compose.test-temp.yaml  # overlay — ephemeral testing
-│   │   └── compose.traefik.yaml    # overlay
+│   │   └── compose.m.<modifier>.yaml  # one per .m. modifier: --no-ports / --reset / --test-temp / --traefik — see complex-setups.md
 │   └── prod/
 │       └── compose.yaml
 ├── cchain/                         # the Go orchestrator

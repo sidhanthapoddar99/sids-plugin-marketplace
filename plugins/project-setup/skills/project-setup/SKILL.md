@@ -26,8 +26,8 @@ These are the conventions to apply by default. Most are **firm** — their value
 2. **If you don't have information, ASK.** Do not presume. Common unknowns: sibling repos, whether the project is ML or app, whether the frontend exposes any backend URLs, deployment targets, theming requirements.
 3. **Root holds only config + README + folders — never loose code.** No executable entry file or stray module directly in the repo root; keep the root clean. *(Only exception: project types that genuinely demand a root entry file — e.g. some editor extensions like a VS Code extension.)*
 4. **Per-service `config.yaml`, root `.env`.** Root `.env` holds shared/common vars only. Each backend owns its own `config.yaml`. Frontends have their own env scope (`VITE_*` / `NEXT_PUBLIC_*`) — backend secrets must never leak there.
-5. **Compose lives in `docker/`**, split on two axes: **profiles** (which services run — the data core has no profile and is always up; apps opt in via `profiles: [app]` / `[edge]`) and **`--config` overlays** (`compose.<name>.yaml` for how they run — `prod`/`expose`/`traefik`). Base is port-less; profiles do ~90% of the work because dev runs on the host. Bind-mounts only. See `references/repo-setup/runtime/docker-compose-structure.md`.
-6. **One `ctl` dispatcher at repo root.** `ctl dev` runs the local host loop (apps on host, hot reload, auto-starts the data core). `ctl up [profile…] [--config=name…]` runs the containerised stack — profiles select services, configs overlay how they run, both auto-discovered; there is **no `ctl prod` verb** (production is `ctl up app edge --config=prod`). `down`/`ps`/`logs` manage containers; `status`/`setup`/`migrate` round it out. It delegates to `docker compose`, a process runner (`process-compose`/`mprocs`), and `scripts/*.sh` — the dispatcher is the public API, callable bare via mise PATH. Name `ctl` is swappable.
+5. **Compose lives in `docker/`**, split on three axes (each a distinct compose mechanism): **profiles** (which services run — the data core has no profile and is always up; apps opt in via `profiles: [app]` / `[edge]`), at most one **`--config=prod`** (a full alternate deployment config in `compose.prod.yaml`), and stackable **`.m.` modifiers** (`compose.m.<name>.yaml`, applied as `--expose` / `--traefik`). Base is port-less; profiles do ~90% of the work because dev runs on the host. Bind-mounts only. See `references/repo-setup/runtime/docker-compose-structure.md`.
+6. **One `ctl` dispatcher at repo root.** `ctl dev` runs the local host loop (apps on host, hot reload, auto-starts the data core). `ctl up [profile…] [--config=prod] [--<modifier>…]` runs the containerised stack — profiles select services, one optional config picks a deployment config, `.m.` modifiers stack on top, all auto-discovered; there is **no `ctl prod` verb** (production is `ctl up app edge --config=prod`). `down`/`ps`/`logs` manage containers; `status`/`setup`/`migrate` round it out. It is a **thin wrapper** delegating to `docker compose`, a process runner (`process-compose`/`mprocs`), and `scripts/*.sh` — the dispatcher is the public API, callable bare via mise PATH. Name `ctl` is swappable.
 7. **README documents the three startup paths**, and **each service/app ships its own `README.md`** for its host dev loop (see `references/repo-setup/readme-three-paths.md`).
 8. **Examples are evidence, not gospel.** They evolved at different times. Cite them, do not blindly copy.
 
@@ -95,7 +95,7 @@ If the user's shape doesn't cleanly match one, name the closest two and ask whic
 For every layout, the same conventions apply (with layout-specific adjustments documented per-layout). Consult:
 
 - `references/repo-setup/env-and-config/` — root `.env`, per-service `config.yaml`, env precedence (root → per-service → real env wins), frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
-- `references/repo-setup/runtime/` — the execution triad (mise + `ctl` + docker). **Start at `runtime/overview.md`** for how they interact; then `docker-compose-structure.md` (profiles vs `--config` vs `compose.m.*`), `script-dispatcher.md` (the thin `ctl` wrapper), `mise.md`, and `complex-setups.md` (multi-mode + binary orchestrator)
+- `references/repo-setup/runtime/` — the execution triad (mise + `ctl` + docker). **Start at `runtime/overview.md`** for how they interact; then `docker-compose-structure.md` (profiles vs `--config` vs `compose.m.*`), `script-overview.md` + `script-usage.md` (the `ctl`/`scripts` model and its command surface), `mise.md`, and `complex-setups.md` (multi-mode + binary orchestrator)
 - `references/architecture/backend/` — `uv` for apps, `uvenv` for ML, Alembic conventions
 - `references/architecture/frontend/` — Vite/proxy/nginx pair, multi-frontend workspaces, design tokens, light/dark
 - `references/architecture/database/` — **choosing a database** (SQLite vs Postgres, in-process memory vs Redis), `infra/` vs `data/`, postgres/redis/sqlite/seaweed/mongo/neo4j conventions (versions illustrative — check latest)
@@ -181,11 +181,8 @@ references/
 │   │   ├── docker-bind-mounts.md  # bind-mount host dirs; no named volumes; data/ discipline
 │   │   ├── docker-nested-data-dir.md   # data/postgres/pgdata so .gitkeep doesn't break initdb
 │   │   ├── docker-internal-ports.md    # internal port = fixed convention; host port = ${VAR}; anchors for repeated blocks
-│   │   ├── script-dispatcher.md   # the ctl model: THIN wrapper → ctl dev (host) + ctl up [profile] [--config] [--modifier]
-│   │   ├── script-subscripts.md   # scripts/*.sh that ctl delegates to (implementation)
-│   │   ├── script-dev-without-docker.md # ctl dev: apps on host (hot reload), data core in containers
-│   │   ├── script-setup-and-status.md   # ctl setup wizard + ctl status doctor (the 2 project-custom subcommands)
-│   │   ├── script-three-startup-paths.md # ctl / raw compose / no-docker host run (README contract)
+│   │   ├── script-overview.md     # the ctl/scripts model: dev vs up, thin wrapper, the 2 custom bodies, why-host, 3 startup paths
+│   │   ├── script-usage.md        # command surface + dispatcher skeleton + scripts/*.sh map + setup/status + host loop + startup commands
 │   │   └── complex-setups.md      # multi-mode docker/<mode>/ trees + escalate ctl → a Go binary (→ Layout 05)
 │   ├── env-and-config/            # the env/config split (a firm convention area)
 │   │   ├── root-env-shared-only.md    # what belongs in root .env (shared only) + .env.example contract
@@ -255,11 +252,11 @@ references/
 
 assets/snippets/                   # fragments to drop into a target repo (NOT read as guidance)
 ├── frontend/{tokens,globals,light-dark}.css, vite-proxy.config.ts
-├── docker/compose.yaml (profiled base) + compose.{expose,traefik,prod}.yaml (--config overlays)
+├── docker/compose.yaml (profiled base) + compose.prod.yaml (--config) + compose.m.{expose,traefik}.yaml (modifiers)
 ├── infra/nginx.conf
 ├── python/{alembic-shim.py, alembic_helpers.py}
 ├── env/{env.example.template, mise.toml.example}
-├── scripts/dev-wrapper.sh         # the ctl dispatcher (drops as ctl at repo root)
+├── scripts/dev-wrapper.sh→ctl (thin dispatcher) + worker scripts (dev-host/setup/status/check-env/migrate/wait-for-health/test/build/clean).sh
 ├── claude/CLAUDE.md.template
 └── README.md                      # snippet index: what each fragment is + where it drops
 

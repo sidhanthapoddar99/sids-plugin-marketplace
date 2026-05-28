@@ -88,7 +88,7 @@ ctl up app edge --config=prod --traefik
     --profile app --profile edge --env-file .env.production up -d
 ```
 
-`ctl up --help` auto-discovers both lists: configs are `compose.<name>.yaml`, modifiers are `compose.m.<name>.yaml`. Raw `docker compose -f docker/compose.yaml --profile app up` always remains available. See `script-dispatcher.md`.
+`ctl up --help` auto-discovers both lists: configs are `compose.<name>.yaml`, modifiers are `compose.m.<name>.yaml`. Raw `docker compose -f docker/compose.yaml --profile app up` always remains available. See `script-usage.md`.
 
 ## Example: the prod config and the traefik modifier
 
@@ -131,7 +131,7 @@ networks:
 
 ## See also
 
-- `script-dispatcher.md` — `ctl up [profile] [--config] [--modifier]` dispatch + auto-discovery
+- `script-usage.md` — `ctl up [profile] [--config] [--modifier]` dispatch + auto-discovery (`script-overview.md` for the model)
 - `docker-internal-ports.md` — internal port = fixed convention; host port = `${VAR}` (the `--expose` modifier)
 - `docker-bind-mounts.md` — bind-mount discipline, the `data/` layout
 - `complex-setups.md` — `docker/<mode>/` trees + Go-CLI orchestrator (Layout 05)

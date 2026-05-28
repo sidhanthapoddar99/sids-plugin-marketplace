@@ -7,7 +7,7 @@ The standard runtime (one `docker/` with a profiled `compose.yaml` + `compose.m.
 
 They travel together: the kind of project that needs `docker/<mode>/` (e.g. a blockchain test harness with 1/N/prod node topologies) is usually the kind that needs a binary to manage it. This is **Layout 05**; the canonical example is `chimere-chain-2025`.
 
-> The simple runtime is documented in `runtime/docker-compose-structure.md` (compose) and `runtime/script-dispatcher.md` (ctl). This doc only covers the deltas for complex setups. Don't reach for any of it preemptively.
+> The simple runtime is documented in `runtime/docker-compose-structure.md` (compose) and `runtime/script-overview.md` (ctl). This doc only covers the deltas for complex setups. Don't reach for any of it preemptively.
 
 ---
 
@@ -140,5 +140,5 @@ A Layout 05 README documents **four** startup paths:
 
 - `runtime/overview.md` — how mise + ctl + docker + env interact (the simple case)
 - `runtime/docker-compose-structure.md` — the flat (single-mode) docker convention + `compose.m.*` modifiers
-- `runtime/script-dispatcher.md` — the shell `ctl` this escalates *from*
+- `runtime/script-overview.md` — the shell `ctl` this escalates *from*
 - `layouts/05_infra-orchestrator.md` — the layout entry that points here

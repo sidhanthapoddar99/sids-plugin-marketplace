@@ -7,11 +7,11 @@ Fragments the `project-setup` skill cites and `/ps-setup` can drop into a new or
 ```
 assets/snippets/
 ├── frontend/          # CSS tokens, theme wiring, vite config
-├── docker/            # profiled compose base + --config overlays
+├── docker/            # profiled compose base + --config + .m. modifiers
 ├── infra/             # config baked into containers (nginx)
 ├── python/            # alembic helpers + shim template
 ├── env/               # .env.example + .mise.toml templates
-├── scripts/           # ctl dispatcher
+├── scripts/           # thin ctl dispatcher + self-contained worker scripts
 └── claude/            # CLAUDE.md template
 ```
 
@@ -28,14 +28,14 @@ assets/snippets/
 
 ### `docker/`
 
-Two axes: `compose.yaml` is the profiled base (data core = no profile; apps `[app]`/`[edge]`); the rest are `--config=<name>` overlays. `ctl up [profile…] [--config=name…]` assembles them.
+Three axes: `compose.yaml` is the profiled base (data core = no profile; apps `[app]`/`[edge]`); `compose.prod.yaml` is the one `--config=prod` deployment config; `compose.m.<name>.yaml` files are stackable `.m.` modifiers (`--expose`, `--traefik`). `ctl up [profile…] [--config=prod] [--<modifier>…]` assembles them. Full convention: `references/repo-setup/runtime/docker-compose-structure.md`.
 
 | File | What it is | Drops at |
 |---|---|---|
 | `compose.yaml` | Profiled base — all services, no host ports; data core has no profile, apps `[app]`/`[edge]` | `docker/compose.yaml` |
-| `compose.expose.yaml` | `--config=expose` — publish host ports (`ctl dev` layers it for the data core) | `docker/compose.expose.yaml` |
-| `compose.prod.yaml` | `--config=prod` — image tags, resource limits, `.env.production` | `docker/compose.prod.yaml` |
-| `compose.traefik.yaml` | `--config=traefik` — external Traefik network + labels on the edge | `docker/compose.traefik.yaml` |
+| `compose.prod.yaml` | `--config=prod` config — image tags, resource limits, `.env.production` | `docker/compose.prod.yaml` |
+| `compose.m.expose.yaml` | `--expose` modifier — publish host ports (`ctl dev` layers it for the data core) | `docker/compose.m.expose.yaml` |
+| `compose.m.traefik.yaml` | `--traefik` modifier — external Traefik network + labels on the edge | `docker/compose.m.traefik.yaml` |
 
 ### `infra/`
 
@@ -59,9 +59,18 @@ Two axes: `compose.yaml` is the profiled base (data core = no profile; apps `[ap
 
 ### `scripts/`
 
+`dev-wrapper.sh` drops at the repo root as `ctl`; **every other file drops into `scripts/`**. `ctl` is a thin router — it owns arg routing, the `ctl up` compose assembly (profiles + one `--config` + `.m.` modifiers), and trivial `docker compose` passthroughs; each command with a real body lives in its own self-contained `scripts/<cmd>.sh`. See `references/repo-setup/runtime/script-overview.md` (model + script map) and `.../script-usage.md` (commands).
+
 | File | What it is | Drops at |
 |---|---|---|
-| `dev-wrapper.sh` | `ctl` control dispatcher (dev/prod/up/down/status/setup/migrate), executable | `ctl` at repo root (rename, chmod +x) |
+| `dev-wrapper.sh` | `ctl` dispatcher — routes `dev`/`up`/`down`/`ps`/`logs`/`setup`/`status`/`migrate`/`test`/`build`/`clean`, executable | `ctl` at repo root (rename, chmod +x) |
+| `dev-host.sh` | host dev loop — bash fallback (≤2 procs; else `process-compose`), runs uvicorn + `bun dev` | `scripts/dev-host.sh` |
+| `setup.sh` | `ctl setup` — `.env` wizard: copies `.env.example`, generates `*_PASSWORD/_SECRET/_KEY` | `scripts/setup.sh` |
+| `status.sh` | `ctl status` — config doctor (env schema + tools + data-core health) | `scripts/status.sh` |
+| `check-env.sh` | diff `.env` keys against `.env.example` (called by `status.sh`) | `scripts/check-env.sh` |
+| `migrate.sh` | `ctl migrate {up\|down\|new\|status}` — Alembic | `scripts/migrate.sh` |
+| `wait-for-health.sh` | poll compose services until healthy (used by `ctl dev`) | `scripts/wait-for-health.sh` |
+| `test.sh` / `build.sh` / `clean.sh` | `ctl test` / `build` / `clean` workers | `scripts/{test,build,clean}.sh` |
 
 ### `claude/`
 
@@ -71,7 +80,7 @@ Two axes: `compose.yaml` is the profiled base (data core = no profile; apps `[ap
 
 ## Conventions
 
-- File names mirror their **drop name** where possible (`compose.expose.yaml`, not `compose-expose.yaml`).
+- File names mirror their **drop name** where possible (`compose.m.expose.yaml`, not `compose-expose.yaml`).
 - Templates use `<PROJECT>` / `<placeholder>` markers the slash command substitutes.
 - All snippets are **illustrative defaults** — adapt per project. The category structure is the contract; the specific values are not.
 - Image tags and runtime versions are illustrative — see the `references/architecture/database/` and `references/repo-setup/runtime/mise.md` notes about checking latest and asking the user.

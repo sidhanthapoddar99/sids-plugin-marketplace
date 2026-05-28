@@ -19,11 +19,10 @@ my-app/
 ├── .env.production                 # optional, compose env_file for prod
 ├── .mise.toml                      # runtime contract
 ├── ctl                             # single dispatcher
-├── docker/
+├── docker/                         # compose mechanics → runtime/docker-compose-structure.md
 │   ├── compose.yaml                # profiled base — data core (no profile) + apps [app]/[edge]; no host ports
-│   ├── compose.expose.yaml         # --config=expose (publish host ports)
 │   ├── compose.prod.yaml           # --config=prod (image tags, limits, .env.production)
-│   └── compose.traefik.yaml        # --config=traefik (external Traefik edge)
+│   └── compose.m.<modifier>.yaml   # one per .m. modifier: --expose (host ports), --traefik (edge)
 ├── scripts/                        # subscripts the dispatcher calls
 │   ├── db-init.sh
 │   ├── check-env.sh
@@ -117,8 +116,8 @@ These are shared across every variant above; don't restate them, follow the refs
 
 - **Env precedence & split** — root `.env` is shared backend/infra only; frontends carry their own `VITE_*` `.env`. See `references/repo-setup/env-and-config/env-precedence.md`, `.../root-env-shared-only.md`, `.../frontend-env-isolation.md`.
 - **Per-service config** — each service has its own `config.yaml` reading root `.env` via `${VAR}`, with a gitignored `config.local.yaml`. See `references/repo-setup/env-and-config/per-service-config-yaml.md`.
-- **Docker structure** — profiled `compose.yaml` (data core + `[app]`/`[edge]`) plus `--config` overlays (`expose`/`prod`/`traefik`). See `references/repo-setup/runtime/docker-compose-structure.md`.
-- **`ctl` dispatcher** — single entry point: `ctl dev` (host) + `ctl up [profile] [--config]` + migrate/test/clean. See `references/repo-setup/runtime/script-dispatcher.md` and `.../three-startup-paths.md`.
+- **Docker structure** — profiled `compose.yaml` (data core + `[app]`/`[edge]`) plus at most one `--config=prod` and stackable `.m.` modifiers (`--expose`/`--traefik`). See `references/repo-setup/runtime/docker-compose-structure.md`.
+- **`ctl` dispatcher** — single entry point: `ctl dev` (host) + `ctl up [profile] [--config]` + migrate/test/clean. See `references/repo-setup/runtime/script-overview.md` (model) and `.../script-usage.md` (commands).
 - **Production serving** — gunicorn + uvicorn workers with recycling behind nginx; readiness/liveness, graceful shutdown, migrations-on-deploy. See `references/architecture/production/app-server-and-workers.md` and `.../production-readiness.md`.
 
 ## Anti-patterns

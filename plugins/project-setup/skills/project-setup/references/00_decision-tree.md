@@ -109,14 +109,14 @@ See `references/repo-setup/env-and-config/env-precedence.md` for the load order 
 
 ### What compose structure does the layout need?
 
-Two axes (see `references/repo-setup/runtime/docker-compose-structure.md`): **profiles** (which services) and **`--config` overlays** (how they run). Default set for Layout 02:
+Three axes — **profiles** (which services run), at most one **`--config=prod`** (a full alternate deployment config), and stackable **`.m.` modifiers** (`--expose` / `--traefik`). The exact filenames, the `ctl up` grammar, and worked examples are the canonical doc's job — **see `references/repo-setup/runtime/docker-compose-structure.md`** and don't restate them. What this layer decides is the *footprint* per layout:
 
-- `compose.yaml` — profiled base: data layer = no profile (always up); apps `profiles: [app]`; edge `profiles: [edge]`. No host ports.
-- `compose.expose.yaml` — `--config=expose`: publish host ports (`ctl dev` layers it for the data core)
-- `compose.prod.yaml` — `--config=prod`: image tags, resource limits, `.env.production`
-- `compose.traefik.yaml` — `--config=traefik`: external Traefik network + labels on the edge
-
-So `ctl up` = data core, `ctl up app` = +apps, `ctl up app edge --config=prod` = production. Single app (Layout 01) often needs only `compose.yaml` (+ `compose.expose.yaml`). ML (Layout 04) often needs no compose. Infra orchestrator (Layout 05) uses `docker/<mode>/compose.yaml` per mode (singlenode/multinode/prod) — see `references/repo-setup/runtime/complex-setups.md`.
+| Layout | Compose footprint |
+|---|---|
+| 01 single-app | often just the profiled base (reach for the `--expose` modifier only if it needs host ports) |
+| 02 multi-app | the full set: profiled base + `--config=prod` + `.m.` modifiers |
+| 04 ML | usually none |
+| 05 orchestrator | `docker/<mode>/` per mode (singlenode / multinode / prod) — see `references/repo-setup/runtime/complex-setups.md` |
 
 ### Python flow per layout
 

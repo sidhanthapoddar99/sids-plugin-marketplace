@@ -1,6 +1,6 @@
-# docker/compose.expose.yaml — config overlay.  ctl up <profile…> --config=expose
+# docker/compose.m.expose.yaml — MODIFIER (--expose).  ctl up <profile…> --expose
 # Publishes host ports. Internal ports are fixed conventions; host ports are ${VAR}-driven.
-# Only ports for services that actually start are applied — so `ctl up --config=expose`
+# Only ports for services that actually start are applied — so `ctl up --expose`
 # (core only) exposes just the data ports; backend/frontend entries are ignored.
 # `ctl dev` layers this automatically when it brings up the data core for host apps.
 

@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # ctl — <PROJECT> control plane.  Drop at repo root as `ctl` (no extension), chmod +x.
 #
-#   ctl dev [target]                 run locally on the host (hot reload); data core auto-started
-#   ctl up [profile…] [--config=n…]  run container stack (bare = no-profile data core)
-#   ctl down [svc]                   stop container services
-#   ctl ps | logs | restart | status | setup | migrate | test | build | clean | help
+#   ctl dev [target]                      run locally on the host (hot reload); data core auto-started
+#   ctl up [profile…] [--config=prod] [--<modifier>…]   run container stack (bare = no-profile data core)
+#   ctl down [svc] | ps | logs | restart                 container lifecycle
+#   ctl setup | status | migrate | test | build | clean | help
 #
-# dev = host loop; up = docker. Profiles select services; --config overlays how they run.
+# THIN WRAPPER: `ctl` owns arg routing + the compose assembly (profiles + one config + .m. modifiers)
+# + trivial `docker compose` passthroughs. Every command with a real body lives in scripts/<cmd>.sh,
+# self-contained and runnable on its own. Add a worker → add a file; no edits here.
+#
+# dev = host loop; up = docker. Profiles select services; one --config=<name> swaps the deployment
+# config; --<modifier> flags layer compose.m.<modifier>.yaml overlays (stack freely).
 # No `ctl prod` verb — production is `ctl up app edge --config=prod`.  Migrations are `ctl migrate`.
-# Local multi-process dev delegates to process-compose if present (else a bash trap fallback).
 
 set -euo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,10 +28,15 @@ DOCKER_DIR="docker"; BASE="$DOCKER_DIR/compose.yaml"
 DATA_SVCS=(postgres redis)               # the no-profile data core dev depends on
 compose() { docker compose -f "$BASE" "$@"; }
 
-# discovery — no hard-coded profile/config lists (assumes inline `profiles: [app]` form)
-list_profiles() { grep -hoE 'profiles:[[:space:]]*\[[^]]+\]' "$BASE" \
-                    | grep -oE '[A-Za-z0-9_-]+' | grep -vx profiles | sort -u; }
-list_configs()  { for f in "$DOCKER_DIR"/compose.*.yaml; do b=${f##*/}; b=${b#compose.}; echo "${b%.yaml}"; done; }
+# discovery — no hard-coded lists (assumes inline `profiles: [app]` form). compose.m.* = modifiers,
+# the rest (minus the base) = configs.
+list_profiles()  { grep -hoE 'profiles:[[:space:]]*\[[^]]+\]' "$BASE" \
+                     | grep -oE '[A-Za-z0-9_-]+' | grep -vx profiles | sort -u; }
+list_configs()   { for f in "$DOCKER_DIR"/compose.*.yaml; do [[ -e $f ]] || continue
+                     b=${f##*/}; [[ $b == compose.yaml || $b == compose.m.* ]] && continue
+                     b=${b#compose.}; echo "${b%.yaml}"; done; }
+list_modifiers() { for f in "$DOCKER_DIR"/compose.m.*.yaml; do [[ -e $f ]] || continue
+                     b=${f##*/compose.m.}; echo "${b%.yaml}"; done; }
 
 require_env() {
   [[ -f .env ]] || die ".env missing — run \`ctl setup\` (or cp .env.example .env)."
@@ -40,122 +49,79 @@ require_tools() {
   (( ${#missing[@]} )) && die "missing on PATH: ${missing[*]} — install mise then \`mise install\`."
 }
 
-# ── container lifecycle (thin wrappers over docker compose) ─
-# ctl up [profile…] [--config=name…] — profiles select services, configs overlay how they run
+# ── ctl up: profiles + one --config + stacked --<modifier> overlays ─────────
 cmd_up() {
   [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]] && { up_help; return; }
   require_env
-  local profiles=() configs=()
+  local profiles=() config="" modifiers=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --config=*) configs+=("${1#--config=}"); shift ;;
-      --config)   configs+=("$2"); shift 2 ;;
+      --config=*) [[ -z $config ]] || die "one --config at a time"; config="${1#--config=}"; shift ;;
+      --config)   [[ -z $config ]] || die "one --config at a time"; config="${2:-}"; shift 2 ;;
+      --*)        modifiers+=("${1#--}"); shift ;;          # --expose → modifier 'expose'
       -*)         die "unknown flag: $1 (try ctl up --help)" ;;
       *)          profiles+=("$1"); shift ;;
     esac
   done
   local files=("$BASE") prof_args=() env_args=()
-  for c in "${configs[@]}"; do
-    local cf="$DOCKER_DIR/compose.$c.yaml"
-    [[ -f "$cf" ]] || die "no such config '$c'. configs: $(list_configs | tr '\n' ' ')"
+  if [[ -n $config ]]; then                                # base + config first
+    local cf="$DOCKER_DIR/compose.$config.yaml"
+    [[ -f $cf ]] || die "no such config '$config'. configs: $(list_configs | tr '\n' ' ')"
     files+=("$cf")
-    [[ "$c" == prod && -f .env.production ]] && env_args=(--env-file .env.production)
+    [[ $config == prod && -f .env.production ]] && env_args=(--env-file .env.production)
+  fi
+  local m mf
+  for m in "${modifiers[@]}"; do                           # modifiers stack last (they win)
+    mf="$DOCKER_DIR/compose.m.$m.yaml"
+    [[ -f $mf ]] || die "no such modifier '$m'. modifiers: $(list_modifiers | tr '\n' ' ')"
+    files+=("$mf")
   done
+  local p
   for p in "${profiles[@]}"; do
     list_profiles | grep -qx "$p" || die "no such profile '$p'. profiles: $(list_profiles | tr '\n' ' ')"
     prof_args+=(--profile "$p")
   done
-  local cmd=(docker compose); for f in "${files[@]}"; do cmd+=(-f "$f"); done
+  local cmd=(docker compose) f; for f in "${files[@]}"; do cmd+=(-f "$f"); done
   cmd+=("${prof_args[@]}" "${env_args[@]}" up -d)
-  c_info "${cmd[*]}"; "${cmd[@]}"
+  c_info "${cmd[*]}"; "${cmd[@]}"                           # echo composed cmd, then run
 }
 up_help() {
-  echo "ctl up [profile…] [--config=name…]"
-  echo "  profiles (which services; combine freely):"; for p in $(list_profiles); do echo "    $p"; done
-  echo "  configs (overlay how they run; stackable):"; for c in $(list_configs); do echo "    $c"; done
+  echo "ctl up [profile…] [--config=<name>] [--<modifier>…]"
+  echo "  profiles  (which services; combine freely):"; for p in $(list_profiles);  do echo "    $p"; done
+  echo "  config    (one alternate deployment config):"; for c in $(list_configs);   do echo "    --config=$c"; done
+  echo "  modifiers (cross-cutting; stack freely):";      for m in $(list_modifiers); do echo "    --$m"; done
 }
-cmd_down()    { compose down "$@"; }
-cmd_restart() { compose restart "$@"; }
-cmd_logs()    { compose logs "$@"; }
+
+# ── ctl dev: ensure data core, then process-compose (or the bash fallback worker) ─
+cmd_dev() {
+  require_env; require_tools
+  c_info "ensuring data core (with ports)…"
+  docker compose -f "$BASE" -f "$DOCKER_DIR/compose.m.expose.yaml" up -d "${DATA_SVCS[@]}"
+  bash scripts/wait-for-health.sh "${DATA_SVCS[@]}" 60 || c_warn "health poll skipped/failed."
+  if command -v process-compose >/dev/null 2>&1 && [[ -f process-compose.yaml ]]; then
+    exec process-compose up "$@"
+  fi
+  exec bash scripts/dev-host.sh "$@"     # bash fallback (≤2 procs; prefer process-compose past that)
+}
+
 cmd_ps() {
   compose ps
   command -v process-compose >/dev/null 2>&1 && process-compose process list 2>/dev/null || true
 }
 
-# ── the two stack launchers ───────────────────────────────
-cmd_dev() {                              # local, host, hot reload
-  require_env; require_tools
-  c_info "ensuring data core (with ports)…"
-  docker compose -f "$BASE" -f "$DOCKER_DIR/compose.expose.yaml" up -d "${DATA_SVCS[@]}"
-  bash scripts/wait-for-health.sh "${DATA_SVCS[@]}" 60 2>/dev/null || \
-    c_warn "wait-for-health.sh missing — skipping healthcheck poll."
-  if command -v process-compose >/dev/null 2>&1 && [[ -f process-compose.yaml ]]; then
-    exec process-compose up "$@"
-  fi
-  # ── bash fallback: fine for 1–2 processes; prefer process-compose past that ──
-  c_info "starting services on host. Ctrl-C kills all."
-  prefix() { local tag="$1" c="$2"; while IFS= read -r l; do printf '\033[%sm[%s]\033[0m %s\n' "$c" "$tag" "$l"; done; }
-  ( cd apps/backend && uv run uvicorn "${BACKEND_MODULE:-app.main}":app --reload \
-      --host "${PYTHON_HOST:-0.0.0.0}" --port "${PYTHON_PORT:-8000}" 2>&1 | prefix "backend " 33 ) & be=$!
-  ( cd apps/frontend && bun dev 2>&1 | prefix "frontend" 36 ) & fe=$!
-  trap 'kill "$be" "$fe" 2>/dev/null || true; wait || true; exit 0' INT TERM
-  wait
-}
-
-# ── custom-body subcommands route to scripts/ ─────────────
-cmd_status() {
-  if [[ -x scripts/status.sh ]]; then bash scripts/status.sh "$@";
-  else c_warn "scripts/status.sh not present — add a project config doctor."; fi
-}
-cmd_setup() {
-  if [[ -x scripts/setup.sh ]]; then bash scripts/setup.sh "$@";
-  else [[ -f .env ]] || cp .env.example .env; c_warn "Fill REQUIRED blanks in .env, then \`ctl dev\`."; fi
-}
-
-cmd_migrate() {
-  local sub="${1:-}"; shift || true
-  case "$sub" in
-    new)    [[ -n "${1:-}" ]] || die "usage: ctl migrate new \"<message>\""
-            ( cd apps/backend && uv run alembic revision -m "$1" ) ;;
-    up)     ( cd apps/backend && uv run alembic upgrade head ) ;;
-    down)   ( cd apps/backend && uv run alembic downgrade -1 ) ;;
-    status) ( cd apps/backend && uv run alembic current ) ;;
-    *)      die "unknown migrate subcommand: ${sub:-<none>}. Try ctl help" ;;
-  esac
-}
-
-cmd_test() {
-  c_info "backend tests…";  ( cd apps/backend && uv run pytest ) || true
-  c_info "frontend tests…"; ( cd apps/frontend && bun test ) || true
-}
-cmd_build() {
-  c_info "building frontend…"; ( cd apps/frontend && bun run build )
-  c_info "building backend image…"; docker build -t "${COMPOSE_PROJECT_NAME:-myapp}-backend:dev" apps/backend
-}
-cmd_clean() {
-  cat <<EOF >&2
-This will: compose down -v (drops data volumes), rm node_modules/dist/.vite, clear __pycache__.
-EOF
-  read -r -p "Continue? [y/N] " ans
-  [[ "${ans,,}" == "y" ]] || { c_warn "aborted."; exit 0; }
-  compose down -v 2>/dev/null || true
-  rm -rf apps/frontend/node_modules apps/frontend/dist apps/frontend/.vite
-  find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
-  c_ok "clean."
-}
+# real-body commands live in scripts/<cmd>.sh — ctl just routes
+run_script() { local s="scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s (ship it in scripts/)."; exec bash "$s" "$@"; }
 
 cmd_help() {
-  cat <<EOF
+  cat <<'EOF'
 ctl — <PROJECT> control plane
-  ctl dev [target]            run locally on the host (hot reload); data core auto-started
-  ctl up [profile…] [--config=n…]  run container stack; ctl up --help for profiles+configs
-  ctl down [svc]              stop container services
-  ctl ps               containers + local procs
-  ctl logs [svc] [-f]  service logs
-  ctl status [svc]     check config (.env, config.local.yaml, deps reachable)
-  ctl setup            interactive .env wizard
-  ctl migrate {up|down|new "<msg>"|status}
-  ctl test | build | clean | help
+  ctl dev [target]                                   host loop (hot reload); data core auto-started
+  ctl up [profile…] [--config=prod] [--<modifier>…]  container stack; ctl up --help for the lists
+  ctl down [svc] | ps | logs [svc] [-f] | restart    container lifecycle
+  ctl setup            interactive .env wizard            (scripts/setup.sh)
+  ctl status [svc]     config doctor                      (scripts/status.sh)
+  ctl migrate {up|down|new "<msg>"|status}               (scripts/migrate.sh)
+  ctl test | build | clean                               (scripts/{test,build,clean}.sh)
 EOF
 }
 
@@ -164,18 +130,13 @@ main() {
   case "${1:-help}" in
     dev)            shift; cmd_dev "$@" ;;
     up)             shift; cmd_up "$@" ;;
-    down)           shift; cmd_down "$@" ;;
-    restart)        shift; cmd_restart "$@" ;;
+    down)           shift; compose down "$@" ;;
+    restart)        shift; compose restart "$@" ;;
+    logs)           shift; compose logs "$@" ;;
     ps)             cmd_ps ;;
-    logs)           shift; cmd_logs "$@" ;;
-    status)         shift; cmd_status "$@" ;;
-    setup)          cmd_setup ;;
-    migrate)        shift; cmd_migrate "$@" ;;
-    test)           cmd_test ;;
-    build)          cmd_build ;;
-    clean)          cmd_clean ;;
+    setup|status|migrate|test|build|clean) local c="$1"; shift; run_script "$c" "$@" ;;
     help|-h|--help) cmd_help ;;
-    *)              die "unknown command: $1. Try ctl help" ;;
+    *)              die "unknown command: ${1:-}. Try ctl help" ;;
   esac
 }
 main "$@"

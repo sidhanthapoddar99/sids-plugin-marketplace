@@ -3,7 +3,8 @@
 #   ctl up           → postgres + redis (no-profile core; what host dev needs)
 #   ctl up app       → + backend, frontend
 #   ctl up app edge  → + nginx
-# Layer config overlays with --config=<name>: compose.expose.yaml / .traefik.yaml / .prod.yaml
+# Layer overlays: one config (--config=prod → compose.prod.yaml) + .m. modifiers
+#   (--expose, --traefik → compose.m.<modifier_name>.yaml). Modifiers stack; at most one config.
 
 services:
   backend:
