@@ -74,16 +74,16 @@ assets/snippets/
 - File names mirror their **drop name** where possible (`compose.dev.yaml`, not `compose-dev.yaml`).
 - Templates use `<PROJECT>` / `<placeholder>` markers the slash command substitutes.
 - All snippets are **illustrative defaults** — adapt per project. The category structure is the contract; the specific values are not.
-- Image tags and runtime versions are illustrative — see the `references/databases/` and `references/mise.md` notes about checking latest and asking the user.
+- Image tags and runtime versions are illustrative — see the `references/architecture/database/` and `references/repo-setup/mise.md` notes about checking latest and asking the user.
 
 ## What's NOT here
 
 This folder is intentionally small. Things deliberately not snippeted:
 
-- **A full project tree** — see `references/topologies/` instead
-- **ML training scripts** — too project-specific; see `references/ml-orchestration/`
-- **Backend `pyproject.toml`** — see `references/python/pyproject-uv-sync-for-apps.md` for the shape
+- **A full project tree** — see `references/repo-setup/topologies/` instead
+- **ML training scripts** — too project-specific; see `references/architecture/ml-orchestration/`
+- **Backend `pyproject.toml`** — see `references/architecture/backend/pyproject-uv-sync-for-apps.md` for the shape
 - **`Dockerfile`s for backend/frontend** — too stack-specific; the references cover the patterns
-- **Cloud orchestrator configs** (`*.dstack.yml`, `sky/*.yaml`) — examples live in `references/ml-orchestration/`
+- **Cloud orchestrator configs** (`*.dstack.yml`, `sky/*.yaml`) — examples live in `references/architecture/ml-orchestration/`
 
 If you find yourself wanting a snippet that isn't here, ask: does it have a small focused job and apply to most projects of its topology? If yes, add it. If no, leave it as a reference example.

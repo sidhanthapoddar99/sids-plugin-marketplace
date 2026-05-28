@@ -28,7 +28,7 @@ These are the conventions to apply by default. Most are **firm** — their value
 4. **Per-service `config.yaml`, root `.env`.** Root `.env` holds shared/common vars only. Each backend owns its own `config.yaml`. Frontends have their own env scope (`VITE_*` / `NEXT_PUBLIC_*`) — backend secrets must never leak there.
 5. **Compose lives in `docker/`**, with files representing deployment modes (base / database-only / dev / prod / traefik / no-ports). Bind-mounts only.
 6. **One `ctl` dispatcher at repo root.** `ctl dev` runs the local host loop (apps on host, hot reload); `ctl prod` runs the full docker stack; `up`/`down`/`ps` manage container services; `status`/`setup`/`migrate` round it out. It delegates to `docker compose`, a process runner (`process-compose`/`mprocs`), and `scripts/*.sh` — the dispatcher is the public API, callable bare via mise PATH. Name `ctl` is swappable.
-7. **README documents the three startup paths**, and **each service/app ships its own `README.md`** for its host dev loop (see `references/readme-three-paths.md`).
+7. **README documents the three startup paths**, and **each service/app ships its own `README.md`** for its host dev loop (see `references/repo-setup/readme-three-paths.md`).
 8. **Examples are evidence, not gospel.** They evolved at different times. Cite them, do not blindly copy.
 
 **Ecosystem-dependent typed defaults — pick the right branch, deviate per the rule:**
@@ -53,7 +53,7 @@ Walk the full flow: decision tree → question flow → topology → cross-cutti
 
 ### B — single architectural decision (user is in the middle of work)
 
-A surgical version: identify the smallest set of references that bear on the question, surface the convention, explain the trade-off, propose an action. Don't drag the user through the whole question flow when they're asking "where does this `init.sql` belong" — answer from `references/databases/infra-vs-data-folder.md`, cite the rule, suggest the placement.
+A surgical version: identify the smallest set of references that bear on the question, surface the convention, explain the trade-off, propose an action. Don't drag the user through the whole question flow when they're asking "where does this `init.sql` belong" — answer from `references/architecture/database/infra-vs-data-folder.md`, cite the rule, suggest the placement.
 
 Pattern for B:
 
@@ -77,7 +77,7 @@ Open `references/01_question-flow.md`. Run through it in order. Ask the user onl
 
 ### Step 3 — pick a topology
 
-Based on the answers, pick a topology from `references/topologies/`:
+Based on the answers, pick a topology from `references/repo-setup/topologies/`:
 
 | # | File | When |
 |---|---|---|
@@ -97,23 +97,23 @@ If the user's shape doesn't cleanly match one, name the closest two and ask whic
 
 For every topology, the same conventions apply (with topology-specific adjustments documented per-topology). Consult:
 
-- `references/env-and-config/` — root `.env`, per-service `config.yaml`, env precedence (root → per-service → real env wins), frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
-- `references/docker-compose/` — `docker/` folder layout, deployment modes, bind-mounts, nested-data-dir trick, escalation to Go CLI
-- `references/scripts/` — the `ctl` dispatcher (dev/prod launchers, up/down containers, delegate to `process-compose`), subscripts, dev-without-docker, three startup paths, `ctl setup`/`ctl status`
-- `references/python/` — `uv` for apps, `uvenv` for ML, Alembic conventions
-- `references/frontend/` — Vite/proxy/nginx pair, multi-frontend workspaces, design tokens, light/dark
-- `references/databases/` — **choosing a database** (SQLite vs Postgres, in-process memory vs Redis), `infra/` vs `data/`, postgres/redis/sqlite/seaweed/mongo/neo4j conventions (versions illustrative — check latest)
-- `references/production/` — app server + workers (gunicorn/uvicorn worker count, recycling, timeouts, preload; per-language concurrency models), production-readiness checklist (liveness/readiness, graceful shutdown, resource limits, migrations-on-deploy, logging)
-- `references/ml-orchestration/` — dstack (composes with the dstack plugin's skill) / SkyPilot / spot+checkpoints / inference autoscaling / remote dev via SSH+VS Code / agent SSH access / CI/CD for ML
-- `references/modularity/` — 500/300 line caps, folders by feature, extract on third use
-- `references/platforms/` — mobile (Kotlin/Swift), desktop (Tauri default, Electron alt)
-- `references/tooling/` — lefthook (pre-commit), VS Code debugger setup
-- `references/mise.md` — version pinning contract (versions illustrative — check latest)
-- `references/claude-folder.md` — `.claude/` conventions (empty by default)
-- `references/readme-three-paths.md` — README contract
-- `references/docs-integration.md` — defer all docs work to the `documentation-guide` skill; `/docs-init` to scaffold
-- `references/ci-cd-future.md` — placeholder, GitHub Actions / Vault notes
-- `references/examples-index.md` — pointers to the real-world examples (atheneum, NeuraSutra, plane, chimere)
+- `references/repo-setup/env-and-config/` — root `.env`, per-service `config.yaml`, env precedence (root → per-service → real env wins), frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
+- `references/repo-setup/docker/` — `docker/` folder layout, deployment modes, bind-mounts, nested-data-dir trick, escalation to Go CLI
+- `references/repo-setup/scripts/` — the `ctl` dispatcher (dev/prod launchers, up/down containers, delegate to `process-compose`), subscripts, dev-without-docker, three startup paths, `ctl setup`/`ctl status`
+- `references/architecture/backend/` — `uv` for apps, `uvenv` for ML, Alembic conventions
+- `references/architecture/frontend/` — Vite/proxy/nginx pair, multi-frontend workspaces, design tokens, light/dark
+- `references/architecture/database/` — **choosing a database** (SQLite vs Postgres, in-process memory vs Redis), `infra/` vs `data/`, postgres/redis/sqlite/seaweed/mongo/neo4j conventions (versions illustrative — check latest)
+- `references/architecture/production/` — app server + workers (gunicorn/uvicorn worker count, recycling, timeouts, preload; per-language concurrency models), production-readiness checklist (liveness/readiness, graceful shutdown, resource limits, migrations-on-deploy, logging)
+- `references/architecture/ml-orchestration/` — dstack (composes with the dstack plugin's skill) / SkyPilot / spot+checkpoints / inference autoscaling / remote dev via SSH+VS Code / agent SSH access / CI/CD for ML
+- `references/architecture/modularity/` — 500/300 line caps, folders by feature, extract on third use
+- `references/architecture/platform/` — mobile (Kotlin/Swift), desktop (Tauri default, Electron alt)
+- `references/repo-setup/tooling/` — lefthook (pre-commit), VS Code debugger setup
+- `references/repo-setup/mise.md` — version pinning contract (versions illustrative — check latest)
+- `references/integrations/claude-folder.md` — `.claude/` conventions (empty by default)
+- `references/repo-setup/readme-three-paths.md` — README contract
+- `references/integrations/docs-integration.md` — defer all docs work to the `documentation-guide` skill; `/docs-init` to scaffold
+- `references/repo-setup/tooling/ci-cd-future.md` — placeholder, GitHub Actions / Vault notes
+- `references/integrations/examples-index.md` — pointers to the real-world examples (atheneum, NeuraSutra, plane, chimere)
 
 ### Step 5 — propose, then act
 
@@ -159,7 +159,7 @@ Never edit files in `audit` mode. In `suggest` mode, only edit after explicit co
 - Do not force ML projects into the app shape — Topology 07.
 - Do not edit anything without showing the plan first and getting confirmation.
 - Do not read `.env` files (secrets); `.env.example` is the contract.
-- Do not invent file paths from training data — consult `references/examples-index.md` to cite real examples.
+- Do not invent file paths from training data — consult `references/integrations/examples-index.md` to cite real examples.
 
 ## File map — everything in this skill, annotated
 
@@ -170,104 +170,97 @@ references/
 ├── 00_decision-tree.md            # START HERE for layout: answers → topology + app/-vs-src/ + config/env placement
 ├── 01_question-flow.md            # the questions to ask before proposing (batched); ALWAYS-ask list
 │
-├── topologies/                    # pick ONE based on the decision tree
-│   ├── 01_single-app.md           # one service total → top-level ./<name>/ (CLI/lib/lone backend)
-│   ├── 02_monorepo-1be-1fe.md     # 1 backend + 1 frontend — the common product case
-│   ├── 03_monorepo-multi-backend.md   # 2+ backends, different langs, coordinate via DB/Redis (atheneum)
-│   ├── 04_monorepo-multi-frontend.md  # multiple frontends sharing packages/ (plane; pnpm+turbo)
-│   ├── 05_monorepo-microservices-mesh.md  # many small services, own boundaries
-│   ├── 06_polyrepo-with-aggregator.md # services in separate repos + a -deploy aggregator
-│   ├── 07_ml-project.md           # uvenv + requirements.txt, no compose; pulls in ml-orchestration/
-│   ├── 08_infra-orchestrator.md   # compose tree driven by a Go CLI (chimere)
-│   └── 09_embeddable-package-and-reference-host.md  # product = published package; apps/web is a dev harness, not the product
+├── repo-setup/                    # INTENT: how the repo is wired, run, configured, deployed
+│   ├── topologies/                # pick ONE based on the decision tree
+│   │   ├── 01_single-app.md           # one service total → top-level ./<name>/ (CLI/lib/lone backend)
+│   │   ├── 02_monorepo-1be-1fe.md     # 1 backend + 1 frontend — the common product case
+│   │   ├── 03_monorepo-multi-backend.md   # 2+ backends, different langs, coordinate via DB/Redis (atheneum)
+│   │   ├── 04_monorepo-multi-frontend.md  # multiple frontends sharing packages/ (plane; pnpm+turbo)
+│   │   ├── 05_monorepo-microservices-mesh.md  # many small services, own boundaries
+│   │   ├── 06_polyrepo-with-aggregator.md # services in separate repos + a -deploy aggregator
+│   │   ├── 07_ml-project.md           # uvenv + requirements.txt, no compose; pulls in ml-orchestration/
+│   │   ├── 08_infra-orchestrator.md   # compose tree driven by a Go CLI (chimere)
+│   │   └── 09_embeddable-package-and-reference-host.md  # product = published package; apps/web is a dev harness
+│   ├── scripts/                   # the ctl dispatcher + subscripts (firm: one entrypoint)
+│   │   ├── global-wrapper-dispatcher.md   # the ctl model: dev/prod launchers, up/down containers, delegate to process-compose
+│   │   ├── subscripts.md          # scripts/*.sh that ctl calls (implementation)
+│   │   ├── dev-without-docker.md  # ctl dev: apps on host (hot reload), DBs in containers
+│   │   ├── three-startup-paths.md # ctl / raw compose / no-docker host run (README contract)
+│   │   └── setup-command.md       # ctl setup wizard + ctl status doctor (the 2 project-custom subcommands)
+│   ├── docker/                    # how compose is laid out (firm: docker/ folder, bind-mounts)
+│   │   ├── docker-folder-layout.md    # everything under docker/; path discipline (../apps, ../infra)
+│   │   ├── compose-as-deployment-modes.md  # files = MODES (base/db-only/dev/prod/traefik/no-ports), not concerns
+│   │   ├── overrides-vs-profiles.md   # when to use -f overlays vs compose profiles
+│   │   ├── bind-mounts-not-volumes.md # bind-mount host dirs; no named volumes; data/ discipline
+│   │   ├── nested-data-dir-trick.md   # data/postgres/pgdata so .gitkeep doesn't break initdb
+│   │   ├── anchors-and-internal-ports.md  # internal port = fixed convention; host port = ${VAR}; anchors for repeated blocks
+│   │   └── orchestrator-escalation.md # when a shell wrapper should become a Go CLI (→ Topology 08)
+│   ├── env-and-config/            # the env/config split (a firm convention area)
+│   │   ├── root-env-shared-only.md    # what belongs in root .env (shared only) + .env.example contract
+│   │   ├── per-service-config-yaml.md # each backend's own config.yaml; reads root .env via ${VAR}
+│   │   ├── frontend-env-isolation.md  # SECURITY: VITE_*/NEXT_PUBLIC_* leak to the bundle — keep separate
+│   │   ├── build-time-vs-runtime.md   # classify every var; baked-into-artifact vs read-on-boot
+│   │   ├── yaml-var-interpolation.md  # ${VAR} substitution rules in config.yaml
+│   │   ├── config-local-overrides.md  # config.local.yaml precedence for dev
+│   │   ├── env-precedence.md          # load order: root .env → per-service .env → real env wins
+│   │   └── secrets-matrix.md          # dev / CI / prod / Vault — where secrets live, rotation
+│   ├── tooling/                   # optional dev tooling + CI/CD
+│   │   ├── lefthook.md            # pre-commit hooks (format/lint pre-commit, tests pre-push)
+│   │   ├── vscode-debugger.md     # .vscode/launch.json etc. for the no-docker host path
+│   │   └── ci-cd-future.md        # GitHub Actions templates; Vault-later notes (general app CI)
+│   ├── mise.md                    # .mise.toml runtime version contract + bare-name PATH (versions illustrative)
+│   └── readme-three-paths.md      # root README contract + per-service READMEs (host dev loop)
 │
-├── env-and-config/                # the env/config split (a firm convention area)
-│   ├── root-env-shared-only.md    # what belongs in root .env (shared only) + .env.example contract
-│   ├── per-service-config-yaml.md # each backend's own config.yaml; reads root .env via ${VAR}
-│   ├── frontend-env-isolation.md  # SECURITY: VITE_*/NEXT_PUBLIC_* leak to the bundle — keep separate
-│   ├── build-time-vs-runtime.md   # classify every var; baked-into-artifact vs read-on-boot
-│   ├── yaml-var-interpolation.md  # ${VAR} substitution rules in config.yaml
-│   ├── config-local-overrides.md  # config.local.yaml precedence for dev
-│   ├── env-precedence.md          # load order: root .env → per-service .env → real env wins
-│   └── secrets-matrix.md          # dev / CI / prod / Vault — where secrets live, rotation
+├── architecture/                  # INTENT: what's inside / how it's built
+│   ├── backend/                   # backend-language flow — app/ vs src/, uv vs uvenv, migrations (Python today)
+│   │   ├── pyproject-uv-sync-for-apps.md  # run-service (flat app/, uv sync) vs distributable (src/<pkg>/)
+│   │   ├── requirements-uvenv-for-ml.md   # ML: requirements.txt + uvenv global env (different on purpose)
+│   │   ├── alembic-default.md     # Alembic init recipe + daily flow + migrations-in-Docker (entrypoint)
+│   │   ├── alembic-with-raw-sql.md    # raw-.sql + 3-line shim, for multi-lang schema consumers (atheneum)
+│   │   └── when-not-alembic.md    # when another migration tool / no tool is right
+│   ├── frontend/                  # Vite/React + theming + multi-frontend + embeddable
+│   │   ├── single-frontend.md     # the default apps/<frontend>/src/ layout (Topology 02/03)
+│   │   ├── multi-frontend-workspaces.md   # pnpm+turborepo, packages/ (Topology 04)
+│   │   ├── shared-ui-package.md   # packages/ui, tailwind-config, types, services — what to share
+│   │   ├── vite-proxy-nginx-pair.md   # dev Vite proxy → prod nginx; same /api/* contract
+│   │   ├── api-prefix-routing.md  # all backend routes under /api/* (makes the proxy work)
+│   │   ├── design-tokens.md       # tokens.css single source; no hex/px in component CSS
+│   │   ├── light-dark-data-attr.md    # [data-theme="dark"] on <html>; both modes default
+│   │   ├── shadcn-tailwind.md     # shadcn/ui + tailwind wired to var(--token)
+│   │   ├── nextjs-astro-variants.md   # when Next (SSR) / Astro (static) instead of Vite
+│   │   └── embeddable-package-and-reference-host.md  # embedding seams (host injects services/storage/theme); publishing a UI package (Topology 09)
+│   ├── database/                  # WHICH engine + per-engine conventions
+│   │   ├── choosing-a-database.md # SQLite vs Postgres; in-process memory vs Redis (pick the right floor)
+│   │   ├── infra-vs-data-folder.md    # infra/ = committed config; data/ = gitignored bind-mount state
+│   │   ├── postgres-conventions.md    # compose block, init scripts, extensions (versions illustrative)
+│   │   ├── redis-conventions.md   # AOF, requirepass, db numbers, Streams (versions illustrative)
+│   │   ├── sqlite-conventions.md  # WAL + busy_timeout + single-writer model; the right floor
+│   │   └── mongodb-neo4j-seaweed.md   # Mongo/Neo4j/Kuzu/Seaweed/Meili + a "which to pick" table
+│   ├── production/                # making it production-grade
+│   │   ├── app-server-and-workers.md  # gunicorn/uvicorn worker count + RECYCLING + timeouts; per-lang model
+│   │   └── production-readiness.md    # liveness/readiness, graceful shutdown, limits, migrations-on-deploy, checklist
+│   ├── ml-orchestration/          # cloud GPU training/inference (Topology 07)
+│   │   ├── overview.md            # START HERE for ML cloud; tools recognised, job shapes
+│   │   ├── dstack.md              # DEFAULT orchestrator; defers to the sibling `dstack` skill for CLI
+│   │   ├── skypilot.md            # alternative orchestrator
+│   │   ├── custom-orchestrator.md # placeholder for a future bespoke tool (steer to dstack first)
+│   │   ├── spot-instances-and-checkpoints.md  # surviving spot preemption; checkpoint-resumable training
+│   │   ├── inference-autoscaling.md   # batch vs online serving; autoscale + redeploy on preemption
+│   │   ├── remote-dev-ssh-vscode.md   # one-command remote GPU box + SSH + VS Code Remote + Claude on box
+│   │   ├── agent-ssh-access.md    # how an agent operates a remote box safely (perms, CLAUDE.md brief)
+│   │   └── cicd-for-ml.md         # cheap/medium/expensive pipeline tiers for ML
+│   ├── platform/                  # non-web targets
+│   │   ├── mobile.md              # native iOS (Swift) + Android (Kotlin) under apps/
+│   │   └── desktop.md             # Tauri (default) / Electron; share packages/ with web
+│   └── modularity/                # code-organisation rules (firm)
+│       ├── file-size-caps.md      # 500 hard / 300 soft lines per file
+│       ├── folders-by-feature.md  # group by feature (auth/, blocks/), not by kind (controllers/)
+│       └── extract-on-third-use.md    # rule of three before extracting a shared helper
 │
-├── docker-compose/                # how compose is laid out (firm: docker/ folder, bind-mounts)
-│   ├── docker-folder-layout.md    # everything under docker/; path discipline (../apps, ../infra)
-│   ├── compose-as-deployment-modes.md  # files = MODES (base/db-only/dev/prod/traefik/no-ports), not concerns
-│   ├── overrides-vs-profiles.md   # when to use -f overlays vs compose profiles
-│   ├── bind-mounts-not-volumes.md # bind-mount host dirs; no named volumes; data/ discipline
-│   ├── nested-data-dir-trick.md   # data/postgres/pgdata so .gitkeep doesn't break initdb
-│   ├── anchors-and-internal-ports.md  # internal port = fixed convention; host port = ${VAR}; anchors for repeated blocks
-│   └── orchestrator-escalation.md # when a shell wrapper should become a Go CLI (→ Topology 08)
-│
-├── scripts/                       # the ctl dispatcher + subscripts (firm: one entrypoint)
-│   ├── global-wrapper-dispatcher.md   # the ctl model: dev/prod launchers, up/down containers, delegate to process-compose
-│   ├── subscripts.md              # scripts/*.sh that ctl calls (implementation)
-│   ├── dev-without-docker.md      # ctl dev: apps on host (hot reload), DBs in containers
-│   ├── three-startup-paths.md     # ctl / raw compose / no-docker host run (README contract)
-│   └── setup-command.md           # ctl setup wizard + ctl status doctor (the 2 project-custom subcommands)
-│
-├── python/                        # Python flow — app/ vs src/, uv vs uvenv, migrations
-│   ├── pyproject-uv-sync-for-apps.md  # run-service (flat app/, uv sync) vs distributable (src/<pkg>/)
-│   ├── requirements-uvenv-for-ml.md   # ML: requirements.txt + uvenv global env (different on purpose)
-│   ├── alembic-default.md         # Alembic init recipe + daily flow + migrations-in-Docker (entrypoint)
-│   ├── alembic-with-raw-sql.md    # raw-.sql + 3-line shim, for multi-lang schema consumers (atheneum)
-│   └── when-not-alembic.md        # when another migration tool / no tool is right
-│
-├── databases/                     # WHICH engine + per-engine conventions
-│   ├── choosing-a-database.md     # SQLite vs Postgres; in-process memory vs Redis (pick the right floor)
-│   ├── infra-vs-data-folder.md    # infra/ = committed config; data/ = gitignored bind-mount state
-│   ├── postgres-conventions.md    # compose block, init scripts, extensions (versions illustrative)
-│   ├── redis-conventions.md       # AOF, requirepass, db numbers, Streams (versions illustrative)
-│   ├── sqlite-conventions.md      # WAL + busy_timeout + single-writer model; the right floor
-│   └── mongodb-neo4j-seaweed.md   # Mongo/Neo4j/Kuzu/Seaweed/Meili + a "which to pick" table
-│
-├── frontend/                      # Vite/React + theming + multi-frontend
-│   ├── single-frontend.md         # the default apps/<frontend>/src/ layout (Topology 02/03)
-│   ├── multi-frontend-workspaces.md   # pnpm+turborepo, packages/ (Topology 04)
-│   ├── shared-ui-package.md       # packages/ui, tailwind-config, types, services — what to share
-│   ├── vite-proxy-nginx-pair.md   # dev Vite proxy → prod nginx; same /api/* contract
-│   ├── api-prefix-routing.md      # all backend routes under /api/* (makes the proxy work)
-│   ├── design-tokens.md           # tokens.css single source; no hex/px in component CSS
-│   ├── light-dark-data-attr.md    # [data-theme="dark"] on <html>; both modes default
-│   ├── shadcn-tailwind.md         # shadcn/ui + tailwind wired to var(--token)
-│   ├── nextjs-astro-variants.md   # when Next (SSR) / Astro (static) instead of Vite
-│   └── embeddable-package-and-reference-host.md  # embedding seams (host injects services/storage/theme); publishing a UI package (Topology 09)
-│
-├── production/                    # making it production-grade
-│   ├── app-server-and-workers.md  # gunicorn/uvicorn worker count + RECYCLING + timeouts; per-lang model
-│   └── production-readiness.md    # liveness/readiness, graceful shutdown, limits, migrations-on-deploy, checklist
-│
-├── ml-orchestration/              # cloud GPU training/inference (Topology 07)
-│   ├── overview.md                # START HERE for ML cloud; tools recognised, job shapes
-│   ├── dstack.md                  # DEFAULT orchestrator; defers to the sibling `dstack` skill for CLI
-│   ├── skypilot.md                # alternative orchestrator
-│   ├── custom-orchestrator.md     # placeholder for a future bespoke tool (steer to dstack first)
-│   ├── spot-instances-and-checkpoints.md  # surviving spot preemption; checkpoint-resumable training
-│   ├── inference-autoscaling.md   # batch vs online serving; autoscale + redeploy on preemption
-│   ├── remote-dev-ssh-vscode.md   # one-command remote GPU box + SSH + VS Code Remote + Claude on box
-│   ├── agent-ssh-access.md        # how an agent operates a remote box safely (perms, CLAUDE.md brief)
-│   └── cicd-for-ml.md             # cheap/medium/expensive pipeline tiers for ML
-│
-├── platforms/                     # non-web targets
-│   ├── mobile.md                  # native iOS (Swift) + Android (Kotlin) under apps/
-│   └── desktop.md                 # Tauri (default) / Electron; share packages/ with web
-│
-├── modularity/                    # code-organisation rules (firm)
-│   ├── file-size-caps.md          # 500 hard / 300 soft lines per file
-│   ├── folders-by-feature.md      # group by feature (auth/, blocks/), not by kind (controllers/)
-│   └── extract-on-third-use.md    # rule of three before extracting a shared helper
-│
-├── tooling/                       # optional dev tooling
-│   ├── lefthook.md                # pre-commit hooks (format/lint pre-commit, tests pre-push)
-│   └── vscode-debugger.md         # .vscode/launch.json etc. for the no-docker host path
-│
-├── mise.md                        # .mise.toml runtime version contract (versions illustrative)
-├── claude-folder.md               # .claude/ stays empty initially; CLAUDE.md template guidance
-├── readme-three-paths.md          # root README contract + per-service READMEs (host dev loop)
-├── docs-integration.md            # defer docs to the documentation-guide skill; /docs-init handoff
-├── ci-cd-future.md                # GitHub Actions templates; Vault-later notes (general app CI)
-└── examples-index.md              # REAL repos to cite (atheneum/NeuraSutra/plane/chimere/uvenv) — never invent paths
+└── integrations/                 # INTENT: peripheral / external-tool handoffs
+    ├── docs-integration.md        # defer docs to the documentation-guide skill; /docs-init handoff
+    ├── claude-folder.md           # .claude/ stays empty initially; CLAUDE.md template guidance
+    └── examples-index.md          # REAL repos to cite (atheneum/NeuraSutra/plane/chimere/uvenv) — never invent paths
 
 assets/snippets/                   # fragments to drop into a target repo (NOT read as guidance)
 ├── frontend/{tokens,globals,light-dark}.css, vite-proxy.config.ts
@@ -286,4 +279,4 @@ commands/ps-setup.md               # the /ps-setup slash command (init | audit |
 
 - Snippets: `assets/snippets/` for fragments to drop in (see the snippet README for the index).
 - Slash command: `commands/ps-setup.md` (the user-facing entrypoint).
-- Examples cited: `references/examples-index.md`.
+- Examples cited: `references/integrations/examples-index.md`.

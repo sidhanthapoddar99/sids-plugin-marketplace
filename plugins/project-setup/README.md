@@ -53,7 +53,7 @@ Subtopics:
 - Agent SSH access (running an agent against a remote GPU)
 - ML CI/CD tiers (cheap / medium / expensive)
 
-See `skills/project-setup/references/ml-orchestration/`.
+See `skills/project-setup/references/architecture/ml-orchestration/`.
 
 ## Key conventions encoded
 

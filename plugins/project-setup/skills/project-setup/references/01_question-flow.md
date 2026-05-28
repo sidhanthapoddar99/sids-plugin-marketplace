@@ -71,9 +71,9 @@ Run this in order before proposing any layout. **Skip what you already know**, b
     - nginx-as-edge → include `infra/nginx/nginx.conf` and route `/api/*`
     - Raw ports → `docker/compose.dev.yaml` only
 14a. **Production serving**: how does the backend run in prod (vs the dev hot-reload process)?
-    - Python → gunicorn + uvicorn workers; set worker count (≈ matches CPU limit), recycling (`--max-requests` + jitter), `--graceful-timeout`. See `references/production/app-server-and-workers.md`.
+    - Python → gunicorn + uvicorn workers; set worker count (≈ matches CPU limit), recycling (`--max-requests` + jitter), `--graceful-timeout`. See `references/architecture/production/app-server-and-workers.md`.
     - Rust / Go → one process, scale via replicas (no worker-process model). Node → replicas, not PM2-in-container.
-    - Confirm: liveness `/health` + readiness `/ready` endpoints, graceful shutdown, resource limits, migrations as a pre-traffic step. Walk `references/production/production-readiness.md`.
+    - Confirm: liveness `/health` + readiness `/ready` endpoints, graceful shutdown, resource limits, migrations as a pre-traffic step. Walk `references/architecture/production/production-readiness.md`.
 15. **Secrets**:
     - Local: confirm `.env` + `.env.local` + `config.local.yaml` gitignored, generated via `openssl rand -hex 32` (instructions at top of `.env.example`)
     - CI: GitHub Actions secrets, self-hosted runner env, or none?
@@ -90,11 +90,11 @@ Run this in order before proposing any layout. **Skip what you already know**, b
 
 ## Batch 6 — supporting infra
 
-20. **Databases needed? — pick the right floor, don't over-provision** (see `references/databases/choosing-a-database.md`)
+20. **Databases needed? — pick the right floor, don't over-provision** (see `references/architecture/database/choosing-a-database.md`)
     - **Relational**: SQLite (single service, modest data, low write concurrency — e.g. auth/config/metadata) vs Postgres (concurrent writers, cross-service sharing, large data, extensions). Start SQLite; move to Postgres when you need concurrent writers or sharing.
     - **Cache / shared state**: in-process memory (single worker, ephemeral, small — a dict rebuilt on boot) vs Redis (shared across workers/services, TTL, persistence, pub/sub). This is coupled to worker count (Q14a) — N workers with coherence needs → Redis.
     - MongoDB / Neo4j / Kuzu / SeaweedFS — per requirement
-    - Migrations: Alembic by default (Python); SQLite needs `render_as_batch=True`; when not Alembic, see `references/python/when-not-alembic.md`
+    - Migrations: Alembic by default (Python); SQLite needs `render_as_batch=True`; when not Alembic, see `references/architecture/backend/when-not-alembic.md`
 21. **Image versions**: **never inherit defaults silently.** For each database / runtime selected, **check the current latest stable** and ask the user which to pin to. The versions in this skill's references are illustrative only.
 22. **Docs**: in-repo `docs/` (recommended for monorepo) or separate docs repo?
     - In-repo → hand off to `/docs-init` (documentation-guide plugin)
@@ -102,25 +102,25 @@ Run this in order before proposing any layout. **Skip what you already know**, b
 23. **`.claude/`**: confirm it stays empty initially. The bootstrapper creates the folder and a `CLAUDE.md` next to it; we build up agents/commands/settings as patterns emerge.
 24. **`.mise.toml`**: which runtime versions to pin? **Check `mise ls-remote python | tail`, `mise ls-remote node | tail`, etc. for current options.** Ask the user which to pin — defaults are illustrative.
 25. **Pre-commit hooks (lefthook)?** Recommended for any project with a team. Default yes for Topology 02–05; ask for Topology 01 / 07.
-26. **`.vscode/` configs?** Optional. If yes, drop `launch.json` / `settings.json` / `extensions.json` per `references/tooling/vscode-debugger.md`.
+26. **`.vscode/` configs?** Optional. If yes, drop `launch.json` / `settings.json` / `extensions.json` per `references/repo-setup/tooling/vscode-debugger.md`.
 
 ## Batch 7 — ML orchestration (only for Topology 07 ML projects)
 
 27. **Cloud orchestration**: dstack / SkyPilot / both / neither / custom?
     - Default **dstack** — already a sibling plugin; defer to its skill for CLI mechanics.
     - SkyPilot if the team's already there or needs heavier k8s integration.
-    - Custom only with strong justification (`references/ml-orchestration/custom-orchestrator.md`).
+    - Custom only with strong justification (`references/architecture/ml-orchestration/custom-orchestrator.md`).
 28. **Spot or on-demand**? Both is fine — spot for training/sweeps, on-demand for inference SLAs / final paper-result training.
 29. **Training cadence**: one-shot / sweep / continuous / batch?
     - One-shot + sweep → spot + checkpoints + retry (`spot-instances-and-checkpoints.md`)
     - Continuous → managed service mode (`inference-autoscaling.md`)
 30. **Inference**: none / batch (queue+workers) / online (web endpoint + autoscale)?
 31. **Remote dev**: does the user want a one-command "spin up GPU box + SSH + VS Code Remote" flow?
-    - If yes → `references/ml-orchestration/remote-dev-ssh-vscode.md`
+    - If yes → `references/architecture/ml-orchestration/remote-dev-ssh-vscode.md`
 32. **Agent access to remote**: does an agent (Claude) need to operate the remote box on the user's behalf?
-    - If yes → `references/ml-orchestration/agent-ssh-access.md`; configure `.claude/settings.local.json` permissions explicitly
+    - If yes → `references/architecture/ml-orchestration/agent-ssh-access.md`; configure `.claude/settings.local.json` permissions explicitly
 33. **CI/CD for ML**: which tiers — cheap (every PR) / medium (nightly) / expensive (on tag)?
-    - `references/ml-orchestration/cicd-for-ml.md` has templates per tier
+    - `references/architecture/ml-orchestration/cicd-for-ml.md` has templates per tier
 
 ## Special — never assume, always ask
 

@@ -90,7 +90,7 @@ The common framing is "`apps/` = deployables, `packages/` = internal shared code
 | **Internal shared lib** | `packages/<name>/` | consumed *in-repo* by sibling apps via the workspace | bundled by the consuming app | no (workspace-internal) |
 | **Published product package** | `packages/<name>/` (the product) | an artifact installed by an **external** repo (npm / PyPI) | **`peerDependency`** — the host owns the React instance | **yes** — `package.json` `exports`, build tooling (tsup/rollup), semver |
 
-The third category is the one the two-category model erases. When the deliverable is the package itself (Topology 09), the repo's `apps/web` is a **reference host** — a dev harness — not the product. See `references/frontend/embeddable-package-and-reference-host.md` for the publishing mechanics (exports, peerDeps, single-artifact bundling) and the embedding-seams (inversion-of-control) pattern.
+The third category is the one the two-category model erases. When the deliverable is the package itself (Topology 09), the repo's `apps/web` is a **reference host** — a dev harness — not the product. See `references/architecture/frontend/embeddable-package-and-reference-host.md` for the publishing mechanics (exports, peerDeps, single-artifact bundling) and the embedding-seams (inversion-of-control) pattern.
 
 ### Where does `config.yaml` live?
 

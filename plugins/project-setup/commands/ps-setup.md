@@ -25,7 +25,7 @@ The user wants to bootstrap a new project.
 
 1. **Open the skill** at `skills/project-setup/SKILL.md` and follow its workflow.
 2. **Run the question flow** from `skills/project-setup/references/01_question-flow.md` in order. Ask only what you don't already know from the conversation.
-3. **Pick a topology** from `skills/project-setup/references/topologies/*` based on the answers. If the user's shape doesn't cleanly match one, name the closest two and ask.
+3. **Pick a topology** from `skills/project-setup/references/repo-setup/topologies/*` based on the answers. If the user's shape doesn't cleanly match one, name the closest two and ask.
 4. **Show the proposed tree** as text. List every file you will create.
 5. **Ask once** before writing anything.
 6. **Apply** — write the files, dropping snippets from `assets/snippets/` where they fit. Use `${VAR}` placeholders consistently.
@@ -65,9 +65,9 @@ The user wants a concrete proposal for restructuring their current repo. **Do no
 ## Style
 
 - Be concise. Long question flows lose users; ask in batches of 3–4 with reasonable defaults flagged.
-- Cite the reference files inline so the user can read why a convention exists (`see references/env-and-config/frontend-env-isolation.md`).
+- Cite the reference files inline so the user can read why a convention exists (`see references/repo-setup/env-and-config/frontend-env-isolation.md`).
 - When dropping a snippet, name the source (`from assets/snippets/dev-wrapper.sh`).
-- Never invent file paths — consult `references/examples-index.md`.
+- Never invent file paths — consult `references/integrations/examples-index.md`.
 - Never read `.env` files. `.env.example` is the contract.
 
 ## When info is missing
