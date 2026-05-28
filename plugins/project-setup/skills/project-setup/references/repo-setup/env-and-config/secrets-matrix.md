@@ -48,10 +48,10 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
 ├── .env.production           # chmod 600, owned by root or app user
 ├── docker-compose.yaml -> /home/user/my-app/docker/compose.yaml
 ├── docker-compose.prod.yaml -> /home/user/my-app/docker/compose.prod.yaml
-└── ctl                       # `ctl prod` runs the deploy
+└── ctl                       # `ctl up app edge --config=prod` runs the deploy
 ```
 
-`ctl prod` wraps: `docker compose --env-file .env.production -f compose.yaml -f compose.prod.yaml up -d`
+`ctl up app edge --config=prod` wraps: `docker compose -f compose.yaml -f compose.prod.yaml -f compose.traefik.yaml --profile app --profile edge --env-file .env.production up -d`
 
 Or, with `env_file:` declared inside each service in the compose:
 

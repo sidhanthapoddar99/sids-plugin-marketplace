@@ -2,8 +2,8 @@
 
 Every project's README must explain **three ways** to start the stack:
 
-1. **The `ctl` dispatcher (preferred)** — `ctl dev` (local) / `ctl prod` (docker)
-2. **Raw docker compose** — `docker compose -f docker/compose.<mode>.yaml up`
+1. **The `ctl` dispatcher (preferred)** — `ctl dev` (local) / `ctl up [profile…] [--config=…]` (docker)
+2. **Raw docker compose** — `docker compose -f docker/compose.yaml --profile <p> up`
 3. **No docker, host run** — `cd apps/backend && uv run …; cd apps/frontend && bun dev`
 
 Why three? Each serves a different need:
@@ -38,30 +38,31 @@ ctl dev
 #### The dispatcher
 
 ```bash
-ctl dev             # local: apps on host (hot reload), DBs in containers
-ctl prod            # full stack in docker (prod overlay + traefik)
-ctl up [service]    # just bring up container services (bare = db, redis)
-ctl status          # check configuration before running
+ctl dev                        # local: apps on host (hot reload), data core in containers
+ctl up                         # data core in containers (postgres + redis)
+ctl up app                     # + app services in containers
+ctl up app edge --config=prod  # full stack in docker (production)
+ctl status                     # check configuration before running
 ```
 
 #### Raw docker compose
 
 ```bash
-# only databases, apps on host
-docker compose -f docker/compose.database-only.yaml up -d
+# only the data core (no-profile services), apps on host
+docker compose -f docker/compose.yaml -f docker/compose.expose.yaml up -d
 
-# everything in containers (dev parity)
-docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d
+# add app services in containers, with host ports
+docker compose -f docker/compose.yaml -f docker/compose.expose.yaml --profile app up -d
 
 # production
-docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml --env-file .env.production up -d
+docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml --profile app --profile edge --env-file .env.production up -d
 ```
 
 #### No docker — host run
 
 ```bash
 # 1. start postgres + redis somewhere — locally installed or compose
-docker compose -f docker/compose.database-only.yaml up -d
+docker compose -f docker/compose.yaml -f docker/compose.expose.yaml up -d   # data core, ports published
 
 # 2. backend
 cd apps/backend
@@ -80,7 +81,7 @@ The no-docker path is what `ctl dev` automates; documenting it raw lets a develo
 
 ## What about prod?
 
-`ctl prod` is the convention; the README's **Deploy** section documents it plus the raw compose prod command. Keep startup-for-development (`ctl dev`) distinct from deployment (`ctl prod`).
+`ctl up app edge --config=prod` is the convention; the README's **Deploy** section documents it plus the raw compose prod command. Keep startup-for-development (`ctl dev`) distinct from deployment (`ctl up … --config=prod`).
 
 ## Audit rule
 

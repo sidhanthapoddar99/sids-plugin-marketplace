@@ -28,8 +28,8 @@ my-tool/
 │   ├── Dockerfile                   # optional
 │   └── README.md                    # this service's host dev loop
 ├── docker/                          # optional — only if the tool needs infra
-│   ├── compose.yaml
-│   └── compose.dev.yaml
+│   ├── compose.yaml                 # profiled base, port-less
+│   └── compose.expose.yaml          # --config=expose (publish ports)
 ├── scripts/                         # optional — subscripts the wrapper calls
 ├── docs/                            # optional — use /docs-init
 ├── .claude/                         # empty initially

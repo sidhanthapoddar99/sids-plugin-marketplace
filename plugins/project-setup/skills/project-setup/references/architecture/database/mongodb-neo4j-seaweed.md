@@ -153,7 +153,7 @@ Use when: fuzzy / full-text search with typo tolerance. Atheneum uses it alongsi
 3. **Bind-mount under `data/<service>/`** — gitignored.
 4. **Config files under `infra/<service>/`** — committed.
 5. **Auth always**, even in dev.
-6. **Internal network** unless host port exposure is needed via `compose.dev.yaml` overlay.
+6. **Internal network** unless host port exposure is needed via the `--config=expose` overlay.
 
 ## When to pick which
 

@@ -70,7 +70,7 @@ The old pattern folded first-run setup into a bare `./dev`. The `ctl` model make
 
 ## Production deploy
 
-Production is `ctl prod` (full docker, prod overlay). Prod secrets are injected as **real environment variables** (`.env.production` via compose `env_file`, or a secret manager), never via `ctl setup`'s interactive prompts — see `references/repo-setup/env-and-config/env-precedence.md` and `references/repo-setup/env-and-config/secrets-matrix.md`.
+Production is `ctl up app edge --config=prod` (full docker, prod overlay). Prod secrets are injected as **real environment variables** (`.env.production` via compose `env_file`, or a secret manager), never via `ctl setup`'s interactive prompts — see `references/repo-setup/env-and-config/env-precedence.md` and `references/repo-setup/env-and-config/secrets-matrix.md`.
 
 ## Anti-patterns
 

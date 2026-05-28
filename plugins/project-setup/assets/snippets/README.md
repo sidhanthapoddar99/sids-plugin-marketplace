@@ -7,7 +7,7 @@ Fragments the `project-setup` skill cites and `/ps-setup` can drop into a new or
 ```
 assets/snippets/
 ├── frontend/          # CSS tokens, theme wiring, vite config
-├── docker/            # compose overlays per deployment mode
+├── docker/            # profiled compose base + --config overlays
 ├── infra/             # config baked into containers (nginx)
 ├── python/            # alembic helpers + shim template
 ├── env/               # .env.example + .mise.toml templates
@@ -28,14 +28,14 @@ assets/snippets/
 
 ### `docker/`
 
+Two axes: `compose.yaml` is the profiled base (data core = no profile; apps `[app]`/`[edge]`); the rest are `--config=<name>` overlays. `ctl up [profile…] [--config=name…]` assembles them.
+
 | File | What it is | Drops at |
 |---|---|---|
-| `compose.yaml` | Base — services declared, no host ports, internal network | `docker/compose.yaml` |
-| `compose.database-only.yaml` | Standalone postgres + redis (dev mode A: apps on host) | `docker/compose.database-only.yaml` |
-| `compose.dev.yaml` | Overlay — adds host port exposure | `docker/compose.dev.yaml` |
-| `compose.prod.yaml` | Overlay — production (images, resource limits) | `docker/compose.prod.yaml` |
-| `compose.traefik.yaml` | Overlay — external Traefik network + labels | `docker/compose.traefik.yaml` |
-| `compose.no-ports.yaml` | Overlay — removes host ports (behind external proxy) | `docker/compose.no-ports.yaml` |
+| `compose.yaml` | Profiled base — all services, no host ports; data core has no profile, apps `[app]`/`[edge]` | `docker/compose.yaml` |
+| `compose.expose.yaml` | `--config=expose` — publish host ports (`ctl dev` layers it for the data core) | `docker/compose.expose.yaml` |
+| `compose.prod.yaml` | `--config=prod` — image tags, resource limits, `.env.production` | `docker/compose.prod.yaml` |
+| `compose.traefik.yaml` | `--config=traefik` — external Traefik network + labels on the edge | `docker/compose.traefik.yaml` |
 
 ### `infra/`
 
@@ -71,7 +71,7 @@ assets/snippets/
 
 ## Conventions
 
-- File names mirror their **drop name** where possible (`compose.dev.yaml`, not `compose-dev.yaml`).
+- File names mirror their **drop name** where possible (`compose.expose.yaml`, not `compose-expose.yaml`).
 - Templates use `<PROJECT>` / `<placeholder>` markers the slash command substitutes.
 - All snippets are **illustrative defaults** — adapt per project. The category structure is the contract; the specific values are not.
 - Image tags and runtime versions are illustrative — see the `references/architecture/database/` and `references/repo-setup/mise.md` notes about checking latest and asking the user.

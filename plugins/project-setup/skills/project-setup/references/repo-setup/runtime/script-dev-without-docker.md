@@ -11,7 +11,7 @@ The default dev mode: **apps run on the host (hot reload), only data services ru
 | Complex debugger attach (port mapping) | IDE attaches directly to the local process |
 | `docker compose restart` to pick up changes | `--reload` / `bun dev` / `cargo-watch` natively |
 
-Production parity is enforced by CI building images and by `ctl prod` running them — you don't need to *develop* against the image. When you do want the containerised stack, that's `ctl prod` (or `ctl up <svc>` for a single container), not `ctl dev`.
+Production parity is enforced by CI building images and by `ctl up app edge --config=prod` running them — you don't need to *develop* against the image. When you do want the containerised stack, that's `ctl up app` (or `ctl up app edge --config=prod`), not `ctl dev`.
 
 ## What `ctl dev` arranges
 
@@ -68,14 +68,14 @@ Past two processes (or once you want readiness ordering and a TUI), switch to `p
 ## Reverse proxy in dev
 
 1. **Vite proxy** (default) — `vite.config.ts` proxies `/api/*` to the backend's host port, read from env. CORS-free; no extra container. See `references/architecture/frontend/vite-proxy-nginx-pair.md`.
-2. **Local nginx container** — `ctl up nginx` brings up nginx routing `/api/*` to the backend (via `host.docker.internal`). Only if you need to exercise the prod-like routing in dev.
+2. **Local nginx container** — `ctl up edge` brings up nginx routing `/api/*` to the backend (via `host.docker.internal`). Only if you need to exercise the prod-like routing in dev.
 
-In prod (`ctl prod`), nginx/traefik routes `/api/*` to the `backend` service over the compose network — same `/api/*` contract, only the proxy changes.
+In prod (`ctl up app edge --config=prod`), nginx/traefik routes `/api/*` to the `backend` service over the compose network — same `/api/*` contract, only the proxy changes.
 
 ## When host-mode doesn't fit a service
 
-- **Heavy native deps** easier to install in a container (exotic glibc, GPU libs) — containerise *that one service* (`ctl up <svc>`), keep the rest on host.
-- **Cross-platform team** where some can't install the toolchain — provide the containerised path via `ctl prod` / `ctl up`, but keep host as the `ctl dev` default.
+- **Heavy native deps** easier to install in a container (exotic glibc, GPU libs) — containerise *that one service* (`docker compose -f docker/compose.yaml up -d <svc>`, or give it its own profile), keep the rest on host.
+- **Cross-platform team** where some can't install the toolchain — provide the containerised path via `ctl up app edge --config=prod` / `ctl up app`, but keep host as the `ctl dev` default.
 
 ## Anti-patterns
 
@@ -86,6 +86,6 @@ In prod (`ctl prod`), nginx/traefik routes `/api/*` to the `backend` service ove
 
 ## See also
 
-- `references/repo-setup/scripts/global-wrapper-dispatcher.md` — `ctl dev` / `ctl prod` / `ctl up`
+- `references/repo-setup/scripts/global-wrapper-dispatcher.md` — `ctl dev` / `ctl up [profile…] [--config=…]`
 - `references/repo-setup/scripts/three-startup-paths.md` — the three documented ways to start
 - `references/architecture/frontend/vite-proxy-nginx-pair.md` — dev proxy → prod nginx

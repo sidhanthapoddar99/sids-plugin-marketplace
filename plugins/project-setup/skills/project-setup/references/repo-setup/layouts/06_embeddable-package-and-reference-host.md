@@ -11,7 +11,7 @@ This is the layout the deployed-vs-distributed question (Batch 1, Q3a) routes to
 - "Embeddable", "SDK", "library-as-product", "the frontend *is* the product", "mounts in someone else's app".
 - The product must run inside a host it doesn't control — so it can't bake in URLs, secrets, or "where saves go".
 
-If instead the repo *runs* the product (you `ctl prod` it and that's the live thing), it's 01–08, not 09.
+If instead the repo *runs* the product (you `ctl up … --config=prod` it and that's the live thing), it's 01–05, not 06.
 
 ## The two-host distinction (the crux)
 
@@ -135,7 +135,7 @@ ctl clean
 ctl help
 ```
 
-`ctl dev` is the reference host, deliberately — day-to-day you develop the package *through* its harness. There is no `ctl prod` for "the product" because the product isn't deployed from here; it ships via `ctl publish`.
+`ctl dev` is the reference host, deliberately — day-to-day you develop the package *through* its harness. There is no production `ctl up` for "the product" because the product isn't deployed from here; it ships via `ctl publish`.
 
 ## What's different from the deployed layouts
 

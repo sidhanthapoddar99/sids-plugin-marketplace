@@ -17,12 +17,12 @@ GitHub: <url>
 ├── apps/
 │   ├── backend/         # <one-line>
 │   └── frontend/        # <one-line>
-├── docker/              # compose files per deployment mode
+├── docker/              # profiled compose base + --config overlays
 ├── infra/               # config baked into containers (nginx, postgres init)
 ├── data/                # bind-mount targets, gitignored except .gitkeep
 ├── docs/                # documentation-template site
 ├── scripts/             # subscripts called by ctl
-├── ctl                  # control dispatcher (dev/prod/up/down/migrate/…)
+├── ctl                  # control dispatcher (dev / up [profile] [--config] / down / migrate / …)
 ├── .env                 # secrets, gitignored
 ├── .env.example         # the contract, committed
 └── README.md / CLAUDE.md
@@ -36,7 +36,7 @@ GitHub: <url>
 - **Per-service `config.yaml`** reads root `.env` via `${VAR}` interpolation; never put secrets in `config.yaml`.
 - **Frontend env is scoped** — `apps/frontend/.env` holds `VITE_*` only; backend secrets stay in root `.env`.
 - **Clean root** — no loose code; `ctl` is the only executable at root. Code lives by ecosystem: Python service → `app/`, frontend → `src/`, distributable package → `src/<pkg>/`.
-- **`ctl` is the only entrypoint** — `ctl dev` (local host loop) / `ctl prod` (docker); migrations via `ctl migrate`; config via `ctl setup` / `ctl status`.
+- **`ctl` is the only entrypoint** — `ctl dev` (local host loop) / `ctl up [profile…] [--config=…]` (docker; prod is `ctl up app edge --config=prod`); migrations via `ctl migrate`; config via `ctl setup` / `ctl status`.
 - **File size cap: 500 hard / 300 soft.** Split before committing.
 - **Folders by feature, not by kind.** `auth/`, `workspaces/`, `blocks/` each own routes + models + service.
 

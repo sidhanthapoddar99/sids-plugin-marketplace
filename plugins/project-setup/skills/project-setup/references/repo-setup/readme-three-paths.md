@@ -102,9 +102,8 @@ ctl setup                  # interactive .env wizard — prompts for missing key
 
 | Command | Does |
 |---|---|
-| `ctl dev [target]` | Run the stack on the host with hot reload (auto-ups data deps) |
-| `ctl prod` | Run the full stack in docker (prod overlay + traefik), detached |
-| `ctl up [service]` | Start container services (bare = data: db, redis); `--prod` for prod overlay |
+| `ctl dev [target]` | Run the stack on the host with hot reload (auto-ups the data core) |
+| `ctl up [profile…] [--config=n…]` | Start container stack: profiles select services (bare = data core), `--config` overlays how they run (`ctl up app edge --config=prod` = production) |
 | `ctl down [service]` | Stop container services |
 | `ctl ps` | List containers + local processes |
 | `ctl logs [svc] [-f]` | Tail logs |
@@ -123,21 +122,21 @@ ctl setup                  # interactive .env wizard — prompts for missing key
 ### Raw docker compose
 
 \`\`\`bash
-# dev mode — apps on host, only DBs in containers (what `ctl dev` does)
-docker compose -f docker/compose.database-only.yaml up -d
+# data core only — apps on host (what `ctl dev` does)
+docker compose -f docker/compose.yaml -f docker/compose.expose.yaml up -d
 
-# full stack in docker (dev-parity overlay — what `ctl prod` builds on)
-docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d
+# app services in containers, with host ports
+docker compose -f docker/compose.yaml -f docker/compose.expose.yaml --profile app up -d
 
-# prod
-docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml --env-file .env.production up -d
+# prod (what `ctl up app edge --config=prod` builds)
+docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml --profile app --profile edge --env-file .env.production up -d
 \`\`\`
 
 ### No docker — host run
 
 \`\`\`bash
-# 1. databases (compose or locally installed)
-docker compose -f docker/compose.database-only.yaml up -d
+# 1. data core (compose or locally installed)
+docker compose -f docker/compose.yaml -f docker/compose.expose.yaml up -d
 
 # 2. backend
 cd apps/backend

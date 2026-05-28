@@ -2,6 +2,8 @@
 
 A docker compose tree driven by a Go (or Rust/Python) CLI binary. Example: `chimere-chain-2025` (blockchain multinode testing — 1 singlenode, N multinode, prod).
 
+> This is the layout entry. For the **escalation triggers** (when a `ctl` shell wrapper should become a binary), the binary anatomy, state management, and the multi-node `docker/<mode>/` tree, see `references/repo-setup/complex-setups/orchestrator-escalation.md`.
+
 ## When it fits
 
 - Multi-mode compose setups beyond `dev`/`prod` (e.g. singlenode / multinode / prod)

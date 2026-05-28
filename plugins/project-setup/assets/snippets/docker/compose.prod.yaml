@@ -1,9 +1,8 @@
-# docker/compose.prod.yaml — production overrides.
-# Combine with: docker compose -f docker/compose.yaml -f docker/compose.prod.yaml --env-file .env.production up -d
-#
-# Then stack one of:
-#   + docker/compose.traefik.yaml      (behind external Traefik)
-#   + docker/compose.no-ports.yaml     (behind nginx-as-edge inside compose)
+# docker/compose.prod.yaml — config overlay: production hardening.
+#   ctl up app edge --config=prod              (--config=prod auto-uses .env.production)
+#   ctl up app edge --config=prod --config=traefik   (behind external Traefik)
+# Swaps build→image tags, adds resource limits + restart policy. Base stays port-less,
+# so there is no separate "no-ports" overlay — just don't add --config=expose in prod.
 
 services:
   backend:

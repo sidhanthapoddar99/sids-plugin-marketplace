@@ -20,12 +20,10 @@ my-app/
 ├── .mise.toml                      # runtime contract
 ├── ctl                             # single dispatcher
 ├── docker/
-│   ├── compose.yaml                # base — no host ports
-│   ├── compose.database-only.yaml  # postgres + redis only, for dev mode
-│   ├── compose.dev.yaml            # +ports overlay
-│   ├── compose.prod.yaml           # production overrides
-│   ├── compose.traefik.yaml        # external Traefik overlay
-│   └── compose.no-ports.yaml       # prod-behind-reverse-proxy overlay
+│   ├── compose.yaml                # profiled base — data core (no profile) + apps [app]/[edge]; no host ports
+│   ├── compose.expose.yaml         # --config=expose (publish host ports)
+│   ├── compose.prod.yaml           # --config=prod (image tags, limits, .env.production)
+│   └── compose.traefik.yaml        # --config=traefik (external Traefik edge)
 ├── scripts/                        # subscripts the dispatcher calls
 │   ├── db-init.sh
 │   ├── check-env.sh
@@ -71,7 +69,7 @@ my-app/
 └── LICENSE
 ```
 
-`ctl dev` is the host dev loop: auto-ups the data containers (postgres + redis), installs deps (`uv sync`, `bun install`), then runs the apps on the host (uvicorn `--reload`, `bun dev`, optional nginx) in the foreground. `ctl up`/`down` start/stop just the data containers; `ctl prod` runs the full stack in docker. Migrations run explicitly via `ctl migrate {up|down|new "<msg>"}`, never silently. See the cross-cutting refs below for env split, compose overlays, and the dispatcher contract.
+`ctl dev` is the host dev loop: auto-ups the data core (postgres + redis, with ports), installs deps (`uv sync`, `bun install`), then runs the apps on the host (uvicorn `--reload`, `bun dev`, optional nginx) in the foreground. `ctl up` brings up just the data core in containers; `ctl up app edge --config=prod` runs the full stack in docker. Migrations run explicitly via `ctl migrate {up|down|new "<msg>"}`, never silently. See the cross-cutting refs below for env split, compose overlays, and the dispatcher contract.
 
 ## Scaling: more than one backend
 
@@ -86,7 +84,7 @@ apps/
 
 The genuinely-unique guidance here is **coordination**: when two backends share state, **one owns the schema and the other consumes it.** Pick the DDL owner explicitly and document it; the non-owner reads the migrated schema and never writes DDL. Coordination goes over a shared transport — Postgres (LISTEN/NOTIFY), Redis (pub/sub, streams), or HTTP — not concurrent writes to the same tables. The `ctl` dispatcher should enforce ordering: e.g. `migrate up → sqlx prepare --check → cargo build`, failing locally on drift. Don't forget `rust-toolchain.toml` for reproducibility.
 
-For env-var namespacing across services (`PYTHON_PORT`, `RUST_PORT`, shared `DATABASE_URL`/`REDIS_URL`), see `references/repo-setup/env-and-config/per-service-config-yaml.md` and `.../root-env-shared-only.md`. Each backend gets its own service in `compose.yaml` with its folder as build context — see `references/repo-setup/docker/docker-folder-layout.md`.
+For env-var namespacing across services (`PYTHON_PORT`, `RUST_PORT`, shared `DATABASE_URL`/`REDIS_URL`), see `references/repo-setup/env-and-config/per-service-config-yaml.md` and `.../root-env-shared-only.md`. Each backend gets its own service in `compose.yaml` (under `profiles: [app]`) with its folder as build context — see `references/repo-setup/docker/docker-compose-structure.md`.
 
 ## Scaling: more than one frontend
 
@@ -119,8 +117,8 @@ These are shared across every variant above; don't restate them, follow the refs
 
 - **Env precedence & split** — root `.env` is shared backend/infra only; frontends carry their own `VITE_*` `.env`. See `references/repo-setup/env-and-config/env-precedence.md`, `.../root-env-shared-only.md`, `.../frontend-env-isolation.md`.
 - **Per-service config** — each service has its own `config.yaml` reading root `.env` via `${VAR}`, with a gitignored `config.local.yaml`. See `references/repo-setup/env-and-config/per-service-config-yaml.md`.
-- **Docker modes** — compose overlays as deployment modes (database-only / dev / prod / traefik). See `references/repo-setup/docker/compose-as-deployment-modes.md` and `.../docker-folder-layout.md`.
-- **`ctl` dispatcher** — single entry point for dev/prod/migrate/test/clean. See `references/repo-setup/scripts/global-wrapper-dispatcher.md` and `.../three-startup-paths.md`.
+- **Docker structure** — profiled `compose.yaml` (data core + `[app]`/`[edge]`) plus `--config` overlays (`expose`/`prod`/`traefik`). See `references/repo-setup/docker/docker-compose-structure.md`.
+- **`ctl` dispatcher** — single entry point: `ctl dev` (host) + `ctl up [profile] [--config]` + migrate/test/clean. See `references/repo-setup/scripts/global-wrapper-dispatcher.md` and `.../three-startup-paths.md`.
 - **Production serving** — gunicorn + uvicorn workers with recycling behind nginx; readiness/liveness, graceful shutdown, migrations-on-deploy. See `references/architecture/production/app-server-and-workers.md` and `.../production-readiness.md`.
 
 ## Anti-patterns
