@@ -109,7 +109,7 @@ See `references/repo-setup/env-and-config/env-precedence.md` for the load order 
 
 ### What compose structure does the layout need?
 
-Three axes — **profiles** (which services run), at most one **`--config=prod`** (a full alternate deployment config), and stackable **`.m.` modifiers** (`--expose` / `--traefik`). The exact filenames, the `ctl up` grammar, and worked examples are the canonical doc's job — **see `references/repo-setup/runtime/docker-compose-structure.md`** and don't restate them. What this layer decides is the *footprint* per layout:
+Three axes — **profiles** (which services run), at most one **`--config=prod`** (a full alternate deployment config), and stackable **`.m.` modifiers** (`--expose` / `--traefik`). The exact filenames, the `ctl up` grammar, and worked examples are the canonical doc's job — **see `references/repo-setup/runtime/docker-overview.md`** and don't restate them. What this layer decides is the *footprint* per layout:
 
 | Layout | Compose footprint |
 |---|---|

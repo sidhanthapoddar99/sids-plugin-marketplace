@@ -21,7 +21,7 @@ Two kinds of thing have two lifecycles, so they get two grammars:
 - **Config** — at most one **`--config=prod`**, a full alternate deployment definition.
 - **Modifiers** — stackable cross-cutting overlays (`--expose`, `--traefik`).
 
-The compose-file convention behind these (filenames, discovery) is owned by `docker-compose-structure.md`; the exact `ctl up` grammar and the assembled `docker compose` line are in `script-usage.md`.
+The compose-file convention behind these (filenames, discovery) is owned by `docker-overview.md`; the exact `ctl up` grammar and the assembled `docker compose` line are in `script-usage.md`.
 
 ## Thin wrapper — delegate, don't hand-roll
 
@@ -103,7 +103,7 @@ A repo has **one** `ctl`. New need → a profile, a `compose.<config>.yaml`, or 
 ## See also
 
 - `script-usage.md` — command surface, dispatcher skeleton, the `scripts/*.sh` map, setup/status detail, host-loop runner, the three startup-path commands
-- `docker-compose-structure.md` — the profile / config / `.m.` modifier compose convention `ctl up` implements
+- `docker-overview.md` — the profile / config / `.m.` modifier compose convention `ctl up` implements
 - `mise.md` — the project-scoped PATH that makes `ctl` callable bare
 - `complex-setups.md` — when `ctl` outgrows shell (multi-node, Go-CLI orchestrator)
 - `overview.md` — the whole-runtime interaction map (mise → ctl → docker)

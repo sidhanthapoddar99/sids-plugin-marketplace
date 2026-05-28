@@ -51,11 +51,11 @@ database:
   url: sqlite:///${DATA_DIR:-./data}/sqlite/app.db
 ```
 
-In Docker, mount `${DATA_DIR}` so the `.db` survives container restarts (same bind-mount discipline as Postgres — see `bind-mounts-not-volumes.md`).
+In Docker, mount `${DATA_DIR}` so the `.db` survives container restarts (same bind-mount discipline as Postgres — see `references/repo-setup/runtime/docker-details.md`).
 
 ## Alembic with SQLite
 
-`render_as_batch=True` is **required** — SQLite can't do most `ALTER TABLE`s in place, and batch mode transparently rebuilds the table. Set it in both the online and offline `context.configure(...)` calls. See `python/alembic-default.md`.
+`render_as_batch=True` is **required** — SQLite can't do most `ALTER TABLE`s in place, and batch mode transparently rebuilds the table. Set it in both the online and offline `context.configure(...)` calls. See `references/architecture/backend/alembic-default.md`.
 
 ## Backup
 

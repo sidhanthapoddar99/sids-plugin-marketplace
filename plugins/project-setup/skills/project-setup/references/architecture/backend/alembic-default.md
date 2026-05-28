@@ -19,7 +19,7 @@ apps/backend/
 ## Initial setup — the concrete recipe
 
 ```bash
-# from the backend dir (flat layout — see python/pyproject-uv-sync-for-apps.md)
+# from the backend dir (flat layout — see pyproject-uv-sync-for-apps.md)
 cd apps/backend            # or ./api for a single service
 uv add alembic sqlalchemy asyncpg
 alembic init alembic       # creates alembic/ + alembic.ini

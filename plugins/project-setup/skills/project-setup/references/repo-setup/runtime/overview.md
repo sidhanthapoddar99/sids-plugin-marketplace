@@ -20,7 +20,7 @@ Read it as: **mise makes `ctl` callable → `ctl` is the single entrypoint → `
 | **mise** | Pin language/tool versions; project-scoped PATH so `ctl` is callable bare | `runtime/mise.md` |
 | **`ctl`** | The *only* entrypoint. A **thin wrapper** that routes to compose / process-compose / `scripts/*.sh` — it assembles flags, it does not implement | `runtime/script-overview.md` |
 | **`scripts/*.sh`** | The bodies `ctl` delegates to — each owns one job (setup, status, migrate, dev-host, health-wait) | `runtime/script-usage.md` |
-| **docker compose** | Container stack: a profiled base + `--config` configs + `compose.m.*` modifiers | `runtime/docker-compose-structure.md` |
+| **docker compose** | Container stack: a profiled base + `--config` configs + `compose.m.*` modifiers | `runtime/docker-overview.md` |
 | **env / config** | Root `.env` (shared) → per-service `config.yaml` (`${VAR}`) → real env wins | `env-and-config/` |
 
 ## Two run surfaces
@@ -28,7 +28,7 @@ Read it as: **mise makes `ctl` callable → `ctl` is the single entrypoint → `
 `ctl` splits cleanly by *where code runs*:
 
 - **`ctl dev` — on the host.** Apps run directly (hot reload); only the data core runs in containers, which `ctl dev` auto-starts (with ports). This is the day-to-day loop. → `runtime/script-overview.md`
-- **`ctl up [profile…] [--config=…] [--<modifier>…]` — in docker.** Profiles pick services, `--config` swaps the deployment config (e.g. `--config=prod`), modifiers layer cross-cutting tweaks (`--expose`, `--traefik`). Production is `ctl up app edge --config=prod`. → `runtime/docker-compose-structure.md` + `runtime/script-usage.md`
+- **`ctl up [profile…] [--config=…] [--<modifier>…]` — in docker.** Profiles pick services, `--config` swaps the deployment config (e.g. `--config=prod`), modifiers layer cross-cutting tweaks (`--expose`, `--traefik`). Production is `ctl up app edge --config=prod`. → `runtime/docker-overview.md` + `runtime/script-usage.md`
 
 There is **no `ctl prod` verb** — prod is a config, not a command.
 
@@ -49,8 +49,8 @@ If you need structurally different stacks (single-node vs cluster vs prod) or `c
 ## Detail docs (the single source for each)
 
 - `runtime/mise.md` — version contract + bare-name PATH
-- `runtime/docker-compose-structure.md` — profiles vs `--config` vs `compose.m.*`; `docker/` layout + path discipline
-- `runtime/docker-bind-mounts.md` · `runtime/docker-nested-data-dir.md` · `runtime/docker-internal-ports.md`
+- `runtime/docker-overview.md` — profiles vs `--config` vs `compose.m.*`; `docker/` layout + path discipline
+- `runtime/docker-details.md` — bind-mounts, the `data/` layout, internal-vs-host ports, anchors
 - `runtime/script-overview.md` — the `ctl`/`scripts` model + the `scripts/` structure & map
 - `runtime/script-usage.md` — command surface, dispatcher skeleton, setup/status, host loop, the three startup-path commands
 - `runtime/complex-setups.md` — multi-mode trees + binary orchestrator (Layout 05)

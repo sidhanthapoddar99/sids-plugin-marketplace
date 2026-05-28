@@ -21,7 +21,7 @@ ctl up app edge --config=prod --traefik
 ▸ docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.m.traefik.yaml --profile app --profile edge --env-file .env.production up -d
 ```
 
-The compose-file convention these assemble (profiles vs config vs `.m.` modifier, path discipline) is `docker-compose-structure.md`.
+The compose-file convention these assemble (profiles vs config vs `.m.` modifier, path discipline) is `docker-overview.md`.
 
 ## Command surface
 
@@ -242,7 +242,7 @@ The no-docker path is what `ctl dev` automates; documenting it raw lets a develo
 ## See also
 
 - `script-overview.md` — the model (dev vs up, thin wrapper, the two custom bodies, why-host, three-paths concept)
-- `docker-compose-structure.md` — profiles / config / `.m.` modifiers; `docker/` layout + path discipline
+- `docker-overview.md` — profiles / config / `.m.` modifiers; `docker/` layout + path discipline
 - `mise.md` — project-scoped PATH; `ctl` callable bare
 - `assets/snippets/scripts/dev-wrapper.sh` (+ `scripts/*.sh`) — the runnable dispatcher and workers
 - `references/architecture/frontend/vite-proxy-nginx-pair.md` — dev proxy → prod nginx

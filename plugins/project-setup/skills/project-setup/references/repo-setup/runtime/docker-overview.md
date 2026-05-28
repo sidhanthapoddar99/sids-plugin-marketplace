@@ -31,7 +31,7 @@ Base + config = `compose.<name>.yaml`; modifiers carry the **`.m.`** infix so yo
 | Bind a data dir | `${DATA_DIR:-../data}/postgres/pgdata:/var/lib/postgresql/data` — `${DATA_DIR}` from `.env`, fallback `../data` |
 | Reference infra config | `../infra/<service>/<file>:/container/path:ro` |
 
-Init scripts, nginx confs, certs go **adjacent to the service** in `infra/<service>/`, never in `docker/`. See `docker-bind-mounts.md` and `docker-nested-data-dir.md`.
+Init scripts, nginx confs, certs go **adjacent to the service** in `infra/<service>/`, never in `docker/`. See `docker-details.md`.
 
 ## Profiles = service selection (the everyday axis)
 
@@ -132,7 +132,6 @@ networks:
 ## See also
 
 - `script-usage.md` — `ctl up [profile] [--config] [--modifier]` dispatch + auto-discovery (`script-overview.md` for the model)
-- `docker-internal-ports.md` — internal port = fixed convention; host port = `${VAR}` (the `--expose` modifier)
-- `docker-bind-mounts.md` — bind-mount discipline, the `data/` layout
+- `docker-details.md` — bind-mounts + the `data/` layout (nested pgdata trick), internal-vs-host ports (`${VAR}` for host ports), YAML anchors
 - `complex-setups.md` — `docker/<mode>/` trees + Go-CLI orchestrator (Layout 05)
 - `references/architecture/production/app-server-and-workers.md` — what the `prod` config carries

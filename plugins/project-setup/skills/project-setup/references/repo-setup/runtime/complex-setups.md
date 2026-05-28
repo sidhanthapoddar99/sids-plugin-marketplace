@@ -7,7 +7,7 @@ The standard runtime (one `docker/` with a profiled `compose.yaml` + `compose.m.
 
 They travel together: the kind of project that needs `docker/<mode>/` (e.g. a blockchain test harness with 1/N/prod node topologies) is usually the kind that needs a binary to manage it. This is **Layout 05**; the canonical example is `chimere-chain-2025`.
 
-> The simple runtime is documented in `runtime/docker-compose-structure.md` (compose) and `runtime/script-overview.md` (ctl). This doc only covers the deltas for complex setups. Don't reach for any of it preemptively.
+> The simple runtime is documented in `runtime/docker-overview.md` (compose) and `runtime/script-overview.md` (ctl). This doc only covers the deltas for complex setups. Don't reach for any of it preemptively.
 
 ---
 
@@ -32,7 +32,7 @@ docker/
 - **Each mode is a directory**, not a file. Its `compose.yaml` is that mode's base.
 - **Within a mode, the same conventions hold**: `compose.m.<modifier>.yaml` for cross-cutting overlays, `profiles:` for optional services, port-less base. The `.m.` marker means the same thing here as in the flat layout.
 - **Profiles still apply per mode** — e.g. `--profile obs` to add observability to whichever mode is running.
-- Path discipline is unchanged (`../../apps`, `../../infra` — note the extra `..` because compose files are now one level deeper). See `runtime/docker-bind-mounts.md`.
+- Path discipline is unchanged (`../../apps`, `../../infra` — note the extra `..` because compose files are now one level deeper). See `runtime/docker-details.md`.
 
 The binary (Part 2) picks the mode directory and assembles the `-f` list; the modes themselves are plain compose and **must remain runnable directly**:
 
@@ -134,11 +134,11 @@ A Layout 05 README documents **four** startup paths:
 - Reinventing what `docker compose` already does (health, deps, log multiplexing) — call it underneath.
 - Conflating orchestrator state and service state — the orchestrator manages compose, never application data.
 - Not documenting the binary's state file — operators need to know it exists and where.
-- Using `docker/<mode>/` for a project that only needs overlays — that's the flat layout (`runtime/docker-compose-structure.md`), not this.
+- Using `docker/<mode>/` for a project that only needs overlays — that's the flat layout (`runtime/docker-overview.md`), not this.
 
 ## See also
 
 - `runtime/overview.md` — how mise + ctl + docker + env interact (the simple case)
-- `runtime/docker-compose-structure.md` — the flat (single-mode) docker convention + `compose.m.*` modifiers
+- `runtime/docker-overview.md` — the flat (single-mode) docker convention + `compose.m.*` modifiers
 - `runtime/script-overview.md` — the shell `ctl` this escalates *from*
 - `layouts/05_infra-orchestrator.md` — the layout entry that points here

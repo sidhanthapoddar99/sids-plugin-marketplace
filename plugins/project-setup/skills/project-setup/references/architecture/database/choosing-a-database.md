@@ -17,7 +17,7 @@ Operational notes for SQLite-in-production:
 - Turn on **WAL mode** (`PRAGMA journal_mode=WAL`) — allows concurrent reads alongside a writer
 - Set a **`busy_timeout`** (`PRAGMA busy_timeout=5000`) so a second writer (e.g. a CLI / cron) waits instead of erroring with "database is locked"
 - One writer at a time is the model — design around it
-- Alembic with SQLite needs `render_as_batch=True` for `ALTER`s (see `python/alembic-default.md`)
+- Alembic with SQLite needs `render_as_batch=True` for `ALTER`s (see `references/architecture/backend/alembic-default.md`)
 
 ### Postgres when
 

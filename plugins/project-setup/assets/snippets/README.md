@@ -28,7 +28,7 @@ assets/snippets/
 
 ### `docker/`
 
-Three axes: `compose.yaml` is the profiled base (data core = no profile; apps `[app]`/`[edge]`); `compose.prod.yaml` is the one `--config=prod` deployment config; `compose.m.<name>.yaml` files are stackable `.m.` modifiers (`--expose`, `--traefik`). `ctl up [profile…] [--config=prod] [--<modifier>…]` assembles them. Full convention: `references/repo-setup/runtime/docker-compose-structure.md`.
+Three axes: `compose.yaml` is the profiled base (data core = no profile; apps `[app]`/`[edge]`); `compose.prod.yaml` is the one `--config=prod` deployment config; `compose.m.<name>.yaml` files are stackable `.m.` modifiers (`--expose`, `--traefik`). `ctl up [profile…] [--config=prod] [--<modifier>…]` assembles them. Full convention: `references/repo-setup/runtime/docker-overview.md`.
 
 | File | What it is | Drops at |
 |---|---|---|
