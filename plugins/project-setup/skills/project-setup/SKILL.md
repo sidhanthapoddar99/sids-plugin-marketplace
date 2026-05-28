@@ -185,13 +185,9 @@ references/
 │   │   ├── script-usage.md        # command surface + dispatcher skeleton + scripts/*.sh map + setup/status + host loop + startup commands
 │   │   └── complex-setups.md      # multi-mode docker/<mode>/ trees + escalate ctl → a Go binary (→ Layout 05)
 │   ├── env-and-config/            # the env/config split (a firm convention area)
-│   │   ├── root-env-shared-only.md    # what belongs in root .env (shared only) + .env.example contract
-│   │   ├── per-service-config-yaml.md # each backend's own config.yaml; reads root .env via ${VAR}
-│   │   ├── frontend-env-isolation.md  # SECURITY: VITE_*/NEXT_PUBLIC_* leak to the bundle — keep separate
-│   │   ├── build-time-vs-runtime.md   # classify every var; baked-into-artifact vs read-on-boot
-│   │   ├── yaml-var-interpolation.md  # ${VAR} substitution rules in config.yaml
-│   │   ├── config-local-overrides.md  # config.local.yaml precedence for dev
-│   │   ├── env-precedence.md          # load order: root .env → per-service .env → real env wins
+│   │   ├── env-precedence.md          # where a value comes from & who wins: 3 tiers + root .env scope + .env.example + config.local.yaml
+│   │   ├── per-service-config.md      # each backend's config.yaml + ${VAR} interpolation from root .env
+│   │   ├── frontend-env-isolation.md  # SECURITY: build-time vs runtime + VITE_*/NEXT_PUBLIC_* must not leak secrets to the bundle
 │   │   └── secrets-matrix.md          # dev / CI / prod / Vault — where secrets live, rotation
 │   ├── tooling/                   # optional dev tooling + CI/CD
 │   │   ├── lefthook.md            # pre-commit hooks (format/lint pre-commit, tests pre-push)

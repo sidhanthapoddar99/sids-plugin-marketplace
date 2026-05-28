@@ -1,13 +1,13 @@
-# Env precedence — the layering order
+# Env precedence — where a value comes from and who wins
 
-Env values come from three tiers. They load **lowest → highest priority**; later overrides earlier. The closer a source is to the runtime, the higher it wins.
+Env values come from three tiers, loading **lowest → highest priority** (later overrides earlier). The closer a source is to the runtime, the higher it wins. Files (`.env`) are a local-dev convenience and a home for non-secret shared defaults; **secrets are injected as real env vars in prod, never committed.**
 
 ## The three tiers
 
 | Priority | Source | Holds | Committed? |
 |---|---|---|---|
 | 1 (lowest) | `root/.env` | **Shared / common** values: service URLs, ports, non-secret defaults several services agree on | no (`.env.example` is) |
-| 2 | `root/<service>/.env` (e.g. `apps/api/.env`) | **Per-service**, mostly **secrets** (DB passwords, API keys) and service-specific overrides | no |
+| 2 | `<service>/.env` (e.g. `apps/api/.env`) | **Per-service**, mostly **secrets** (DB passwords, API keys) and service-specific overrides | no |
 | 3 (highest) | **Real environment variables** | Exported in the shell / set by the orchestrator / CI / container `environment:` | n/a — never a file |
 
 ```
@@ -18,54 +18,122 @@ apps/api/.env        (tier 2 — per-service secrets + overrides)
 root/.env            (tier 1 — shared non-secret defaults)
 ```
 
-Backends typically have one per-service `.env`; frontends have their own (`VITE_*` / `NEXT_PUBLIC_*`) — see `references/repo-setup/env-and-config/frontend-env-isolation.md`.
+Backends typically have one per-service `.env`; frontends have their own (`VITE_*` / `NEXT_PUBLIC_*`) — see `frontend-env-isolation.md`.
 
-## The principle
-
-**Secrets are injected as real env vars in prod, not committed to any file.** Files (`.env`) are a local-dev convenience and a home for non-secret shared defaults. In production the orchestrator (compose `environment:`, the platform's secret store, CI) sets the real env vars — tier 3 — and those always beat anything a file says. So the same code reads `os.environ["DB_PASSWORD"]` in both dev (from a file) and prod (from a real env var) with no branching.
+**The principle:** the same code reads `os.environ["DB_PASSWORD"]` in both dev (from a file) and prod (from a real env var) with no branching. In production the orchestrator (compose `environment:`, a secret store, CI) sets tier-3 env vars, and those always beat anything a file says.
 
 ## Loader semantics
 
-Most dotenv loaders (e.g. python-dotenv) default to `override=False`: a value **already present in the real environment is not overwritten** by the `.env` file. That default is exactly what you want — real env wins (tier 3).
-
-When you load **two** files (root then per-service), the more-specific file should beat the shared one — but **never** beat a real exported env var. Load files into a dict first, then let `os.environ` win:
+Most dotenv loaders default to `override=False`: a value **already present in the real environment is not overwritten** by `.env`. That default is exactly what you want — real env wins (tier 3). When loading **two** files (root then per-service), the more-specific file beats the shared one, but **never** beats a real exported env var:
 
 ```python
 import os
 from dotenv import dotenv_values
-
-# tier 1 then tier 2: later file overrides earlier file
-merged = {**dotenv_values("root/.env"), **dotenv_values("apps/api/.env")}
-
-# tier 3 wins: real env vars override both files
-config = {**merged, **os.environ}
+merged = {**dotenv_values("root/.env"), **dotenv_values("apps/api/.env")}  # tier 1 then 2: later file wins
+config = {**merged, **os.environ}                                          # tier 3: real env overrides both
 ```
 
-The takeaway is the ordering — files merge most-specific-last, then real env overrides everything. (If you prefer `load_dotenv`, call it on the root file with `override=False`, then the service file with `override=True` over the root file's keys; just ensure no file load can clobber a pre-existing real env var.)
+Files merge most-specific-last, then real env overrides everything. (With `load_dotenv`: root with `override=False`, then the service file with `override=True` over the root keys — just ensure no file load clobbers a pre-existing real env var.)
 
-## How this composes with `config.yaml`
+## Root `.env` — shared / common vars only
 
-There are **two parallel override stacks** that meet at interpolation:
+The root `.env` is **not** a global dumping ground. It holds only what's shared across services or needed by docker compose orchestration.
 
-- **Env files** (this doc) → resolve a final set of env vars.
-- Those vars get interpolated into `config.yaml` via `${VAR}` — see `references/repo-setup/env-and-config/yaml-var-interpolation.md`.
-- **Config files** override separately: `config.local.yaml` overrides `config.yaml` — see `references/repo-setup/env-and-config/config-local-overrides.md`.
+| ✅ Belongs at root `.env` | ❌ Does NOT belong |
+|---|---|
+| DB creds (`POSTGRES_USER/PASSWORD/DB/PORT`), Redis (`REDIS_PASSWORD/PORT`) | **Frontend-public vars** (`VITE_*`, `NEXT_PUBLIC_*`) → `apps/<frontend>/.env` |
+| Auth secrets shared across backends (`JWT_SIGNING_KEY`, `ENCRYPTION_KEY_*`) | **Per-service non-secrets** → that service's `config.yaml` |
+| Shared external API keys (only if multiple services consume) | **ML experiment hyperparameters** → `configs/<experiment>.yaml` |
+| Compose orchestration (`DATA_DIR`, `DOMAIN`, `TZ`, port mappings) | |
+| Per-service runtime hints (`PYTHON_PORT`, `RUST_PORT`) so compose can map them | |
 
-So env precedence decides *what `${VAR}` resolves to*; config precedence decides *which YAML layer wins*. They're orthogonal and meet only at the `${VAR}` substitution point.
+### `.env.example` is the contract
+
+`.env` is gitignored; **`.env.example` is committed** and is the contract every developer / CI / prod machine reads first. Comments are not optional — the file is the contract for humans, not just machines.
+
+```bash
+# my-app — environment contract
+# Copy to .env and fill the blanks. Secrets must be generated, not invented: openssl rand -hex 32
+# Anything marked REQUIRED must be set before `ctl` will start.
+
+# ─── Database ───
+POSTGRES_USER=myapp
+POSTGRES_PASSWORD=               # REQUIRED — openssl rand -hex 32
+POSTGRES_DB=myapp
+POSTGRES_PORT=5432
+# ─── Redis ───
+REDIS_PASSWORD=                  # REQUIRED — openssl rand -hex 32
+# ─── Auth ───
+JWT_SIGNING_KEY=                 # REQUIRED — openssl rand -hex 32
+# ─── Service ports (host-side, for dev) ───
+PYTHON_PORT=8000
+# ─── Compose ───
+DATA_DIR=./data                  # where bind-mounts live
+DOMAIN=localhost
+TZ=Asia/Kolkata
+```
+
+### The derived files
+
+| File | Purpose | Gitignored? |
+|---|---|---|
+| `.env` | Local dev values | yes |
+| `.env.example` | The committed contract | no |
+| `.env.production` | Production values, loaded as compose `env_file:` | yes |
+| `.env.local` | Optional dev override (rare; usually `config.local.yaml` covers it) | yes |
+
+### How `.env` is consumed
+
+1. **docker compose** auto-loads root `.env` for `${VAR}` interpolation in compose files.
+2. **per-service `config.yaml`** interpolates `${VAR}` from root `.env` — see `per-service-config.md`.
+3. **`ctl`** sources `.env` at the top (`set -a; source .env; set +a`); `ctl setup` fills it and `ctl status` diffs it against `.env.example` — see `runtime/script-usage.md`.
+4. **Frontends do not read root `.env`** — see `frontend-env-isolation.md`.
+
+## `config.local.yaml` — local-only overrides
+
+A sibling to `config.yaml` (gitignored) that takes precedence in local dev, letting a developer tweak settings without editing the committed config.
+
+```
+apps/backend/
+├── config.yaml          # committed, the base
+└── config.local.yaml    # gitignored, your overrides
+```
+
+```yaml
+# apps/backend/config.local.yaml
+app:      { log_level: debug }     # base says info; I want debug locally
+database: { echo: true }           # log all SQL
+redis:    { url: redis://localhost:6379/15 }   # db 15 to not collide with other projects
+features: { new_search_ui: true }  # feature flag for in-progress work
+```
+
+What goes in it: things that vary **per-developer** (log levels, local DB on a non-standard port, feature toggles, mock endpoints). Things that vary **per-environment** go in `config.<env>.yaml` or env vars.
+
+**Loading order:** `config.yaml` → `config.<env>.yaml` (committed, env-specific) → `config.local.yaml` (gitignored, dev-only). Deep merge — nested keys merge field by field; arrays replace whole. Gitignore `*.local.yaml` / `**/*.local.yaml`.
+
+**Why not just `.env.local`?** `.env.local` is for runtime env vars; `config.local.yaml` is for structured config (arrays/objects/nested keys). They coexist — a dev typically has both: `.env.local` with personal API keys, `config.local.yaml` with preferred log levels. Secrets go in `.env.local` and are referenced from YAML via `${VAR}`, never written into `config.local.yaml`.
+
+## Two parallel override stacks meet at interpolation
+
+- **Env files** (this doc) resolve a final set of env vars.
+- Those vars interpolate into `config.yaml` via `${VAR}` — see `per-service-config.md`.
+- **Config files** override separately: `config.local.yaml` over `config.yaml`.
+
+Env precedence decides *what `${VAR}` resolves to*; config precedence decides *which YAML layer wins*. Orthogonal, meeting only at the `${VAR}` substitution point.
 
 ## Anti-patterns
 
-- Secrets in root `.env` — it's **shared**; put secrets in the per-service `.env` or inject them as real env vars in prod
-- Committing any `.env` — gitignore them; commit `.env.example` as the contract
-- A file overriding a real exported env var — breaks prod secret injection; real env must always win
-- Duplicating the same URL in every service's `.env` — put it **once** in root `.env` and let services inherit it
+- Secrets in root `.env` — it's **shared**; put secrets in the per-service `.env` or inject as real env vars in prod.
+- Committing any `.env` — gitignore them; commit `.env.example`.
+- A file overriding a real exported env var — breaks prod secret injection; real env must always win.
+- Duplicating the same URL in every service's `.env` — put it **once** in root `.env` and inherit.
+- Frontend-public vars at root — leaks if a backend bundles them.
+- Per-service non-secret config in `.env` — that's what `config.yaml` is for.
+- Committing `config.local.yaml`, or encoding secrets in it — defeats the purpose; secrets go in `.env.local`.
 
 ## See also
 
-- `references/repo-setup/env-and-config/root-env-shared-only.md`
-- `references/repo-setup/env-and-config/per-service-config-yaml.md`
-- `references/repo-setup/env-and-config/frontend-env-isolation.md`
-- `references/repo-setup/env-and-config/secrets-matrix.md`
-- `references/repo-setup/env-and-config/build-time-vs-runtime.md`
-- `references/repo-setup/env-and-config/yaml-var-interpolation.md`
-- `references/repo-setup/env-and-config/config-local-overrides.md`
+- `per-service-config.md` — `config.yaml` + `${VAR}` interpolation
+- `frontend-env-isolation.md` — build-time vs runtime + keeping secrets out of the client bundle
+- `secrets-matrix.md` — where secrets live across dev / CI / prod / vault
+- `runtime/script-usage.md` — `ctl setup` / `ctl status` (the `require_env` guard, the schema diff)

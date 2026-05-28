@@ -33,7 +33,7 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
    *.local.yaml
    ```
 
-4. **`ctl` refuses to start if `.env` has unfilled required keys.** See `references/repo-setup/env-and-config/root-env-shared-only.md` for the `require_env` helper.
+4. **`ctl` refuses to start if `.env` has unfilled required keys.** See `references/repo-setup/runtime/script-usage.md` for the `require_env` helper.
 
 ## CI rules
 

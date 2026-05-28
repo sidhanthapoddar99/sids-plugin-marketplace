@@ -66,5 +66,5 @@ services:
 ## See also
 
 - `references/repo-setup/runtime/docker-compose-structure.md` — folder layout + profiles vs `--config` overlays
-- `references/repo-setup/env-and-config/yaml-var-interpolation.md`
-- `references/repo-setup/env-and-config/build-time-vs-runtime.md`
+- `references/repo-setup/env-and-config/per-service-config.md`
+- `references/repo-setup/env-and-config/frontend-env-isolation.md`

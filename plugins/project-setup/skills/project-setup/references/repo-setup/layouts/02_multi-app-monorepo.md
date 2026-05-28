@@ -83,7 +83,7 @@ apps/
 
 The genuinely-unique guidance here is **coordination**: when two backends share state, **one owns the schema and the other consumes it.** Pick the DDL owner explicitly and document it; the non-owner reads the migrated schema and never writes DDL. Coordination goes over a shared transport — Postgres (LISTEN/NOTIFY), Redis (pub/sub, streams), or HTTP — not concurrent writes to the same tables. The `ctl` dispatcher should enforce ordering: e.g. `migrate up → sqlx prepare --check → cargo build`, failing locally on drift. Don't forget `rust-toolchain.toml` for reproducibility.
 
-For env-var namespacing across services (`PYTHON_PORT`, `RUST_PORT`, shared `DATABASE_URL`/`REDIS_URL`), see `references/repo-setup/env-and-config/per-service-config-yaml.md` and `.../root-env-shared-only.md`. Each backend gets its own service in `compose.yaml` (under `profiles: [app]`) with its folder as build context — see `references/repo-setup/runtime/docker-compose-structure.md`.
+For env-var namespacing across services (`PYTHON_PORT`, `RUST_PORT`, shared `DATABASE_URL`/`REDIS_URL`), see `references/repo-setup/env-and-config/per-service-config.md` and `.../env-precedence.md`. Each backend gets its own service in `compose.yaml` (under `profiles: [app]`) with its folder as build context — see `references/repo-setup/runtime/docker-compose-structure.md`.
 
 ## Scaling: more than one frontend
 
@@ -114,8 +114,8 @@ This is still the same monorepo spectrum, not a new kind. The signal you've outg
 
 These are shared across every variant above; don't restate them, follow the refs:
 
-- **Env precedence & split** — root `.env` is shared backend/infra only; frontends carry their own `VITE_*` `.env`. See `references/repo-setup/env-and-config/env-precedence.md`, `.../root-env-shared-only.md`, `.../frontend-env-isolation.md`.
-- **Per-service config** — each service has its own `config.yaml` reading root `.env` via `${VAR}`, with a gitignored `config.local.yaml`. See `references/repo-setup/env-and-config/per-service-config-yaml.md`.
+- **Env precedence & split** — root `.env` is shared backend/infra only; frontends carry their own `VITE_*` `.env`. See `references/repo-setup/env-and-config/env-precedence.md` and `.../frontend-env-isolation.md`.
+- **Per-service config** — each service has its own `config.yaml` reading root `.env` via `${VAR}`, with a gitignored `config.local.yaml`. See `references/repo-setup/env-and-config/per-service-config.md`.
 - **Docker structure** — profiled `compose.yaml` (data core + `[app]`/`[edge]`) plus at most one `--config=prod` and stackable `.m.` modifiers (`--expose`/`--traefik`). See `references/repo-setup/runtime/docker-compose-structure.md`.
 - **`ctl` dispatcher** — single entry point: `ctl dev` (host) + `ctl up [profile] [--config]` + migrate/test/clean. See `references/repo-setup/runtime/script-overview.md` (model) and `.../script-usage.md` (commands).
 - **Production serving** — gunicorn + uvicorn workers with recycling behind nginx; readiness/liveness, graceful shutdown, migrations-on-deploy. See `references/architecture/production/app-server-and-workers.md` and `.../production-readiness.md`.
