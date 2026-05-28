@@ -32,7 +32,7 @@ So **internal URLs are stable constants; only host-facing ports vary.** `http://
 | Collisions | Impossible (separate namespaces) | Possible across stacks — so vary it |
 | Referenced as | `http://backend:8000` | `localhost:${BACKEND_PORT}` (humans/dev only) |
 
-In **dev** (apps on host) the app binds a host port directly; in **prod** (containers) it's the internal port + compose network. The internal port being a constant is what keeps the two modes consistent — see `references/repo-setup/docker/docker-compose-structure.md`.
+In **dev** (apps on host) the app binds a host port directly; in **prod** (containers) it's the internal port + compose network. The internal port being a constant is what keeps the two modes consistent — see `references/repo-setup/runtime/docker-compose-structure.md`.
 
 ## B. YAML anchors & `x-` extension fields
 
@@ -65,6 +65,6 @@ services:
 
 ## See also
 
-- `references/repo-setup/docker/docker-compose-structure.md` — folder layout + profiles vs `--config` overlays
+- `references/repo-setup/runtime/docker-compose-structure.md` — folder layout + profiles vs `--config` overlays
 - `references/repo-setup/env-and-config/yaml-var-interpolation.md`
 - `references/repo-setup/env-and-config/build-time-vs-runtime.md`

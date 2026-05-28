@@ -2,7 +2,7 @@
 
 One executable at repo root. Single entrypoint for the whole stack — local dev processes **and** containers. The user-facing API for the project.
 
-> **Name.** This doc uses `ctl`. The name is a single token you can swap project-wide (`stack`, `app`, `ctl`, or the project name) — pick one and keep it. With mise's project-scoped PATH (`[env]._.path = ["{{config_root}}"]`, see `references/repo-setup/mise.md`) you call it bare — `ctl up` — instead of `./ctl`.
+> **Name.** This doc uses `ctl`. The name is a single token you can swap project-wide (`stack`, `app`, `ctl`, or the project name) — pick one and keep it. With mise's project-scoped PATH (`[env]._.path = ["{{config_root}}"]`, see `references/repo-setup/runtime/mise.md`) you call it bare — `ctl up` — instead of `./ctl`.
 
 ## The model — one host launcher, one docker launcher
 
@@ -11,27 +11,28 @@ Two kinds of thing have two different lifecycles, so they get two different gram
 | Kind | Lifecycle | Commands |
 |---|---|---|
 | **The local dev loop** (apps on host, hot reload) | interactive, foreground — you watch it, Ctrl-C to stop | `ctl dev` |
-| **The containerised stack** | detached, long-lived background | `ctl up [profile…] [--config=…]` / `ctl down` / `ctl ps` / `ctl logs` |
+| **The containerised stack** | detached, long-lived background | `ctl up [profile…] [--config=<name>] [--<modifier>…]` / `ctl down` / `ctl ps` / `ctl logs` |
 
-`ctl dev` runs apps **on the host**; it is genuinely *not* a compose variant, so it's its own verb. Everything that runs **in docker** goes through `ctl up`, parameterised by **profiles** (which services) and optional **`--config` overlays** (how they run). There is **no `ctl prod` verb**: production is `ctl up app edge --config=prod`. See `references/repo-setup/docker/docker-compose-structure.md` for the profile/overlay convention this implements.
+`ctl dev` runs apps **on the host**; it is genuinely *not* a compose variant, so it's its own verb. Everything that runs **in docker** goes through `ctl up`, parameterised by **profiles** (which services), an optional **config** (a full alternate definition, `--config=prod`), and **modifiers** (cross-cutting overlays, `--expose`/`--traefik`). There is **no `ctl prod` verb**: production is `ctl up app edge --config=prod`. See `references/repo-setup/runtime/docker-compose-structure.md` for the profile/config/modifier convention this implements.
 
-## `ctl up` — profiles + optional configs
+## `ctl up` — profiles, one config, stacked modifiers
 
 ```
-ctl up                          core only (no-profile services: data layer)
-ctl up <profile…>               docker compose --profile <p> …   profiles ∈ app|edge|obs|…
-ctl up <profile…> --config=<n>… also layer compose.<n>.yaml      configs ∈ prod|expose|traefik|…
-ctl up --help                   list discovered profiles + configs
+ctl up                              core only (no-profile services: data layer)
+ctl up <profile…>                   --profile <p> …                profiles  ∈ app|edge|obs|…
+ctl up <profile…> --config=<name>   + compose.<name>.yaml          config    ∈ prod|… (at most one)
+ctl up <profile…> --<modifier>…     + compose.m.<modifier>.yaml    modifiers ∈ expose|traefik|no-ports|…
+ctl up --help                       list discovered profiles, configs, modifiers
 ```
 
-- **Profiles are the everyday axis** (which subset runs); they combine freely (`ctl up app edge`). **Configs are the escape hatch** (overlay a different definition) and stack (`--config=prod --config=traefik`).
-- **Auto-discovered** — profiles by grepping `profiles:` in `compose.yaml`, configs by globbing `docker/compose.*.yaml`. No hard-coded lists; drop a `compose.<x>.yaml` and it shows up in `--help`.
+- **Profiles** combine freely (`ctl up app edge`). **One config** (`--config=prod`) swaps the whole deployment definition. **Modifiers** (`--expose`, `--traefik`) are small cross-cutting overlays that stack.
+- **Auto-discovered**: profiles by grepping `profiles:` in `compose.yaml`; configs are `compose.<name>.yaml`; modifiers are `compose.m.<name>.yaml`. No hard-coded lists — drop a file and it appears in `--help`.
 - **`--config=prod` switches `--env-file` to `.env.production`** when present.
-- **Always echoes the composed command** before running, so the active `-f`/`--profile` set is never hidden.
+- **Always echoes the composed command** before running, so the active set is never hidden.
 
 ```
-ctl up app edge --config=prod --config=traefik
-▸ docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml --profile app --profile edge --env-file .env.production up -d
+ctl up app edge --config=prod --traefik
+▸ docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.m.traefik.yaml --profile app --profile edge --env-file .env.production up -d
 ```
 
 ## Command surface
@@ -40,8 +41,8 @@ ctl up app edge --config=prod --config=traefik
 ctl dev [target]      run the stack LOCALLY on the host (hot reload). target ∈ all|backend|frontend|<svc>
                       auto-ensures the data core (with ports) is up first. foreground; Ctrl-C/q stops.
 
-ctl up [profile…] [--config=n…]   start container stack, detached
-ctl up --help                     list discovered profiles + configs
+ctl up [profile…] [--config=<name>] [--<modifier>…]   start container stack, detached
+ctl up --help                     list discovered profiles, configs, modifiers
 ctl down [service]    stop the project (or named service)
 ctl restart [service]
 ctl ps                unified view: running containers + running local dev procs
@@ -86,30 +87,37 @@ require_env() {
 }
 require_tools() { for t in mise docker; do command -v "$t" >/dev/null || die "missing: $t"; done; }
 
-# --- discovery: no hard-coded profile/config lists -------------------------
-list_profiles() { grep -hoE 'profiles:[[:space:]]*\[[^]]+\]' "$BASE" \
-                    | grep -oE '[A-Za-z0-9_-]+' | grep -vx profiles | sort -u; }
-list_configs()  { for f in "$DOCKER_DIR"/compose.*.yaml; do b=${f##*/}; b=${b#compose.}; echo "${b%.yaml}"; done; }
+# --- discovery: no hard-coded lists ----------------------------------------
+list_profiles()  { grep -hoE 'profiles:[[:space:]]*\[[^]]+\]' "$BASE" \
+                     | grep -oE '[A-Za-z0-9_-]+' | grep -vx profiles | sort -u; }
+list_configs()   { for f in "$DOCKER_DIR"/compose.*.yaml; do b=${f##*/}; [[ $b == compose.yaml || $b == compose.m.* ]] && continue; b=${b#compose.}; echo "${b%.yaml}"; done; }
+list_modifiers() { for f in "$DOCKER_DIR"/compose.m.*.yaml; do b=${f##*/compose.m.}; echo "${b%.yaml}"; done; }
 
-# --- ctl up: profiles + --config overlays ----------------------------------
+# --- ctl up: profiles + one --config + stacked --modifiers ------------------
 cmd_up() {
   [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]] && { up_help; return; }
   require_env
-  local profiles=() configs=()
+  local profiles=() config="" modifiers=()
   while [[ $# -gt 0 ]]; do
     case "$1" in
-      --config=*) configs+=("${1#--config=}"); shift ;;
-      --config)   configs+=("$2"); shift 2 ;;
+      --config=*) [[ -z $config ]] || die "one --config at a time"; config="${1#--config=}"; shift ;;
+      --config)   [[ -z $config ]] || die "one --config at a time"; config="$2"; shift 2 ;;
+      --*)        modifiers+=("${1#--}"); shift ;;          # --expose → modifier 'expose'
       -*)         die "unknown flag: $1 (try ctl up --help)" ;;
       *)          profiles+=("$1"); shift ;;
     esac
   done
   local files=("$BASE") prof_args=() env_args=()
-  for c in "${configs[@]}"; do
-    local cf="$DOCKER_DIR/compose.$c.yaml"
-    [[ -f $cf ]] || die "no such config '$c'. configs: $(list_configs | tr '\n' ' ')"
+  if [[ -n $config ]]; then                                # base + config first
+    local cf="$DOCKER_DIR/compose.$config.yaml"
+    [[ -f $cf ]] || die "no such config '$config'. configs: $(list_configs | tr '\n' ' ')"
     files+=("$cf")
-    [[ $c == prod && -f .env.production ]] && env_args=(--env-file .env.production)
+    [[ $config == prod && -f .env.production ]] && env_args=(--env-file .env.production)
+  fi
+  for m in "${modifiers[@]}"; do                           # modifiers stack last (win)
+    local mf="$DOCKER_DIR/compose.m.$m.yaml"
+    [[ -f $mf ]] || die "no such modifier '$m'. modifiers: $(list_modifiers | tr '\n' ' ')"
+    files+=("$mf")
   done
   for p in "${profiles[@]}"; do
     list_profiles | grep -qx "$p" || die "no such profile '$p'. profiles: $(list_profiles | tr '\n' ' ')"
@@ -120,9 +128,10 @@ cmd_up() {
   c_info "${cmd[*]}"; "${cmd[@]}"
 }
 up_help() {
-  echo "ctl up [profile…] [--config=name…]"
-  echo "  profiles (which services; combine freely):"; for p in $(list_profiles); do echo "    $p"; done
-  echo "  configs (overlay how they run; stackable):"; for c in $(list_configs); do echo "    $c"; done
+  echo "ctl up [profile…] [--config=<name>] [--<modifier>…]"
+  echo "  profiles  (which services; combine freely):"; for p in $(list_profiles);  do echo "    $p"; done
+  echo "  config    (one alternate deployment config):"; for c in $(list_configs);   do echo "    --config=$c"; done
+  echo "  modifiers (cross-cutting; stack freely):";      for m in $(list_modifiers); do echo "    --$m"; done
 }
 
 # --- other container wrappers ----------------------------------------------
@@ -134,7 +143,7 @@ cmd_logs()  { docker compose -f "$BASE" logs "$@"; }
 cmd_dev() {                       # local, host, hot reload
   require_env; require_tools
   c_info "ensuring data core (with ports)…"
-  docker compose -f "$BASE" -f "$DOCKER_DIR/compose.expose.yaml" up -d "${DATA_SVCS[@]}"
+  docker compose -f "$BASE" -f "$DOCKER_DIR/compose.m.expose.yaml" up -d "${DATA_SVCS[@]}"
   bash scripts/wait-for-health.sh "${DATA_SVCS[@]}" 60
   if command -v process-compose >/dev/null; then
     exec process-compose up "${@:+--names $*}"        # reads process-compose.yaml
@@ -182,7 +191,7 @@ main() {
 main "$@"
 ```
 
-The skill drops this from `assets/snippets/scripts/dev-wrapper.sh` and adapts it. Profile/config discovery is a one-line `grep`/glob — convention over a YAML parser, deliberately. (The grep assumes the inline `profiles: [app]` form the snippet uses.)
+The skill drops this from `assets/snippets/scripts/dev-wrapper.sh` and adapts it. Profile/config/modifier discovery is a one-line `grep`/glob — convention over a YAML parser, deliberately. (The grep assumes the inline `profiles: [app]` form the snippet uses; `compose.m.*` files are modifiers, the rest are configs.)
 
 ## The dev launcher's process file (`process-compose.yaml`)
 
@@ -208,33 +217,34 @@ processes:
 ## Design rules
 
 - **`ctl dev` is the most common path.** Optimise for "fresh clone → `ctl setup` → `ctl dev` → it works."
-- **`ctl up` assembles, compose executes.** The only logic in `up` is turning profiles + configs into `--profile`/`-f`/`--env-file`, then echoing and running it. No reimplementing compose.
-- **No silent failures.** Missing tool, unset var, healthcheck timeout, unknown profile/config → die with the fix.
-- **No hard-coded profile/config lists.** Discover them so `--help` and reality never drift.
+- **`ctl up` assembles, compose executes.** The only logic in `up` is turning profiles + config + modifiers into `--profile`/`-f`/`--env-file`, then echoing and running it. No reimplementing compose.
+- **No silent failures.** Missing tool, unset var, healthcheck timeout, unknown profile/config/modifier → die with the fix.
+- **No hard-coded profile/config/modifier lists.** Discover them so `--help` and reality never drift.
 - **`status` and `setup` are the two custom bodies** — stable command name, project-specific logic. Everything else is largely uniform.
 - **Self-documenting** — `ctl help` is the contract; `ctl up --help` is the discovered profile/config list.
 
 ## One dispatcher per repo
 
-A single repo has **one** `ctl`. New need → a profile, a `compose.<config>.yaml`, or a subcommand — not a second wrapper. The one place two contracts exist is Layout 03 (polyrepo + aggregator): each child repo has its own `ctl`, and the aggregator repo has its own `ctl` whose `ctl up app edge --config=prod` deploys the merged stack. When `ctl` itself outgrows shell (structured state across runs, multi-node promotion), escalate it to a binary — see `references/repo-setup/complex-setups/orchestrator-escalation.md`.
+A single repo has **one** `ctl`. New need → a profile, a `compose.<config>.yaml`, or a subcommand — not a second wrapper. The one place two contracts exist is Layout 03 (polyrepo + aggregator): each child repo has its own `ctl`, and the aggregator repo has its own `ctl` whose `ctl up app edge --config=prod` deploys the merged stack. When `ctl` itself outgrows shell (structured state across runs, multi-node promotion), escalate it to a binary — see `references/repo-setup/runtime/complex-setups.md`.
 
 ## Anti-patterns
 
 - A 500-line bash wrapper that reimplements a process manager — delegate to `process-compose`/`docker compose`.
 - A `ctl prod` verb separate from `ctl up` — production is just profiles + `--config=prod`; two verbs for one lifecycle drift apart.
 - Per-mode option files (`compose.dev.yaml`, `compose.db.yaml`) when a profile expresses it — `db`→`ctl up` (core), `app`→`--profile app`.
+- A modifier file missing its `.m.` infix (or a config carrying one) — the marker is how `ctl` and a reader tell `--config=prod` from `--traefik`.
 - Hand-managing local PIDs, pidfiles, and tmux sessions when `process-compose`/`mprocs` do it declaratively.
 - Folding migrations into `ctl dev` — `dev` is the host loop only; migrations are `ctl migrate`.
-- A hard-coded `case` of profile/config names instead of discovery — `--help` lies the moment someone adds a file.
+- A hard-coded `case` of profile/config/modifier names instead of discovery — `--help` lies the moment someone adds a file.
 - Subcommands that just alias `docker compose` syntax verbatim — `ctl up` exists to hide the flag soup, not mirror it.
 - Silent fallbacks ("if docker isn't installed, try podman") — be explicit; ask the user to install the canonical tool.
 
 ## See also
 
-- `references/repo-setup/docker/docker-compose-structure.md` — the profile/`--config` convention `ctl up` implements
-- `references/repo-setup/scripts/dev-without-docker.md` — what `ctl dev` runs on the host and why
-- `references/repo-setup/scripts/setup-command.md` — `ctl setup` / `ctl status` as project-custom subscripts
-- `references/repo-setup/scripts/subscripts.md` — the `scripts/*.sh` the dispatcher calls
-- `references/repo-setup/scripts/three-startup-paths.md` — `ctl` / raw compose / no-docker, documented in the README
-- `references/repo-setup/complex-setups/orchestrator-escalation.md` — escalate `ctl` → a binary orchestrator
-- `references/repo-setup/mise.md` — project-scoped PATH so `ctl` is callable bare
+- `references/repo-setup/runtime/docker-compose-structure.md` — the profile/`--config` convention `ctl up` implements
+- `references/repo-setup/runtime/script-dev-without-docker.md` — what `ctl dev` runs on the host and why
+- `references/repo-setup/runtime/script-setup-and-status.md` — `ctl setup` / `ctl status` as project-custom subscripts
+- `references/repo-setup/runtime/script-subscripts.md` — the `scripts/*.sh` the dispatcher calls
+- `references/repo-setup/runtime/script-three-startup-paths.md` — `ctl` / raw compose / no-docker, documented in the README
+- `references/repo-setup/runtime/complex-setups.md` — escalate `ctl` → a binary orchestrator
+- `references/repo-setup/runtime/mise.md` — project-scoped PATH so `ctl` is callable bare

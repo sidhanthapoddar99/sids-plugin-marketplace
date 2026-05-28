@@ -58,7 +58,7 @@ Run this in order before proposing any layout. **Skip what you already know**, b
     - Confirm: bun dev / uvicorn --reload / cargo-watch — all run on host
 12. **`ctl` subcommands**: which day-to-day flows need shortcuts?
     - Suggest defaults: `ctl dev` (host dev loop), `ctl up [profile…] [--config=…]` (containers — bare = data core, `ctl up app edge --config=prod` = production), `ctl down`, `ctl migrate {up|down|new}`, `ctl test`, `ctl clean`, `ctl help`.
-    - Profiles (which services) vs `--config` overlays (how they run) are the two `ctl up` axes — see `references/repo-setup/docker/docker-compose-structure.md`.
+    - Profiles (which services) vs `--config` overlays (how they run) are the two `ctl up` axes — see `references/repo-setup/runtime/docker-compose-structure.md`.
     - Add language-specific: `ctl sqlx-prepare` (if Rust), `ctl train` (if ML).
 
 ## Batch 4 — deployment + secrets

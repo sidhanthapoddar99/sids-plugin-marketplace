@@ -74,7 +74,7 @@ Two axes: `compose.yaml` is the profiled base (data core = no profile; apps `[ap
 - File names mirror their **drop name** where possible (`compose.expose.yaml`, not `compose-expose.yaml`).
 - Templates use `<PROJECT>` / `<placeholder>` markers the slash command substitutes.
 - All snippets are **illustrative defaults** — adapt per project. The category structure is the contract; the specific values are not.
-- Image tags and runtime versions are illustrative — see the `references/architecture/database/` and `references/repo-setup/mise.md` notes about checking latest and asking the user.
+- Image tags and runtime versions are illustrative — see the `references/architecture/database/` and `references/repo-setup/runtime/mise.md` notes about checking latest and asking the user.
 
 ## What's NOT here
 

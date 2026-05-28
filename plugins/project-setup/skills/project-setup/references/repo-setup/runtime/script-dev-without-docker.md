@@ -20,7 +20,7 @@ Production parity is enforced by CI building images and by `ctl up app edge --co
 3. Multiplexes their output into readable, per-service panes.
 4. Stops everything cleanly on Ctrl-C / quit.
 
-Steps 2–4 are delegated to a process runner — **don't hand-roll PID juggling** (see `references/repo-setup/scripts/global-wrapper-dispatcher.md` § "Delegate"). Default `process-compose`; `mprocs` as a lighter option; a bash `trap` only as a 1–2-process fallback.
+Steps 2–4 are delegated to a process runner — **don't hand-roll PID juggling** (see `references/repo-setup/runtime/script-dispatcher.md` § "Delegate"). Default `process-compose`; `mprocs` as a lighter option; a bash `trap` only as a 1–2-process fallback.
 
 ### Preferred: `process-compose.yaml`
 
@@ -86,6 +86,6 @@ In prod (`ctl up app edge --config=prod`), nginx/traefik routes `/api/*` to the 
 
 ## See also
 
-- `references/repo-setup/scripts/global-wrapper-dispatcher.md` — `ctl dev` / `ctl up [profile…] [--config=…]`
-- `references/repo-setup/scripts/three-startup-paths.md` — the three documented ways to start
+- `references/repo-setup/runtime/script-dispatcher.md` — `ctl dev` / `ctl up [profile…] [--config=…]`
+- `references/repo-setup/runtime/script-three-startup-paths.md` — the three documented ways to start
 - `references/architecture/frontend/vite-proxy-nginx-pair.md` — dev proxy → prod nginx

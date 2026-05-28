@@ -215,5 +215,5 @@ The skill can drop this checklist into `docs/` or the README's Deploy section.
 
 - `references/architecture/production/app-server-and-workers.md` — worker / recycling detail
 - `references/repo-setup/env-and-config/secrets-matrix.md` — prod secrets handling
-- `references/repo-setup/docker/docker-compose-structure.md` — the prod (`--config=prod`) overlay
+- `references/repo-setup/runtime/docker-compose-structure.md` — the prod (`--config=prod`) overlay
 - `references/architecture/backend/alembic-default.md` — migration mechanics

@@ -56,7 +56,7 @@ $ ctl status
 ✓ infra: postgres + redis healthy
 ```
 
-`ctl status` shares logic with `scripts/check-env.sh` (see `references/repo-setup/scripts/subscripts.md`) — `check-env` is the env-schema diff; `status` is the broader, per-service doctor that calls it.
+`ctl status` shares logic with `scripts/check-env.sh` (see `references/repo-setup/runtime/script-subscripts.md`) — `check-env` is the env-schema diff; `status` is the broader, per-service doctor that calls it.
 
 ## Why explicit `setup`, not folded-into-bare-run
 
@@ -66,7 +66,7 @@ The old pattern folded first-run setup into a bare `./dev`. The `ctl` model make
 - **`ctl setup` is re-runnable** on its own — "I added a new service, re-fill its keys" without launching anything.
 - **`ctl status` gives a fast yes/no** without side effects — the thing you run when "it won't start" and you don't know why.
 
-`ctl dev`'s only config interaction is the guard: if `.env` is missing, it stops and says `run ctl setup` (see the `require_env` helper in `references/repo-setup/scripts/global-wrapper-dispatcher.md`).
+`ctl dev`'s only config interaction is the guard: if `.env` is missing, it stops and says `run ctl setup` (see the `require_env` helper in `references/repo-setup/runtime/script-dispatcher.md`).
 
 ## Production deploy
 
@@ -82,7 +82,7 @@ Production is `ctl up app edge --config=prod` (full docker, prod overlay). Prod 
 
 ## See also
 
-- `references/repo-setup/scripts/global-wrapper-dispatcher.md` — the dispatcher; `require_env` guard
-- `references/repo-setup/scripts/subscripts.md` — `scripts/setup.sh`, `scripts/status.sh`, `scripts/check-env.sh`
+- `references/repo-setup/runtime/script-dispatcher.md` — the dispatcher; `require_env` guard
+- `references/repo-setup/runtime/script-subscripts.md` — `scripts/setup.sh`, `scripts/status.sh`, `scripts/check-env.sh`
 - `references/repo-setup/env-and-config/env-precedence.md` — load order; prod injects real env vars
 - `references/repo-setup/env-and-config/config-local-overrides.md` — `config.local.yaml` precedence

@@ -109,14 +109,14 @@ See `references/repo-setup/env-and-config/env-precedence.md` for the load order 
 
 ### What compose structure does the layout need?
 
-Two axes (see `references/repo-setup/docker/docker-compose-structure.md`): **profiles** (which services) and **`--config` overlays** (how they run). Default set for Layout 02:
+Two axes (see `references/repo-setup/runtime/docker-compose-structure.md`): **profiles** (which services) and **`--config` overlays** (how they run). Default set for Layout 02:
 
 - `compose.yaml` — profiled base: data layer = no profile (always up); apps `profiles: [app]`; edge `profiles: [edge]`. No host ports.
 - `compose.expose.yaml` — `--config=expose`: publish host ports (`ctl dev` layers it for the data core)
 - `compose.prod.yaml` — `--config=prod`: image tags, resource limits, `.env.production`
 - `compose.traefik.yaml` — `--config=traefik`: external Traefik network + labels on the edge
 
-So `ctl up` = data core, `ctl up app` = +apps, `ctl up app edge --config=prod` = production. Single app (Layout 01) often needs only `compose.yaml` (+ `compose.expose.yaml`). ML (Layout 04) often needs no compose. Infra orchestrator (Layout 05) uses `docker/<mode>/compose.yaml` per mode (singlenode/multinode/prod) — see `references/repo-setup/complex-setups/orchestrator-escalation.md`.
+So `ctl up` = data core, `ctl up app` = +apps, `ctl up app edge --config=prod` = production. Single app (Layout 01) often needs only `compose.yaml` (+ `compose.expose.yaml`). ML (Layout 04) often needs no compose. Infra orchestrator (Layout 05) uses `docker/<mode>/compose.yaml` per mode (singlenode/multinode/prod) — see `references/repo-setup/runtime/complex-setups.md`.
 
 ### Python flow per layout
 
@@ -159,7 +159,7 @@ These decisions only apply once a project crosses a complexity threshold:
 
 | Trigger | Action |
 |---|---|
-| `ctl` shell dispatcher grows past ~150 lines or needs structured state across compose runs | Move orchestration to a Go binary (Layout 05; see `references/repo-setup/complex-setups/orchestrator-escalation.md`). |
+| `ctl` shell dispatcher grows past ~150 lines or needs structured state across compose runs | Move orchestration to a Go binary (Layout 05; see `references/repo-setup/runtime/complex-setups.md`). |
 | A single app grows a second app (backend or frontend) | Migrate Layout 01 → 02: introduce `apps/`, move the existing app under `apps/<name>/`. |
 | Within Layout 02, frontends start sharing code | Introduce `pnpm-workspace.yaml` + `turbo.json` + `packages/` — still Layout 02. |
 | Within Layout 02, services grow independent deploy cadences/boundaries | The mesh end of Layout 02; if they need separate repos, escalate to Layout 03. |

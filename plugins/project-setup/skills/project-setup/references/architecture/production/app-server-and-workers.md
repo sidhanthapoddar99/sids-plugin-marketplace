@@ -196,5 +196,5 @@ Match `WEB_CONCURRENCY` to the `cpus` limit — there's no point running 9 worke
 ## See also
 
 - `references/architecture/production/production-readiness.md` — the broader pre-deploy checklist
-- `references/repo-setup/docker/docker-compose-structure.md` — where the prod (`--config=prod`) overlay lives
+- `references/repo-setup/runtime/docker-compose-structure.md` — where the prod (`--config=prod`) overlay lives
 - `references/architecture/frontend/vite-proxy-nginx-pair.md` — nginx sits in front of these workers

@@ -26,7 +26,7 @@ These are the conventions to apply by default. Most are **firm** — their value
 2. **If you don't have information, ASK.** Do not presume. Common unknowns: sibling repos, whether the project is ML or app, whether the frontend exposes any backend URLs, deployment targets, theming requirements.
 3. **Root holds only config + README + folders — never loose code.** No executable entry file or stray module directly in the repo root; keep the root clean. *(Only exception: project types that genuinely demand a root entry file — e.g. some editor extensions like a VS Code extension.)*
 4. **Per-service `config.yaml`, root `.env`.** Root `.env` holds shared/common vars only. Each backend owns its own `config.yaml`. Frontends have their own env scope (`VITE_*` / `NEXT_PUBLIC_*`) — backend secrets must never leak there.
-5. **Compose lives in `docker/`**, split on two axes: **profiles** (which services run — the data core has no profile and is always up; apps opt in via `profiles: [app]` / `[edge]`) and **`--config` overlays** (`compose.<name>.yaml` for how they run — `prod`/`expose`/`traefik`). Base is port-less; profiles do ~90% of the work because dev runs on the host. Bind-mounts only. See `references/repo-setup/docker/docker-compose-structure.md`.
+5. **Compose lives in `docker/`**, split on two axes: **profiles** (which services run — the data core has no profile and is always up; apps opt in via `profiles: [app]` / `[edge]`) and **`--config` overlays** (`compose.<name>.yaml` for how they run — `prod`/`expose`/`traefik`). Base is port-less; profiles do ~90% of the work because dev runs on the host. Bind-mounts only. See `references/repo-setup/runtime/docker-compose-structure.md`.
 6. **One `ctl` dispatcher at repo root.** `ctl dev` runs the local host loop (apps on host, hot reload, auto-starts the data core). `ctl up [profile…] [--config=name…]` runs the containerised stack — profiles select services, configs overlay how they run, both auto-discovered; there is **no `ctl prod` verb** (production is `ctl up app edge --config=prod`). `down`/`ps`/`logs` manage containers; `status`/`setup`/`migrate` round it out. It delegates to `docker compose`, a process runner (`process-compose`/`mprocs`), and `scripts/*.sh` — the dispatcher is the public API, callable bare via mise PATH. Name `ctl` is swappable.
 7. **README documents the three startup paths**, and **each service/app ships its own `README.md`** for its host dev loop (see `references/repo-setup/readme-three-paths.md`).
 8. **Examples are evidence, not gospel.** They evolved at different times. Cite them, do not blindly copy.
@@ -95,9 +95,7 @@ If the user's shape doesn't cleanly match one, name the closest two and ask whic
 For every layout, the same conventions apply (with layout-specific adjustments documented per-layout). Consult:
 
 - `references/repo-setup/env-and-config/` — root `.env`, per-service `config.yaml`, env precedence (root → per-service → real env wins), frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
-- `references/repo-setup/docker/` — `docker/` folder layout, profiles (selection) vs `--config` overlays, bind-mounts, nested-data-dir trick
-- `references/repo-setup/complex-setups/` — escalating `ctl` → a Go-CLI orchestrator + multi-node `docker/<mode>/` trees
-- `references/repo-setup/scripts/` — the `ctl` dispatcher (`ctl dev` host loop + `ctl up [profile] [--config]`, delegate to `process-compose`), subscripts, dev-without-docker, three startup paths, `ctl setup`/`ctl status`
+- `references/repo-setup/runtime/` — the execution triad (mise + `ctl` + docker). **Start at `runtime/overview.md`** for how they interact; then `docker-compose-structure.md` (profiles vs `--config` vs `compose.m.*`), `script-dispatcher.md` (the thin `ctl` wrapper), `mise.md`, and `complex-setups.md` (multi-mode + binary orchestrator)
 - `references/architecture/backend/` — `uv` for apps, `uvenv` for ML, Alembic conventions
 - `references/architecture/frontend/` — Vite/proxy/nginx pair, multi-frontend workspaces, design tokens, light/dark
 - `references/architecture/database/` — **choosing a database** (SQLite vs Postgres, in-process memory vs Redis), `infra/` vs `data/`, postgres/redis/sqlite/seaweed/mongo/neo4j conventions (versions illustrative — check latest)
@@ -106,7 +104,7 @@ For every layout, the same conventions apply (with layout-specific adjustments d
 - `references/architecture/modularity/` — 500/300 line caps, folders by feature, extract on third use
 - `references/architecture/platform/` — mobile (Kotlin/Swift), desktop (Tauri default, Electron alt)
 - `references/repo-setup/tooling/` — lefthook (pre-commit), VS Code debugger setup
-- `references/repo-setup/mise.md` — version pinning contract (versions illustrative — check latest)
+- `references/repo-setup/runtime/mise.md` — version pinning contract (versions illustrative — check latest)
 - `references/integrations/claude-folder.md` — `.claude/` conventions (empty by default)
 - `references/repo-setup/readme-three-paths.md` — README contract
 - `references/integrations/docs-integration.md` — defer all docs work to the `documentation-guide` skill; `/docs-init` to scaffold
@@ -176,19 +174,19 @@ references/
 │   │   ├── 04_ml-project.md           # uvenv + requirements.txt, no compose; pulls in ml-orchestration/
 │   │   ├── 05_infra-orchestrator.md   # compose tree driven by a Go CLI (chimere)
 │   │   └── 06_embeddable-package-and-reference-host.md  # product = published package; apps/web is a dev harness
-│   ├── scripts/                   # the ctl dispatcher + subscripts (firm: one entrypoint)
-│   │   ├── global-wrapper-dispatcher.md   # the ctl model: ctl dev (host) + ctl up [profile] [--config], delegate to process-compose
-│   │   ├── subscripts.md          # scripts/*.sh that ctl calls (implementation)
-│   │   ├── dev-without-docker.md  # ctl dev: apps on host (hot reload), DBs in containers
-│   │   ├── three-startup-paths.md # ctl / raw compose / no-docker host run (README contract)
-│   │   └── setup-command.md       # ctl setup wizard + ctl status doctor (the 2 project-custom subcommands)
-│   ├── docker/                    # how compose is laid out (firm: docker/ folder, profiles + --config, bind-mounts)
-│   │   ├── docker-compose-structure.md # docker/ layout + path discipline + profiles (selection) vs --config overlays
-│   │   ├── bind-mounts-not-volumes.md # bind-mount host dirs; no named volumes; data/ discipline
-│   │   ├── nested-data-dir-trick.md   # data/postgres/pgdata so .gitkeep doesn't break initdb
-│   │   └── anchors-and-internal-ports.md  # internal port = fixed convention; host port = ${VAR}; anchors for repeated blocks
-│   ├── complex-setups/            # when you outgrow one compose + ctl (escalate to a binary orchestrator)
-│   │   └── orchestrator-escalation.md # triggers + Go-CLI anatomy + multi-node docker/<mode>/ tree (→ Layout 05)
+│   ├── runtime/                   # the execution triad: mise + ctl + docker (firm: one entrypoint; profiles + --config + compose.m.*)
+│   │   ├── overview.md            # ★ START HERE: how mise + ctl + docker + env interact (the ONE map); others link here
+│   │   ├── mise.md                # .mise.toml version contract + bare-name PATH (versions illustrative)
+│   │   ├── docker-compose-structure.md # docker/ layout + path discipline; profiles (selection) vs --config configs vs compose.m.* modifiers
+│   │   ├── docker-bind-mounts.md  # bind-mount host dirs; no named volumes; data/ discipline
+│   │   ├── docker-nested-data-dir.md   # data/postgres/pgdata so .gitkeep doesn't break initdb
+│   │   ├── docker-internal-ports.md    # internal port = fixed convention; host port = ${VAR}; anchors for repeated blocks
+│   │   ├── script-dispatcher.md   # the ctl model: THIN wrapper → ctl dev (host) + ctl up [profile] [--config] [--modifier]
+│   │   ├── script-subscripts.md   # scripts/*.sh that ctl delegates to (implementation)
+│   │   ├── script-dev-without-docker.md # ctl dev: apps on host (hot reload), data core in containers
+│   │   ├── script-setup-and-status.md   # ctl setup wizard + ctl status doctor (the 2 project-custom subcommands)
+│   │   ├── script-three-startup-paths.md # ctl / raw compose / no-docker host run (README contract)
+│   │   └── complex-setups.md      # multi-mode docker/<mode>/ trees + escalate ctl → a Go binary (→ Layout 05)
 │   ├── env-and-config/            # the env/config split (a firm convention area)
 │   │   ├── root-env-shared-only.md    # what belongs in root .env (shared only) + .env.example contract
 │   │   ├── per-service-config-yaml.md # each backend's own config.yaml; reads root .env via ${VAR}
@@ -202,7 +200,6 @@ references/
 │   │   ├── lefthook.md            # pre-commit hooks (format/lint pre-commit, tests pre-push)
 │   │   ├── vscode-debugger.md     # .vscode/launch.json etc. for the no-docker host path
 │   │   └── ci-cd-future.md        # GitHub Actions templates; Vault-later notes (general app CI)
-│   ├── mise.md                    # .mise.toml runtime version contract + bare-name PATH (versions illustrative)
 │   └── readme-three-paths.md      # root README contract + per-service READMEs (host dev loop)
 │
 ├── architecture/                  # INTENT: what's inside / how it's built

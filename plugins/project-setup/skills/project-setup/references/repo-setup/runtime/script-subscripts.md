@@ -101,7 +101,7 @@ echo "✓ .env matches .env.example schema"
 
 (Production-grade `check-env` should also detect REQUIRED markers and empty values — simplified here.)
 
-`scripts/status.sh` (the `ctl status` doctor) calls `check-env.sh` and layers per-service and reachability checks on top — see `references/repo-setup/scripts/setup-command.md`.
+`scripts/status.sh` (the `ctl status` doctor) calls `check-env.sh` and layers per-service and reachability checks on top — see `references/repo-setup/runtime/script-setup-and-status.md`.
 
 ## Per-language helpers
 

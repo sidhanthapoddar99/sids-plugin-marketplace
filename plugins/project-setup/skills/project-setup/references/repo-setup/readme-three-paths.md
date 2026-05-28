@@ -1,6 +1,6 @@
 # README contract — three startup paths
 
-The README must document three ways to start the project. Same content as `references/repo-setup/scripts/three-startup-paths.md`, surfaced as a top-level convention so the audit checks it.
+The README must document three ways to start the project. Same content as `references/repo-setup/runtime/script-three-startup-paths.md`, surfaced as a top-level convention so the audit checks it.
 
 ## The three paths
 

@@ -49,20 +49,20 @@ ctl status                     # check configuration before running
 
 ```bash
 # only the data core (no-profile services), apps on host
-docker compose -f docker/compose.yaml -f docker/compose.expose.yaml up -d
+docker compose -f docker/compose.yaml -f docker/compose.m.expose.yaml up -d
 
 # add app services in containers, with host ports
-docker compose -f docker/compose.yaml -f docker/compose.expose.yaml --profile app up -d
+docker compose -f docker/compose.yaml -f docker/compose.m.expose.yaml --profile app up -d
 
-# production
-docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml --profile app --profile edge --env-file .env.production up -d
+# production (config = prod, modifier = traefik)
+docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.m.traefik.yaml --profile app --profile edge --env-file .env.production up -d
 ```
 
 #### No docker — host run
 
 ```bash
 # 1. start postgres + redis somewhere — locally installed or compose
-docker compose -f docker/compose.yaml -f docker/compose.expose.yaml up -d   # data core, ports published
+docker compose -f docker/compose.yaml -f docker/compose.m.expose.yaml up -d   # data core, ports published
 
 # 2. backend
 cd apps/backend
