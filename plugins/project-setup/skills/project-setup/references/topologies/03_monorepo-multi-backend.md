@@ -15,7 +15,7 @@ Multiple backends in different languages, coordinating via Redis/DB, in one repo
 my-app/
 ├── .env / .env.example              # shared infra creds + per-service-named vars
 ├── .mise.toml                       # all language toolchains
-├── dev                              # ./dev — language-aware subcommands
+├── ctl                              # ctl — language-aware subcommands
 ├── docker/                          # same overlay set as Topology 02
 ├── scripts/
 ├── apps/
@@ -54,7 +54,7 @@ When two backends coordinate, **one owns the schema, the other consumes**:
 - The non-owner reads the migrated schema. **It never writes DDL.**
 - Coordination happens via Postgres (LISTEN/NOTIFY), Redis (pub/sub, streams), or HTTP — not via direct concurrent writes.
 
-**Atheneum's rule**: Python owns Alembic, Rust never writes DDL. If a Rust query needs a column, write the Alembic migration first, regenerate `.sqlx/`, then add the query. The `./dev` wrapper enforces this — `migrate up → sqlx prepare --check → cargo build` in order, fails locally on drift.
+**Atheneum's rule**: Python owns Alembic, Rust never writes DDL. If a Rust query needs a column, write the Alembic migration first, regenerate `.sqlx/`, then add the query. The `ctl` dispatcher enforces this — `migrate up → sqlx prepare --check → cargo build` in order, fails locally on drift.
 
 ## Env naming
 
@@ -66,16 +66,16 @@ When there are multiple backends, namespace env vars by service when ambiguous:
 - `REDIS_URL` shared
 - `JWT_SIGNING_KEY` shared (if both validate)
 
-## `./dev` subcommands (atheneum pattern)
+## `ctl` subcommands (atheneum pattern)
 
 ```
-./dev                            # full first-run flow
-./dev migrate new "<msg>"        # alembic revision + .up.sql/.down.sql shim
-./dev migrate {up|down|status}
-./dev sqlx-prepare               # refresh Rust offline metadata
-./dev test                       # bun test + pytest + cargo test
-./dev clean                      # asks first
-./dev help
+ctl dev                          # host dev loop — auto-ups data deps, starts the backends on host
+ctl migrate new "<msg>"          # alembic revision + .up.sql/.down.sql shim
+ctl migrate {up|down|status}
+ctl sqlx-prepare                 # refresh Rust offline metadata
+ctl test                         # bun test + pytest + cargo test
+ctl clean                        # asks first
+ctl help
 ```
 
 ## Compose

@@ -18,7 +18,7 @@ my-ml/
 ├── .mise.toml                      # python only (single version)
 ├── requirements.txt                # human-authored, broad ranges, with comments
 ├── uvenv-name                      # plain file containing the env name (e.g. "ml-recommender")
-├── dev                             # ./dev — task subcommands
+├── ctl                             # ctl — task subcommands
 ├── apps/                           # code in a package folder, never loose in root
 │   └── <project-name>/
 │       ├── src/<package>/          # ML utilities/wrappers are an importable lib → src-layout ok
@@ -69,21 +69,21 @@ uvenv install torch transformers accelerate
 
 # inside a project
 uvenv activate ml-recommender
-./dev train --config configs/baseline.yaml
+ctl train --config configs/baseline.yaml
 ```
 
-The repo's `uvenv-name` file tells `./dev` which env to activate.
+The repo's `uvenv-name` file tells `ctl` which env to activate.
 
-## `./dev` subcommands
+## `ctl` subcommands
 
 ```
-./dev train --config <path>      # python apps/<project>/src/train.py --config <path>
-./dev eval --run <run-id>        # evaluation
-./dev serve                      # optional inference
-./dev nb                         # start jupyter / vscode notebook server in the right env
-./dev data-prep                  # one-shot data prep
-./dev clean
-./dev help
+ctl train --config <path>        # python apps/<project>/src/train.py --config <path>
+ctl eval --run <run-id>          # evaluation
+ctl serve                        # optional inference
+ctl nb                           # start jupyter / vscode notebook server in the right env
+ctl data-prep                    # one-shot data prep
+ctl clean
+ctl help
 ```
 
 The wrapper assumes uvenv is active (or activates it from `uvenv-name`).

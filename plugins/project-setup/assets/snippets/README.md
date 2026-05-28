@@ -11,7 +11,7 @@ assets/snippets/
 ├── infra/             # config baked into containers (nginx)
 ├── python/            # alembic helpers + shim template
 ├── env/               # .env.example + .mise.toml templates
-├── scripts/           # ./dev wrapper
+├── scripts/           # ctl dispatcher
 └── claude/            # CLAUDE.md template
 ```
 
@@ -61,7 +61,7 @@ assets/snippets/
 
 | File | What it is | Drops at |
 |---|---|---|
-| `dev-wrapper.sh` | `./dev` global wrapper, executable | `./dev` at repo root (rename, chmod +x) |
+| `dev-wrapper.sh` | `ctl` control dispatcher (dev/prod/up/down/status/setup/migrate), executable | `ctl` at repo root (rename, chmod +x) |
 
 ### `claude/`
 

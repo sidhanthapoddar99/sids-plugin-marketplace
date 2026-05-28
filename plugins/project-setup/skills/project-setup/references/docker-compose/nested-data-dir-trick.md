@@ -38,7 +38,7 @@ services:
 
 Postgres will write its initdb output into `pgdata/`, alongside the `.gitkeep`. **This works because Postgres considers a directory "empty" if it contains only a hidden file like `.gitkeep`** — actually, this depends on the Postgres image. Recent images check `os.listdir()` and treat `.gitkeep` as a non-empty directory.
 
-**Safest approach**: don't commit `.gitkeep` inside `pgdata/`. Commit it one level up, and let `./dev` create the `pgdata/` directory on first run:
+**Safest approach**: don't commit `.gitkeep` inside `pgdata/`. Commit it one level up, and let `ctl dev` create the `pgdata/` directory on first run:
 
 ```
 data/postgres/
@@ -46,15 +46,15 @@ data/postgres/
 ```
 
 ```bash
-# ./dev — first-run flow:
+# ctl dev — data-dir setup:
 mkdir -p data/postgres/pgdata data/redis/data data/seaweed/{master,volume,filer}
 ```
 
-This is the **canonical pattern**. The skill should generate `./dev` with these `mkdir -p` calls baked in.
+This is the **canonical pattern**. The skill should generate `ctl` with these `mkdir -p` calls baked in.
 
 ## The atheneum approach (for reference)
 
-Atheneum commits `.gitkeep` inside the parent (`data/postgres/`), not the nested `pgdata/`. The `./dev` wrapper creates `data/postgres/pgdata/` on first run. The bind-mount is `data/postgres/pgdata:/var/lib/postgresql/data`. Postgres initialises into the empty nested dir cleanly.
+Atheneum commits `.gitkeep` inside the parent (`data/postgres/`), not the nested `pgdata/`. The `ctl` dispatcher creates `data/postgres/pgdata/` on first run. The bind-mount is `data/postgres/pgdata:/var/lib/postgresql/data`. Postgres initialises into the empty nested dir cleanly.
 
 From atheneum's `docker-compose.yaml`:
 

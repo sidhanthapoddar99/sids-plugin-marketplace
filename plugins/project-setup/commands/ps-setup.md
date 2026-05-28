@@ -33,7 +33,7 @@ The user wants to bootstrap a new project.
    - `mise install` to install the runtime contract
    - `cp .env.example .env` to start the secrets contract
    - `/docs-init` (from the `documentation-guide` plugin) to scaffold `docs/`
-   - `./dev` to run the first-run flow once secrets are filled
+   - `ctl dev` to run the host dev loop once secrets are filled
 
 ## Audit mode
 
@@ -44,7 +44,7 @@ The user wants to know how their current repo compares to the conventions. **Rea
 3. For each convention area, compare the repo to the reference. List in three categories:
    - **Matches** — already aligned
    - **Drift** — minor deviation (e.g. flat `backend/` instead of `apps/backend/`)
-   - **Missing** — convention not present (e.g. no `./dev` wrapper, no `docker/` folder, no `tokens.css`)
+   - **Missing** — convention not present (e.g. no `ctl` dispatcher, no `docker/` folder, no `tokens.css`)
 4. Stop. Do not propose changes; just the report.
 5. Tell the user `/ps-setup suggest` produces a remediation plan if they want one.
 
@@ -56,7 +56,7 @@ The user wants a concrete proposal for restructuring their current repo. **Do no
 2. Produce a remediation plan:
    - **Rename** — `backend/` → `apps/backend/`, `frontend/` → `apps/frontend/`, etc.
    - **Move** — compose files into `docker/`, init scripts into `infra/<service>/`, bind-mount dirs under `data/`.
-   - **Add** — missing pieces: `./dev` wrapper, `tokens.css`, `.mise.toml`, `.env.example`, `CLAUDE.md`.
+   - **Add** — missing pieces: `ctl` dispatcher, `tokens.css`, `.mise.toml`, `.env.example`, `CLAUDE.md`.
    - **Split** — files exceeding the 500-line cap.
 3. Show the proposed end-state tree.
 4. Ask the user which pieces they want to apply. They can opt into subset.

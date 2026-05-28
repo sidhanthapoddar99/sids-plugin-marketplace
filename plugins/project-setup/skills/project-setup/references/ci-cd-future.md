@@ -118,7 +118,7 @@ For now, the bootstrapper just creates `.github/workflows/` with a `.gitkeep` an
 ## Anti-patterns
 
 - Hand-rolling CI YAML for every project — use a templated workflow
-- Mixing test execution between CI and `./dev` — same commands; CI is just an environment
+- Mixing test execution between CI and `ctl` — same commands; CI is just an environment
 - Pushing images on every commit — only on tags or main
 - Running migrations in CI workflow steps that aren't isolated — services should run, migrations apply, tests run, all in one job
 - No status checks required on the default branch — set up GitHub branch protection

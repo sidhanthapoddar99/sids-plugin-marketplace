@@ -17,7 +17,7 @@ my-product/
 ├── package.json                    # workspace root
 ├── pnpm-workspace.yaml             # (or bun workspaces)
 ├── turbo.json                      # globalEnv lists every cache-busting var
-├── dev                             # ./dev — dispatches to turbo
+├── ctl                             # ctl — dispatches to turbo
 ├── docker/
 ├── scripts/
 ├── apps/
@@ -111,16 +111,16 @@ Root `.env` still holds backend secrets — but **no frontend reads it**.
 
 Every env var that affects the build belongs in `globalEnv`. Forgetting one means stale caches.
 
-## `./dev` shape
+## `ctl` shape
 
 ```
-./dev                            # turbo dev (all apps)
-./dev <app>                      # turbo dev --filter=<app>
-./dev build                      # turbo build
-./dev check                      # types + lint + format
-./dev test
-./dev clean
-./dev help
+ctl dev                          # turbo dev (all apps)
+ctl dev <app>                    # turbo dev --filter=<app>
+ctl build                        # turbo build
+ctl check                        # types + lint + format
+ctl test
+ctl clean
+ctl help
 ```
 
 ## Real-world reference

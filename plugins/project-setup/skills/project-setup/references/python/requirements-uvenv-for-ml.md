@@ -35,7 +35,7 @@ uvenv list
 # inside an experiment repo
 cd ~/projects/my-recommender
 uvenv activate $(cat uvenv-name)        # reads the env name from the file
-./dev train --config configs/baseline.yaml
+ctl train --config configs/baseline.yaml
 ```
 
 ## `requirements.txt` shape
@@ -81,10 +81,10 @@ $ cat uvenv-name
 ml-recommender
 ```
 
-`./dev` activates this env at the start of every subcommand:
+`ctl` activates this env at the start of every subcommand:
 
 ```bash
-# inside ./dev
+# inside ctl
 env_name=$(cat uvenv-name 2>/dev/null || echo "")
 if [[ -z "$env_name" ]]; then
   die "no uvenv-name file — create one with: echo 'ml-<project>' > uvenv-name"

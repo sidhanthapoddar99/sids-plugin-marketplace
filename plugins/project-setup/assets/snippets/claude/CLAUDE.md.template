@@ -21,8 +21,8 @@ GitHub: <url>
 ├── infra/               # config baked into containers (nginx, postgres init)
 ├── data/                # bind-mount targets, gitignored except .gitkeep
 ├── docs/                # documentation-template site
-├── scripts/             # subscripts called by ./dev
-├── dev                  # one-command boot
+├── scripts/             # subscripts called by ctl
+├── ctl                  # control dispatcher (dev/prod/up/down/migrate/…)
 ├── .env                 # secrets, gitignored
 ├── .env.example         # the contract, committed
 └── README.md / CLAUDE.md
@@ -35,8 +35,8 @@ GitHub: <url>
 - **Every component uses `var(--token)` from `tokens.css`** — no hex, no raw px in component CSS.
 - **Per-service `config.yaml`** reads root `.env` via `${VAR}` interpolation; never put secrets in `config.yaml`.
 - **Frontend env is scoped** — `apps/frontend/.env` holds `VITE_*` only; backend secrets stay in root `.env`.
-- **No `src/` at repo root** — always nested under `apps/<name>/src/`.
-- **`./dev` is the only entrypoint** — setup folds in. No separate `setup.dev.sh`.
+- **Clean root** — no loose code; `ctl` is the only executable at root. Code lives by ecosystem: Python service → `app/`, frontend → `src/`, distributable package → `src/<pkg>/`.
+- **`ctl` is the only entrypoint** — `ctl dev` (local host loop) / `ctl prod` (docker); migrations via `ctl migrate`; config via `ctl setup` / `ctl status`.
 - **File size cap: 500 hard / 300 soft.** Split before committing.
 - **Folders by feature, not by kind.** `auth/`, `workspaces/`, `blocks/` each own routes + models + service.
 
@@ -46,8 +46,8 @@ See [README.md](README.md#get-started). Quick:
 
 ```bash
 mise install
-cp .env.example .env       # fill REQUIRED blanks
-./dev
+ctl setup                  # fill REQUIRED blanks (interactive)
+ctl dev
 ```
 
 ## Where to learn more
@@ -63,10 +63,10 @@ cp .env.example .env       # fill REQUIRED blanks
 Alembic — `apps/backend/alembic/versions/`. Commands:
 
 ```bash
-./dev migrate new "<message>"
-./dev migrate up
-./dev migrate down
-./dev migrate status
+ctl migrate new "<message>"
+ctl migrate up
+ctl migrate down
+ctl migrate status
 ```
 
 ## Tech stack

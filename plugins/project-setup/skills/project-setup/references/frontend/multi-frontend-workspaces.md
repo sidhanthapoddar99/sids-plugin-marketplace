@@ -45,8 +45,10 @@ my-product/
 │   ├── types/
 │   └── utils/
 ├── docker/  scripts/  infra/  data/  docs/  .claude/
-└── dev / README / CLAUDE
+└── ctl / README / CLAUDE
 ```
+
+> **`packages/` here = internal shared code** consumed in-repo by the sibling apps. If instead the repo's *deliverable* is a `packages/<pkg>` that an **external** host installs (the package *is* the product, `apps/web` is just a reference host), that's a different topology — see `references/topologies/09_embeddable-package-and-reference-host.md` (peerDeps, `exports`, publishing, embedding seams).
 
 ## Root `package.json`
 
@@ -186,16 +188,16 @@ Same shape, swap `pnpm-workspace.yaml` for `package.json#workspaces`:
 
 Bun is simpler but turborepo's cache + task graph is currently the value-add of pnpm + turbo. For pure Vite/React with no SSR, bun workspaces + bun's own bundling can work — try it if you don't need turbo features.
 
-## `./dev` shape
+## `ctl` shape
 
 ```bash
-./dev                       # turbo dev — all apps + persistent watch
-./dev <app>                 # turbo dev --filter=<app>
-./dev build                 # turbo build
-./dev check                 # turbo check — types + lint + format
-./dev test                  # turbo test
-./dev clean                 # turbo clean + docker
-./dev help
+ctl dev                     # turbo dev — all apps + persistent watch
+ctl dev <app>               # turbo dev --filter=<app>
+ctl build                   # turbo build
+ctl check                   # turbo check — types + lint + format
+ctl test                    # turbo test
+ctl clean                   # turbo clean + docker
+ctl help
 ```
 
 The wrapper delegates to turbo; turbo handles filter/cache/parallelism.

@@ -35,6 +35,8 @@ export default defineConfig(({ mode }) => {
 
 Frontend code calls `/api/users` — Vite intercepts and forwards to `http://localhost:8000/api/users`. No CORS, no `VITE_API_URL` per environment.
 
+> Vite has no server runtime, so the proxy target lives in build/dev env that is effectively client-adjacent. With Next.js the equivalent proxy (`next.config` `rewrites()`) runs server-side and can use server-only env. See the Vite-vs-Next env-split comparison in `references/env-and-config/frontend-env-isolation.md`.
+
 ## Prod — nginx routing
 
 ```nginx

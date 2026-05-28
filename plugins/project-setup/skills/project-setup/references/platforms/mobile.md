@@ -57,14 +57,14 @@ Both apps:
 
 Don't try to share code between iOS and Android. The native UI worlds are too different. Share at the **API contract** level instead.
 
-## `./dev` integration
+## `ctl` integration
 
-`./dev` doesn't run the mobile apps — those are IDE-driven (Xcode / Android Studio). But `./dev` can:
+`ctl` doesn't run the mobile apps — those are IDE-driven (Xcode / Android Studio). But `ctl` can:
 
 ```bash
-./dev mobile-ios          # opens MyApp.xcodeproj in Xcode (macOS only)
-./dev mobile-android      # opens apps/mobile-android in Android Studio
-./dev mobile-api-codegen  # regenerate clients from the backend's OpenAPI
+ctl mobile-ios          # opens MyApp.xcodeproj in Xcode (macOS only)
+ctl mobile-android      # opens apps/mobile-android in Android Studio
+ctl mobile-api-codegen  # regenerate clients from the backend's OpenAPI
 ```
 
 ## CI/CD

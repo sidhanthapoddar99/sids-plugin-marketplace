@@ -57,7 +57,7 @@ pre-commit:
 pre-push:
   commands:
     test:
-      run: ./dev test
+      run: ctl test
 ```
 
 ## Activation
@@ -66,10 +66,10 @@ pre-push:
 lefthook install      # writes git hooks pointing at lefthook
 ```
 
-The `./dev` wrapper can call this in its first-run flow:
+The `ctl` dispatcher can call this in its dev flow:
 
 ```bash
-# inside ./dev cmd_bare
+# inside ctl, in the dev setup path
 if command -v lefthook >/dev/null 2>&1 && [[ ! -f .git/hooks/pre-commit ]]; then
   c_info "Installing git hooks (lefthook)…"
   lefthook install
@@ -78,7 +78,7 @@ fi
 
 ## Composition with mise
 
-`.mise.toml` ensures every contributor has lefthook. `./dev` ensures hooks are wired. No manual steps after clone.
+`.mise.toml` ensures every contributor has lefthook. `ctl` ensures hooks are wired. No manual steps after clone.
 
 ## When to skip lefthook
 

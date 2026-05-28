@@ -62,7 +62,7 @@ See [README.md](README.md#get-started). Quick:
 \`\`\`bash
 mise install
 cp .env.example .env
-./dev
+ctl dev
 \`\`\`
 
 ## Where to learn more
@@ -82,14 +82,14 @@ The CLAUDE.md is **agent-first**. Designed for an LLM agent walking into the rep
 
 ## What about `.claude/settings.local.json`?
 
-If a project consistently triggers a permission prompt for a known-safe operation (e.g. `Bash(./dev:*)`), commit a `.claude/settings.local.json` that allows it:
+If a project consistently triggers a permission prompt for a known-safe operation (e.g. `Bash(ctl:*)`), commit a `.claude/settings.local.json` that allows it:
 
 ```json
 {
   "permissions": {
     "allow": [
-      "Bash(./dev:*)",
-      "Bash(./dev *)",
+      "Bash(ctl:*)",
+      "Bash(ctl *)",
       "Bash(docker compose:*)",
       "Bash(uv run:*)",
       "Bash(bun *:*)"

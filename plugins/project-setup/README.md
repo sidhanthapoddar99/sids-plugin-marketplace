@@ -26,7 +26,7 @@ The same machinery powers initialising a new project, auditing an existing one f
   - `/ps-setup audit` — scan the current repo, report drift from conventions
   - `/ps-setup suggest` — propose an ideal structure for the current repo given what's there
 - **References library** — `skills/project-setup/references/` — topologies, env/config rules, docker patterns, scripts, language flows, frontend, databases, modularity, the `.claude/` folder, design tokens, README contract.
-- **Snippets** — `assets/snippets/` — focused fragments (tokens.css, alembic shim, vite proxy, compose overlays, the `./dev` wrapper, `.mise.toml`) the skill cites and the slash command can drop in. **Not** a full project template.
+- **Snippets** — `assets/snippets/` — focused fragments (tokens.css, alembic shim, vite proxy, compose overlays, the `ctl` dispatcher, `.mise.toml`) the skill cites and the slash command can drop in. **Not** a full project template.
 
 ## Topologies recognised
 
@@ -59,8 +59,8 @@ See `skills/project-setup/references/ml-orchestration/`.
 
 - **Root `.env`** carries shared / common vars only. **Per-service `config.yaml`** in each backend reads those via `${VAR}` interpolation. Frontend has its **own** env scope (`VITE_*` / `NEXT_PUBLIC_*`) so backend secrets don't leak to clients.
 - **Compose lives in `docker/`**, with files representing **deployment modes** (`compose.yaml`, `compose.database-only.yaml`, `compose.dev.yaml`, `compose.prod.yaml`, `compose.traefik.yaml`, `compose.no-ports.yaml`).
-- **One global wrapper at repo root** — `./dev` — is the single entrypoint. It dispatches to subcommands and to scripts in `scripts/`. Setup folds in (no separate `setup.dev.sh`).
-- **No `src/` at repo root.** Always nest inside an `apps/<name>/src/` (or similar) so there's room to grow without restructuring.
+- **One control dispatcher at repo root** — `ctl` — is the single entrypoint: `ctl dev` (local host loop, hot reload) / `ctl prod` (full docker) / `up`·`down`·`ps` (containers) / `status`·`setup`·`migrate`. It delegates to `docker compose`, a process runner (`process-compose`/`mprocs`), and `scripts/*.sh`; callable bare via mise PATH.
+- **Clean root, ecosystem-typed code layout.** No loose code at root. Where code lives follows the stack — Python service → `app/`, frontend → `src/`, distributable package → `src/<pkg>/` — and nesting follows service count (one → top-level `./<name>/`, several → `apps/<name>/`).
 - **README documents three startup paths**: wrapper script, raw docker compose, no-docker host run.
 - **Modern Python for apps** (`pyproject.toml` + `uv.lock` + `uv sync`); **classic Python for ML** (`requirements.txt` + uvenv global env).
 - **Design tokens** in a single CSS file consumed by `var(--token)`. No hex, no raw px in component CSS. Light + dark via `[data-theme="dark"]` on `:root`. Light-only is allowed for marketing pages.

@@ -53,7 +53,24 @@ curl https://mise.run | sh
 mise install
 ```
 
-`./dev` checks `mise` is on PATH and fails loudly if not.
+`ctl` checks `mise` is on PATH and fails loudly if not.
+
+## Calling `ctl` by bare name
+
+To type `ctl dev` instead of `./ctl dev`, add a project-scoped PATH entry in `.mise.toml`:
+
+```toml
+[env]
+_.path = ["{{config_root}}"]   # repo root → `ctl` resolves by bare name
+```
+
+This is **project-scoped** — only active inside the project dir, and only after mise trusts the repo (`mise trust`, once per clone). That's what makes it safe, unlike `export PATH=.:$PATH` globally — the classic footgun that runs a malicious executable from any cloned repo you `cd` into.
+
+**Keep `ctl` the single root-level executable.** Putting the repo root on PATH means every executable at root becomes a bare command inside the project, so don't scatter loose scripts there — `ctl` is the one entrypoint. Subscripts live in `scripts/` and are called *by* `ctl`, not by humans, so they don't need bare-name access (and `.sh` files on PATH are an easy way to shadow a real binary). Only if a specific script genuinely needs human bare-name invocation, add that one directory explicitly:
+
+```toml
+_.path = ["{{config_root}}", "{{config_root}}/scripts"]   # only if a script needs bare-name use
+```
 
 ## CI
 

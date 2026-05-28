@@ -4,7 +4,15 @@ Maps the question-flow answers (`01_question-flow.md`) onto a topology and the m
 
 ## Topology selection
 
+The **first cut** is *deployed vs distributed* — does the repo run the product, or publish a package an external host runs? Most repos are deployed (01–08). If the deliverable is a package a separate host consumes, it's Topology 09 regardless of how many backends/frontends it has internally.
+
 ```
+STEP 1 — does this repo RUN the product, or PUBLISH a package an external host runs?
+├── Distributed — deliverable is a published package; the repo's own app (if any) is just a reference host
+│   └── → Topology 09 (embeddable package + reference host)   [skip Step 2]
+└── Deployed — the repo runs the product → continue to Step 2
+
+STEP 2 — (deployed only) pick the deployed topology:
 Is this a single repo, or multiple repos working together?
 ├── Single repo (monorepo or single-app)
 │   ├── Is there a frontend?
@@ -28,16 +36,17 @@ Is this a single repo, or multiple repos working together?
 
 ## Per-topology defaults
 
-| Topology | Workspace tool | Compose layout | `./dev` shape |
+| Topology | Workspace tool | Compose layout | `ctl` shape |
 |---|---|---|---|
 | 01 single-app | none | optional `docker/` | bare entrypoint, few subcommands |
 | 02 mono 1be+1fe | none (or pnpm if frontend is heavy) | `docker/` w/ full deployment-mode set | full subcommand set |
 | 03 multi-backend | none | `docker/` w/ full deployment-mode set | language-aware subcommands (migrate, sqlx-prepare, test, …) |
 | 04 multi-frontend | pnpm + turborepo (default for Vite/React); bun workspaces ok | `docker/` w/ full set | dispatches to per-app builds |
 | 05 microservices mesh | none — each backend is independent | per-service compose under `docker/<svc>/` | wrapper-of-wrappers |
-| 06 polyrepo + aggregator | n/a | only aggregator repo has compose (image-based, no build) | aggregator owns `./deploy`; each service repo has own `./dev` |
-| 07 ML | uvenv | none typically | `./dev train`, `./dev eval`, `./dev serve` |
+| 06 polyrepo + aggregator | n/a | only aggregator repo has compose (image-based, no build) | aggregator owns `ctl prod`; each service repo has own `ctl` |
+| 07 ML | uvenv | none typically | `ctl train`, `ctl eval`, `ctl serve` |
 | 08 infra orchestrator | go (the orchestrator binary itself) | `docker/<mode>/` tree | go binary at root |
+| 09 embeddable package + reference host | pnpm/bun workspace (package + reference `apps/web`) | optional — only for the reference host's deps | `ctl dev` runs the reference host; `ctl build` builds the package; `ctl publish` ships it |
 
 ## Per-topology cross-cutting decisions
 
@@ -67,8 +76,21 @@ Is this a single repo, or multiple repos working together?
 | 06 | per individual repo — apply the same rule inside each |
 | 07 (ML) | `apps/<project>/src/<pkg>/` for the package, or flat scripts; ML tooling varies |
 | 08 | `apps/<service>/app|src/` per service; orchestrator binary at `cchain/` or similar |
+| 09 | the **product** package in `packages/<pkg>/src/` (published, src-layout); the **reference host** in `apps/web/src/`; optional BFF in `apps/api/app/` |
 
 **Never loose code at repo root.** Always inside a service/app (or package) folder. One-liner: **flat `app/` for run-services, `src/` for frontends and packages, nothing loose in root.**
+
+### `apps/` vs `packages/` — three categories, not two
+
+The common framing is "`apps/` = deployables, `packages/` = internal shared code." That's incomplete: it has no slot for a repo whose *deliverable is a package an external host runs*. Split into **three**:
+
+| Category | Lives in | Built/shipped as | React (if UI) | Versioned + published? |
+|---|---|---|---|---|
+| **Deployable app** | `apps/<name>/` | a running process / image you deploy | bundled (owns its React) | no |
+| **Internal shared lib** | `packages/<name>/` | consumed *in-repo* by sibling apps via the workspace | bundled by the consuming app | no (workspace-internal) |
+| **Published product package** | `packages/<name>/` (the product) | an artifact installed by an **external** repo (npm / PyPI) | **`peerDependency`** — the host owns the React instance | **yes** — `package.json` `exports`, build tooling (tsup/rollup), semver |
+
+The third category is the one the two-category model erases. When the deliverable is the package itself (Topology 09), the repo's `apps/web` is a **reference host** — a dev harness — not the product. See `references/frontend/embeddable-package-and-reference-host.md` for the publishing mechanics (exports, peerDeps, single-artifact bundling) and the embedding-seams (inversion-of-control) pattern.
 
 ### Where does `config.yaml` live?
 
@@ -158,19 +180,21 @@ These decisions only apply once a project crosses a complexity threshold:
 
 | Trigger | Action |
 |---|---|
-| `./dev` shell wrapper grows past ~150 lines or needs structured state across compose runs | Move orchestration to a Go binary (Topology 08 pattern). |
+| `ctl` shell dispatcher grows past ~150 lines or needs structured state across compose runs | Move orchestration to a Go binary (Topology 08 pattern). |
 | Single-backend monorepo grows a second backend | Migrate Topology 02 → 03; rename `apps/backend/` → `apps/backend-<primary-lang>/`. |
 | Single-frontend monorepo grows a second frontend that shares any code | Migrate Topology 02 → 04; introduce `pnpm-workspace.yaml` + `turbo.json` + `packages/`. |
 | `requirements.txt` flow grows reproducibility needs | Migrate Topology 07-style → 01-style with `pyproject.toml` + `uv.lock`. |
 | Two repos start sharing env vars | Introduce Topology 06 aggregator repo. |
+| A deployed app's frontend (or engine) starts being consumed by an *external* repo | Re-frame as Topology 09: the consumed part becomes a published `packages/<pkg>/` (peerDeps, `exports`), the current app demotes to a reference host. |
 
 ## Open questions the skill should always re-ask
 
 Even with a clear topology, these are project-specific and must be asked:
 
-1. **Sibling repos** — does this repo expect another repo to be cloned next to it?
-2. **External services** — Traefik present? Self-hosted Postgres elsewhere? Cloud DB?
-3. **Deployment surface** — single target, multiple (WSL dev / bare server / cloud)?
-4. **Open source vs private** — affects CI/CD defaults (GitHub Actions vs none).
-5. **Theming** — both modes (default) or marketing-page light-only?
-6. **Build-time env vars** — every `VITE_*` / `NEXT_PUBLIC_*` must be confirmed: is it safe to bake into the bundle?
+1. **Deployed vs distributed** — does this repo *run* the product, or *publish a package* an external host runs? If distributed → Topology 09 (the repo's own app is a reference host, not the product).
+2. **Sibling repos** — does this repo expect another repo to be cloned next to it?
+3. **External services** — Traefik present? Self-hosted Postgres elsewhere? Cloud DB?
+4. **Deployment surface** — single target, multiple (WSL dev / bare server / cloud)?
+5. **Open source vs private** — affects CI/CD defaults (GitHub Actions vs none).
+6. **Theming** — both modes (default) or marketing-page light-only?
+7. **Build-time env vars** — every `VITE_*` / `NEXT_PUBLIC_*` must be confirmed: is it safe to bake into the bundle?

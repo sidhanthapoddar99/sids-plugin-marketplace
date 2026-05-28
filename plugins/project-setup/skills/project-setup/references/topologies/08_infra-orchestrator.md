@@ -43,11 +43,11 @@ Key differences from Topology 02:
 
 - `docker/<mode>/` instead of `docker/<file>` — modes are folders containing per-mode compose + overlays
 - Go binary at the orchestration layer
-- No `./dev` shell wrapper — the binary replaces it
+- No `ctl` shell dispatcher — the binary replaces it
 
 ## When NOT to use Go
 
-- Shell wrapper is < 150 lines and not branchy → just use Topology 02's `./dev`
+- Shell dispatcher is < 150 lines and not branchy → just use Topology 02's `ctl`
 - The orchestrator just calls `docker compose` with flags → shell is fine
 - Team doesn't know Go and never will → use Rust or Python; the language matters less than the structured-state requirement
 

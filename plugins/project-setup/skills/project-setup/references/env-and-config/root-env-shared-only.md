@@ -31,7 +31,7 @@ Format `.env.example`:
 # Copy to .env and fill in the blanks. Secrets must be generated, not invented:
 #   openssl rand -hex 32
 #
-# Anything marked REQUIRED must be set before `./dev` will start.
+# Anything marked REQUIRED must be set before `ctl` will start.
 # Anything else has a sensible default in compose / config.yaml.
 
 # ─── Database ─────────────────────────────────────────────
@@ -63,7 +63,7 @@ Comments are not optional — the file is the contract for humans, not just mach
 
 1. **docker compose** — auto-loads root `.env` for `${VAR}` interpolation in compose files
 2. **per-service `config.yaml`** — interpolates `${VAR}` from root `.env` (see `yaml-var-interpolation.md`)
-3. **`./dev` wrapper** — sources `.env` at the top (`set -a; source .env; set +a`)
+3. **`ctl` dispatcher** — sources `.env` at the top (`set -a; source .env; set +a`)
 4. **Frontends** — **do not read root `.env`** (see `frontend-env-isolation.md`)
 
 ## Three derived files
@@ -77,7 +77,7 @@ Comments are not optional — the file is the contract for humans, not just mach
 
 ## Bootstrap
 
-The `./dev` wrapper's first job is to check `.env` exists and matches `.env.example`'s keys:
+The `ctl` dispatcher's first job is to check `.env` exists and matches `.env.example`'s keys:
 
 ```bash
 require_env() {
@@ -96,7 +96,7 @@ require_env() {
 }
 ```
 
-A `./dev check-env` subcommand diffs `.env`'s keys against `.env.example` and reports missing or extra ones.
+The `ctl status` config doctor diffs `.env`'s keys against `.env.example` and reports missing or extra ones; `ctl setup` walks the user through filling them.
 
 ## Anti-patterns
 

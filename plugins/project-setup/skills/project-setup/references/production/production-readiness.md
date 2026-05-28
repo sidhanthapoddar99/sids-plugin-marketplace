@@ -160,7 +160,7 @@ services:
         condition: service_completed_successfully
 ```
 
-`./deploy` or CI runs migrate → waits for success → starts/rolls the app.
+`ctl prod` or CI runs migrate → waits for success → starts/rolls the app.
 
 ## Reverse proxy hardening (nginx / Traefik)
 

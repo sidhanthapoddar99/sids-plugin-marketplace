@@ -1,14 +1,18 @@
 # Subscripts in `scripts/`
 
-`./dev` is the dispatcher. `scripts/<name>.sh` are the workers. Keeps the wrapper tight and gives each operation its own file.
+`ctl` is the dispatcher. `scripts/<name>.sh` are the workers. Keeps the wrapper tight and gives each operation its own file.
 
 ## Folder
 
 ```
 scripts/
+├── setup.sh            # ctl setup — interactive .env wizard (project-custom)
+├── status.sh           # ctl status — config doctor (project-custom)
+├── dev-host.sh         # bash fallback for the host dev loop (≤2 procs; else process-compose)
 ├── migrate.sh
 ├── test.sh
 ├── build.sh
+├── clean.sh
 ├── wait-for-health.sh
 ├── check-env.sh
 ├── db-init.sh
@@ -21,7 +25,7 @@ Every script is executable, takes `set -euo pipefail`, and exits non-zero on fai
 ## Naming
 
 - Verb-noun, kebab-case: `db-init.sh`, `wait-for-health.sh`
-- `.sh` extension on scripts (so editors syntax-highlight); no extension on `./dev` (it's the public API)
+- `.sh` extension on scripts (so editors syntax-highlight); no extension on `ctl` (it's the public API)
 - Each script does **one** thing well
 
 ## Example — `scripts/wait-for-health.sh`
@@ -97,6 +101,8 @@ echo "✓ .env matches .env.example schema"
 
 (Production-grade `check-env` should also detect REQUIRED markers and empty values — simplified here.)
 
+`scripts/status.sh` (the `ctl status` doctor) calls `check-env.sh` and layers per-service and reachability checks on top — see `references/scripts/setup-command.md`.
+
 ## Per-language helpers
 
 ```
@@ -115,8 +121,8 @@ Optional nested by language for projects with 3+ languages (Topology 03+).
 
 ## Anti-patterns
 
-- Logic inside `./dev` that should be in a script — split when subcommands grow past ~30 lines
-- Scripts that call each other in deep chains — keep the call graph shallow; `./dev` is the orchestrator
+- Logic inside `ctl` that should be in a script — split when subcommands grow past ~30 lines
+- Scripts that call each other in deep chains — keep the call graph shallow; `ctl` is the orchestrator
 - Bash scripts that should be Python (parsing, structured data) — at that point write Python
 - Forgetting `set -euo pipefail` — silent failures bite
 - Hardcoding service names that should come from compose project naming

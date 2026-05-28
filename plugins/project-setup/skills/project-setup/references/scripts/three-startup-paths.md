@@ -2,7 +2,7 @@
 
 Every project's README must explain **three ways** to start the stack:
 
-1. **Wrapper script (preferred)** — `./dev`
+1. **The `ctl` dispatcher (preferred)** — `ctl dev` (local) / `ctl prod` (docker)
 2. **Raw docker compose** — `docker compose -f docker/compose.<mode>.yaml up`
 3. **No docker, host run** — `cd apps/backend && uv run …; cd apps/frontend && bun dev`
 
@@ -10,31 +10,39 @@ Why three? Each serves a different need:
 
 | Path | Why someone uses it |
 |---|---|
-| `./dev` | Fast onboarding, day-to-day flow |
-| Raw compose | Understanding what `./dev` is actually doing; debugging compose itself |
+| `ctl` | Fast onboarding, day-to-day flow |
+| Raw compose | Understanding what `ctl` is actually doing; debugging compose itself |
 | No-docker | IDE debugger attach; profiling; running tests against a single service in isolation |
 
 If any of the three is broken or missing, the project has accumulated invisible debt.
 
 ## Template README section
 
-```markdown
+````markdown
 ## Get started
 
 ```bash
 # 1. clone, install runtimes
 git clone <url> && cd <repo>
-mise install
+mise install        # mise also puts `ctl` on PATH inside the repo (see .mise.toml)
 
 # 2. configure
-cp .env.example .env
-# fill in REQUIRED blanks — see comments at the top
+ctl setup           # interactive: fills .env, generates secrets
 
-# 3. start
-./dev
+# 3. run locally (apps on host, DBs in containers)
+ctl dev
 ```
 
 ### Other ways to start
+
+#### The dispatcher
+
+```bash
+ctl dev             # local: apps on host (hot reload), DBs in containers
+ctl prod            # full stack in docker (prod overlay + traefik)
+ctl up [service]    # just bring up container services (bare = db, redis)
+ctl status          # check configuration before running
+```
 
 #### Raw docker compose
 
@@ -42,7 +50,7 @@ cp .env.example .env
 # only databases, apps on host
 docker compose -f docker/compose.database-only.yaml up -d
 
-# everything in containers (with host ports)
+# everything in containers (dev parity)
 docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d
 
 # production
@@ -66,19 +74,21 @@ cd apps/frontend
 bun install
 bun dev
 ```
-```
+````
+
+The no-docker path is what `ctl dev` automates; documenting it raw lets a developer attach a debugger to one service.
 
 ## What about prod?
 
-A separate "Deploy" section in the README. Keep startup-for-development distinct from deployment.
+`ctl prod` is the convention; the README's **Deploy** section documents it plus the raw compose prod command. Keep startup-for-development (`ctl dev`) distinct from deployment (`ctl prod`).
 
 ## Audit rule
 
 `/ps-setup audit` should check the README for evidence of all three paths. Flag drift:
 
-- README only documents `./dev` → user can't debug compose issues
-- README only documents `docker compose` → no fast iteration story
-- README only documents raw host run → no convention; everyone reinvents
+- README only documents `ctl dev` → user can't debug compose issues
+- README only documents `docker compose` → no fast iteration story, no convention
+- README only documents raw host run → everyone reinvents the flow
 
 ## Anti-patterns
 

@@ -88,11 +88,11 @@ bun install
 bun run electron:dev
 ```
 
-`./dev` can wrap these:
+`ctl` can wrap these:
 
 ```bash
-./dev desktop             # bun tauri dev (from apps/desktop)
-./dev desktop electron    # bun run electron:dev (from apps/desktop-electron)
+ctl desktop             # bun tauri dev (from apps/desktop)
+ctl desktop electron    # bun run electron:dev (from apps/desktop-electron)
 ```
 
 ## Distribution

@@ -12,7 +12,7 @@ The canonical example for:
 - Python + Rust dual backend coordinating via Redis/Streams + shared Postgres
 - Alembic with raw `.sql` + 3-line Python shim pattern
 - Single source of truth: Python owns DDL, Rust never writes it
-- `./dev` wrapper with subcommands (`migrate`, `sqlx-prepare`, `test`, `clean`)
+- `ctl` dispatcher with subcommands (`migrate`, `sqlx-prepare`, `test`, `clean`)
 - Apps-on-host + DBs-in-containers dev mode
 - Design tokens in `frontend/src/styles/tokens.css`
 - Light + dark + glassmorphism, three font sizes
@@ -20,7 +20,7 @@ The canonical example for:
 
 Files worth studying:
 
-- `dev` — `./dev` wrapper, well-commented
+- `ctl` — the `ctl` dispatcher, well-commented
 - `docker-compose.yaml` — bind-mount + nested-data-dir trick
 - `CLAUDE.md` — agent brief
 - `README.md` — three-path structure
@@ -85,7 +85,7 @@ The canonical example for:
 - `globalEnv` in `turbo.json` listing every cache-busting var
 - Shared `packages/ui`, `packages/tailwind-config`, `packages/typescript-config`, `packages/services`, `packages/types`, etc.
 - Caddy-as-proxy in `apps/proxy/`
-- Different setup scripts for dev vs prod (`setup.dev.sh` + `setup.prod.sh`) — **we prefer fold-into-`./dev`**, but plane's split is valid for its scale
+- Different setup scripts for dev vs prod (`setup.dev.sh` + `setup.prod.sh`) — **we prefer fold-into-`ctl`**, but plane's split is valid for its scale
 
 Files worth studying:
 
@@ -93,7 +93,7 @@ Files worth studying:
 - `turbo.json` — globalEnv pattern
 - `apps/web/`, `apps/admin/`, `apps/space/`, `apps/live/` — per-app structure
 - `packages/ui/`, `packages/tailwind-config/` — shared package shape
-- `setup.dev.sh` — initial setup orchestration (which our convention folds into `./dev`)
+- `setup.dev.sh` — initial setup orchestration (which our convention folds into `ctl`)
 
 ## uvenv — Topology 01 (single-app)
 
@@ -108,6 +108,20 @@ A small CLI tool. Demonstrates:
 - VHS tape files in `demo/` for README GIFs
 
 Used as a build dep by ML projects in Topology 07.
+
+## (none yet) — Topology 09 (embeddable package + reference host)
+
+No repo in Sid's current portfolio is a canonical Topology 09 — a published package (UI component / SDK / headless engine) whose real consumer is an *external* host, with a thin in-repo reference host for dev.
+
+When one lands (e.g. an embeddable editor that mounts inside other apps), it becomes the canonical example for:
+
+- The published `packages/<pkg>` as the product; `apps/web` as a reference host (not the deliverable)
+- React as a `peerDependency`; per-instance mount model
+- Embedding seams (host-injected services / storage / theme)
+- Single-artifact delivery (`noExternal` bundling of an internal react-less `core`)
+- `package.json` `exports` + library build tooling (tsup/rollup) + versioned publishing
+
+Until then, the skill proposes the pattern on its own merits and flags the absence (see `references/topologies/09_embeddable-package-and-reference-host.md`).
 
 ## How the skill cites these
 

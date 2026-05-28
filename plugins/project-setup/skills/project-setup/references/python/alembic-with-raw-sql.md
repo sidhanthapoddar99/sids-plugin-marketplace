@@ -91,13 +91,13 @@ CREATE INDEX ON users (org_id, email);
 
 DBAs / operators / sqlx all read this file. There's no ORM intermediary.
 
-## `./dev migrate new` automates the file pair
+## `ctl migrate new` automates the file pair
 
 ```bash
-./dev migrate new "add ideas table"
+ctl migrate new "add ideas table"
 ```
 
-In the wrapper:
+In the dispatcher:
 
 ```bash
 cmd_migrate_new() {
@@ -123,7 +123,7 @@ Generated `.py` shim + empty `.up.sql` and `.down.sql` ready to fill.
 After every migration, regenerate Rust's offline metadata:
 
 ```bash
-./dev sqlx-prepare
+ctl sqlx-prepare
 ```
 
 Which runs:
@@ -132,7 +132,7 @@ Which runs:
 ( cd apps/backend-rust && DATABASE_URL="${DATABASE_URL}" cargo sqlx prepare --workspace )
 ```
 
-This writes `.sqlx/` files Rust uses for offline query verification. `./dev` runs:
+This writes `.sqlx/` files Rust uses for offline query verification. `ctl` runs:
 
 ```
 migrate up → sqlx prepare --check → cargo build

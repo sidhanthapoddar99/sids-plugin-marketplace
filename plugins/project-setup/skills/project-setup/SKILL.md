@@ -1,6 +1,6 @@
 ---
 name: project-setup
-description: Use when making any architectural, structural, layout, or convention decision about a repo — bootstrapping a new one, restructuring an existing one, adding or splitting services, picking databases or orchestrators, or deciding where a file or folder belongs. Equally for greenfield init and for modifying established codebases. Covers monorepo vs polyrepo, single vs multi backend / frontend, the `apps/` / `packages/` / `infra/` / `data/` / `docker/` folder split, root `.env` vs per-service `config.yaml`, secrets matrix, docker-compose deployment-mode files, the `./dev` wrapper, design tokens + light/dark, modularity caps (500/300 lines, folders by feature), ML cloud orchestration (dstack, SkyPilot, spot + checkpoints, inference autoscaling, remote GPU dev via SSH + VS Code, agent SSH access), Python flow (`uv sync` for apps vs `uvenv` + `requirements.txt` for ML), Alembic + raw-SQL shim pattern, production serving (gunicorn/uvicorn workers, worker recycling, graceful shutdown, healthchecks, resource limits, migrations-on-deploy), mobile (Kotlin/Swift), desktop (Tauri / Electron), lefthook, VS Code debugger setup, `.mise.toml`, polyrepo deploy aggregators, Go-CLI infra orchestrators. Triggers on "create a project", "init a repo", "scaffold a monorepo", "bootstrap", "audit my layout", "restructure this repo", "where should X go", "where does X belong", "is this the right place for", "split this backend", "add a backend", "add a frontend", "add a service", "pick a database", "Postgres vs Mongo", "SQLite or Postgres", "do I need Postgres", "in-memory or Redis", "do I need Redis", "app/ or src/", "src layout", "where does the code go", "monorepo or polyrepo", "where to put .env", "single .env or per-service", "config.yaml location", "VITE_ leak", "frontend env isolation", "design tokens", "tokens.css", "light/dark mode", "shadcn setup", "multi-frontend", "pnpm workspaces", "turborepo", "compose layout", "deployment modes", "bind-mount data", "./dev wrapper", "dev script", "setup script", "mise.toml", "alembic", "uv sync vs requirements", "uvenv", "dstack", "SkyPilot", "spot training", "checkpoint training", "remote GPU dev", "agent SSH access", "gunicorn workers", "how many workers", "worker recycling", "max-requests", "uvicorn workers", "production serving", "graceful shutdown", "healthcheck endpoint", "liveness readiness", "resource limits", "migrations on deploy", "production checklist", "Tauri or Electron", "iOS Android repo layout", "lefthook", "VS Code launch.json", "polyrepo aggregator", "deploy repo", "docs folder", "documentation-template", `apps/`, `packages/`, `infra/`, `data/`, `docker/`, `tokens.css`, `config.yaml`, `.env.example`, `.mise.toml`, `compose.yaml`. SKIP when the user is debugging runtime behaviour, editing function bodies, reviewing test output, writing application logic inside an existing file, or operating purely inside the dstack CLI surface (defer to the sibling `dstack` skill) or editing documentation-template content (defer to the sibling `documentation-guide` skill) — this skill owns the structural / placement / convention side, not the in-file work.
+description: Use when making any architectural, structural, layout, or convention decision about a repo — bootstrapping a new one, restructuring an existing one, adding or splitting services, picking databases or orchestrators, or deciding where a file or folder belongs. Equally for greenfield init and for modifying established codebases. Covers monorepo vs polyrepo, single vs multi backend / frontend, deployed application vs distributed/published package (embeddable UI / SDK + reference host), the `apps/` / `packages/` / `infra/` / `data/` / `docker/` folder split, root `.env` vs per-service `config.yaml`, secrets matrix, docker-compose deployment-mode files, the `ctl` control dispatcher (dev/prod launchers + up/down/status/setup), design tokens + light/dark, modularity caps (500/300 lines, folders by feature), ML cloud orchestration (dstack, SkyPilot, spot + checkpoints, inference autoscaling, remote GPU dev via SSH + VS Code, agent SSH access), Python flow (`uv sync` for apps vs `uvenv` + `requirements.txt` for ML), Alembic + raw-SQL shim pattern, production serving (gunicorn/uvicorn workers, worker recycling, graceful shutdown, healthchecks, resource limits, migrations-on-deploy), mobile (Kotlin/Swift), desktop (Tauri / Electron), lefthook, VS Code debugger setup, `.mise.toml`, polyrepo deploy aggregators, Go-CLI infra orchestrators. Triggers on "create a project", "init a repo", "scaffold a monorepo", "bootstrap", "audit my layout", "restructure this repo", "where should X go", "where does X belong", "is this the right place for", "split this backend", "add a backend", "add a frontend", "add a service", "pick a database", "Postgres vs Mongo", "SQLite or Postgres", "do I need Postgres", "in-memory or Redis", "do I need Redis", "app/ or src/", "src layout", "where does the code go", "monorepo or polyrepo", "deployed app or package", "distributed package", "publish a package", "embeddable component", "library vs app", "SDK package", "reference host", "where to put .env", "single .env or per-service", "config.yaml location", "VITE_ leak", "frontend env isolation", "design tokens", "tokens.css", "light/dark mode", "shadcn setup", "multi-frontend", "pnpm workspaces", "turborepo", "compose layout", "deployment modes", "bind-mount data", "./dev wrapper", "ctl dispatcher", "control script", "dev vs deploy", "process-compose", "dev script", "setup script", "mise.toml", "alembic", "uv sync vs requirements", "uvenv", "dstack", "SkyPilot", "spot training", "checkpoint training", "remote GPU dev", "agent SSH access", "gunicorn workers", "how many workers", "worker recycling", "max-requests", "uvicorn workers", "production serving", "graceful shutdown", "healthcheck endpoint", "liveness readiness", "resource limits", "migrations on deploy", "production checklist", "Tauri or Electron", "iOS Android repo layout", "lefthook", "VS Code launch.json", "polyrepo aggregator", "deploy repo", "docs folder", "documentation-template", `apps/`, `packages/`, `infra/`, `data/`, `docker/`, `tokens.css`, `config.yaml`, `.env.example`, `.mise.toml`, `compose.yaml`. SKIP when the user is debugging runtime behaviour, editing function bodies, reviewing test output, writing application logic inside an existing file, or operating purely inside the dstack CLI surface (defer to the sibling `dstack` skill) or editing documentation-template content (defer to the sibling `documentation-guide` skill) — this skill owns the structural / placement / convention side, not the in-file work.
 ---
 
 # project-setup
@@ -27,7 +27,7 @@ These are the conventions to apply by default. Most are **firm** — their value
 3. **Root holds only config + README + folders — never loose code.** No executable entry file or stray module directly in the repo root; keep the root clean. *(Only exception: project types that genuinely demand a root entry file — e.g. some editor extensions like a VS Code extension.)*
 4. **Per-service `config.yaml`, root `.env`.** Root `.env` holds shared/common vars only. Each backend owns its own `config.yaml`. Frontends have their own env scope (`VITE_*` / `NEXT_PUBLIC_*`) — backend secrets must never leak there.
 5. **Compose lives in `docker/`**, with files representing deployment modes (base / database-only / dev / prod / traefik / no-ports). Bind-mounts only.
-6. **One `./dev` wrapper at repo root.** Setup folds in. No separate `setup.dev.sh`. Subscripts in `scripts/` are implementation, the wrapper is the public API.
+6. **One `ctl` dispatcher at repo root.** `ctl dev` runs the local host loop (apps on host, hot reload); `ctl prod` runs the full docker stack; `up`/`down`/`ps` manage container services; `status`/`setup`/`migrate` round it out. It delegates to `docker compose`, a process runner (`process-compose`/`mprocs`), and `scripts/*.sh` — the dispatcher is the public API, callable bare via mise PATH. Name `ctl` is swappable.
 7. **README documents the three startup paths**, and **each service/app ships its own `README.md`** for its host dev loop (see `references/readme-three-paths.md`).
 8. **Examples are evidence, not gospel.** They evolved at different times. Cite them, do not blindly copy.
 
@@ -89,6 +89,7 @@ Based on the answers, pick a topology from `references/topologies/`:
 | 06 | `06_polyrepo-with-aggregator.md` | Each service in its own repo + a `-deploy` aggregator repo. |
 | 07 | `07_ml-project.md` | uvenv global env, `requirements.txt`, no frontend, no compose. |
 | 08 | `08_infra-orchestrator.md` | Compose tree driven by a Go CLI. |
+| 09 | `09_embeddable-package-and-reference-host.md` | The deliverable is a *published package* (UI component / SDK / headless engine) an external host mounts; `apps/web` is a reference host, not the product. |
 
 If the user's shape doesn't cleanly match one, name the closest two and ask which they want — or document the hybrid explicitly.
 
@@ -96,9 +97,9 @@ If the user's shape doesn't cleanly match one, name the closest two and ask whic
 
 For every topology, the same conventions apply (with topology-specific adjustments documented per-topology). Consult:
 
-- `references/env-and-config/` — root `.env`, per-service `config.yaml`, frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
+- `references/env-and-config/` — root `.env`, per-service `config.yaml`, env precedence (root → per-service → real env wins), frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
 - `references/docker-compose/` — `docker/` folder layout, deployment modes, bind-mounts, nested-data-dir trick, escalation to Go CLI
-- `references/scripts/` — `./dev` wrapper pattern, subscripts, dev-without-docker, three startup paths, setup folded in
+- `references/scripts/` — the `ctl` dispatcher (dev/prod launchers, up/down containers, delegate to `process-compose`), subscripts, dev-without-docker, three startup paths, `ctl setup`/`ctl status`
 - `references/python/` — `uv` for apps, `uvenv` for ML, Alembic conventions
 - `references/frontend/` — Vite/proxy/nginx pair, multi-frontend workspaces, design tokens, light/dark
 - `references/databases/` — **choosing a database** (SQLite vs Postgres, in-process memory vs Redis), `infra/` vs `data/`, postgres/redis/sqlite/seaweed/mongo/neo4j conventions (versions illustrative — check latest)
@@ -177,7 +178,8 @@ references/
 │   ├── 05_monorepo-microservices-mesh.md  # many small services, own boundaries
 │   ├── 06_polyrepo-with-aggregator.md # services in separate repos + a -deploy aggregator
 │   ├── 07_ml-project.md           # uvenv + requirements.txt, no compose; pulls in ml-orchestration/
-│   └── 08_infra-orchestrator.md   # compose tree driven by a Go CLI (chimere)
+│   ├── 08_infra-orchestrator.md   # compose tree driven by a Go CLI (chimere)
+│   └── 09_embeddable-package-and-reference-host.md  # product = published package; apps/web is a dev harness, not the product
 │
 ├── env-and-config/                # the env/config split (a firm convention area)
 │   ├── root-env-shared-only.md    # what belongs in root .env (shared only) + .env.example contract
@@ -186,6 +188,7 @@ references/
 │   ├── build-time-vs-runtime.md   # classify every var; baked-into-artifact vs read-on-boot
 │   ├── yaml-var-interpolation.md  # ${VAR} substitution rules in config.yaml
 │   ├── config-local-overrides.md  # config.local.yaml precedence for dev
+│   ├── env-precedence.md          # load order: root .env → per-service .env → real env wins
 │   └── secrets-matrix.md          # dev / CI / prod / Vault — where secrets live, rotation
 │
 ├── docker-compose/                # how compose is laid out (firm: docker/ folder, bind-mounts)
@@ -194,14 +197,15 @@ references/
 │   ├── overrides-vs-profiles.md   # when to use -f overlays vs compose profiles
 │   ├── bind-mounts-not-volumes.md # bind-mount host dirs; no named volumes; data/ discipline
 │   ├── nested-data-dir-trick.md   # data/postgres/pgdata so .gitkeep doesn't break initdb
+│   ├── anchors-and-internal-ports.md  # internal port = fixed convention; host port = ${VAR}; anchors for repeated blocks
 │   └── orchestrator-escalation.md # when a shell wrapper should become a Go CLI (→ Topology 08)
 │
-├── scripts/                       # the ./dev wrapper + subscripts (firm: one entrypoint)
-│   ├── global-wrapper-dispatcher.md   # the ./dev pattern (skeleton, dispatch, helpers)
-│   ├── subscripts.md              # scripts/*.sh that ./dev calls (implementation)
-│   ├── dev-without-docker.md      # default dev mode: apps on host, DBs in containers
-│   ├── three-startup-paths.md     # ./dev / raw compose / no-docker host run
-│   └── setup-folded-into-dev.md   # no separate setup.dev.sh; first-run folds into ./dev
+├── scripts/                       # the ctl dispatcher + subscripts (firm: one entrypoint)
+│   ├── global-wrapper-dispatcher.md   # the ctl model: dev/prod launchers, up/down containers, delegate to process-compose
+│   ├── subscripts.md              # scripts/*.sh that ctl calls (implementation)
+│   ├── dev-without-docker.md      # ctl dev: apps on host (hot reload), DBs in containers
+│   ├── three-startup-paths.md     # ctl / raw compose / no-docker host run (README contract)
+│   └── setup-command.md           # ctl setup wizard + ctl status doctor (the 2 project-custom subcommands)
 │
 ├── python/                        # Python flow — app/ vs src/, uv vs uvenv, migrations
 │   ├── pyproject-uv-sync-for-apps.md  # run-service (flat app/, uv sync) vs distributable (src/<pkg>/)
@@ -227,7 +231,8 @@ references/
 │   ├── design-tokens.md           # tokens.css single source; no hex/px in component CSS
 │   ├── light-dark-data-attr.md    # [data-theme="dark"] on <html>; both modes default
 │   ├── shadcn-tailwind.md         # shadcn/ui + tailwind wired to var(--token)
-│   └── nextjs-astro-variants.md   # when Next (SSR) / Astro (static) instead of Vite
+│   ├── nextjs-astro-variants.md   # when Next (SSR) / Astro (static) instead of Vite
+│   └── embeddable-package-and-reference-host.md  # embedding seams (host injects services/storage/theme); publishing a UI package (Topology 09)
 │
 ├── production/                    # making it production-grade
 │   ├── app-server-and-workers.md  # gunicorn/uvicorn worker count + RECYCLING + timeouts; per-lang model
@@ -270,7 +275,7 @@ assets/snippets/                   # fragments to drop into a target repo (NOT r
 ├── infra/nginx.conf
 ├── python/{alembic-shim.py, alembic_helpers.py}
 ├── env/{env.example.template, mise.toml.example}
-├── scripts/dev-wrapper.sh
+├── scripts/dev-wrapper.sh         # the ctl dispatcher (drops as ctl at repo root)
 ├── claude/CLAUDE.md.template
 └── README.md                      # snippet index: what each fragment is + where it drops
 

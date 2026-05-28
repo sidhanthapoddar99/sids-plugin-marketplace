@@ -1,171 +1,185 @@
-# `./dev` — the global wrapper dispatcher
+# `ctl` — the global control dispatcher
 
-One executable at repo root. Single entrypoint. Dispatches to subcommands and to subscripts. Setup folds in. The user-facing API for the project.
+One executable at repo root. Single entrypoint for the whole stack — local dev processes **and** containers. The user-facing API for the project.
 
-## Contract
+> **Name.** This doc uses `ctl`. The name is a single token you can swap project-wide (`stack`, `app`, `ctl`, or the project name) — pick one and keep it. With mise's project-scoped PATH (`[env]._.path = ["."]` / `["scripts"]`, see `references/mise.md`) you call it bare — `ctl dev` — instead of `./ctl`.
 
-- Always executable, always at `./dev` (no `.sh` extension)
-- `./dev` (bare) — first-run / day-to-day default flow
-- `./dev <subcommand> [args]` — specific operation
-- `./dev help` — print the contract
-- Always sourced from `set -euo pipefail` for safety
-- Sources `.env` after verifying it exists (and copies from `.env.example` if missing, then exits with instructions)
+## The model — split by lifecycle, not by one verb
+
+Two kinds of thing have two different lifecycles, so they get two different grammars:
+
+| Kind | Lifecycle | Commands |
+|---|---|---|
+| **The local dev loop** (apps on host, hot reload) | interactive, foreground — you watch it, Ctrl-C to stop | `ctl dev` |
+| **The full containerised stack** (prod overlay + traefik) | a deployment | `ctl prod` |
+| **Container services** (db, redis, …) | detached, long-lived background | `ctl up` / `ctl down` / `ctl ps` / `ctl logs` |
+
+`dev` and `prod` are the two "run the whole stack" launchers, split by **where it runs** (host vs docker). `up`/`down` are the granular **container** knobs — in dev these are almost always just the data services, because the apps run on the host.
+
+## Command surface
+
+```
+ctl dev [target]      run the stack LOCALLY on the host (hot reload). target ∈ all|backend|frontend|<svc>
+                      auto-ensures its data-container deps are up first. foreground; Ctrl-C/q stops.
+ctl prod              run the full stack IN DOCKER (prod overlay + traefik). detached.
+
+ctl up   [service]    start container service(s), detached. bare = data services (db, redis). --prod for prod overlay
+ctl down [service]    stop container service(s)
+ctl restart [service]
+ctl ps                unified view: running containers + running local dev procs
+ctl logs [service] [-f]
+
+ctl status [service]  config doctor — project-custom body (see below)
+ctl setup             interactive .env / config.local.yaml wizard — project-custom body
+ctl migrate {up|down|new|status}   alembic (lives here, not under dev)
+ctl test [target]
+ctl build             production image build
+ctl clean             tear down + clear caches (asks first)
+ctl help              print the contract
+```
+
+Note `ctl dev backend` (backend on the **host**, reloading) and `ctl up backend` (backend **container**) differ — `dev` = host, `up` = container. In dev `up` is usually only `db`/`redis`, so the overlap is rare; `ctl help` and `ctl status` must spell the distinction out.
+
+## Delegate — don't hand-roll a process manager
+
+The dispatcher is **thin routing**. It must not grow into a 500-line supervisor (that fights the modularity caps in `references/modularity/`). It delegates:
+
+- **Containers → `docker compose`.** `up`/`down`/`ps`/`logs`/`restart` are thin wrappers over compose, which already does health, deps, and log multiplexing.
+- **Local multi-process dev → a real runner, not bash PID juggling.** Default **`process-compose`** (declarative `process-compose.yaml`: per-process commands, `depends_on`, readiness probes, a TUI with per-service panes, `--detached` mode). Lighter alternative: **`mprocs`**. Zero-dep fallback: a bash `trap` killing backgrounded jobs (shown below) — fine for 1–2 processes, replace with process-compose past that. This is where the "independent frontend/backend views" you'd reach for tmux come from — for free.
+- **`status` / `setup` → project-custom subscripts** (`scripts/status.sh`, `scripts/setup.sh`). The *command surface* is uniform across every project; these two bodies are necessarily case-by-case (which env keys, which services, frontend-vs-backend checks). The dispatcher routes; the bodies vary.
 
 ## Skeleton
 
 ```bash
 #!/usr/bin/env bash
-# ./dev — <PROJECT> developer entry point.
-#
-# Bare ./dev runs the full first-run / dev flow.
-# Subcommands wrap day-to-day flows.
-
+# ctl — <PROJECT> control plane. Local dev + containers, one entrypoint.
 set -euo pipefail
+REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"; cd "$REPO_ROOT"
 
-REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-cd "$REPO_ROOT"
-
-# ---------- helpers --------------------------------------------------------
-
-c_dim()   { printf '\033[2m%s\033[0m\n' "$*"; }
-c_info()  { printf '\033[36m▸\033[0m %s\n' "$*"; }
-c_ok()    { printf '\033[32m✓\033[0m %s\n' "$*"; }
-c_warn()  { printf '\033[33m!\033[0m %s\n' "$*" >&2; }
-c_err()   { printf '\033[31m✗\033[0m %s\n' "$*" >&2; }
-die()     { c_err "$*"; exit 1; }
+c_info(){ printf '\033[36m▸\033[0m %s\n' "$*"; }
+c_ok(){   printf '\033[32m✓\033[0m %s\n' "$*"; }
+c_warn(){ printf '\033[33m!\033[0m %s\n' "$*" >&2; }
+die(){    printf '\033[31m✗\033[0m %s\n' "$*" >&2; exit 1; }
 
 require_env() {
-  if [[ ! -f .env ]]; then
-    if [[ -f .env.example ]]; then
-      c_warn ".env not found — copying from .env.example."
-      c_warn "Edit .env to fill in REQUIRED blanks, then re-run."
-      cp .env.example .env
-      exit 1
-    fi
-    die ".env is missing and no .env.example exists."
+  [[ -f .env ]] || { c_warn ".env missing — run \`ctl setup\` (or cp .env.example .env)."; exit 1; }
+  set -a; source .env; set +a
+}
+require_tools() { for t in mise docker; do command -v "$t" >/dev/null || die "missing: $t"; done; }
+
+# --- container lifecycle: thin wrappers over docker compose -----------------
+DATA_SVCS=(postgres redis)
+compose() { docker compose -f docker/compose.yaml "$@"; }
+cmd_up()      { require_env; if [[ $# -eq 0 ]]; then compose up -d "${DATA_SVCS[@]}"; else compose up -d "$@"; fi; }
+cmd_down()    { compose down "$@"; }
+cmd_ps()      { compose ps; process-compose process list 2>/dev/null || true; }
+cmd_logs()    { compose logs "$@"; }
+
+# --- the two stack launchers ------------------------------------------------
+cmd_dev() {                       # local, host, hot reload
+  require_env; require_tools
+  c_info "ensuring data services…"; cmd_up "${DATA_SVCS[@]}"
+  bash scripts/wait-for-health.sh "${DATA_SVCS[@]}" 60
+  if command -v process-compose >/dev/null; then
+    exec process-compose up "${@:+--names $*}"        # reads process-compose.yaml
+  else
+    bash scripts/dev-host.sh "$@"                      # bash trap fallback (1–2 procs)
   fi
-  set -a
-  source .env
-  set +a
 }
-
-require_tools() {
-  local missing=()
-  for t in mise docker; do
-    command -v "$t" >/dev/null 2>&1 || missing+=("$t")
-  done
-  (( ${#missing[@]} > 0 )) && die "Missing tools on PATH: ${missing[*]}. Install mise (https://mise.jdx.dev), then \`mise install\`."
-}
-
-# ---------- subcommands ----------------------------------------------------
-
-cmd_help() {
-  cat <<EOF
-./dev — <PROJECT> developer entry point.
-
-Usage:
-  ./dev                           full first-run flow (compose up DBs, install deps, migrate, start services)
-  ./dev migrate {up|down|new}     alembic operations
-  ./dev test                      run all test suites
-  ./dev build                     production build (frontend + backend)
-  ./dev clean                     docker compose down -v + clear caches (asks first)
-  ./dev help                      print this contract
-
-EOF
-}
-
-cmd_migrate() { bash scripts/migrate.sh "$@"; }
-cmd_test()    { bash scripts/test.sh "$@"; }
-cmd_build()   { bash scripts/build.sh "$@"; }
-
-cmd_clean() {
-  cat <<EOF >&2
-This will:
-  • docker compose down -v   (drops postgres + redis data volumes)
-  • rm -rf node_modules dist .vite
-  • find . -name __pycache__ -prune -exec rm -rf {} +
-
-EOF
-  read -r -p "Continue? [y/N] " ans
-  [[ "${ans,,}" == "y" ]] || { c_warn "aborted."; exit 0; }
-  docker compose -f docker/compose.yaml down -v || true
-  rm -rf apps/frontend/node_modules apps/frontend/dist apps/frontend/.vite
-  find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
-  c_ok "clean."
-}
-
-# ---------- bare flow ------------------------------------------------------
-
-cmd_bare() {
-  c_info "<PROJECT> dev — first-run flow"
+cmd_prod() {                      # full docker, prod overlay
   require_env
-  require_tools
-
-  c_info "Ensuring data dirs exist…"
-  mkdir -p data/postgres/pgdata data/redis/data
-
-  c_info "Bringing up postgres + redis…"
-  docker compose -f docker/compose.database-only.yaml up -d
-  bash scripts/wait-for-health.sh postgres redis
-
-  c_info "Installing/syncing deps…"
-  ( cd apps/backend && uv sync )
-  ( cd apps/frontend && bun install )
-
-  c_info "Applying migrations…"
-  ( cd apps/backend && uv run alembic upgrade head )
-
-  c_info "Starting backend + frontend on host. Ctrl-C kills all."
-  prefix() { local tag="$1" color="$2"; while IFS= read -r line; do printf '\033[%sm[%s]\033[0m %s\n' "$color" "$tag" "$line"; done; }
-
-  ( cd apps/backend && uv run uvicorn ${BACKEND_MODULE:-app.main}:app --reload \
-      --host "${PYTHON_HOST:-0.0.0.0}" --port "${PYTHON_PORT:-8000}" 2>&1 | prefix "backend " "33" ) &
-  local be_pid=$!
-
-  ( cd apps/frontend && bun dev 2>&1 | prefix "frontend" "36" ) &
-  local fe_pid=$!
-
-  trap 'kill "$be_pid" "$fe_pid" 2>/dev/null || true; wait || true; exit 0' INT TERM
-  wait
+  docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml \
+    --env-file .env.production up -d
 }
 
-# ---------- dispatch -------------------------------------------------------
+# --- custom-body subcommands route to scripts -------------------------------
+cmd_status()  { bash scripts/status.sh "$@"; }     # project-custom config doctor
+cmd_setup()   { bash scripts/setup.sh "$@"; }      # project-custom .env wizard
+cmd_migrate() { bash scripts/migrate.sh "$@"; }
+
+cmd_help() { cat <<EOF
+ctl — <PROJECT> control plane
+  ctl dev [target]     run locally on the host (hot reload); deps auto-started
+  ctl prod             run the full stack in docker
+  ctl up/down [svc]    start/stop container services (bare = db,redis)
+  ctl ps / logs [svc]  inspect containers + local procs
+  ctl status [svc]     check config (.env, config.local.yaml, deps reachable)
+  ctl setup            interactive .env wizard
+  ctl migrate {up|down|new|status}
+  ctl test / build / clean / help
+EOF
+}
 
 main() {
-  local cmd="${1:-}"
-  case "$cmd" in
-    "")              cmd_bare ;;
-    migrate)         shift; cmd_migrate "$@" ;;
-    test)            shift; cmd_test "$@" ;;
-    build)           shift; cmd_build "$@" ;;
-    clean)           cmd_clean ;;
-    help|-h|--help)  cmd_help ;;
-    *)               die "unknown command: $cmd. Try ./dev help" ;;
+  case "${1:-help}" in
+    dev)      shift; cmd_dev "$@" ;;
+    prod)     cmd_prod ;;
+    up)       shift; cmd_up "$@" ;;
+    down)     shift; cmd_down "$@" ;;
+    restart)  shift; compose restart "$@" ;;
+    ps)       cmd_ps ;;
+    logs)     shift; cmd_logs "$@" ;;
+    status)   shift; cmd_status "$@" ;;
+    setup)    cmd_setup ;;
+    migrate)  shift; cmd_migrate "$@" ;;
+    test)     shift; bash scripts/test.sh "$@" ;;
+    build)    bash scripts/build.sh ;;
+    clean)    bash scripts/clean.sh ;;
+    help|-h|--help) cmd_help ;;
+    *)        die "unknown command: $1. Try ctl help" ;;
   esac
 }
-
 main "$@"
 ```
 
-The skill drops this skeleton from `assets/snippets/dev-wrapper.sh` and adapts it to the topology.
+The skill drops this from `assets/snippets/scripts/dev-wrapper.sh` and adapts it.
+
+## The dev launcher's process file (`process-compose.yaml`)
+
+```yaml
+# host dev processes — `ctl dev` runs these; deps auto-ordered; per-process panes
+processes:
+  backend:
+    command: "uv run uvicorn app.main:app --reload --port ${PYTHON_PORT:-8000}"
+    working_dir: "apps/backend"
+    readiness_probe: { http_get: { host: localhost, port: 8000, path: /health } }
+  frontend:
+    command: "bun dev"
+    working_dir: "apps/frontend"
+    depends_on: { backend: { condition: process_healthy } }
+```
+
+`ctl dev backend` runs just that process; `ctl dev` runs all. `depends_on` plus the data-service auto-up in `cmd_dev` is exactly the "error if a required dep isn't there" behaviour — declare deps, let the runner enforce them.
+
+## Dependency auto-up
+
+`ctl dev` brings up its data-container deps (`db`, `redis`) before starting host processes, and `process-compose`'s `depends_on` orders the host processes among themselves. So the everyday loop is one command — `ctl dev` — not "`ctl up db` then start things by hand." If a declared dep can't be started, fail loudly with the fix, never start half a stack silently.
 
 ## Design rules
 
-- **Bare invocation is the most common path**. Optimise for "fresh clone, ./dev, things work."
-- **No silent failures.** If a tool is missing, an env var is unset, or a healthcheck times out — die loudly with the fix.
-- **Coloured output** but minimal. Don't make the wrapper a spectacle.
-- **Subcommands are thin** — they delegate to `scripts/<name>.sh` for anything non-trivial. The wrapper is dispatch, the scripts are logic.
-- **Self-documenting** — `./dev help` is the contract.
+- **`ctl dev` is the most common path.** Optimise for "fresh clone → `ctl setup` → `ctl dev` → it works."
+- **No silent failures.** Missing tool, unset var, healthcheck timeout → die with the fix.
+- **Thin dispatch, delegated logic.** Subcommands route to `docker compose`, `process-compose`, or `scripts/<name>.sh`. The wrapper is the contract, not the implementation.
+- **`status` and `setup` are the two custom bodies** — stable command name, project-specific logic. Everything else is largely uniform across projects.
+- **Self-documenting** — `ctl help` is the contract.
 
-## When to split into multiple wrappers
+## One dispatcher per repo
 
-A single repo should have **one** wrapper. If your repo grows two distinct user populations (e.g. developers and operators), prefer subcommands over a second wrapper. Two wrappers means two contracts to remember.
-
-The single exception is Topology 06 (polyrepo + aggregator) where the aggregator gets its own `./deploy` distinct from each child repo's `./dev`. Different repos, different contracts.
+A single repo has **one** `ctl`. New need → a subcommand, not a second wrapper. The one place two contracts exist is Topology 06 (polyrepo + aggregator): each child repo has its own `ctl`, and the aggregator repo has its own `ctl` whose `ctl prod` deploys the merged stack. Different repos, different contracts — not two wrappers in one repo.
 
 ## Anti-patterns
 
-- 500-line monolithic wrappers — split logic into `scripts/<name>.sh`
-- Subcommands that duplicate `docker compose` syntax — the wrapper exists to hide that
-- Adding new subcommands proactively for hypothetical needs — wait for the pain
-- Silent fallbacks ("if docker isn't installed, try podman") — be explicit; ask the user to install the canonical tool
+- A 500-line bash wrapper that reimplements a process manager — delegate to `process-compose`/`docker compose`.
+- Hand-managing local PIDs, pidfiles, and tmux sessions when `process-compose`/`mprocs` do it declaratively.
+- Folding migrations or prod into `ctl dev` — `dev` is the host loop only; migrations are `ctl migrate`, docker is `ctl prod`/`ctl up`.
+- Subcommands that just alias `docker compose` syntax verbatim — the wrapper exists to hide the `-f` flag soup.
+- Adding subcommands proactively for hypothetical needs — wait for the pain.
+- Silent fallbacks ("if docker isn't installed, try podman") — be explicit; ask the user to install the canonical tool.
+
+## See also
+
+- `references/scripts/dev-without-docker.md` — what `ctl dev` runs on the host and why
+- `references/scripts/setup-command.md` — `ctl setup` / `ctl status` as project-custom subscripts
+- `references/scripts/subscripts.md` — the `scripts/*.sh` the dispatcher calls
+- `references/scripts/three-startup-paths.md` — `ctl` / raw compose / no-docker, documented in the README
+- `references/mise.md` — project-scoped PATH so `ctl` is callable bare

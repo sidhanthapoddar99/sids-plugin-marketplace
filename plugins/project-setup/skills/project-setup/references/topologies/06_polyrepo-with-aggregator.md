@@ -17,7 +17,7 @@ Each service in its own git repo, plus a `<product>-deploy` aggregator repo that
 │   ├── .env / .env.example         # subset — only its own keys
 │   ├── apps/<svc>/
 │   ├── docker/compose.yaml
-│   ├── dev
+│   ├── ctl
 │   └── README.md
 ├── my-product-backend-rs/          # own repo
 │   └── …                            # similar shape, Topology 01 or 02 internally
@@ -28,7 +28,7 @@ Each service in its own git repo, plus a `<product>-deploy` aggregator repo that
     ├── .env / .env.example         # canonical merged contract
     ├── docker-compose.yaml         # references PRE-BUILT IMAGES, not build:
     ├── docker-compose.prod.yaml
-    ├── deploy                      # ./deploy — aggregator wrapper
+    ├── ctl                         # the aggregator's own ctl (ctl prod deploys)
     ├── scripts/
     │   ├── sync-env-templates.sh   # fetch .env.example from each child
     │   ├── check-env-drift.sh      # union of child keys ⊆ aggregator
@@ -44,7 +44,7 @@ The aggregator repo is the **deployment-time source of truth**:
 1. **Canonical merged `.env.example`** — union of every child repo's `.env.example` keys. Comments name which service consumes each key.
 2. **Production compose** — references pre-built images (`image: ghcr.io/me/backend-py:v1.2.3`), never `build:`. The build happens in the child repos' CI; the aggregator just composes them.
 3. **`sync-env-templates.sh`** — fetches each child's `.env.example` and asserts the union. Run on update.
-4. **`./deploy`** — pulls images, runs migrations (via a one-shot container), restarts services.
+4. **`ctl prod`** (the aggregator's own dispatcher) — pulls images, runs migrations (via a one-shot container), restarts services.
 
 ## Env contract sync (the hard part)
 
@@ -72,7 +72,7 @@ CI in each child repo can run a similar check in reverse: "my `.env.example` key
 child repo CI:
   build → test → push to ghcr.io/me/<service>:<sha> and :<tag>
 
-aggregator CI / ./deploy:
+aggregator CI / ctl prod:
   pull ghcr.io/me/<service>:<tag> → compose up
 ```
 

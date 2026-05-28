@@ -65,7 +65,7 @@ data/
 !data/**/.gitkeep
 ```
 
-This commits the directory structure (via `.gitkeep`) but not the actual data. Fresh clones can run `./dev` immediately — the directories exist.
+This commits the directory structure (via `.gitkeep`) but not the actual data. Fresh clones can run `ctl dev` immediately — the directories exist.
 
 ## `${DATA_DIR}` env override
 

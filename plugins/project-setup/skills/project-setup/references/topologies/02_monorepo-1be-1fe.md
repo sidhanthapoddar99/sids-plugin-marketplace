@@ -17,7 +17,7 @@ my-app/
 ├── .env.example                    # the contract (committed)
 ├── .env.production                 # optional, compose env_file for prod
 ├── .mise.toml                      # runtime contract
-├── dev                             # ./dev — single entrypoint
+├── ctl                             # ctl — single dispatcher
 ├── docker/
 │   ├── compose.yaml                # base — no host ports
 │   ├── compose.database-only.yaml  # postgres + redis only, for dev mode
@@ -101,32 +101,34 @@ my-app/
 
 ### Dev flow
 
-- `./dev` (bare) — first-run flow: compose up postgres+redis, install deps (uv sync, bun install), migrate, start three processes on host (uvicorn --reload, bun dev, optional nginx)
-- `./dev migrate {up|down|new "<msg>"}` — alembic
-- `./dev test` — pytest + bun test
-- `./dev clean` — `docker compose down -v` + clear caches (asks first)
-- `./dev help` — print contract
+- `ctl dev` — host dev loop: auto-ups the data containers (postgres+redis), installs deps (uv sync, bun install), then starts three processes on host (uvicorn --reload, bun dev, optional nginx). Foreground; Ctrl-C stops. Apps run on the host, not in containers.
+- `ctl up` — start just the data containers (postgres+redis); `ctl down` to stop them
+- `ctl prod` — full stack in docker (prod overlay + traefik), detached
+- `ctl migrate {up|down|new "<msg>"}` — alembic (run after first `ctl dev` to apply schema; not done silently)
+- `ctl test` — pytest + bun test
+- `ctl clean` — `docker compose down -v` + clear caches (asks first)
+- `ctl help` — print contract
 
 ### Compose overlays
 
 ```bash
-# dev — apps on host, only DBs in containers
+# dev — apps on host, only DBs in containers (what `ctl dev` / `ctl up` use)
 docker compose -f docker/compose.database-only.yaml up -d
 
-# dev — everything in containers
+# full stack in docker — dev-parity overlay (via `ctl up --prod` style runs)
 docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d
 
-# prod — behind external Traefik
+# prod — behind external Traefik (what `ctl prod` runs)
 docker compose -f docker/compose.yaml -f docker/compose.prod.yaml -f docker/compose.traefik.yaml up -d
 ```
 
-The wrapper picks the right combination from `./dev`.
+The dispatcher picks the right combination: `ctl dev`/`ctl up` for data-only, `ctl prod` for the full stack.
 
 ### README
 
 Documents three startup paths:
 
-1. `./dev` — preferred
+1. `ctl dev` — preferred
 2. Raw `docker compose -f docker/compose.dev.yaml up` — for understanding
 3. No-docker host run — for IDE debugging (each service has its own setup snippet)
 
@@ -134,7 +136,7 @@ Documents three startup paths:
 
 - Single backend, so one `apps/backend/`
 - No language coordination concerns
-- `./dev` has one set of build steps
+- `ctl` has one set of build steps
 
 ## What's different from Topology 04
 

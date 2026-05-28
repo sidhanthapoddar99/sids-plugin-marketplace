@@ -15,7 +15,7 @@ Many small backends, each with its own service boundary, in one repo. Less commo
 my-platform/
 ├── .env / .env.example
 ├── .mise.toml
-├── dev                             # ./dev — dispatches per-service
+├── ctl                             # ctl — dispatches per-service
 ├── docker/
 │   ├── compose.yaml                # all services
 │   ├── compose.database-only.yaml

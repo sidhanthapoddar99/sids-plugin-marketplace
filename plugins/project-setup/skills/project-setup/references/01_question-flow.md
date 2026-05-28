@@ -16,6 +16,10 @@ Run this in order before proposing any layout. **Skip what you already know**, b
    - 0
    - 1
    - 2+ (multi-frontend workspace; ask if they share UI/types/styles)
+3a. **Deployed application, or distributed package?** (the often-unasked axis — ask it explicitly)
+   - **Deployed** — the repo *runs* the product (you `docker compose up` / `ctl prod` it). Topologies 01–08.
+   - **Distributed** — the deliverable is a **published package** that a *separate, external host* installs and runs. The repo's own web app (if any) is just a **reference host** for development, not the product. → Topology 09 (embeddable package + reference host).
+   - Tell-tale: "another repo will consume this", "it gets embedded in someone else's app", "we publish it to npm/PyPI", "the frontend *is* the product, the local app just hosts it". If any of these, it's distributed even if it also happens to deploy a demo.
 4. **What languages?**
    - Python, Rust, Go, TypeScript, Kotlin, Swift, mix
    - For Python: **app or ML?** (don't infer from extensions — ML uses uvenv + `requirements.txt`)
@@ -53,9 +57,9 @@ Run this in order before proposing any layout. **Skip what you already know**, b
     - Containerise everything when the team needs total parity (rare).
 11. **Hot reload needed?**
     - Confirm: bun dev / uvicorn --reload / cargo-watch — all run on host
-12. **`./dev` subcommands**: which day-to-day flows need shortcuts?
-    - Suggest defaults: `./dev` (bare = first-run flow), `./dev migrate {up|down|new}`, `./dev test`, `./dev clean`, `./dev help`.
-    - Add language-specific: `./dev sqlx-prepare` (if Rust), `./dev ml-train` (if ML).
+12. **`ctl` subcommands**: which day-to-day flows need shortcuts?
+    - Suggest defaults: `ctl dev` (host dev loop), `ctl prod` (full stack in docker), `ctl up`/`ctl down` (data containers), `ctl migrate {up|down|new}`, `ctl test`, `ctl clean`, `ctl help`.
+    - Add language-specific: `ctl sqlx-prepare` (if Rust), `ctl train` (if ML).
 
 ## Batch 4 — deployment + secrets
 
@@ -122,6 +126,7 @@ Run this in order before proposing any layout. **Skip what you already know**, b
 
 | Topic | Why ask |
 |---|---|
+| **Deployed vs distributed** | The repo might *run* the product, or *publish a package* an external host runs. Unasked, the skill defaults to "deployed" and mis-frames `apps/` vs `packages/`, missing peerDeps / exports / publishing entirely. → Topology 09. |
 | Sibling-repo dependencies | Cannot infer from inside one repo. |
 | ML vs app | `.py` files exist in both. Affects every Python decision. |
 | Frontend exposure | A leaked DATABASE_URL via `VITE_*` is catastrophic. |

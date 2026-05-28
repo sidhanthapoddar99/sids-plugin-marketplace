@@ -14,7 +14,7 @@ docker/
 └── compose.no-ports.yaml
 ```
 
-The `./dev` wrapper knows which combination to use per mode; users can also invoke compose directly.
+The `ctl` dispatcher knows which combination to use per mode; users can also invoke compose directly.
 
 ## Orchestrator layout (Topology 08)
 
@@ -74,12 +74,12 @@ Using `${DATA_DIR}` makes it overridable from env — useful in dev (`DATA_DIR=/
 
 Alternative: invoke from the `docker/` directory with `cd docker && docker compose up`. Either approach is fine; pick one and document it.
 
-## `./dev` wrapper handles paths
+## `ctl` handles paths
 
-The user never types those flags. `./dev` runs from repo root and constructs the full `-f` argument list:
+The user never types those flags. `ctl` runs from repo root and constructs the full `-f` argument list:
 
 ```bash
-cmd_up_prod() {
+cmd_prod() {
   docker compose \
     -f docker/compose.yaml \
     -f docker/compose.prod.yaml \

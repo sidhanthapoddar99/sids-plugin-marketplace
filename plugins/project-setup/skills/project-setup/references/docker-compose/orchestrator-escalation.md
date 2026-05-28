@@ -1,4 +1,4 @@
-# When to escalate `./dev` to a real orchestrator binary
+# When to escalate `ctl` to a real orchestrator binary
 
 Most projects never need this. But for projects with complex compose graphs and structured state between commands, the shell wrapper grows past its useful size and a real binary helps.
 
@@ -6,7 +6,7 @@ Most projects never need this. But for projects with complex compose graphs and 
 
 Escalate when **any** of these are true:
 
-1. **`./dev` shell script grows past ~150 lines** of non-trivial logic (not counting comments, color helpers, prefix wrappers)
+1. **`ctl` shell script grows past ~150 lines** of non-trivial logic (not counting comments, color helpers, prefix wrappers)
 2. **State persists between commands** — "is multinode running?", "which peer is leader?", "what port did I pick last time?"
 3. **Multiple compose modes interact** (singlenode → multinode promotion, prod → test-temp swaps)
 4. **Operators need it**, not just developers — the wrapper becomes the product surface

@@ -19,7 +19,7 @@ Pros:
 
 Cons:
 
-- Verbose `-f` flags (the `./dev` wrapper hides them)
+- Verbose `-f` flags (the `ctl` dispatcher hides them)
 - Requires consistent service names across files
 
 ## Profiles

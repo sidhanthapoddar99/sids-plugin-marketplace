@@ -55,7 +55,7 @@ docker compose \
 - Doesn't scale to 3+ modes
 - Hard to switch modes without renaming files
 
-Explicit `-f` arguments + named modes scale better and are auditable. The `./dev` wrapper hides the flags from day-to-day use; raw `docker compose -f docker/<file>` remains available for understanding.
+Explicit `-f` arguments + named modes scale better and are auditable. The `ctl` dispatcher hides the flags from day-to-day use; raw `docker compose -f docker/<file>` remains available for understanding.
 
 ## Per-mode authoring rules
 

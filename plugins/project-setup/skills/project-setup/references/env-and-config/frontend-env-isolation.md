@@ -82,6 +82,21 @@ For an SSR framework (Next.js, Remix, Astro):
 
 The skill should ask whether SSR is in play and route accordingly.
 
+## Vite vs Next.js — the env-split contrast
+
+The two most common stacks differ in *what can stay private*. This matters when picking a framework for a project that proxies to a backend.
+
+| | **Vite** (SPA) | **Next.js** (SSR / app router) |
+|---|---|---|
+| Client-visible vars | `VITE_*` — baked into the bundle at build | `NEXT_PUBLIC_*` — baked into the client bundle |
+| Server-only vars | none — there's no server runtime | un-prefixed vars stay server-only (route handlers, server components, `next.config`) |
+| Dev proxy to backend | Vite dev server proxies `/api/*` to the backend host port (proxy target read from env) | `next.config` `rewrites()` — a **server-side** proxy that can read server-only env |
+| Backend URL exposure | necessarily public — if the browser needs it, it's `VITE_*` | can stay **server-side**: a backend URL used only in `rewrites()` need NOT be `NEXT_PUBLIC_*` |
+
+The sharp point: **with Vite, anything the browser touches is necessarily public** (`VITE_*`, inlined into JS). **With Next, you can keep a backend URL server-side** via `rewrites()` and avoid exposing it at all. Either way, the rule above holds — `DATABASE_URL` and other secrets never go in a client-exposed (`VITE_*` / `NEXT_PUBLIC_*`) var.
+
+See `references/frontend/vite-proxy-nginx-pair.md` (Vite proxy + nginx) and `references/frontend/nextjs-astro-variants.md` (Next `rewrites()`) for the proxy config detail.
+
 ## Confirmation step in `/ps-setup`
 
 When walking the user through `apps/<frontend>/.env.example`, **read each line aloud and confirm**:

@@ -73,7 +73,7 @@ This project runs heavy work on a remote GPU box. The host is `my-ml-dev`
 
 When you need to run training / eval / inference:
 
-1. Spin up if not running: `./dev cloud up`
+1. Spin up if not running: `ctl cloud up`
 2. Check status: `dstack ps my-ml-dev` or `ssh my-ml-dev 'nvidia-smi'`
 3. Submit a job: `ssh my-ml-dev 'cd /workspace && nohup python -m my_project.train --config configs/baseline.yaml > outputs/run.log 2>&1 &'`
 4. Tail logs: `ssh my-ml-dev 'tail -f /workspace/outputs/run.log'`

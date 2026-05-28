@@ -69,20 +69,20 @@ keys = root,sqlalchemy,alembic
 
 ```bash
 # create a revision
-./dev migrate new "add users table"
+ctl migrate new "add users table"
 # → alembic/versions/20260520_abc123_add_users_table.py
 
 # write the migration
 # ... edit the file ...
 
 # apply
-./dev migrate up
+ctl migrate up
 
 # rollback last
-./dev migrate down
+ctl migrate down
 
 # check current
-./dev migrate status
+ctl migrate status
 ```
 
 ## Migrations in Docker — the container migrates itself

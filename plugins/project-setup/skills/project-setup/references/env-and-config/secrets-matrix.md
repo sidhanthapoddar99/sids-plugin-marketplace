@@ -33,7 +33,7 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
    *.local.yaml
    ```
 
-4. **`./dev` refuses to start if `.env` has unfilled required keys.** See `references/env-and-config/root-env-shared-only.md` for the `require_env` helper.
+4. **`ctl` refuses to start if `.env` has unfilled required keys.** See `references/env-and-config/root-env-shared-only.md` for the `require_env` helper.
 
 ## CI rules
 
@@ -48,10 +48,10 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
 ├── .env.production           # chmod 600, owned by root or app user
 ├── docker-compose.yaml -> /home/user/my-app/docker/compose.yaml
 ├── docker-compose.prod.yaml -> /home/user/my-app/docker/compose.prod.yaml
-└── ./deploy.sh
+└── ctl                       # `ctl prod` runs the deploy
 ```
 
-`docker compose --env-file .env.production -f compose.yaml -f compose.prod.yaml up -d`
+`ctl prod` wraps: `docker compose --env-file .env.production -f compose.yaml -f compose.prod.yaml up -d`
 
 Or, with `env_file:` declared inside each service in the compose:
 

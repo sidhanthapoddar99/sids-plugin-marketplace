@@ -107,7 +107,7 @@ gunicorn app.main:app -c gunicorn.conf.py
 CMD ["gunicorn", "app.main:app", "-c", "gunicorn.conf.py"]
 ```
 
-Dev (`./dev` host run) uses `uvicorn --reload`; the image uses gunicorn. Two different entrypoints for two different jobs — don't ship `--reload` to prod.
+Dev (`ctl dev` host run) uses `uvicorn --reload`; the image uses gunicorn. Two different entrypoints for two different jobs — don't ship `--reload` to prod.
 
 ### uvicorn-only alternative
 

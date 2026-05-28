@@ -65,7 +65,7 @@ export default {
 };
 ```
 
-The `/api/*` prefix convention still holds.
+The `/api/*` prefix convention still holds. Because `rewrites()` runs server-side, `BACKEND_URL` here can be a **server-only** var (no `NEXT_PUBLIC_` prefix) — unlike Vite, where any proxy target the browser depends on must be `VITE_*` and therefore public. See the Vite-vs-Next env-split comparison in `references/env-and-config/frontend-env-isolation.md`.
 
 ### `data-theme` SSR-safe
 

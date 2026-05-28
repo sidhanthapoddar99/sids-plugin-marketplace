@@ -73,7 +73,7 @@ Pick by what the thing *is*, not by habit. See `references/python/pyproject-uv-s
 - No `apps/frontend/`
 - No `infra/` (unless the tool ships infra config; rare)
 - No `data/` (unless the tool persists state via compose; rare)
-- `./dev` is small: usually just `./dev` (run), `./dev test`, `./dev build`, `./dev help`
+- `ctl` is small: usually just `ctl dev` (run), `ctl test`, `ctl build`, `ctl help`
 
 ## Real-world reference
 
@@ -93,4 +93,4 @@ Move to Topology 02 when:
 - Nesting a single service under `apps/<name>/`. `apps/` is for 2+ services; for one, use top-level `./<name>/`.
 - Using `src/` for a run-service backend. Flat `app/` — `src/` is for distributable packages and frontends.
 - Adding `docker/`, `infra/`, `data/`, `scripts/` proactively. Add when needed.
-- Writing a 200-line `./dev` wrapper for a tool. Keep it tight; if it grows, split subcommands into `scripts/`.
+- Writing a 200-line `ctl` dispatcher for a tool. Keep it tight; if it grows, split subcommands into `scripts/`.

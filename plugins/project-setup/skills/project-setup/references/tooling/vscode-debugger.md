@@ -9,7 +9,7 @@ Optional but useful. The "no-docker host run" startup path (`scripts/three-start
 ├── launch.json          # debug configurations
 ├── settings.json        # workspace settings (interpreter, formatter, ...)
 ├── extensions.json      # recommended extensions for contributors
-└── tasks.json           # optional — wrap `./dev` subcommands
+└── tasks.json           # optional — wrap `ctl` subcommands
 ```
 
 All committed. Per-user overrides go in `.vscode/settings.local.json` (gitignored).
@@ -130,7 +130,7 @@ All committed. Per-user overrides go in `.vscode/settings.local.json` (gitignore
 
 When a contributor opens the workspace, VS Code prompts to install these.
 
-## `tasks.json` — wrap `./dev` subcommands
+## `tasks.json` — wrap `ctl` subcommands
 
 ```jsonc
 {
@@ -143,15 +143,15 @@ When a contributor opens the workspace, VS Code prompts to install these.
       "options": { "cwd": "${workspaceFolder}/apps/backend-rust" }
     },
     {
-      "label": "./dev migrate up",
+      "label": "ctl migrate up",
       "type": "shell",
-      "command": "./dev migrate up",
+      "command": "ctl migrate up",
       "presentation": { "reveal": "always", "panel": "shared" }
     },
     {
-      "label": "./dev test",
+      "label": "ctl test",
       "type": "shell",
-      "command": "./dev test"
+      "command": "ctl test"
     }
   ]
 }
@@ -174,4 +174,4 @@ None of Sid's example repos currently ship full `.vscode/` configs — the snipp
 - Per-user paths committed (`/Users/sid/...`) — break for everyone else
 - Skipping `envFile` — debugger doesn't see `.env` values
 - `justMyCode: true` for everything — sometimes you need to step into a dep
-- VS Code-only conventions where the project should still work without — keep `./dev` as the canonical entrypoint
+- VS Code-only conventions where the project should still work without — keep `ctl` as the canonical entrypoint
