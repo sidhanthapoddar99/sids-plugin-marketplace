@@ -49,7 +49,7 @@ Each service/app folder owns its `README.md`, dependency manifest (`requirements
 
 ### A — wholesale bootstrap / audit / suggest (user invokes `/ps-setup`)
 
-Walk the full flow: decision tree → question flow → topology → cross-cutting conventions → propose → apply.
+Walk the full flow: decision tree → question flow → layout → cross-cutting conventions → propose → apply.
 
 ### B — single architectural decision (user is in the middle of work)
 
@@ -69,33 +69,30 @@ Both workflows draw from the same references library — A is the all-in-one tou
 
 ### Step 1 — read the decision tree
 
-Open `references/00_decision-tree.md`. It maps question answers → topology + key decisions.
+Open `references/00_decision-tree.md`. It maps question answers → layout + key decisions.
 
 ### Step 2 — run the question flow
 
 Open `references/01_question-flow.md`. Run through it in order. Ask the user only the questions whose answer you can't reliably infer from the current repo or conversation. Skip what's already answered. Stop and confirm if any answer is ambiguous.
 
-### Step 3 — pick a topology
+### Step 3 — pick a layout
 
-Based on the answers, pick a topology from `references/repo-setup/topologies/`:
+Based on the answers, pick a layout from `references/repo-setup/layouts/`:
 
 | # | File | When |
 |---|---|---|
-| 01 | `01_single-app.md` | A single CLI / library / tool. No frontend, no microservices. |
-| 02 | `02_monorepo-1be-1fe.md` | Single backend + single frontend. The common case. |
-| 03 | `03_monorepo-multi-backend.md` | Multiple backends in different languages coordinating via Redis/DB. |
-| 04 | `04_monorepo-multi-frontend.md` | Multiple frontends sharing a `packages/ui`. |
-| 05 | `05_monorepo-microservices-mesh.md` | Many small backends with their own service boundaries. |
-| 06 | `06_polyrepo-with-aggregator.md` | Each service in its own repo + a `-deploy` aggregator repo. |
-| 07 | `07_ml-project.md` | uvenv global env, `requirements.txt`, no frontend, no compose. |
-| 08 | `08_infra-orchestrator.md` | Compose tree driven by a Go CLI. |
-| 09 | `09_embeddable-package-and-reference-host.md` | The deliverable is a *published package* (UI component / SDK / headless engine) an external host mounts; `apps/web` is a reference host, not the product. |
+| 01 | `01_single-app.md` | Exactly one runnable app — a CLI, library, lone backend, or lone frontend. |
+| 02 | `02_multi-app-monorepo.md` | Two or more apps in one repo — any mix of backends + frontends. 1be+1fe is the common case; multi-backend coordination, multi-frontend `packages/`, and the mesh end are points on the same spectrum (count is a parameter, not a separate layout). |
+| 03 | `03_polyrepo-with-aggregator.md` | Each service in its own repo + a `-deploy` aggregator repo. |
+| 04 | `04_ml-project.md` | uvenv global env, `requirements.txt`, no frontend, no compose. |
+| 05 | `05_infra-orchestrator.md` | Compose tree driven by a Go CLI. |
+| 06 | `06_embeddable-package-and-reference-host.md` | The deliverable is a *published package* (UI component / SDK / headless engine) an external host mounts; `apps/web` is a reference host, not the product. |
 
 If the user's shape doesn't cleanly match one, name the closest two and ask which they want — or document the hybrid explicitly.
 
 ### Step 4 — apply the cross-cutting conventions
 
-For every topology, the same conventions apply (with topology-specific adjustments documented per-topology). Consult:
+For every layout, the same conventions apply (with layout-specific adjustments documented per-layout). Consult:
 
 - `references/repo-setup/env-and-config/` — root `.env`, per-service `config.yaml`, env precedence (root → per-service → real env wins), frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
 - `references/repo-setup/docker/` — `docker/` folder layout, deployment modes, bind-mounts, nested-data-dir trick, escalation to Go CLI
@@ -126,7 +123,7 @@ For every topology, the same conventions apply (with topology-specific adjustmen
 When the mode is `audit` or `suggest`:
 
 1. Read the current repo structure (top-level + `apps/*`, `packages/*`, `docker/`, `infra/`, `data/`, `scripts/`).
-2. Identify the closest topology.
+2. Identify the closest layout.
 3. For each convention area, compare the repo to the reference and list:
    - **Matches** (green) — what's already aligned
    - **Drift** (yellow) — minor deviations
@@ -150,13 +147,13 @@ Never edit files in `audit` mode. In `suggest` mode, only edit after explicit co
 | Existing `.env` content (when auditing) | Do not read `.env` files — they contain secrets. Read `.env.example` only. |
 | Image / runtime versions (postgres:?, redis:?, python:?) | Always — versions in this skill's references are illustrative. Check latest stable, surface options, let the user pick. |
 | ML cloud orchestrator (dstack / SkyPilot / custom / none) | Always ask for ML projects. If dstack, also consult the `dstack` skill in the sibling plugin. |
-| Remote dev / agent SSH access for ML projects | Always ask — different topology surface (`apps/cloud/`, `tasks/`, `scripts/cloud/`) |
+| Remote dev / agent SSH access for ML projects | Always ask — different layout surface (`apps/cloud/`, `tasks/`, `scripts/cloud/`) |
 
 ## What you do not do
 
 - Do not generate a full project template. Use snippets.
 - Do not assume a workspace tool (`pnpm-workspace.yaml`, `turbo.json`) when a single-frontend project doesn't need one.
-- Do not force ML projects into the app shape — Topology 07.
+- Do not force ML projects into the app shape — Layout 04.
 - Do not edit anything without showing the plan first and getting confirmation.
 - Do not read `.env` files (secrets); `.env.example` is the contract.
 - Do not invent file paths from training data — consult `references/integrations/examples-index.md` to cite real examples.
@@ -167,20 +164,17 @@ Read the file whose comment matches the decision in front of you. Paths are rela
 
 ```
 references/
-├── 00_decision-tree.md            # START HERE for layout: answers → topology + app/-vs-src/ + config/env placement
+├── 00_decision-tree.md            # START HERE for layout: answers → layout + app/-vs-src/ + config/env placement
 ├── 01_question-flow.md            # the questions to ask before proposing (batched); ALWAYS-ask list
 │
 ├── repo-setup/                    # INTENT: how the repo is wired, run, configured, deployed
-│   ├── topologies/                # pick ONE based on the decision tree
-│   │   ├── 01_single-app.md           # one service total → top-level ./<name>/ (CLI/lib/lone backend)
-│   │   ├── 02_monorepo-1be-1fe.md     # 1 backend + 1 frontend — the common product case
-│   │   ├── 03_monorepo-multi-backend.md   # 2+ backends, different langs, coordinate via DB/Redis (atheneum)
-│   │   ├── 04_monorepo-multi-frontend.md  # multiple frontends sharing packages/ (plane; pnpm+turbo)
-│   │   ├── 05_monorepo-microservices-mesh.md  # many small services, own boundaries
-│   │   ├── 06_polyrepo-with-aggregator.md # services in separate repos + a -deploy aggregator
-│   │   ├── 07_ml-project.md           # uvenv + requirements.txt, no compose; pulls in ml-orchestration/
-│   │   ├── 08_infra-orchestrator.md   # compose tree driven by a Go CLI (chimere)
-│   │   └── 09_embeddable-package-and-reference-host.md  # product = published package; apps/web is a dev harness
+│   ├── layouts/                   # pick ONE based on the decision tree
+│   │   ├── 01_single-app.md           # exactly one app — CLI/lib/lone backend or lone frontend
+│   │   ├── 02_multi-app-monorepo.md   # 2+ apps in one repo (any # be/fe); router for multi-backend/-frontend/mesh
+│   │   ├── 03_polyrepo-with-aggregator.md # services in separate repos + a -deploy aggregator
+│   │   ├── 04_ml-project.md           # uvenv + requirements.txt, no compose; pulls in ml-orchestration/
+│   │   ├── 05_infra-orchestrator.md   # compose tree driven by a Go CLI (chimere)
+│   │   └── 06_embeddable-package-and-reference-host.md  # product = published package; apps/web is a dev harness
 │   ├── scripts/                   # the ctl dispatcher + subscripts (firm: one entrypoint)
 │   │   ├── global-wrapper-dispatcher.md   # the ctl model: dev/prod launchers, up/down containers, delegate to process-compose
 │   │   ├── subscripts.md          # scripts/*.sh that ctl calls (implementation)
@@ -194,7 +188,7 @@ references/
 │   │   ├── bind-mounts-not-volumes.md # bind-mount host dirs; no named volumes; data/ discipline
 │   │   ├── nested-data-dir-trick.md   # data/postgres/pgdata so .gitkeep doesn't break initdb
 │   │   ├── anchors-and-internal-ports.md  # internal port = fixed convention; host port = ${VAR}; anchors for repeated blocks
-│   │   └── orchestrator-escalation.md # when a shell wrapper should become a Go CLI (→ Topology 08)
+│   │   └── orchestrator-escalation.md # when a shell wrapper should become a Go CLI (→ Layout 05)
 │   ├── env-and-config/            # the env/config split (a firm convention area)
 │   │   ├── root-env-shared-only.md    # what belongs in root .env (shared only) + .env.example contract
 │   │   ├── per-service-config-yaml.md # each backend's own config.yaml; reads root .env via ${VAR}
@@ -219,8 +213,8 @@ references/
 │   │   ├── alembic-with-raw-sql.md    # raw-.sql + 3-line shim, for multi-lang schema consumers (atheneum)
 │   │   └── when-not-alembic.md    # when another migration tool / no tool is right
 │   ├── frontend/                  # Vite/React + theming + multi-frontend + embeddable
-│   │   ├── single-frontend.md     # the default apps/<frontend>/src/ layout (Topology 02/03)
-│   │   ├── multi-frontend-workspaces.md   # pnpm+turborepo, packages/ (Topology 04)
+│   │   ├── single-frontend.md     # the default apps/<frontend>/src/ layout (Layout 02)
+│   │   ├── multi-frontend-workspaces.md   # pnpm+turborepo, packages/ (Layout 02, multi-frontend)
 │   │   ├── shared-ui-package.md   # packages/ui, tailwind-config, types, services — what to share
 │   │   ├── vite-proxy-nginx-pair.md   # dev Vite proxy → prod nginx; same /api/* contract
 │   │   ├── api-prefix-routing.md  # all backend routes under /api/* (makes the proxy work)
@@ -228,7 +222,7 @@ references/
 │   │   ├── light-dark-data-attr.md    # [data-theme="dark"] on <html>; both modes default
 │   │   ├── shadcn-tailwind.md     # shadcn/ui + tailwind wired to var(--token)
 │   │   ├── nextjs-astro-variants.md   # when Next (SSR) / Astro (static) instead of Vite
-│   │   └── embeddable-package-and-reference-host.md  # embedding seams (host injects services/storage/theme); publishing a UI package (Topology 09)
+│   │   └── embeddable-package-and-reference-host.md  # embedding seams (host injects services/storage/theme); publishing a UI package (Layout 06)
 │   ├── database/                  # WHICH engine + per-engine conventions
 │   │   ├── choosing-a-database.md # SQLite vs Postgres; in-process memory vs Redis (pick the right floor)
 │   │   ├── infra-vs-data-folder.md    # infra/ = committed config; data/ = gitignored bind-mount state
@@ -239,7 +233,7 @@ references/
 │   ├── production/                # making it production-grade
 │   │   ├── app-server-and-workers.md  # gunicorn/uvicorn worker count + RECYCLING + timeouts; per-lang model
 │   │   └── production-readiness.md    # liveness/readiness, graceful shutdown, limits, migrations-on-deploy, checklist
-│   ├── ml-orchestration/          # cloud GPU training/inference (Topology 07)
+│   ├── ml-orchestration/          # cloud GPU training/inference (Layout 04)
 │   │   ├── overview.md            # START HERE for ML cloud; tools recognised, job shapes
 │   │   ├── dstack.md              # DEFAULT orchestrator; defers to the sibling `dstack` skill for CLI
 │   │   ├── skypilot.md            # alternative orchestrator

@@ -12,10 +12,10 @@ Every color, spacing, radius, font-size, blur, shadow lives in **one CSS file** 
 
 ## Location
 
-| Topology | Path |
+| Layout | Path |
 |---|---|
-| 02 / 03 single frontend | `apps/frontend/src/styles/tokens.css` |
-| 04 multi-frontend | `packages/styles/src/tokens.css` (consumed by all apps) |
+| 02, single frontend | `apps/frontend/src/styles/tokens.css` |
+| 02, multiple frontends | `packages/styles/src/tokens.css` (consumed by all apps) |
 
 ## Token categories (default set)
 

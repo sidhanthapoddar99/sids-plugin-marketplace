@@ -14,7 +14,7 @@ Optional but useful. The "no-docker host run" startup path (`scripts/three-start
 
 All committed. Per-user overrides go in `.vscode/settings.local.json` (gitignored).
 
-## `launch.json` — Topology 02 / 03
+## `launch.json` — Layout 02
 
 ```jsonc
 {

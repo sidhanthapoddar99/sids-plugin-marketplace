@@ -48,7 +48,7 @@ my-product/
 └── ctl / README / CLAUDE
 ```
 
-> **`packages/` here = internal shared code** consumed in-repo by the sibling apps. If instead the repo's *deliverable* is a `packages/<pkg>` that an **external** host installs (the package *is* the product, `apps/web` is just a reference host), that's a different topology — see `references/repo-setup/topologies/09_embeddable-package-and-reference-host.md` (peerDeps, `exports`, publishing, embedding seams).
+> **`packages/` here = internal shared code** consumed in-repo by the sibling apps. If instead the repo's *deliverable* is a `packages/<pkg>` that an **external** host installs (the package *is* the product, `apps/web` is just a reference host), that's a different layout — see `references/repo-setup/layouts/06_embeddable-package-and-reference-host.md` (peerDeps, `exports`, publishing, embedding seams).
 
 ## Root `package.json`
 

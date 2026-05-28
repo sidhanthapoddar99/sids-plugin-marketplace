@@ -1,4 +1,4 @@
-# Topology 08 — infra orchestrator
+# Layout 05 — infra orchestrator
 
 A docker compose tree driven by a Go (or Rust/Python) CLI binary. Example: `chimere-chain-2025` (blockchain multinode testing — 1 singlenode, N multinode, prod).
 
@@ -14,7 +14,7 @@ A docker compose tree driven by a Go (or Rust/Python) CLI binary. Example: `chim
 ```
 my-chain/
 ├── apps/
-│   └── <services>/                 # the actual services (Topology 01–03 internally)
+│   └── <services>/                 # the actual services (Layout 01–02 internally)
 ├── docker/
 │   ├── singlenode/
 │   │   └── compose.yaml
@@ -39,7 +39,7 @@ my-chain/
 └── README.md / CLAUDE.md
 ```
 
-Key differences from Topology 02:
+Key differences from Layout 02:
 
 - `docker/<mode>/` instead of `docker/<file>` — modes are folders containing per-mode compose + overlays
 - Go binary at the orchestration layer
@@ -47,7 +47,7 @@ Key differences from Topology 02:
 
 ## When NOT to use Go
 
-- Shell dispatcher is < 150 lines and not branchy → just use Topology 02's `ctl`
+- Shell dispatcher is < 150 lines and not branchy → just use Layout 02's `ctl`
 - The orchestrator just calls `docker compose` with flags → shell is fine
 - Team doesn't know Go and never will → use Rust or Python; the language matters less than the structured-state requirement
 
@@ -88,6 +88,6 @@ The binary owns the state (node count, ports, peer addresses) and calls `docker 
 - Hiding compose files behind the binary so deeply that the operator can't run `docker compose ...` directly — keep the compose files plain, the binary is a convenience
 - Conflating orchestrator-state and service-state — the orchestrator only manages compose, not application data
 
-## README contract for Topology 08
+## README contract for Layout 05
 
 In addition to the standard three startup paths, the README must explain **both** the binary (`./cch multinode up`) AND the underlying compose calls (`docker compose -f docker/multinode/compose.yaml up`). The binary should be the convenience; the compose calls remain the ground truth.

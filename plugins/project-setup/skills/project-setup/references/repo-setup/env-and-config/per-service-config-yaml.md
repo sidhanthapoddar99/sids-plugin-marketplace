@@ -4,19 +4,19 @@ Each backend gets its own `config.yaml` next to its code. The root `.env` holds 
 
 ## Why per-service, not root?
 
-- A monorepo can have multiple backends (Topology 03+), each with its own concerns. `database.pool_size` is a Python backend concern; `sync.broker_url` is a Rust backend concern. Mixing them in a root file would be a soup.
+- A monorepo can have multiple backends (Layout 02), each with its own concerns. `database.pool_size` is a Python backend concern; `sync.broker_url` is a Rust backend concern. Mixing them in a root file would be a soup.
 - Each backend's `config.yaml` becomes self-documenting for that service.
-- Service can be extracted to its own repo (Topology 06) without splitting a shared config file.
+- Service can be extracted to its own repo (Layout 03) without splitting a shared config file.
 
 ## Location
 
-| Topology | Path(s) |
+| Layout | Path(s) |
 |---|---|
 | 01 single-app | `apps/<tool>/config.yaml` |
 | 02 mono 1be+1fe | `apps/backend/config.yaml` |
-| 03 multi-backend | `apps/backend-python/config.yaml`, `apps/backend-rust/config.yaml`, … |
-| 04 multi-frontend | `apps/<app>/config.yaml` if needed |
-| 05 microservices mesh | `apps/<service>/config.yaml` |
+| 02 multi-backend | `apps/backend-python/config.yaml`, `apps/backend-rust/config.yaml`, … |
+| 02 multi-frontend | `apps/<app>/config.yaml` if needed |
+| 02 microservices mesh | `apps/<service>/config.yaml` |
 
 ## Shape (illustrative — not mandatory)
 

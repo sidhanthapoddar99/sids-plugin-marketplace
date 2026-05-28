@@ -1,4 +1,4 @@
-# Topology 07 — ML project
+# Layout 04 — ML project
 
 uvenv-driven global Python env, `requirements.txt`, experiments + notebooks + training scripts. **Different from app projects on purpose.**
 
@@ -56,7 +56,7 @@ my-ml/
 - Pip-resolves are tolerant — appropriate for ML where exact pin chains are brittle and broad version ranges work fine.
 - Notebook dev flow benefits from `pip install` (or `uv pip install`) in an active env, not `uv sync` against a project lockfile.
 
-If you later want to ship the trained model as a service: spin up a **separate app project** (Topology 01 or 02) with `pyproject.toml` + `uv.lock`, and import the model artefacts.
+If you later want to ship the trained model as a service: spin up a **separate app project** (Layout 01 or 02) with `pyproject.toml` + `uv.lock`, and import the model artefacts.
 
 ## uvenv flow
 
@@ -114,12 +114,12 @@ No canonical Sid ML repo right now; the conventions are derived from the Notes +
 
 ## Escalation
 
-- Need reproducible builds with exact deps → move to `pyproject.toml` + `uv.lock` (Topology 01)
-- Ship inference as a service → add an app project (Topology 02), import model from this one
+- Need reproducible builds with exact deps → move to `pyproject.toml` + `uv.lock` (Layout 01)
+- Ship inference as a service → add an app project (Layout 02), import model from this one
 
 ## See also — cloud orchestration
 
-Topology 07 defines the **repo shape**. For **how training, inference, sweeps, and remote dev actually run on cloud GPUs**, see `references/architecture/ml-orchestration/`:
+Layout 04 defines the **repo shape**. For **how training, inference, sweeps, and remote dev actually run on cloud GPUs**, see `references/architecture/ml-orchestration/`:
 
 - `overview.md` — when to reach for cloud orchestration; tools recognised (dstack / SkyPilot / custom)
 - `dstack.md` — default; composes with the dstack sibling plugin's skill
@@ -131,7 +131,7 @@ Topology 07 defines the **repo shape**. For **how training, inference, sweeps, a
 - `agent-ssh-access.md` — running Claude (or another agent) on or via the remote
 - `cicd-for-ml.md` — cheap/medium/expensive pipeline tiers for ML
 
-When `/ps-setup` runs for an ML project, after the standard Topology 07 questions, also run Batch 7 in `01_question-flow.md` (cloud orchestration questions).
+When `/ps-setup` runs for an ML project, after the standard Layout 04 questions, also run Batch 7 in `01_question-flow.md` (cloud orchestration questions).
 
 ## Cloud-aware repo additions
 

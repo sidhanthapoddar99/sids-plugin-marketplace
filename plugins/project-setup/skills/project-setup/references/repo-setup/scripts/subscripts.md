@@ -117,7 +117,7 @@ scripts/
     └── biome.sh
 ```
 
-Optional nested by language for projects with 3+ languages (Topology 03+).
+Optional nested by language for projects with 3+ languages (Layout 02).
 
 ## Anti-patterns
 

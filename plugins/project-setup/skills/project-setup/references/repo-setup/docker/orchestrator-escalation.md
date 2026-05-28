@@ -32,7 +32,7 @@ Go is the most common pick because:
 - Type-safe state management
 - Easy cross-compile
 
-## Layout (Topology 08 pattern)
+## Layout (Layout 05 pattern)
 
 ```
 my-chain/
@@ -109,7 +109,7 @@ If the binary hides essential behaviour (env munging, dynamic volume paths) insi
 
 ## README contract
 
-When a project has Topology 08, the README must document **four** startup paths, not three:
+When a project has Layout 05, the README must document **four** startup paths, not three:
 
 1. The binary (`./cch multinode up`) — preferred
 2. Raw docker compose (`docker compose -f docker/multinode/compose.yaml up`)

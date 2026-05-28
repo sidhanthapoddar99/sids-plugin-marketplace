@@ -25,7 +25,7 @@ The user wants to bootstrap a new project.
 
 1. **Open the skill** at `skills/project-setup/SKILL.md` and follow its workflow.
 2. **Run the question flow** from `skills/project-setup/references/01_question-flow.md` in order. Ask only what you don't already know from the conversation.
-3. **Pick a topology** from `skills/project-setup/references/repo-setup/topologies/*` based on the answers. If the user's shape doesn't cleanly match one, name the closest two and ask.
+3. **Pick a layout** from `skills/project-setup/references/repo-setup/layouts/*` based on the answers. If the user's shape doesn't cleanly match one, name the closest two and ask.
 4. **Show the proposed tree** as text. List every file you will create.
 5. **Ask once** before writing anything.
 6. **Apply** — write the files, dropping snippets from `assets/snippets/` where they fit. Use `${VAR}` placeholders consistently.
@@ -40,7 +40,7 @@ The user wants to bootstrap a new project.
 The user wants to know how their current repo compares to the conventions. **Read-only — never edit files.**
 
 1. Read the current repo's top-level structure (`apps/`, `packages/`, `docker/`, `infra/`, `data/`, `scripts/`, `docs/`, `.claude/`, `.mise.toml`, `.env.example`, `README.md`, `CLAUDE.md`). Do **not** read `.env` files (secrets).
-2. Identify the closest topology by file evidence + by asking 1–2 disambiguating questions (e.g. "are there sibling repos I should know about?").
+2. Identify the closest layout by file evidence + by asking 1–2 disambiguating questions (e.g. "are there sibling repos I should know about?").
 3. For each convention area, compare the repo to the reference. List in three categories:
    - **Matches** — already aligned
    - **Drift** — minor deviation (e.g. flat `backend/` instead of `apps/backend/`)
@@ -52,7 +52,7 @@ The user wants to know how their current repo compares to the conventions. **Rea
 
 The user wants a concrete proposal for restructuring their current repo. **Do not edit yet.**
 
-1. Run audit first (internally). Identify topology + drifts + gaps.
+1. Run audit first (internally). Identify layout + drifts + gaps.
 2. Produce a remediation plan:
    - **Rename** — `backend/` → `apps/backend/`, `frontend/` → `apps/frontend/`, etc.
    - **Move** — compose files into `docker/`, init scripts into `infra/<service>/`, bind-mount dirs under `data/`.

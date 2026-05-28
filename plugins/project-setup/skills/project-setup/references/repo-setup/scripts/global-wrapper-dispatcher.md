@@ -165,7 +165,7 @@ processes:
 
 ## One dispatcher per repo
 
-A single repo has **one** `ctl`. New need → a subcommand, not a second wrapper. The one place two contracts exist is Topology 06 (polyrepo + aggregator): each child repo has its own `ctl`, and the aggregator repo has its own `ctl` whose `ctl prod` deploys the merged stack. Different repos, different contracts — not two wrappers in one repo.
+A single repo has **one** `ctl`. New need → a subcommand, not a second wrapper. The one place two contracts exist is Layout 03 (polyrepo + aggregator): each child repo has its own `ctl`, and the aggregator repo has its own `ctl` whose `ctl prod` deploys the merged stack. Different repos, different contracts — not two wrappers in one repo.
 
 ## Anti-patterns
 

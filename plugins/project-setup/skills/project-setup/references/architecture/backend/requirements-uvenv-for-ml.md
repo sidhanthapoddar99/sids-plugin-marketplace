@@ -1,6 +1,6 @@
 # ML Python flow — `requirements.txt` + uvenv global env
 
-For ML projects (Topology 07). Different from app projects on purpose — see `pyproject-uv-sync-for-apps.md` for the comparison.
+For ML projects (Layout 04). Different from app projects on purpose — see `pyproject-uv-sync-for-apps.md` for the comparison.
 
 ## Why this is different
 
@@ -92,7 +92,7 @@ fi
 uvenv activate "$env_name"
 ```
 
-## Layout under Topology 07
+## Layout under Layout 04
 
 ```
 my-ml/
@@ -116,7 +116,7 @@ No docker compose. No frontend. No `pyproject.toml` typically (but optional if y
 
 ## When to graduate to the app flow
 
-- Need exact reproducibility (e.g. you're shipping a model server) → migrate inference to a separate app project (Topology 02) with `pyproject.toml` + `uv.lock`
+- Need exact reproducibility (e.g. you're shipping a model server) → migrate inference to a separate app project (Layout 02) with `pyproject.toml` + `uv.lock`
 - Multiple devs need identical envs → consider `uv pip compile requirements.txt -o requirements.lock` as a middle ground
 - Experiment matrix grows past ~10 active configs → keep `requirements.txt` but versioned per-major-rev
 

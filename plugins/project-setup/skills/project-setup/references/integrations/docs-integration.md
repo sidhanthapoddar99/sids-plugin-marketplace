@@ -56,8 +56,8 @@ Sections are configured in `site.yaml`. Adding a new section is `/docs-add-secti
 When `/ps-setup` reaches the docs step:
 
 1. Decide whether docs are in scope:
-   - In-repo `docs/` (recommended for Topology 02–05, 07, 08)
-   - Separate `<product>-docs` repo (Topology 06 polyrepo)
+   - In-repo `docs/` (recommended for Layout 02, 04, 05)
+   - Separate `<product>-docs` repo (Layout 03 polyrepo)
    - None (private tool, no docs needed yet)
 
 2. For in-repo: create `docs/.gitkeep`, then **print** the next step:
@@ -128,7 +128,7 @@ it has the operating manual.
 | Light + dark themes | Search (Algolia / pagefind can be added later) |
 | Custom layouts via `layouts/` | Server-rendered pages (it's a static site) |
 
-## Polyrepo case (Topology 06)
+## Polyrepo case (Layout 03)
 
 Each service repo's README points at the docs repo URL. The docs repo itself is initialised separately with `/docs-init`. The aggregator repo's README links to the docs repo too.
 

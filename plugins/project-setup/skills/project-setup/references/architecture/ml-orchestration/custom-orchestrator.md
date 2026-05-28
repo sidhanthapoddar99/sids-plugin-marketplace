@@ -1,6 +1,6 @@
 # Custom orchestrator — placeholder for Sid's own future tool
 
-If dstack and SkyPilot don't cover a use case, the escape hatch is to build a thin custom orchestrator. Pattern is similar to chimere's Go CLI (Topology 08): a small binary that calls cloud SDKs / kubectl / SSH, with structured state across runs.
+If dstack and SkyPilot don't cover a use case, the escape hatch is to build a thin custom orchestrator. Pattern is similar to chimere's Go CLI (Layout 05): a small binary that calls cloud SDKs / kubectl / SSH, with structured state across runs.
 
 ## When this is justified
 

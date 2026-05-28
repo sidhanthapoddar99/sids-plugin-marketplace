@@ -2,7 +2,7 @@
 
 Sid's actual projects. **Not perfect** — they evolved at different times with different constraints. They demonstrate the conventions in production, and they're the ground truth the skill should cite (not invent file paths from training data).
 
-## atheneum — Topology 03 (multi-backend microservices)
+## atheneum — Layout 02 (multi-backend microservices)
 
 **Location**: `~/projects/02_OpenSource/04_knowledge_management/atheneum`
 **GitHub**: `https://github.com/sidhanthapoddar/atheneum`
@@ -33,7 +33,7 @@ Drifts (when migrating to current conventions):
 - `frontend/`, `backend-python/`, `backend-rust/` at root rather than under `apps/`
 - No `infra/` folder (postgres init scripts are at `scripts/postgres-init/`)
 
-## NeuraSutra — Topology 02 (mono 1be + 1fe), with deployment-mode split
+## NeuraSutra — Layout 02 (mono 1be + 1fe), with deployment-mode split
 
 **Location**: `~/projects/06_04_NeuraSutra/neurasutra-api-management`
 
@@ -57,7 +57,7 @@ Drifts:
 - Compose files at root rather than in `docker/`
 - `frontend/`, `backend/` at root rather than under `apps/`
 
-## chimere — Topology 08 (infra orchestrator with Go CLI)
+## chimere — Layout 05 (infra orchestrator with Go CLI)
 
 **Location**: `~/projects/06_01_Chimere/Own-blockchain/chimere-chain-2025`
 
@@ -74,7 +74,7 @@ Files worth studying:
 - `docker/multinode/compose.no-ports.yaml` — overlay example
 - `Readme.md` — documents both `./cch` and raw `docker compose` invocations
 
-## plane — Topology 04 (multi-frontend workspaces)
+## plane — Layout 02 (multi-frontend workspaces)
 
 **Location**: `~/projects/03_Self_Hosted_Apps/plane`
 
@@ -95,7 +95,7 @@ Files worth studying:
 - `packages/ui/`, `packages/tailwind-config/` — shared package shape
 - `setup.dev.sh` — initial setup orchestration (which our convention folds into `ctl`)
 
-## uvenv — Topology 01 (single-app)
+## uvenv — Layout 01 (single-app)
 
 **Location**: `~/projects/02_OpenSource/02_dev_tools/uvenv`
 **GitHub**: `https://github.com/sidhanthapoddar/uvenv`
@@ -107,11 +107,11 @@ A small CLI tool. Demonstrates:
 - `install.sh`, `USER_GUIDE.md`, `DESIGN.md`, `CHANGELOG.md` — solid docs hygiene
 - VHS tape files in `demo/` for README GIFs
 
-Used as a build dep by ML projects in Topology 07.
+Used as a build dep by ML projects in Layout 04.
 
-## (none yet) — Topology 09 (embeddable package + reference host)
+## (none yet) — Layout 06 (embeddable package + reference host)
 
-No repo in Sid's current portfolio is a canonical Topology 09 — a published package (UI component / SDK / headless engine) whose real consumer is an *external* host, with a thin in-repo reference host for dev.
+No repo in Sid's current portfolio is a canonical Layout 06 — a published package (UI component / SDK / headless engine) whose real consumer is an *external* host, with a thin in-repo reference host for dev.
 
 When one lands (e.g. an embeddable editor that mounts inside other apps), it becomes the canonical example for:
 
@@ -121,14 +121,14 @@ When one lands (e.g. an embeddable editor that mounts inside other apps), it bec
 - Single-artifact delivery (`noExternal` bundling of an internal react-less `core`)
 - `package.json` `exports` + library build tooling (tsup/rollup) + versioned publishing
 
-Until then, the skill proposes the pattern on its own merits and flags the absence (see `references/repo-setup/topologies/09_embeddable-package-and-reference-host.md`).
+Until then, the skill proposes the pattern on its own merits and flags the absence (see `references/repo-setup/layouts/06_embeddable-package-and-reference-host.md`).
 
 ## How the skill cites these
 
 When `/ps-setup` runs:
 
-- Identifies the closest topology
-- Points the user at the **most relevant** example for that topology
+- Identifies the closest layout
+- Points the user at the **most relevant** example for that layout
 - For each convention area, can cite a specific file from a specific example
 
 The skill should **never invent paths** from training data. If it can't find a real example for a convention, it should:
@@ -141,6 +141,6 @@ The skill should **never invent paths** from training data. If it can't find a r
 
 This file lists what exists today. As Sid's project portfolio evolves:
 
-- Add new exemplars when they fit a topology cleanly
+- Add new exemplars when they fit a layout cleanly
 - Mark old ones as "predates convention X" rather than removing
 - Don't migrate the examples to fit the conventions — let them evolve organically, and the references catch up

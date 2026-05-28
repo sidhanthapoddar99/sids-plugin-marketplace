@@ -39,11 +39,11 @@ my-app/
 └── …
 ```
 
-The frontend half of Tauri is the **same** stack as the web frontend (Topology 02). The Rust side is small — bootstraps the webview, handles native filesystem/menu/tray/IPC.
+The frontend half of Tauri is the **same** stack as the web frontend (Layout 02). The Rust side is small — bootstraps the webview, handles native filesystem/menu/tray/IPC.
 
 ## Sharing UI between web + desktop
 
-If the project has both web and desktop frontends with shared UI: that's Topology 04 (multi-frontend workspaces). `apps/web/` + `apps/desktop/` both depend on `packages/ui` + `packages/styles`. Same tokens, same components.
+If the project has both web and desktop frontends with shared UI: that's Layout 02 (multi-frontend workspaces). `apps/web/` + `apps/desktop/` both depend on `packages/ui` + `packages/styles`. Same tokens, same components.
 
 ```
 my-app/
@@ -112,6 +112,6 @@ CI on tag pushes builds + signs + uploads to GitHub Releases.
 
 ## See also
 
-- `references/repo-setup/topologies/04_monorepo-multi-frontend.md` — shared packages story
+- `references/repo-setup/layouts/02_multi-app-monorepo.md` — shared packages story
 - `references/architecture/frontend/design-tokens.md` — `tokens.css` lives in `packages/styles` when shared
 - Sid's repos don't currently include a desktop example

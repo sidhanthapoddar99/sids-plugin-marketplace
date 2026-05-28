@@ -2,7 +2,7 @@
 
 All compose files live under `docker/`. Root has at most a `.env` and `.env.example`.
 
-## Standard layout (Topology 02–05)
+## Standard layout (Layout 02)
 
 ```
 docker/
@@ -16,7 +16,7 @@ docker/
 
 The `ctl` dispatcher knows which combination to use per mode; users can also invoke compose directly.
 
-## Orchestrator layout (Topology 08)
+## Orchestrator layout (Layout 05)
 
 ```
 docker/

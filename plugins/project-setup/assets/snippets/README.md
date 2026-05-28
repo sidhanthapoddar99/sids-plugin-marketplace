@@ -21,7 +21,7 @@ assets/snippets/
 
 | File | What it is | Drops at |
 |---|---|---|
-| `tokens.css` | Design tokens — `--bg-*`, `--fg-*`, `--space-*`, `--radius-*`, light + dark | Topology 02/03: `apps/<frontend>/src/styles/tokens.css`. Topology 04: `packages/styles/src/tokens.css` |
+| `tokens.css` | Design tokens — `--bg-*`, `--fg-*`, `--space-*`, `--radius-*`, light + dark | Layout 02 (single frontend): `apps/<frontend>/src/styles/tokens.css`. Layout 02 (multi-frontend): `packages/styles/src/tokens.css` |
 | `globals.css` | Base resets + tailwind directives + shadcn alias mapping | `apps/<frontend>/src/styles/globals.css` |
 | `light-dark.css` | Theme transitions, scrollbar styling, selection | `apps/<frontend>/src/styles/light-dark.css` |
 | `vite-proxy.config.ts` | `vite.config.ts` with `/api/*` + `/ws` proxy | `apps/<frontend>/vite.config.ts` |
@@ -80,10 +80,10 @@ assets/snippets/
 
 This folder is intentionally small. Things deliberately not snippeted:
 
-- **A full project tree** — see `references/repo-setup/topologies/` instead
+- **A full project tree** — see `references/repo-setup/layouts/` instead
 - **ML training scripts** — too project-specific; see `references/architecture/ml-orchestration/`
 - **Backend `pyproject.toml`** — see `references/architecture/backend/pyproject-uv-sync-for-apps.md` for the shape
 - **`Dockerfile`s for backend/frontend** — too stack-specific; the references cover the patterns
 - **Cloud orchestrator configs** (`*.dstack.yml`, `sky/*.yaml`) — examples live in `references/architecture/ml-orchestration/`
 
-If you find yourself wanting a snippet that isn't here, ask: does it have a small focused job and apply to most projects of its topology? If yes, add it. If no, leave it as a reference example.
+If you find yourself wanting a snippet that isn't here, ask: does it have a small focused job and apply to most projects of its layout? If yes, add it. If no, leave it as a reference example.

@@ -1,8 +1,8 @@
-# Topology 09 — embeddable package + reference host
+# Layout 06 — embeddable package + reference host
 
 The repo's **deliverable is a published package** — a UI component / SDK / headless engine — that a *separate, external host* installs and runs. The repo also ships a thin **reference host** (`apps/web`) so you can develop and demo the package, but that app is **not the product**. Think "Google-Workspace-style embed": the editor is the product; it mounts inside many different host apps, each supplying its own services and storage.
 
-This is the topology the deployed-vs-distributed question (Batch 1, Q3a) routes to. It's orthogonal to backend/frontend count — a Topology 09 repo can internally have a BFF, a reference frontend, and shared packages, but its *reason to exist* is the published artifact.
+This is the layout the deployed-vs-distributed question (Batch 1, Q3a) routes to. It's orthogonal to backend/frontend count — a Layout 06 repo can internally have a BFF, a reference frontend, and shared packages, but its *reason to exist* is the published artifact.
 
 ## When it fits
 
@@ -96,7 +96,7 @@ Rules that fall out of this:
 - **Per-instance mount model** (Google-Workspace-style): the same package mounts many times, each instance configured independently — different `apiBaseUrl`, different storage, different theme. No module-level global state that assumes one host.
 - The **reference host** fills these seams with local/throwaway impls; the **real host** fills them with production ones. Same contract, two implementations — the package can't tell the difference.
 
-## Publishing mechanics (the part deployed topologies ignore)
+## Publishing mechanics (the part deployed layouts ignore)
 
 A published package is built and versioned differently from a deployed app:
 
@@ -137,7 +137,7 @@ ctl help
 
 `ctl dev` is the reference host, deliberately — day-to-day you develop the package *through* its harness. There is no `ctl prod` for "the product" because the product isn't deployed from here; it ships via `ctl publish`.
 
-## What's different from the deployed topologies
+## What's different from the deployed layouts
 
 - The thing in `packages/` is **the product**, not internal shared code (the third `apps/`-vs-`packages/` category — see `references/00_decision-tree.md`).
 - `apps/web` is a **reference host**, not the deliverable.
@@ -162,4 +162,4 @@ ctl help
 
 ## Real-world reference
 
-No repo in Sid's current portfolio is a canonical Topology 09 yet. When one lands (an embeddable editor / SDK whose consumer is an external host), add it here as the canonical example. Until then, propose the pattern on its own merits and flag the absence.
+No repo in Sid's current portfolio is a canonical Layout 06 yet. When one lands (an embeddable editor / SDK whose consumer is an external host), add it here as the canonical example. Until then, propose the pattern on its own merits and flag the absence.

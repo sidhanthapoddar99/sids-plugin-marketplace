@@ -1,6 +1,6 @@
 # Modern Python flow — `pyproject.toml` + `uv.lock` + `uv sync`
 
-For app projects (Topology 01–06, 08). **Different from ML projects** — see `requirements-uvenv-for-ml.md`.
+For app projects (Layout 01–03, 05). **Different from ML projects** — see `requirements-uvenv-for-ml.md`.
 
 ## First decision — run-service or distributable package?
 
@@ -12,7 +12,7 @@ The layout differs, and it matters:
 | `[tool.uv] package` | `false` (or omit) — it's run, not built | `true` — it's built into a wheel |
 | Why | Launched via `uvicorn app.main:app`; never installed. `src/` would only add `PYTHONPATH` / `prepend_sys_path` plumbing for no benefit. | src-layout forces tests to import the *installed* package — catches "works because of cwd, breaks when installed" bugs |
 | `pythonpath` (pytest) | `["."]` | `["src"]` |
-| Examples | the backend in Topologies 02/03/05; the official full-stack FastAPI template (`backend/app/`) | a published CLI, a shared library, an SDK |
+| Examples | the backend in Layout 02; the official full-stack FastAPI template (`backend/app/`) | a published CLI, a shared library, an SDK |
 
 **Default for a backend is the run-service column.** Only reach for src-layout when the thing is genuinely distributable.
 

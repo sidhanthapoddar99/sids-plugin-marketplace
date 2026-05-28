@@ -168,7 +168,7 @@ ctl migrate status
 
 ## Deploy
 
-See [docs/deploy.md](docs/deploy.md) (or aggregator repo for Topology 06).
+See [docs/deploy.md](docs/deploy.md) (or aggregator repo for Layout 03).
 
 ---
 

@@ -1,4 +1,4 @@
-# Single frontend — Topology 02 / 03
+# Single frontend — Layout 02
 
 The default frontend setup: one Vite + React + TS + Tailwind + shadcn/ui app under `apps/frontend/`.
 
@@ -118,7 +118,7 @@ Plus whatever shadcn pulls in (Radix primitives, etc.) and the project-specific 
 
 | Trigger | Action |
 |---|---|
-| Second frontend that shares any code | Migrate to Topology 04 (`packages/ui`, `packages/styles`) |
+| Second frontend that shares any code | Migrate to Layout 02 (`packages/ui`, `packages/styles`) |
 | Server-rendering required | Switch to Next.js or Astro variants |
 | PWA / offline mode | Add `vite-plugin-pwa` + Workbox |
 | Heavy state | Add Zustand (local) + TanStack Query (server) |

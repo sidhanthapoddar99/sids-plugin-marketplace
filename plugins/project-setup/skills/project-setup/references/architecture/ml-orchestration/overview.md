@@ -1,6 +1,6 @@
 # ML orchestration — running training and inference on cloud GPUs
 
-Topology 07 (`07_ml-project.md`) defines the **repo shape** for an ML project. This subfolder covers the **operational shape** — how training, inference, and experiments actually run when you don't have a GPU under your desk.
+Layout 04 (`04_ml-project.md`) defines the **repo shape** for an ML project. This subfolder covers the **operational shape** — how training, inference, and experiments actually run when you don't have a GPU under your desk.
 
 ## Three orchestrators in scope
 
@@ -40,7 +40,7 @@ Topology 07 (`07_ml-project.md`) defines the **repo shape** for an ML project. T
 
 ## Scripts that belong in the repo
 
-For Topology 07 + cloud orchestration, expect (under `scripts/cloud/`):
+For Layout 04 + cloud orchestration, expect (under `scripts/cloud/`):
 
 ```
 scripts/cloud/
@@ -63,7 +63,7 @@ sky/<task>.yaml               # if using SkyPilot
 
 ## What the skill should ask
 
-When `/ps-setup` is invoked for an ML project, after the standard Topology 07 questions, also ask:
+When `/ps-setup` is invoked for an ML project, after the standard Layout 04 questions, also ask:
 
 1. **Cloud orchestration**: dstack / SkyPilot / both / neither / custom?
 2. **Spot or on-demand**?

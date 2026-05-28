@@ -1,4 +1,4 @@
-# Topology 06 — polyrepo with deploy aggregator
+# Layout 03 — polyrepo with deploy aggregator
 
 Each service in its own git repo, plus a `<product>-deploy` aggregator repo that owns the merged env contract and the production compose.
 
@@ -20,7 +20,7 @@ Each service in its own git repo, plus a `<product>-deploy` aggregator repo that
 │   ├── ctl
 │   └── README.md
 ├── my-product-backend-rs/          # own repo
-│   └── …                            # similar shape, Topology 01 or 02 internally
+│   └── …                            # similar shape, Layout 01 or 02 internally
 ├── my-product-frontend/            # own repo
 │   └── …
 ├── my-product-docs/                # own repo — documentation-template
@@ -82,15 +82,15 @@ The aggregator never builds. The child repos never deploy.
 
 A dedicated `my-product-docs/` repo — documentation-template. The aggregator's README links to it.
 
-## When NOT to use this topology
+## When NOT to use this layout
 
-- Single team that always releases everything together → Topology 02–04
-- Services share a database with tight schema coupling → Topology 03
+- Single team that always releases everything together → Layout 02
+- Services share a database with tight schema coupling → Layout 02
 - Wanting "microservices" for résumé reasons → don't
 
 ## Real-world reference
 
-None of Sid's current repos is full Topology 06. The pattern is documented from industry practice; the skill should ask carefully before recommending.
+None of Sid's current repos is full Layout 03. The pattern is documented from industry practice; the skill should ask carefully before recommending.
 
 ## Common mistakes to avoid
 

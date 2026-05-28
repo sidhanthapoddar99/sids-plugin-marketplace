@@ -11,7 +11,7 @@ This plugin owns the **structural and architectural side** of every repo decisio
 
 There is **no single ideal structure** — what's "right" depends on whether the project is mono- or poly-repo, has one or many backends, one or many frontends, ships ML or app code, what's getting deployed where, and a dozen other shape questions. So this plugin is not a template generator. It's:
 
-1. A **knowledge base** of recognised project topologies and the conventions that apply to each.
+1. A **knowledge base** of recognised project layouts and the conventions that apply to each.
 2. A **question-asker** that interrogates the user (or the existing repo) before recommending anything.
 3. A **decision engine** for individual architectural questions when the user is mid-work: surfaces the convention, explains the trade-off, proposes a concrete action.
 4. A **layout proposer** that, when invoked for a full bootstrap, produces a concrete tree and the snippets to wire it up.
@@ -25,25 +25,23 @@ The same machinery powers initialising a new project, auditing an existing one f
   - `/ps-setup` — interactive init for a new project
   - `/ps-setup audit` — scan the current repo, report drift from conventions
   - `/ps-setup suggest` — propose an ideal structure for the current repo given what's there
-- **References library** — `skills/project-setup/references/` — topologies, env/config rules, docker patterns, scripts, language flows, frontend, databases, modularity, the `.claude/` folder, design tokens, README contract.
+- **References library** — `skills/project-setup/references/` — layouts, env/config rules, docker patterns, scripts, language flows, frontend, databases, modularity, the `.claude/` folder, design tokens, README contract.
 - **Snippets** — `assets/snippets/` — focused fragments (tokens.css, alembic shim, vite proxy, compose overlays, the `ctl` dispatcher, `.mise.toml`) the skill cites and the slash command can drop in. **Not** a full project template.
 
-## Topologies recognised
+## Layouts recognised
 
 | # | Name | When it fits |
 |---|---|---|
-| 01 | single-app | A single CLI / library / tool. No frontend, no microservices. |
-| 02 | monorepo, 1 backend + 1 frontend | The common product case. |
-| 03 | monorepo, multi-backend microservices | Two or more backends in different languages coordinating via Redis/DB (e.g. atheneum: Python control plane + Rust data plane). |
-| 04 | monorepo, multi-frontend workspaces | Several frontends sharing a `packages/ui` (e.g. plane: web/admin/space/live + shared packages, turborepo + pnpm). |
-| 05 | monorepo, microservices mesh | Many small backends each with their own boundary. |
-| 06 | polyrepo with deploy aggregator | Each service in its own repo plus a `-deploy` repo aggregating env + compose. |
-| 07 | ML project | uvenv-driven global envs, `requirements.txt`, no frontend, no compose. |
-| 08 | infra orchestrator | Docker compose tree driven by a Go CLI (e.g. chimere multinode blockchain). |
+| 01 | single app / service | One runnable app — a CLI, library, lone backend, or lone frontend. |
+| 02 | multi-app monorepo | Two or more apps in one repo, any mix of backends + frontends. Multi-backend coordination, multi-frontend `packages/` workspaces, and the microservices-mesh end are points on one spectrum — count is a parameter, not a separate layout. |
+| 03 | polyrepo with deploy aggregator | Each service in its own repo plus a `-deploy` repo aggregating env + compose. |
+| 04 | ML project | uvenv-driven global envs, `requirements.txt`, no frontend, no compose. |
+| 05 | infra orchestrator | Docker compose tree driven by a Go CLI. |
+| 06 | embeddable package + reference host | The deliverable is a published package (UI component / SDK / engine) an external host mounts; the repo's `apps/web` is a reference host, not the product. |
 
 ## ML cloud orchestration
 
-For Topology 07 (ML projects), the skill also covers cloud GPU orchestration. Default is **dstack** — a sibling plugin in this marketplace. The `project-setup` skill defers to the `dstack` skill for CLI mechanics, focuses on the **structural** side (repo layout, `tasks/*.dstack.yml`, `scripts/cloud/`). Same support for **SkyPilot** as an alternative.
+For Layout 04 (ML projects), the skill also covers cloud GPU orchestration. Default is **dstack** — a sibling plugin in this marketplace. The `project-setup` skill defers to the `dstack` skill for CLI mechanics, focuses on the **structural** side (repo layout, `tasks/*.dstack.yml`, `scripts/cloud/`). Same support for **SkyPilot** as an alternative.
 
 Subtopics:
 

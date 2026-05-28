@@ -1,4 +1,4 @@
-# Topology 01 — single-app
+# Layout 01 — single-app
 
 A single CLI, library, or tool. No frontend, no microservices. Examples: `uvenv`, a one-off scraper, a small daemon.
 
@@ -11,7 +11,7 @@ A single CLI, library, or tool. No frontend, no microservices. Examples: `uvenv`
 
 ## Tree
 
-**One service total → the code folder sits at the top level, NOT under `apps/`.** `apps/` is for grouping *multiple* services (Topology 02+).
+**One service total → the code folder sits at the top level, NOT under `apps/`.** `apps/` is for grouping *multiple* services (Layout 02+).
 
 Distributable tool / library (src-layout earns its keep for packaging):
 
@@ -59,7 +59,7 @@ my-api/
 
 ## Why top-level, not `apps/`?
 
-`apps/` is a grouping folder — it earns its place once there are 2+ services to group. For a single service it's empty ceremony. Keep the root clean (config + README + folders) and put the one service folder directly at the top level. If a second service appears later, *that's* when you introduce `apps/` and move both under it (Topology 02 escalation).
+`apps/` is a grouping folder — it earns its place once there are 2+ services to group. For a single service it's empty ceremony. Keep the root clean (config + README + folders) and put the one service folder directly at the top level. If a second service appears later, *that's* when you introduce `apps/` and move both under it (Layout 02 escalation).
 
 ## Why `app/` (flat) for a run-service and `src/<pkg>/` for a distributable?
 
@@ -68,7 +68,7 @@ my-api/
 
 Pick by what the thing *is*, not by habit. See `references/architecture/backend/pyproject-uv-sync-for-apps.md`.
 
-## What's different from Topology 02
+## What's different from Layout 02
 
 - No `apps/frontend/`
 - No `infra/` (unless the tool ships infra config; rare)
@@ -81,7 +81,7 @@ Pick by what the thing *is*, not by habit. See `references/architecture/backend/
 
 ## Escalation triggers
 
-Move to Topology 02 when:
+Move to Layout 02 when:
 
 - A frontend is added (even a small admin dashboard)
 - A second backend is added in a different language

@@ -25,7 +25,7 @@ brew install lefthook
 curl -fsSL https://lefthook.dev/install.sh | sh
 ```
 
-## `lefthook.yml` shape (Topology 03 — multi-backend example)
+## `lefthook.yml` shape (Layout 02 — multi-backend example)
 
 ```yaml
 # lefthook.yml at repo root

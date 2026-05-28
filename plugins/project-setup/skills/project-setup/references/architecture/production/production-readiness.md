@@ -176,7 +176,7 @@ services:
 When the project graduates beyond "it runs":
 
 - **Metrics** — Prometheus scrape endpoint (`/metrics`), or push to a hosted collector. Watch: request rate, error rate, p50/p95/p99 latency, worker memory, restart count.
-- **Tracing** — OpenTelemetry spans across services (especially Topology 03+ multi-backend).
+- **Tracing** — OpenTelemetry spans across services (especially Layout 02 multi-backend).
 - **Error tracking** — Sentry (backend DSN + frontend `VITE_SENTRY_DSN`).
 - **Uptime** — external health-check pinger hitting `/health`.
 

@@ -94,7 +94,7 @@ networks:
 ## Real-world reference
 
 - `NeuraSutra` has the four-mode split (`docker-compose-database.yaml`, `-ports.yaml`, `-traefik.yaml`, base) at repo root. The convention here moves them into `docker/` and renames consistently (`compose.dev.yaml` is clearer than `-ports.yaml`).
-- `chimere` has `docker/{singlenode,multinode,prod}/` — that's Topology 08, where modes are folders not files.
+- `chimere` has `docker/{singlenode,multinode,prod}/` — that's Layout 05, where modes are folders not files.
 
 ## What the prod overlay carries
 

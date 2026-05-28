@@ -1,8 +1,8 @@
 # Embeddable package + reference host
 
-The mechanics behind Topology 09: when the repo's deliverable is a **published package** (UI component / SDK / headless engine) that an *external host* mounts, not a service you deploy. This doc covers the embedding seams (inversion of control), the reference-vs-real host distinction, the per-instance mount model, and the publishing details deployed topologies never need.
+The mechanics behind Layout 06: when the repo's deliverable is a **published package** (UI component / SDK / headless engine) that an *external host* mounts, not a service you deploy. This doc covers the embedding seams (inversion of control), the reference-vs-real host distinction, the per-instance mount model, and the publishing details deployed layouts never need.
 
-Read `references/repo-setup/topologies/09_embeddable-package-and-reference-host.md` for the topology and tree; this is the how-to for the seams and the build.
+Read `references/repo-setup/layouts/06_embeddable-package-and-reference-host.md` for the layout and tree; this is the how-to for the seams and the build.
 
 ## Reference host vs real host
 
@@ -142,7 +142,7 @@ Result: **multiple workspace packages for the authors, one package for the consu
 
 ## Cross-references
 
-- `references/repo-setup/topologies/09_embeddable-package-and-reference-host.md` — the topology + tree + `ctl` shape.
+- `references/repo-setup/layouts/06_embeddable-package-and-reference-host.md` — the layout + tree + `ctl` shape.
 - `references/00_decision-tree.md` § "`apps/` vs `packages/` — three categories" — placement model (deployable / internal lib / published product).
 - `references/01_question-flow.md` Q3a — the deployed-vs-distributed question that routes here.
 - `references/architecture/frontend/multi-frontend-workspaces.md` — the pnpm/turbo workspace mechanics reused for the package + reference-host split.
