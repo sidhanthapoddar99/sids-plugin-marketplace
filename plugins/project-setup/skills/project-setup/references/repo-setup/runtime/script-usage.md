@@ -71,7 +71,8 @@ Grouped by category (the prefix on the backing script file; the `ctl` verb stays
 
 ```
 Development (host loop)
-  ctl dev [target]                 apps on host, hot reload; auto-ups + waits for the data core   (dev-host.sh)
+  ctl dev [target] [--dry-run]     apps on host, hot reload; auto-ups + waits for the data core   (dev-host.sh)
+                                   --help shows each target's exact host command; --dry-run prints them
   ctl migrate {up|down|new|status} alembic — backend owns DDL                                      (dev-migrate.sh)
   ctl test [backend|frontend]      run test suites                                                 (dev-test.sh)
   ctl lint [backend|frontend]      lint backend + frontend (ruff + biome; stack-specific)          (dev-lint.sh)
@@ -79,8 +80,9 @@ Development (host loop)
 Containers (docker compose)
   ctl up [config] [--modifier "a,b"] [-a] [--nqa] [-y] [--dry-run] [--list]   assemble + start     (docker-up.sh)
   ctl down [svc] / restart [svc]   stop / restart                                       (inline → docker compose)
-  ctl logs [svc] [-f] / ps         tail logs / containers + host procs                  (inline → docker compose)
+  ctl logs [svc] [-f]              tail container logs                                  (inline → docker compose)
   ctl exec <svc> [cmd]             run a command in a container (default: shell)        (inline → docker compose)
+  ctl ps                           containers + host dev processes (by dev port → PID)              (docker-ps.sh)
   ctl shell <svc>                  psql / redis-cli / shell in a container                          (docker-shell.sh)
   ctl build                        build the service images                                         (docker-build.sh)
   ctl clean [-y]                   tear down + wipe volumes/caches (asks first)                     (docker-clean.sh)
@@ -94,7 +96,7 @@ Configuration
 
 `ctl up --list` (terse) and `ctl status` (full doctor) both surface the auto-discovered configs / modifiers, so "what can I run here" is always one command away.
 
-`ctl dev backend` (backend on the **host**, reloading) and `ctl up` (backend in a **container**) differ by *where it runs* — `dev` = host, `up` = docker. The trivial `down`/`restart`/`logs`/`ps`/`exec` forwards live inline in `ctl`; everything with a real body is a `scripts/<category>-<name>.sh` worker.
+`ctl dev backend` (backend on the **host**, reloading) and `ctl up` (backend in a **container**) differ by *where it runs* — `dev` = host, `up` = docker. The trivial `down`/`restart`/`logs`/`exec` forwards live inline in `ctl`; everything with a real body — including `ps` (containers + host procs) — is a `scripts/<category>-<name>.sh` worker.
 
 ## Architecture — `ctl` + `_lib.sh` + `_select.sh` + workers
 

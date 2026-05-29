@@ -163,6 +163,15 @@ wait_healthy() {  # wait_healthy <svc…> [timeout-seconds] — used by ctl dev'
   err "not healthy within ${timeout}s: ${svcs[*]}"; return 1
 }
 
+# ── host processes ──
+# port_pid <port> — PID listening on TCP <port> (ss, then lsof); empty if none. Used by `ctl ps`.
+port_pid() {
+  local p="$1" pid=""
+  command -v ss >/dev/null 2>&1 && pid=$(ss -tlnp 2>/dev/null | awk -v p=":$p" '$4 ~ p"$"' | grep -oE 'pid=[0-9]+' | head -1 | cut -d= -f2)
+  [[ -z $pid ]] && command -v lsof >/dev/null 2>&1 && pid=$(lsof -tiTCP:"$p" -sTCP:LISTEN 2>/dev/null | head -1)
+  printf '%s' "$pid"
+}
+
 # ── env schema (used by ctl status and manage-check-env.sh) ──
 check_env_schema() {  # 0 if .env has every key .env.example declares
   # STRICT: missing .env / .env.example is an error.

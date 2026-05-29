@@ -2,11 +2,15 @@
 
 The README must document three ways to start the project. The three paths themselves — including the exact raw `docker compose` / host-run commands — are owned by `references/repo-setup/runtime/script-usage.md`; this doc is the **full README contract** (structure, command table, audit checklist) that surfaces them as a top-level convention.
 
-## The three paths
+## The shape: Prerequisites → Quick start (ctl) → Manual (no ctl)
 
-1. **`ctl dev`** — the dispatcher. The recommended path. One command runs the stack on the host with hot reload.
-2. **Raw `docker compose -f docker/...`** — for understanding what `ctl` does, debugging compose issues, copy-pasting for production.
-3. **No-docker host run** — `cd apps/backend && uv run ...; cd apps/frontend && bun dev` — for IDE debugger attach, profiling, working on a single service in isolation.
+The top of the README has three sections, in order:
+
+1. **Prerequisites** — what to install by hand before anything (mise, Docker); `mise install` provides the rest.
+2. **Quick start (`ctl`)** — the recommended path, showing **both** surfaces: `ctl dev` (host loop) and `ctl up` (containers). One dispatcher, two run modes.
+3. **Manual (without `ctl`)** — the same stack run *without* the dispatcher: raw `docker compose -f docker/…`, and per-service host runs that **defer to each service's own README**. `ctl` is a project-level management layer; the services are **ctl-agnostic** (their READMEs use only native commands), so this is the fallback when you're not using `ctl`.
+
+These map onto the three startup paths the audit enforces — `ctl` (dev + up), raw compose, and no-docker host run — grouped as "with ctl" (quick start) vs "without ctl" (manual). The exact raw `docker compose` / host-run commands are owned by `references/repo-setup/runtime/script-usage.md`; paste them from there so the README never drifts.
 
 ## README structure
 
@@ -56,26 +60,26 @@ GitHub: <url>
 
 ---
 
-## Get started
+## Prerequisites
+
+- [mise](https://mise.jdx.dev) — pins + installs every runtime; `mise install` provides Python, Node/Bun, etc.
+- Docker + Docker Compose v2 — for the data core / containerised stack
+- Nothing else by hand — `mise install` provides the language toolchains.
+
+## Quick start (with `ctl`)
 
 \`\`\`bash
-# clone
 git clone <url> && cd <project>
+mise install            # runtimes + puts `ctl` on PATH inside the repo
+ctl setup               # fills .env, generates secrets, installs deps
 
-# runtimes
-mise install
-
-# configure
-cp .env.example .env
-# fill REQUIRED blanks — see comments at top
-
-# start
-ctl dev
+ctl dev                 # apps on the host (hot reload) + data core in containers  ← day-to-day
+# or run the whole stack in containers:
+ctl up                  # interactive: pick config → modifiers → plan → confirm
+ctl up --modifier expose   # whole stack, nginx published on $NGINX_PORT
 \`\`\`
 
-Open <frontend URL> and <backend docs URL>.
-
-Subsequent runs: `ctl dev` (fast — caches preserved). To wipe and restart: `ctl clean`.
+Open <frontend URL> and <backend docs URL>. Subsequent runs: `ctl dev` (caches preserved); wipe + restart with `ctl clean`. `ctl dev --dry-run` prints exactly what it would run.
 
 ---
 
@@ -102,7 +106,7 @@ ctl setup                  # interactive .env wizard — prompts for missing key
 
 | Command | Does |
 |---|---|
-| `ctl dev [target]` | Run the stack on the host with hot reload (auto-ups the data core) |
+| `ctl dev [target] [--dry-run]` | Run the stack on the host with hot reload (auto-ups the data core); `--dry-run` prints the exact host commands |
 | `ctl up [config] [--modifier "a,b"]` | Start container stack (interactive in a TTY): a standalone `config` replaces base (`data`, `prod`), `--modifier` overlays stack on top (`ctl up prod` = production) |
 | `ctl down [service]` | Stop container services |
 | `ctl ps` | List containers + local processes |
@@ -117,9 +121,12 @@ ctl setup                  # interactive .env wizard — prompts for missing key
 
 ---
 
-## Other ways to start
+## Manual (without `ctl`)
 
-Besides `ctl dev`, the README's "Other ways to start" carries **two** more paths — raw `docker compose -f …` and a no-docker host run. Don't hand-write the `-f` lines here: the exact commands (with the current `.m.` modifier filenames) are owned by **`references/repo-setup/runtime/script-usage.md`** and kept in sync with the dispatcher. Paste them from there into the generated README so this template never drifts when the compose layout changes.
+For when you don't want the dispatcher — debugging compose itself, attaching a debugger to one service, or a host where `ctl` isn't set up. Two ways:
+
+- **Raw `docker compose -f docker/…`** — what `ctl up` assembles under the hood. Don't hand-write the `-f` lines here: the exact commands (with the current `.m.` modifier filenames) are owned by **`references/repo-setup/runtime/script-usage.md`** — paste them from there so the README never drifts.
+- **Per-service host run** — `cd apps/<service>` and follow **that service's own `README.md`**. Each service README owns its native start commands (`uv run …`, `bun dev`, …) and is **ctl-agnostic** — it never mentions `ctl`, because `ctl` is a project-level layer wrapping these same commands. The root README points; the service READMEs tell.
 
 ---
 
@@ -167,7 +174,7 @@ There are **two kinds of README**, with a clean division of labour:
 | **Root `README.md`** | Cross-cutting: the three startup paths, architecture overview, `ctl`, configuration, the command table, where everything lives. |
 | **`<service>/README.md`** (one per backend, one per frontend) | That single service's **host (non-Docker) dev loop** — the IDE-debugging path for *this* service. |
 
-**Every backend and every frontend ships its own `README.md`.** The root README tells you how to run the whole stack; the service README tells you how to work on that one service directly on the host (the path a developer attaching a debugger actually takes).
+**Every backend and every frontend ships its own `README.md`.** The root README tells you how to run the whole stack; the service README tells you how to work on that one service directly on the host (the path a developer attaching a debugger actually takes). Crucially, a service README is **ctl-agnostic** — it documents only native commands (`uv run …`, `bun dev`), never `ctl`. `ctl` is a project-level wrapper *over* those commands, so a service stays self-contained and portable (it works the same when lifted out of the repo).
 
 A `<service>/README.md` covers:
 
@@ -215,14 +222,14 @@ The root README's "no-docker host run" section can then be brief and **point at 
 - [ ] Project elevator pitch in first paragraph
 - [ ] Tech stack table
 - [ ] Project layout tree
-- [ ] "Get started" section with `mise install` + `cp .env.example .env` + `ctl dev`
+- [ ] "Prerequisites" section (mise, Docker) and a "Quick start" showing **both** `ctl dev` and `ctl up`
 - [ ] "Configuration" section — what goes in root `.env` (shared) vs per-service `.env`/`config.yaml`, copying `.env.example`, `ctl setup`, and `config.local.yaml` overriding `config.yaml`
 - [ ] "Commands" section — table enumerating what `ctl` exposes (dev, prod, up/down, ps, logs, status, setup, migrate, test, build, clean)
-- [ ] "Other ways to start" section with raw docker compose + no-docker host run
+- [ ] "Manual (without `ctl`)" section: raw docker compose + per-service host run that **defers to each service's README**
 - [ ] Migrations section (if Alembic is used)
 - [ ] Documentation pointer
 - [ ] License mention
-- [ ] **Each backend and frontend has its own `README.md`** documenting its host dev loop
+- [ ] **Each backend and frontend has its own `README.md`** documenting its host dev loop (ctl-agnostic — native commands only, never `ctl`)
 
 Missing any → drift report flags it.
 

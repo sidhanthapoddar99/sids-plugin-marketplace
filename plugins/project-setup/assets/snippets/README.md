@@ -64,7 +64,7 @@ assets/snippets/
 
 **This is a template, not a fixed spec.** It's a sensible default toolkit — copy `ctl` (to the repo root, `chmod +x`, no extension — it's the public API) **and the whole `scripts/` folder**, then add / remove / edit commands to fit the project. Most repos won't need every command shipped here; some (`lint`, `shell`) are stack-specific — adapt or drop them.
 
-`ctl` is a thin router; `scripts/_lib.sh` is the shared foundation (colors + indent-aware logging, `row()` aligned help, uniform `--help`, `dc()` + discovery, `or_none`, guards, container-resolved health) every worker sources; `scripts/_select.sh` is a dependency-free TUI picker (no fzf/gum) sourced by `_lib.sh` and used by the interactive `ctl up`. Each command with a real body is a worker named **`scripts/<category>-<name>.sh`** (category ∈ `dev` | `docker` | `manage` — the `ctl` verb stays clean: `ctl migrate`, file `dev-migrate.sh`). Trivial `docker compose` forwards (`down`/`restart`/`logs`/`ps`/`exec`) stay inline in `ctl`. Colors auto-disable when piped or `NO_COLOR` is set; every command takes `-h`/`--help`.
+`ctl` is a thin router; `scripts/_lib.sh` is the shared foundation (colors + indent-aware logging, `row()` aligned help, uniform `--help`, `dc()` + discovery, `or_none`, guards, container-resolved health) every worker sources; `scripts/_select.sh` is a dependency-free TUI picker (no fzf/gum) sourced by `_lib.sh` and used by the interactive `ctl up`. Each command with a real body is a worker named **`scripts/<category>-<name>.sh`** (category ∈ `dev` | `docker` | `manage` — the `ctl` verb stays clean: `ctl migrate`, file `dev-migrate.sh`). Trivial `docker compose` forwards (`down`/`restart`/`logs`/`exec`) stay inline in `ctl`. Colors auto-disable when piped or `NO_COLOR` is set; every command takes `-h`/`--help`.
 
 **To add a command:** drop `scripts/<category>-<name>.sh` (use the worker preamble in `_lib.sh`) and wire one `run <file>` line into `ctl`'s `case`. See `references/repo-setup/runtime/script-overview.md` (model + map) and `.../script-usage.md` (commands).
 
@@ -81,6 +81,7 @@ assets/snippets/
 | `docker-build.sh` / `docker-clean.sh` | `ctl build` / `ctl clean [-y]` | `scripts/docker-{build,clean}.sh` |
 | `docker-health.sh` | `ctl health [svc…]` — one-shot health table | `scripts/docker-health.sh` |
 | `docker-shell.sh` | `ctl shell <svc>` — psql / redis-cli / shell in a container | `scripts/docker-shell.sh` |
+| `docker-ps.sh` | `ctl ps` — containers, then host dev processes (resolved by dev port → PID) | `scripts/docker-ps.sh` |
 | `manage-setup.sh` | `ctl setup` — `.env` wizard (generates `*_PASSWORD/_SECRET/_KEY`), data dirs, installs deps | `scripts/manage-setup.sh` |
 | `manage-status.sh` | `ctl status` — doctor: env · runtimes (mise+pins, uv/bun/uvenv) · docker · deps · health · stack | `scripts/manage-status.sh` |
 | `manage-check-env.sh` | `.env` vs `.env.example` schema diff (helper; used by status) | `scripts/manage-check-env.sh` |

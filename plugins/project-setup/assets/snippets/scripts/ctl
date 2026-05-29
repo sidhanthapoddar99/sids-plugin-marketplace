@@ -67,12 +67,11 @@ case "$cmd" in
   clean)    run docker-clean  "$@" ;;
   health)   run docker-health "$@" ;;
   shell)    run docker-shell  "$@" ;;
+  ps)       run docker-ps     "$@" ;;       # containers + host dev processes
   # ── containers: thin docker compose passthroughs (uniform help + native hint) ──
   down)     is_help "${1:-}" && { passthrough_help down    "stop the stack (or one service)";    exit 0; }; dc down    "$@" ;;
   restart)  is_help "${1:-}" && { passthrough_help restart "restart the stack (or one service)"; exit 0; }; dc restart "$@" ;;
   logs)     is_help "${1:-}" && { passthrough_help logs    "tail container logs (-f to follow)"; exit 0; }; dc logs    "$@" ;;
-  ps)       is_help "${1:-}" && { passthrough_help ps      "list running containers";            exit 0; }
-            dc ps; command -v process-compose >/dev/null 2>&1 && process-compose process list 2>/dev/null || true ;;
   exec)     is_help "${1:-}" && { print_help exec "Run a command inside a running service container." \
               'exec <service> [command…] [-h]' \
               $'Arguments\n  service       the compose service (e.g. backend, postgres)\n  command…      default: an interactive shell\n\nOptions\n  -h, --help    show this help' \
