@@ -11,8 +11,12 @@ frontend_cmd() { printf 'cd apps/frontend && bun dev'; }
 
 usage() { print_help "dev" "Run apps on the host with hot reload; auto-starts the data core." \
   'dev [all|backend|frontend] [--dry-run] [-h]' \
-"Arguments  (each line shows the host command it runs)
+"Arguments
   all (default)   backend + frontend together — Ctrl-C stops both
+  backend         backend API server only (hot reload)
+  frontend        frontend dev server only
+
+Direct  (the host command each runs — what --dry-run prints; copy to run without ctl)
   backend         ${C_GRN}$(backend_cmd)${C_RESET}
   frontend        ${C_GRN}$(frontend_cmd)${C_RESET}
 
