@@ -16,7 +16,7 @@ Run this in order before proposing any layout. **Skip what you already know**, b
    - 1
    - 2+ (multi-frontend workspace; ask if they share UI/types/styles → `packages/`)
 3a. **Deployed application, or distributed package?** (the often-unasked axis — ask it explicitly)
-   - **Deployed** — the repo *runs* the product (you `ctl up` it; production is `ctl up app edge --config=prod`). Layouts 01–05.
+   - **Deployed** — the repo *runs* the product (you `ctl up` it; production is `ctl up prod`). Layouts 01–05.
    - **Distributed** — the deliverable is a **published package** that a *separate, external host* installs and runs. The repo's own web app (if any) is just a **reference host** for development, not the product. → Layout 06 (embeddable package + reference host).
    - Tell-tale: "another repo will consume this", "it gets embedded in someone else's app", "we publish it to npm/PyPI", "the frontend *is* the product, the local app just hosts it". If any of these, it's distributed even if it also happens to deploy a demo.
 4. **What languages?**
@@ -57,8 +57,8 @@ Run this in order before proposing any layout. **Skip what you already know**, b
 11. **Hot reload needed?**
     - Confirm: bun dev / uvicorn --reload / cargo-watch — all run on host
 12. **`ctl` subcommands**: which day-to-day flows need shortcuts?
-    - Suggest defaults: `ctl dev` (host dev loop), `ctl up [profile…] [--config=…]` (containers — bare = data core, `ctl up app edge --config=prod` = production), `ctl down`, `ctl migrate {up|down|new}`, `ctl test`, `ctl clean`, `ctl help`.
-    - `ctl up` has three axes — profiles (which services), at most one `--config=prod`, and stackable `.m.` modifiers (`--expose` / `--traefik`); see `references/repo-setup/runtime/docker-overview.md`.
+    - Suggest defaults: `ctl dev` (host dev loop), `ctl up [config] [--modifier "a,b"]` (containers — bare = the whole stack, `ctl up prod` = production), `ctl down`, `ctl migrate {up|down|new}`, `ctl test`, `ctl clean`, `ctl help`.
+    - `ctl up` is profile-less with two axes — at most one standalone `config` (replaces base; `data`, `prod`) and stackable `.m.` modifiers (`--modifier expose,traefik`); bare `ctl up` is interactive (pick → plan → confirm); see `references/repo-setup/runtime/docker-overview.md`.
     - Add language-specific: `ctl sqlx-prepare` (if Rust), `ctl train` (if ML).
 
 ## Batch 4 — deployment + secrets
@@ -67,9 +67,9 @@ Run this in order before proposing any layout. **Skip what you already know**, b
     - Single (e.g. one bare server)
     - Multiple (e.g. WSL dev / bare server / cloud — generates multiple `docker-compose-*.yml`)
 14. **Reverse proxy**: external Traefik present? nginx-as-edge? raw ports?
-    - Traefik present → ship a `--traefik` modifier (`compose.m.traefik.yaml`)
+    - Traefik present → ship a `traefik` modifier (`compose.m.traefik.yaml`)
     - nginx-as-edge → include `infra/nginx/nginx.conf` and route `/api/*`
-    - Raw ports → the `--expose` modifier (no separate config file)
+    - Raw ports → an `expose` modifier (no separate config file)
 14a. **Production serving**: how does the backend run in prod (vs the dev hot-reload process)?
     - Python → gunicorn + uvicorn workers; set worker count (≈ matches CPU limit), recycling (`--max-requests` + jitter), `--graceful-timeout`. See `references/architecture/production/app-server-and-workers.md`.
     - Rust / Go → one process, scale via replicas (no worker-process model). Node → replicas, not PM2-in-container.

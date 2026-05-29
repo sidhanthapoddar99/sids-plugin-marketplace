@@ -10,13 +10,16 @@
 # (scripts/<category>-<name>.sh), and inlines only the trivial `docker compose` passthroughs.
 # Every command supports -h / --help; colors auto-disable when piped or NO_COLOR is set.
 #
-#   Development    dev · migrate · test
-#   Containers     up · down · restart · logs · ps · exec · build · clean · health
+#   Development    dev · migrate · test · lint
+#   Containers     up · down · restart · logs · ps · exec · build · clean · health · shell
 #   Configuration  setup · status
 #
-# Profiles select services; one --config=<name> swaps the deployment config; --<modifier>
-# flags layer compose.m.<modifier>.yaml overlays.  No `ctl prod` verb — prod is
-# `ctl up app edge --config=prod`.  Run `ctl <command> --help` for any command.
+# PROFILE-LESS 2-axis model. `ctl up` takes an optional standalone `config` (a
+# compose.<name>.yaml that REPLACES base — e.g. `data` = just the data layer) plus stackable
+# `--modifier "a,b"` overlays (compose.m.<name>.yaml). Bare `ctl up` is interactive
+# (config → modifiers → plan → confirm). No `ctl prod` verb — prod is `ctl up prod`. Profiles
+# are a rare advanced escalation (see runtime/complex-setups.md), not part of this default.
+# Run `ctl <command> --help` for any command.
 
 set -euo pipefail
 CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,20 +32,26 @@ run() { local s="$CTL_ROOT/scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s
 ctl_help() {
   printf '%s%s%s — control plane. One entrypoint for dev + containers.\n\n' "$C_B$C_CYN" "ctl" "$C_RESET"
   printf '%sDevelopment%s (host loop)\n' "$C_B" "$C_RESET"
-  printf '  %-36s %s\n' "dev [target]"                     "apps on host, hot reload (auto-starts data core)"
-  printf '  %-36s %s\n' 'migrate {up|down|new|status}'     "database migrations (Alembic)"
-  printf '  %-36s %s\n' "test [backend|frontend]"          "run test suites"
-  printf '  %-36s %s\n' "lint [backend|frontend]"          "lint backend + frontend"
+  row "dev [target]"                     "apps on host, hot reload (auto-starts data core)"
+  row 'migrate {up|down|new|status}'     "database migrations (Alembic)"
+  row "test [backend|frontend]"          "run test suites"
+  row "lint [backend|frontend]"          "lint backend + frontend"
   printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"
-  printf '  %-36s %s\n' "up [profile…] [--config] [--mod]" "start the stack          (ctl up --help)"
-  printf '  %-36s %s\n' "down [svc] · restart [svc]"       "stop · restart"
-  printf '  %-36s %s\n' "logs [svc] [-f] · ps"             "tail logs · list containers + host procs"
-  printf '  %-36s %s\n' "exec <svc> [cmd] · shell <svc>"   "run a command · open a client/shell in a container"
-  printf '  %-36s %s\n' "build · clean · health"           "build images · wipe (asks) · health check"
+  row "up [config] [--modifier …]"       "assemble + start the stack — interactive  (ctl up --help)"
+  row "down [svc]"                       "stop the stack (or one service)"
+  row "restart [svc]"                    "restart the stack (or one service)"
+  row "logs [svc] [-f]"                  "tail container logs"
+  row "ps"                               "list running containers + host procs"
+  row "exec <svc> [cmd]"                 "run a command in a container (default: shell)"
+  row "shell <svc>"                      "open a client/shell in a container (psql, redis-cli, …)"
+  row "build"                            "build the service images"
+  row "clean [-y]"                       "tear down + wipe volumes/images (asks first)"
+  row "health [svc…]"                    "one-shot container health table"
   printf '\n%sConfiguration%s\n' "$C_B" "$C_RESET"
-  printf '  %-36s %s\n' "setup"                            "interactive .env wizard"
-  printf '  %-36s %s\n' "status"                           "config doctor (env · tools · health)"
-  printf '\n%s-h/--help works on every command:  ctl <command> --help%s\n' "$C_DIM" "$C_RESET"
+  row "setup"                            "seed .env, generate secrets, data dirs, install deps"
+  row "status"                           "config doctor (env · runtimes · deps · health · stack)"
+  printf '\n%sup axes%s   configs: %s  modifiers: %s\n' "$C_DIM" "$C_RESET" "$(list_configs | join_sp | or_none)" "$(list_modifiers | join_sp | or_none)"
+  printf '%s-h/--help works on every command:  ctl <command> --help%s\n' "$C_DIM" "$C_RESET"
 }
 
 cmd="${1:-help}"; shift || true

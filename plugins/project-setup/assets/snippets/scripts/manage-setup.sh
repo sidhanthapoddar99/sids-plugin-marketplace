@@ -23,7 +23,8 @@ while IFS='=' read -r key val; do
   fi
 done < .env
 
-step "ensuring data dirs…"; mkdir -p data/postgres/pgdata data/redis/data
+# data dirs — only with a data core (skipped cleanly for no-data-core projects)
+if (( ${#DATA_SVCS[@]} )); then step "ensuring data dirs…"; mkdir -p data/postgres/pgdata data/redis/data; fi
 
 step "installing dependencies…"      # default tools: uv (python) + bun (node). See script-alternatives.md to swap.
 if [[ -d apps/backend ]]; then

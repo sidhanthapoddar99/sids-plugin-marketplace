@@ -34,8 +34,8 @@ See `references/repo-setup/layouts/02_multi-app-monorepo.md`.
 | Layout | Workspace tool | Compose layout | `ctl` shape |
 |---|---|---|---|
 | 01 single app / service | none | optional `docker/` | bare entrypoint, few subcommands |
-| 02 multi-app monorepo | none; pnpm + turborepo when multiple frontends share code | `docker/` profiled base + `--config` overlays; `docker/<svc>/` per service at the mesh end | full subcommand set; language-aware (migrate, sqlx-prepare, test, …); dispatches to per-app builds |
-| 03 polyrepo + aggregator | n/a | only the aggregator repo has compose (image-based, no build) | aggregator owns `ctl up app edge --config=prod`; each service repo has its own `ctl` |
+| 02 multi-app monorepo | none; pnpm + turborepo when multiple frontends share code | `docker/` base (whole stack) + standalone configs + `.m.` modifiers; `docker/<svc>/` per service at the mesh end | full subcommand set; language-aware (migrate, sqlx-prepare, test, …); dispatches to per-app builds |
+| 03 polyrepo + aggregator | n/a | only the aggregator repo has compose (image-based, no build) | aggregator owns `ctl up prod`; each service repo has its own `ctl` |
 | 04 ML | uvenv | none typically | `ctl train`, `ctl eval`, `ctl serve` |
 | 05 infra orchestrator | go (the orchestrator binary itself) | `docker/<mode>/` tree | go binary at root |
 | 06 embeddable package + reference host | pnpm/bun workspace (package + reference `apps/web`) | optional — only for the reference host's deps | `ctl dev` runs the reference host; `ctl build` builds the package; `ctl publish` ships it |
@@ -109,12 +109,12 @@ See `references/repo-setup/env-and-config/env-precedence.md` for the load order 
 
 ### What compose structure does the layout need?
 
-Three axes — **profiles** (which services run), at most one **`--config=prod`** (a full alternate deployment config), and stackable **`.m.` modifiers** (`--expose` / `--traefik`). The exact filenames, the `ctl up` grammar, and worked examples are the canonical doc's job — **see `references/repo-setup/runtime/docker-overview.md`** and don't restate them. What this layer decides is the *footprint* per layout:
+Two axes (profile-less) — at most one standalone **`config`** (a `compose.<name>.yaml` that *replaces* base; `data`, `prod`) and stackable **`.m.` modifiers** (`--modifier expose,traefik`). The exact filenames, the `ctl up` grammar, and worked examples are the canonical doc's job — **see `references/repo-setup/runtime/docker-overview.md`** and don't restate them. What this layer decides is the *footprint* per layout:
 
 | Layout | Compose footprint |
 |---|---|
-| 01 single-app | often just the profiled base (reach for the `--expose` modifier only if it needs host ports) |
-| 02 multi-app | the full set: profiled base + `--config=prod` + `.m.` modifiers |
+| 01 single-app | often just the base (reach for the `expose` modifier only if it needs host ports) |
+| 02 multi-app | the full set: base + standalone configs (`data`, `prod`) + `.m.` modifiers |
 | 04 ML | usually none |
 | 05 orchestrator | `docker/<mode>/` per mode (singlenode / multinode / prod) — see `references/repo-setup/runtime/complex-setups.md` |
 

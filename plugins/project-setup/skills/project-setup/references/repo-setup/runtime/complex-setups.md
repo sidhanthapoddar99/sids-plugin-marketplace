@@ -1,13 +1,24 @@
-# Complex setups — multi-mode compose trees + binary orchestrators
+# Complex setups — profiles, multi-mode compose trees + binary orchestrators
 
-The standard runtime (one `docker/` with a profiled `compose.yaml` + `compose.m.*` modifiers, driven by the `ctl` shell dispatcher) covers the vast majority of repos. This doc is for the **two coupled escalations** you reach when that's not enough:
+The standard runtime (one `docker/` with a profile-less `compose.yaml` + standalone configs + `compose.m.*` modifiers, driven by the `ctl` shell dispatcher) covers the vast majority of repos. This doc is for the escalations you reach when that's not enough:
 
+0. **Profiles** — a genuine multi-group service mesh (several *independently-optional* service groups in arbitrary combinations) that standalone configs can't express legibly. → re-add a profiles axis. (The default model is profile-less; this is the rare opt-in.)
 1. **Multi-mode compose** — you need structurally *different* stacks (single-node vs a multi-node cluster vs prod), not just overlays on one base. → `docker/<mode>/` directories.
 2. **Binary orchestrator** — the shell `ctl` outgrows its job (structured state across runs, mode promotion). → a Go (or Rust/Python) CLI replaces the shell wrapper.
 
 They travel together: the kind of project that needs `docker/<mode>/` (e.g. a blockchain test harness with 1/N/prod node topologies) is usually the kind that needs a binary to manage it. This is **Layout 05**; the canonical example is `chimere-chain-2025`.
 
 > The simple runtime is documented in `runtime/docker-overview.md` (compose) and `runtime/script-overview.md` (ctl). This doc only covers the deltas for complex setups. Don't reach for any of it preemptively.
+
+---
+
+## Part 0 — profiles (the advanced service-selection axis)
+
+The default model is **profile-less**: every service in the chosen compose file runs, and "a subset" is expressed as a standalone `compose.<name>.yaml` selected by name (`docker-overview.md`). At ≤5 services where you almost always want the whole set, a profile axis costs more than it pays — synthetic `all`/`none` entries, mutual-exclusion logic, config-aware recomputation — for a payoff that never materialises.
+
+**Re-add profiles only when the project has several genuinely orthogonal, independently-optional service groups** mixed in arbitrary combinations — workers + observability + edge + debug tooling, toggled à la carte. That's a real shape, but uncommon, and even then a handful of standalone configs often expresses it more legibly. The test: can you *name* several independently-optional groups **and** confirm standalone configs can't express them? If not, stay profile-less.
+
+To re-add the axis: tag services with `profiles:` in `compose.yaml`, restore `list_profiles()` in `_lib.sh` (grep `profiles:` from the base), and give `docker-up.sh` a third selection axis (`--profile`, comma-list) feeding `--profile <p>` flags into the assembly. The interactive picker gains a profiles step *under* the chosen config. It's additive — the config + modifier axes are unchanged.
 
 ---
 
@@ -30,8 +41,8 @@ docker/
 ```
 
 - **Each mode is a directory**, not a file. Its `compose.yaml` is that mode's base.
-- **Within a mode, the same conventions hold**: `compose.m.<modifier>.yaml` for cross-cutting overlays, `profiles:` for optional services, port-less base. The `.m.` marker means the same thing here as in the flat layout.
-- **Profiles still apply per mode** — e.g. `--profile obs` to add observability to whichever mode is running.
+- **Within a mode, the same conventions hold**: `compose.m.<modifier>.yaml` for cross-cutting overlays, port-less base. The `.m.` marker means the same thing here as in the flat layout.
+- **Multi-mode is itself the common reason to want profiles** (Part 0): a mode like `multinode` may genuinely have optional groups (`--profile obs` to add observability). If a mode needs them, re-add the axis *for that mode* per Part 0 — it's still the opt-in, not the baseline.
 - Path discipline is unchanged (`../../apps`, `../../infra` — note the extra `..` because compose files are now one level deeper). See `runtime/docker-details.md`.
 
 The binary (Part 2) picks the mode directory and assembles the `-f` list; the modes themselves are plain compose and **must remain runnable directly**:
@@ -139,6 +150,6 @@ A Layout 05 README documents **four** startup paths:
 ## See also
 
 - `runtime/overview.md` — how mise + ctl + docker + env interact (the simple case)
-- `runtime/docker-overview.md` — the flat (single-mode) docker convention + `compose.m.*` modifiers
+- `runtime/docker-overview.md` — the flat (single-mode) profile-less convention: standalone configs + `compose.m.*` modifiers
 - `runtime/script-overview.md` — the shell `ctl` this escalates *from*
 - `layouts/05_infra-orchestrator.md` — the layout entry that points here

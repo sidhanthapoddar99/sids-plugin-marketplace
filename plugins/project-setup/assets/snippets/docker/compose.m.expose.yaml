@@ -1,22 +1,16 @@
-# docker/compose.m.expose.yaml — MODIFIER (--expose).  ctl up <profile…> --expose
-# Publishes host ports. Internal ports are fixed conventions; host ports are ${VAR}-driven.
-# Only ports for services that actually start are applied — so `ctl up --expose`
-# (core only) exposes just the data ports; backend/frontend entries are ignored.
-# `ctl dev` layers this automatically when it brings up the data core for host apps.
+# docker/compose.m.expose.yaml — MODIFIER (`--modifier expose`).
+#
+# Publishes nginx (the edge) to the host — the safe default for running the whole stack
+# locally behind the reverse proxy. nginx is in base, so this overlays cleanly:
+#
+#   ctl up --modifier expose
+#   # raw: docker compose -f docker/compose.yaml -f docker/compose.m.expose.yaml up -d --build
+#
+# The app then answers at http://localhost:${NGINX_PORT} (default 8080). backend, frontend,
+# postgres and redis stay internal-only — reach the app through nginx. To publish the data
+# layer (for host dev) use `expose_data`; to publish everything (debug) use `expose_all`.
 
 services:
-  backend:
-    ports:
-      - "${PYTHON_PORT:-8000}:8000"
-  frontend:
-    ports:
-      - "${FRONTEND_PORT:-3000}:80"
   nginx:
     ports:
       - "${NGINX_PORT:-8080}:80"
-  postgres:
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-  redis:
-    ports:
-      - "${REDIS_PORT:-6379}:6379"

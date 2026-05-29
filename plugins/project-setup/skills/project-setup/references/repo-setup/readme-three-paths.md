@@ -103,7 +103,7 @@ ctl setup                  # interactive .env wizard — prompts for missing key
 | Command | Does |
 |---|---|
 | `ctl dev [target]` | Run the stack on the host with hot reload (auto-ups the data core) |
-| `ctl up [profile…] [--config=n…]` | Start container stack: profiles select services (bare = data core), `--config` overlays how they run (`ctl up app edge --config=prod` = production) |
+| `ctl up [config] [--modifier "a,b"]` | Start container stack (interactive in a TTY): a standalone `config` replaces base (`data`, `prod`), `--modifier` overlays stack on top (`ctl up prod` = production) |
 | `ctl down [service]` | Stop container services |
 | `ctl ps` | List containers + local processes |
 | `ctl logs [svc] [-f]` | Tail logs |

@@ -11,7 +11,7 @@ This is the layout the deployed-vs-distributed question (Batch 1, Q3a) routes to
 - "Embeddable", "SDK", "library-as-product", "the frontend *is* the product", "mounts in someone else's app".
 - The product must run inside a host it doesn't control — so it can't bake in URLs, secrets, or "where saves go".
 
-If instead the repo *runs* the product (you `ctl up … --config=prod` it and that's the live thing), it's 01–05, not 06.
+If instead the repo *runs* the product (you `ctl up prod` it and that's the live thing), it's 01–05, not 06.
 
 ## The two-host distinction (the crux)
 

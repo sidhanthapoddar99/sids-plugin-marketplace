@@ -1,0 +1,19 @@
+# docker/compose.m.expose_data.yaml — MODIFIER (`--modifier expose_data`).
+#
+# Publishes the DATA layer (postgres + redis) to the host. This is what `ctl dev` overlays
+# automatically: the apps run as host processes and need to reach the containerised data
+# core, so its ports must be published.
+#
+#   ctl up data --modifier expose_data    # just the data layer, reachable from the host
+#   # (ctl dev applies this for you when it brings up the data core)
+#
+# Only the ports for services that actually start are applied, so layering this on a config
+# that omits postgres/redis is harmless (those entries are simply ignored).
+
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:6379"

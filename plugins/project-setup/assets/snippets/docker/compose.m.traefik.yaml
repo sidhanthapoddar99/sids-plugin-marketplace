@@ -1,6 +1,9 @@
-# docker/compose.m.traefik.yaml — MODIFIER (--traefik).  ctl up app edge --config=prod --traefik
-# Joins external `traefik-proxy` network, adds Traefik labels on the edge service (nginx).
-# Pair with the `edge` profile so nginx is actually started.
+# docker/compose.m.traefik.yaml — MODIFIER (`--modifier traefik`).
+#   ctl up prod --modifier traefik        # production stack behind an external Traefik
+#   ctl up --modifier traefik             # base stack behind Traefik
+# Joins the external `traefik-proxy` network and adds Traefik labels on the edge (nginx).
+# nginx is in base, so it's always present — no profile needed. Don't stack with `expose`
+# (Traefik terminates ingress; you don't also publish the host port).
 
 services:
   nginx:

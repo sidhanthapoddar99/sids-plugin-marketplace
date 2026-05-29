@@ -39,7 +39,7 @@ mise isn't intrinsically required — `./ctl` runs without it. You lose bare `ct
 
 Affects **all** `docker-*` commands (`up`/`build`/`clean`/`health`/`shell`) plus `ctl dev`'s data-core bring-up. Run Postgres/Redis natively (system service, Homebrew, or a managed instance) and point the apps at them via `.env` (`DATABASE_URL`, `REDIS_URL`).
 
-- `dev-host.sh`: delete the `dc -f "$DOCKER_DIR/compose.m.expose.yaml" up -d "${DATA_SVCS[@]}"` line and the `wait_healthy …` line — the data core is now external. `require_tools mise docker` → `require_tools mise`.
+- `dev-host.sh`: the data-core bring-up is already guarded on `DATA_SVCS`, but with native services you remove the `dc -f "$DOCKER_DIR/compose.m.expose_data.yaml" up -d "${DATA_SVCS[@]}"` + `wait_healthy` block (or set `DATA_SVCS=()`). `require_tools mise docker` → `require_tools mise`.
 - `manage-status.sh`: replace the `docker` step and the `health_table` call with native reachability checks — e.g. `pg_isready -h localhost` and `redis-cli ping`.
 - `_lib.sh`: `dc()`, `svc_health`, `wait_healthy` are docker-specific; leave them unused or adapt to the native services.
 - `ctl up`/`down`/etc. have no meaning without containers — drop those routes from `ctl`, or keep them for environments that do have docker.

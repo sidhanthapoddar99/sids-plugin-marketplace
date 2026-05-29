@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev-host.sh — `ctl dev`. Ensure the data core, then run apps on the host with hot reload.
+# dev-host.sh — `ctl dev`. Ensure the data core (if any), then run apps on the host with hot reload.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
 
@@ -11,16 +11,21 @@ usage() { print_help "dev" "Run apps on the host with hot reload; auto-starts th
 Options
   -h, --help      show this help
 
-Brings up postgres+redis (with ports) in containers, waits for health, then runs the
-apps as host processes. Uses process-compose if process-compose.yaml exists, else a
-bash fallback (fine for ≤2 procs; prefer process-compose past that)."; }
+With a data core (DATA_SVCS set), brings up those services in containers WITH ports
+(via the expose_data modifier), waits for health, then runs the apps as host processes.
+With no data core (DATA_SVCS empty) it just runs the host processes. Uses process-compose
+if process-compose.yaml exists, else a bash fallback (fine for ≤2 procs)."; }
 
 is_help "${1:-}" && { usage; exit 0; }
-require_env; require_tools mise docker
+require_env; require_tools mise
 
-step "ensuring data core (with ports)…"
-dc -f "$DOCKER_DIR/compose.m.expose.yaml" up -d "${DATA_SVCS[@]}"
-wait_healthy "${DATA_SVCS[@]}" 60 || warn "health poll failed — continuing anyway."
+# data core (skipped cleanly when DATA_SVCS is empty — no-data-core projects)
+if (( ${#DATA_SVCS[@]} )); then
+  require_tools docker
+  step "ensuring data core (with ports)…"
+  dc -f "$DOCKER_DIR/compose.m.expose_data.yaml" up -d "${DATA_SVCS[@]}"
+  wait_healthy "${DATA_SVCS[@]}" 60 || warn "health poll failed — continuing anyway."
+fi
 
 if command -v process-compose >/dev/null 2>&1 && [[ -f process-compose.yaml ]]; then
   exec process-compose up "$@"

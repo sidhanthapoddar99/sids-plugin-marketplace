@@ -1,16 +1,32 @@
-# docker/compose.yaml — base. ALL services declared, NO host ports, internal network only.
-# Services grouped by PROFILE — the data layer has no profile (always up); apps opt in:
-#   ctl up           → postgres + redis (no-profile core; what host dev needs)
-#   ctl up app       → + backend, frontend
-#   ctl up app edge  → + nginx
-# Layer overlays: one config (--config=prod → compose.prod.yaml) + .m. modifiers
-#   (--expose, --traefik → compose.m.<modifier_name>.yaml). Modifiers stack; at most one config.
+# docker/compose.yaml — base. The WHOLE stack, NO host ports, internal network only.
+#
+# PROFILE-LESS: every service here just runs. `ctl up` (bare) brings up all of them
+# (at ≤5 services you almost always want the whole stack). Nothing is reachable from the
+# host until you add an expose modifier.
+#
+# Two ways to vary it (see runtime/docker-overview.md for the model):
+#   • config   — a STANDALONE scenario that REPLACES this file (compose.<name>.yaml):
+#       data   compose.data.yaml   — just postgres + redis (the data layer alone)
+#       prod   compose.prod.yaml   — the hardened production stack (ctl up prod)
+#   • modifier — a cross-cutting OVERLAY layered on top (compose.m.<name>.yaml):
+#       expose       compose.m.expose.yaml       — nginx only (the edge; run the stack behind the proxy)
+#       expose_data  compose.m.expose_data.yaml  — postgres + redis ports (what `ctl dev` needs)
+#       expose_all   compose.m.expose_all.yaml   — every service on its own port (debug)
+#       traefik      compose.m.traefik.yaml      — join an external Traefik proxy
+#
+# Driven from the repo root via `ctl up [config] [--modifier "a,b"]`; the raw form
+# (run FROM THE REPO ROOT so ../ resolves against docker/) is:
+#   docker compose -f docker/compose.yaml up -d --build
+#
+# Internal ports (8000 backend, etc.) are fixed conventions — written plainly here and in
+# infra/nginx/nginx.conf, never parameterised. Only the published host port varies (in the
+# expose modifiers). `name:` sets the compose project name (health lookups respect it).
+
+name: ${COMPOSE_PROJECT_NAME:-myapp}
 
 services:
   backend:
     build: ../apps/backend
-    container_name: ${COMPOSE_PROJECT_NAME:-myapp}-backend
-    profiles: [app]
     restart: unless-stopped
     env_file:
       - ../.env
@@ -19,6 +35,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    # [ADAPT] App healthcheck — uncomment + point at your liveness route so `ctl health` is
+    # meaningful and depends_on: service_healthy works. Use a tool already IN the image:
+    #   python image:  test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+    #   has curl:      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+    # healthcheck:
+    #   test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+    #   interval: 30s
+    #   timeout: 5s
+    #   retries: 3
+    #   start_period: 20s
     networks:
       - internal
 
@@ -28,30 +54,35 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
         VITE_APP_ENV: ${APP_ENV:-development}
-    container_name: ${COMPOSE_PROJECT_NAME:-myapp}-frontend
-    profiles: [app]
     restart: unless-stopped
     depends_on:
       - backend
+    # [ADAPT] App healthcheck — for an SSR server (Next standalone) hit its port; for a static
+    # build served by nginx the nginx healthcheck below already covers it.
+    #   node image:    test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
     networks:
       - internal
 
   nginx:
     image: nginx:1.27-alpine
-    container_name: ${COMPOSE_PROJECT_NAME:-myapp}-nginx
-    profiles: [edge]
     restart: unless-stopped
     volumes:
       - ../infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
       - frontend
+    healthcheck:
+      # busybox wget (in the alpine image); / proxies through to the apps.
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - internal
 
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: ${COMPOSE_PROJECT_NAME:-myapp}-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -72,7 +103,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: ${COMPOSE_PROJECT_NAME:-myapp}-redis
     restart: unless-stopped
     command: >
       redis-server

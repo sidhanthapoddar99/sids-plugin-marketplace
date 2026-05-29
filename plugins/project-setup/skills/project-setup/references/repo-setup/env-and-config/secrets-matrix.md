@@ -48,10 +48,10 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
 ├── .env.production           # chmod 600, owned by root or app user
 ├── docker-compose.yaml -> /home/user/my-app/docker/compose.yaml
 ├── docker-compose.prod.yaml -> /home/user/my-app/docker/compose.prod.yaml
-└── ctl                       # `ctl up app edge --config=prod` runs the deploy
+└── ctl                       # `ctl up prod` runs the deploy
 ```
 
-The secrets-relevant part: the `--config=prod` config switches the compose `--env-file` to `.env.production` (it also pins image tags + resource limits). The exact assembled `docker compose` line is the dispatcher's to own — see `references/repo-setup/runtime/script-usage.md`.
+The secrets-relevant part: the `prod` config switches the compose `--env-file` to `.env.production` (it also pins image tags + resource limits). The exact assembled `docker compose` line is the dispatcher's to own — see `references/repo-setup/runtime/script-usage.md`.
 
 Or, with `env_file:` declared inside each service in the compose:
 

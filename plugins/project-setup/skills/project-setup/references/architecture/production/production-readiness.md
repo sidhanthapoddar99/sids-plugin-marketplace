@@ -160,7 +160,7 @@ services:
         condition: service_completed_successfully
 ```
 
-`ctl up app edge --config=prod` or CI runs migrate → waits for success → starts/rolls the app.
+`ctl up prod` or CI runs migrate → waits for success → starts/rolls the app.
 
 ## Reverse proxy hardening (nginx / Traefik)
 
@@ -215,5 +215,5 @@ The skill can drop this checklist into `docs/` or the README's Deploy section.
 
 - `references/architecture/production/app-server-and-workers.md` — worker / recycling detail
 - `references/repo-setup/env-and-config/secrets-matrix.md` — prod secrets handling
-- `references/repo-setup/runtime/docker-overview.md` — the prod (`--config=prod`) overlay
+- `references/repo-setup/runtime/docker-overview.md` — the prod config (standalone)
 - `references/architecture/backend/alembic-default.md` — migration mechanics

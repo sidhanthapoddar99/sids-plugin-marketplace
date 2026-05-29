@@ -101,7 +101,7 @@ services:
 | Collisions | Impossible (separate namespaces) | Possible across stacks → vary it |
 | Referenced as | `http://backend:8000` | `localhost:${BACKEND_PORT}` (dev/humans only) |
 
-In dev (apps on host) the app binds a host port directly; in containers it's the internal port + compose network. The constant internal port keeps the two modes consistent. Host ports are published by the `--expose` modifier (`compose.m.expose.yaml`), not the base — see `docker-overview.md`.
+In dev (apps on host) the app binds a host port directly; in containers it's the internal port + compose network. The constant internal port keeps the two modes consistent. Host ports are published by the `expose` modifiers (`compose.m.expose*.yaml`), not the base — see `docker-overview.md`.
 
 **Anti-patterns:** hardcoding the published host port (collides across stacks — vary it via `${VAR}`); hardcoding `http://localhost:8000` for service-to-service calls (use `http://backend:8000` over the compose network).
 

@@ -1,0 +1,31 @@
+# docker/compose.m.expose_all.yaml — MODIFIER (`--modifier expose_all`).
+#
+# Publishes EVERY service on its own host port. The rare debugging case — you almost never
+# want it. 99% of local runs only need the edge (`expose`) or the data layer (`expose_data`).
+# Reach for this only to talk to a service directly, bypassing nginx (probing the API,
+# debugging the frontend server in isolation, connecting a DB client).
+#
+#   ctl up --modifier expose_all
+#   # raw: docker compose -f docker/compose.yaml -f docker/compose.m.expose_all.yaml up -d --build
+#
+# Targets all services, so it expects the BASE config (whole stack). Layering it on a slice
+# config (e.g. `ctl up data --modifier expose_all`) is rejected by docker compose — the
+# modifier would reference services the slice doesn't define. The interactive plan catches
+# this and offers Back instead of failing at `up`.
+
+services:
+  backend:
+    ports:
+      - "${PYTHON_PORT:-8000}:8000"
+  frontend:
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+  nginx:
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+  postgres:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
