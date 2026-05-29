@@ -59,18 +59,27 @@ Three axes: `compose.yaml` is the profiled base (data core = no profile; apps `[
 
 ### `scripts/`
 
-`dev-wrapper.sh` drops at the repo root as `ctl`; **every other file drops into `scripts/`**. `ctl` is a thin router — it owns arg routing, the `ctl up` compose assembly (profiles + one `--config` + `.m.` modifiers), and trivial `docker compose` passthroughs; each command with a real body lives in its own self-contained `scripts/<cmd>.sh`. See `references/repo-setup/runtime/script-overview.md` (model + script map) and `.../script-usage.md` (commands).
+**This is a template, not a fixed spec.** It's a sensible default toolkit — copy `ctl` (to the repo root, `chmod +x`, no extension — it's the public API) **and the whole `scripts/` folder**, then add / remove / edit commands to fit the project. Most repos won't need every command shipped here; some (`lint`, `shell`) are stack-specific — adapt or drop them.
+
+`ctl` is a thin router; `scripts/_lib.sh` is the shared foundation (colors, uniform `--help`, `dc()` + discovery, guards, health) every worker sources; each command with a real body is a worker named **`scripts/<category>-<name>.sh`** (category ∈ `dev` | `docker` | `manage` — the `ctl` verb stays clean: `ctl migrate`, file `dev-migrate.sh`). Trivial `docker compose` forwards (`down`/`restart`/`logs`/`ps`/`exec`) stay inline in `ctl`. Colors auto-disable when piped or `NO_COLOR` is set; every command takes `-h`/`--help`.
+
+**To add a command:** drop `scripts/<category>-<name>.sh` (use the worker preamble in `_lib.sh`) and wire one `run <file>` line into `ctl`'s `case`. See `references/repo-setup/runtime/script-overview.md` (model + map) and `.../script-usage.md` (commands).
 
 | File | What it is | Drops at |
 |---|---|---|
-| `dev-wrapper.sh` | `ctl` dispatcher — routes `dev`/`up`/`down`/`ps`/`logs`/`setup`/`status`/`migrate`/`test`/`build`/`clean`, executable | `ctl` at repo root (rename, chmod +x) |
-| `dev-host.sh` | host dev loop — bash fallback (≤2 procs; else `process-compose`), runs uvicorn + `bun dev` | `scripts/dev-host.sh` |
-| `setup.sh` | `ctl setup` — `.env` wizard: copies `.env.example`, generates `*_PASSWORD/_SECRET/_KEY` | `scripts/setup.sh` |
-| `status.sh` | `ctl status` — config doctor (env schema + tools + data-core health) | `scripts/status.sh` |
-| `check-env.sh` | diff `.env` keys against `.env.example` (called by `status.sh`) | `scripts/check-env.sh` |
-| `migrate.sh` | `ctl migrate {up\|down\|new\|status}` — Alembic | `scripts/migrate.sh` |
-| `wait-for-health.sh` | poll compose services until healthy (used by `ctl dev`) | `scripts/wait-for-health.sh` |
-| `test.sh` / `build.sh` / `clean.sh` | `ctl test` / `build` / `clean` workers | `scripts/{test,build,clean}.sh` |
+| `ctl` | dispatcher — routes every subcommand, inlines trivial compose forwards, executable | `ctl` at repo root (chmod +x) |
+| `_lib.sh` | **shared foundation** sourced by `ctl` + all workers (colors, `print_help`, `dc()`+discovery, guards, health, `confirm`) | `scripts/_lib.sh` |
+| `dev-host.sh` | `ctl dev` — ensure data core + run apps on host (`process-compose` or bash fallback) | `scripts/dev-host.sh` |
+| `dev-migrate.sh` | `ctl migrate {up\|down\|new\|status}` — Alembic | `scripts/dev-migrate.sh` |
+| `dev-test.sh` | `ctl test [backend\|frontend]` — pytest + bun test | `scripts/dev-test.sh` |
+| `dev-lint.sh` | `ctl lint [backend\|frontend]` — ruff + biome (stack-specific; adapt or drop) | `scripts/dev-lint.sh` |
+| `docker-up.sh` | `ctl up` — assemble profiles + one `--config` + `.m.` modifiers (`--dry-run`) | `scripts/docker-up.sh` |
+| `docker-build.sh` / `docker-clean.sh` | `ctl build` / `ctl clean [-y]` | `scripts/docker-{build,clean}.sh` |
+| `docker-health.sh` | `ctl health [svc…]` — one-shot health table | `scripts/docker-health.sh` |
+| `docker-shell.sh` | `ctl shell <svc>` — psql / redis-cli / shell in a container | `scripts/docker-shell.sh` |
+| `manage-setup.sh` | `ctl setup` — `.env` wizard (generates `*_PASSWORD/_SECRET/_KEY`) | `scripts/manage-setup.sh` |
+| `manage-status.sh` | `ctl status` — doctor: env · runtimes (mise+pins, uv/bun/uvenv) · docker · health · stack | `scripts/manage-status.sh` |
+| `manage-check-env.sh` | `.env` vs `.env.example` schema diff (helper; used by status) | `scripts/manage-check-env.sh` |
 
 ### `claude/`
 

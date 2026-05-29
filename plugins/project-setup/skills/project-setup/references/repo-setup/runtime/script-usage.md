@@ -25,120 +25,101 @@ The compose-file convention these assemble (profiles vs config vs `.m.` modifier
 
 ## Command surface
 
+Grouped by category (the prefix on the backing script file; the `ctl` verb stays clean). **Every command takes `-h`/`--help`** — uniform, colored, rendered by one helper in `_lib.sh`.
+
 ```
-ctl dev [target]      run the stack LOCALLY on the host (hot reload). target ∈ all|backend|frontend|<svc>
-                      auto-ensures the data core (with ports) is up first. foreground; Ctrl-C/q stops.
-ctl up [profile…] [--config=<name>] [--<modifier>…]   start container stack, detached
-ctl up --help         list discovered profiles, configs, modifiers
-ctl down [service]    stop the project (or named service)
-ctl restart [service]
-ctl ps                unified view: running containers + running local dev procs
-ctl logs [service] [-f]
-ctl status [service]  config doctor — project-custom body (scripts/status.sh)
-ctl setup             interactive .env / config.local.yaml wizard — project-custom body (scripts/setup.sh)
-ctl migrate {up|down|new|status}   alembic (lives here, not under dev)
-ctl test [target]
-ctl build             production image build
-ctl clean             tear down + clear caches (asks first)
-ctl help              print the contract
+Development (host loop)
+  ctl dev [target]                 apps on host, hot reload; auto-ups + waits for the data core   (dev-host.sh)
+  ctl migrate {up|down|new|status} alembic — backend owns DDL                                      (dev-migrate.sh)
+  ctl test [backend|frontend]      run test suites                                                 (dev-test.sh)
+  ctl lint [backend|frontend]      lint backend + frontend (ruff + biome; stack-specific)          (dev-lint.sh)
+
+Containers (docker compose)
+  ctl up [profile…] [--config=<name>] [--<modifier>…] [--dry-run]   assemble + start the stack     (docker-up.sh)
+  ctl up --help                    list discovered profiles, configs, modifiers
+  ctl down [svc] / restart [svc]   stop / restart                                       (inline → docker compose)
+  ctl logs [svc] [-f] / ps         tail logs / containers + host procs                  (inline → docker compose)
+  ctl exec <svc> [cmd]             run a command in a container (default: shell)        (inline → docker compose)
+  ctl shell <svc>                  psql / redis-cli / shell in a container                          (docker-shell.sh)
+  ctl build                        frontend assets + backend image                                 (docker-build.sh)
+  ctl clean [-y]                   tear down + wipe volumes/caches (asks first)                     (docker-clean.sh)
+  ctl health [svc…]                one-shot health table                                            (docker-health.sh)
+
+Configuration
+  ctl setup                        interactive .env wizard — project-custom                         (manage-setup.sh)
+  ctl status                       doctor: env · runtimes (mise/uv/bun/uvenv) · docker · health · stack  (manage-status.sh)
+  ctl help                         print the grouped contract
 ```
 
-`ctl dev backend` (backend on the **host**, reloading) and `ctl up app` (backend **container**) differ by *where it runs* — `dev` = host, `up` = docker. `ctl help` and `ctl status` must spell that out.
+Every command takes `-h`/`--help`; `ctl up --help` and `ctl status` both surface the auto-discovered profiles / configs / modifiers, so "what can I run here" is always one command away.
 
-## Dispatcher skeleton
+`ctl dev backend` (backend on the **host**, reloading) and `ctl up app` (backend **container**) differ by *where it runs* — `dev` = host, `up` = docker. The trivial `down`/`restart`/`logs`/`ps`/`exec` forwards live inline in `ctl`; everything with a real body is a `scripts/<category>-<name>.sh` worker.
 
-The full runnable version is `assets/snippets/scripts/dev-wrapper.sh` (drops in as `ctl`). The load-bearing part is discovery + the `ctl up` assembly — everything else is thin routing:
+## Architecture — `ctl` + `_lib.sh` + workers
+
+The runnable toolkit ships in `assets/snippets/scripts/` — copy `ctl` (to repo root) + `scripts/` and it works. Three layers:
+
+**`_lib.sh` (sourced by everything)** — the shared foundation that keeps every worker tiny and identical: a TTY/`NO_COLOR`-aware color palette + `say/step/ok/warn/err/die`, the uniform `print_help` renderer, `dc()` + `list_profiles/list_configs/list_modifiers` discovery, `require_env/require_tools`, `wait_healthy/health_table`, `check_env_schema`, `confirm`. Colors auto-disable when stdout isn't a terminal or `NO_COLOR` is set.
+
+**`ctl` (the router)** — sources `_lib.sh`, dispatches each subcommand, inlines only the trivial passthroughs:
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"; cd "$REPO_ROOT"
-DOCKER_DIR="docker"; BASE="$DOCKER_DIR/compose.yaml"
-DATA_SVCS=(postgres redis)               # the no-profile core ctl dev depends on
-c_info(){ printf '\033[36m▸\033[0m %s\n' "$*"; }
-die(){    printf '\033[31m✗\033[0m %s\n' "$*" >&2; exit 1; }
+CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$CTL_ROOT/scripts/_lib.sh"; cd "$CTL_ROOT"
 
-# discovery — no hard-coded lists. compose.m.* = modifiers; the rest (minus base) = configs.
-list_profiles()  { grep -hoE 'profiles:[[:space:]]*\[[^]]+\]' "$BASE" | grep -oE '[A-Za-z0-9_-]+' | grep -vx profiles | sort -u; }
-list_configs()   { for f in "$DOCKER_DIR"/compose.*.yaml; do [[ -e $f ]] || continue; b=${f##*/}; [[ $b == compose.yaml || $b == compose.m.* ]] && continue; b=${b#compose.}; echo "${b%.yaml}"; done; }
-list_modifiers() { for f in "$DOCKER_DIR"/compose.m.*.yaml; do [[ -e $f ]] || continue; b=${f##*/compose.m.}; echo "${b%.yaml}"; done; }
+run() { local s="$CTL_ROOT/scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s"; exec bash "$s" "$@"; }
 
-cmd_up() {                               # profiles + one --config + stacked --<modifier>
-  local profiles=() config="" modifiers=()
-  while [[ $# -gt 0 ]]; do case "$1" in
-    --config=*) [[ -z $config ]] || die "one --config at a time"; config="${1#--config=}"; shift ;;
-    --*)        modifiers+=("${1#--}"); shift ;;       # --expose → modifier 'expose'
-    -*)         die "unknown flag: $1" ;;
-    *)          profiles+=("$1"); shift ;;
-  esac; done
-  local files=("$BASE") prof_args=() env_args=()
-  if [[ -n $config ]]; then
-    local cf="$DOCKER_DIR/compose.$config.yaml"; [[ -f $cf ]] || die "no such config '$config'"
-    files+=("$cf"); [[ $config == prod && -f .env.production ]] && env_args=(--env-file .env.production)
-  fi
-  local m; for m in "${modifiers[@]}"; do                # modifiers stack last (they win)
-    local mf="$DOCKER_DIR/compose.m.$m.yaml"; [[ -f $mf ]] || die "no such modifier '$m'"; files+=("$mf")
-  done
-  local p; for p in "${profiles[@]}"; do
-    list_profiles | grep -qx "$p" || die "no such profile '$p'"; prof_args+=(--profile "$p")
-  done
-  local cmd=(docker compose) f; for f in "${files[@]}"; do cmd+=(-f "$f"); done
-  cmd+=("${prof_args[@]}" "${env_args[@]}" up -d)
-  c_info "${cmd[*]}"; "${cmd[@]}"                         # echo composed cmd, then run
-}
-
-# dev → ensure data core + process-compose/dev-host;  down/ps/logs → thin compose wrappers;
-# setup|status|migrate|test|build|clean → exec scripts/<cmd>.sh  (see the script map below)
+case "${1:-help}" in
+  dev)     shift; run dev-host    "$@" ;;          # real bodies → workers
+  migrate) shift; run dev-migrate "$@" ;;
+  up)      shift; run docker-up   "$@" ;;
+  setup)   shift; run manage-setup "$@" ;;
+  # … test/build/clean/health/status route the same way …
+  down)    shift; is_help "${1:-}" && { passthrough_help down "stop the stack"; exit 0; }; dc down "$@" ;;
+  restart|logs|ps|exec) … ;;                       # trivial docker compose forwards, inline
+  help|-h|--help) ctl_help ;;
+  *)       die "unknown command: ${1:-} (try ctl --help)" ;;
+esac
 ```
 
-Discovery is a one-line `grep`/glob — convention over a YAML parser, deliberately. (Assumes the inline `profiles: [app]` form.)
-
-## Worker scripts — two worked bodies
-
-`ctl` routes each real-body command to a self-contained `scripts/<name>.sh` (`set -euo pipefail`, exits non-zero, one job). The full list, roles, and folder layout are the **script map in `script-overview.md`**; the runnable set ships in `assets/snippets/scripts/`. Two representative bodies:
-
-### Example — `scripts/wait-for-health.sh`
+**`scripts/<category>-<name>.sh` (the workers)** — each sources `_lib.sh`, has a `usage()`, intercepts `-h/--help`, then does its one job with colored output. The uniform shape:
 
 ```bash
 #!/usr/bin/env bash
-# Wait for given compose services to report healthy.
-# Usage: ./scripts/wait-for-health.sh postgres redis [timeout-seconds]
 set -euo pipefail
-services=("$@"); timeout=60
-if [[ "${services[-1]}" =~ ^[0-9]+$ ]]; then timeout="${services[-1]}"; unset 'services[-1]'; fi
-proj="${COMPOSE_PROJECT_NAME:-$(basename "$PWD")}"; elapsed=0
-while (( elapsed < timeout )); do
-  all_healthy=true
-  for svc in "${services[@]}"; do
-    status=$(docker inspect -f '{{.State.Health.Status}}' "${proj}-${svc}" 2>/dev/null || echo "unknown")
-    [[ "$status" != "healthy" ]] && { all_healthy=false; break; }
-  done
-  $all_healthy && { echo "✓ all healthy: ${services[*]}"; exit 0; }
-  sleep 2; elapsed=$((elapsed + 2))
-done
-echo "✗ not healthy within ${timeout}s: ${services[*]}" >&2; exit 1
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+
+usage() { print_help "migrate" "Run database migrations (Alembic)." \
+  'migrate {up|down|new "<msg>"|status} [-h]' \
+"Commands
+  up / down / status   upgrade / downgrade one / show current
+  new \"<msg>\"           create a revision
+
+Options
+  -h, --help           show this help"; }
+
+is_help "${1:-}" && { usage; exit 0; }
+require_env
+# … the body (uses dc/step/ok/die from _lib.sh) …
 ```
 
-### Example — `scripts/check-env.sh`
-
-```bash
-#!/usr/bin/env bash
-# Diff .env keys against .env.example. Fail on missing keys.
-set -euo pipefail
-[[ -f .env && -f .env.example ]] || { echo "✗ need both .env and .env.example"; exit 1; }
-declare -A actual
-while IFS='=' read -r k _; do [[ -z "$k" || "$k" =~ ^# ]] || actual["$k"]=1; done < .env
-missing=()
-while IFS='=' read -r k _; do [[ -z "$k" || "$k" =~ ^# ]] && continue; [[ -v actual[$k] ]] || missing+=("$k"); done < .env.example
-(( ${#missing[@]} )) && { echo "✗ missing in .env: ${missing[*]}"; exit 1; }
-echo "✓ .env matches .env.example schema"
-```
+The load-bearing piece is `docker-up.sh`'s assembly (the same profiles + one `--config` + stacked `.m.` modifiers logic shown above) plus the discovery in `_lib.sh` — a one-line `grep`/glob per axis, convention over a YAML parser. Everything else is thin routing. Each worker stays ~25 lines because `_lib.sh` carries the shared weight; `ctl <cmd> --help` and `ctl up --help` (the discovered lists) come for free from `print_help`.
 
 ## `ctl setup` + `ctl status` — the two custom bodies
 
-**`scripts/setup.sh`** (the wizard): copy `.env.example` → `.env` if missing (never overwrite); walk the **REQUIRED** keys and prompt each, showing the current value; generate secrets the user shouldn't invent (`openssl rand -hex 32`); optionally seed `config.local.yaml`; ensure bind-mount data dirs exist (`mkdir -p data/postgres/pgdata data/redis/data`); end by printing `ctl status`. Keep it idempotent — re-running tops up, never clobbers.
+**`scripts/manage-setup.sh`** (the wizard): copy `.env.example` → `.env` if missing (never overwrite); walk the **REQUIRED** keys, generating secrets the user shouldn't invent (`openssl rand -hex 32` for `*_PASSWORD/_SECRET/_KEY`); ensure bind-mount data dirs (`mkdir -p data/postgres/pgdata data/redis/data`); end by pointing at `ctl dev`. Idempotent — re-running tops up, never clobbers.
 
-**`scripts/status.sh`** (the doctor) is read-only; checks (project-specific, consistent shape):
+**`scripts/manage-status.sh`** (the doctor) is read-only; it calls `check_env_schema` (from `_lib.sh`) and layers tool + health checks. Project-specific checks, consistent shape:
+
+| Check | Example |
+|---|---|
+| `.env` exists, matches `.env.example` schema | no missing keys, no empty REQUIRED |
+| `config.local.yaml` present (dev) | warn if absent — defaults won't apply |
+| Per-service config | backend `config.yaml` valid; frontend `.env` has `VITE_*`/`NEXT_PUBLIC_*` |
+| Dependencies reachable | data containers healthy? `mise` tools installed? |
+| Secrets not placeholder | REQUIRED keys aren't still `changeme` |
 
 | Check | Example |
 |---|---|
@@ -157,11 +138,11 @@ $ ctl status
 ✓ infra: postgres + redis healthy
 ```
 
-Report per area (backend / frontend / infra), green/yellow/red, with the fix for each red. `ctl status` calls `check-env.sh` (the env-schema diff) and layers per-service + reachability checks on top.
+Report per area (backend / frontend / infra), green/yellow/red, with the fix for each red. `ctl status` calls `check_env_schema` (from `_lib.sh`, also exposed as `manage-check-env.sh`) and layers tool, health, and discovered-stack (profiles/configs/modifiers) checks on top.
 
 ## `ctl dev` — the host loop
 
-`ctl dev` (1) brings up its data-container deps (`postgres`, `redis`, with ports) via `docker compose` and waits for healthchecks (`scripts/wait-for-health.sh`); (2) starts each app as a host process with hot reload; (3) multiplexes output into per-service panes; (4) stops everything cleanly on Ctrl-C. Steps 2–4 are delegated to a process runner — don't hand-roll PID juggling.
+`ctl dev` (1) brings up its data-container deps (`postgres`, `redis`, with ports) via `docker compose` and waits for healthchecks (`wait_healthy` from `_lib.sh`); (2) starts each app as a host process with hot reload; (3) multiplexes output into per-service panes; (4) stops everything cleanly on Ctrl-C. Steps 2–4 are delegated to a process runner — don't hand-roll PID juggling.
 
 ### Preferred: `process-compose.yaml`
 
@@ -239,10 +220,19 @@ The no-docker path is what `ctl dev` automates; documenting it raw lets a develo
 - "Just run `make dev`" with no explanation, or a Getting-Started wiki separate from the README — keep the contract in the repo.
 - Different commands in CI vs README — CI uses the same documented commands (or a superset).
 
+## Setting up & modifying the scripts
+
+The shipped `ctl` + `scripts/` are a **starting template** — copy them, then edit per project; the workers are custom scripts, not fixed tools. The recommended stack is **mise** (versions + bare-name PATH), **docker** (containers), **uv** (`uv sync` in-tree venv) and **bun** (node) — and `ctl setup` bootstraps a clone end-to-end with them: create `.env`, generate secrets, make data dirs, **install deps** (`uv sync` + `bun install`); `ctl status` then reports env · runtimes · docker · **deps (`.venv`/`node_modules`)** · health · stack.
+
+To **add** a command, drop `scripts/<category>-<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `_lib.sh`) and wire one `run` line into `ctl`. To **modify** one, edit its body — the command surface and `_lib.sh` stay constant.
+
+**Using mise / docker / uv / bun is highly recommended, but not mandatory.** When a project opts out of any of them, **don't fight the template** — follow `script-alternatives.md`, which gives the exact `.sh` lines to edit and the substitute (e.g. `./ctl` instead of bare `ctl` without mise; native Postgres/Redis without docker; **uvenv** named global venvs or `python -m venv`/poetry instead of `uv sync`; pnpm/npm instead of bun).
+
 ## See also
 
 - `script-overview.md` — the model (dev vs up, thin wrapper, the two custom bodies, why-host, three-paths concept)
+- `script-alternatives.md` — adapting the scripts off mise / docker / uv / bun (incl. uvenv)
 - `docker-overview.md` — profiles / config / `.m.` modifiers; `docker/` layout + path discipline
 - `mise.md` — project-scoped PATH; `ctl` callable bare
-- `assets/snippets/scripts/dev-wrapper.sh` (+ `scripts/*.sh`) — the runnable dispatcher and workers
+- `assets/snippets/scripts/ctl` (+ `scripts/*.sh`) — the runnable dispatcher and workers
 - `references/architecture/frontend/vite-proxy-nginx-pair.md` — dev proxy → prod nginx

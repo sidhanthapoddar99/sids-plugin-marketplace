@@ -95,7 +95,7 @@ If the user's shape doesn't cleanly match one, name the closest two and ask whic
 For every layout, the same conventions apply (with layout-specific adjustments documented per-layout). Consult:
 
 - `references/repo-setup/env-and-config/` — root `.env`, per-service `config.yaml`, env precedence (root → per-service → real env wins), frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
-- `references/repo-setup/runtime/` — the execution triad (mise + `ctl` + docker). **Start at `runtime/overview.md`** for how they interact; then `docker-overview.md` (profiles vs `--config` vs `compose.m.*`), `script-overview.md` + `script-usage.md` (the `ctl`/`scripts` model and its command surface), `mise.md`, and `complex-setups.md` (multi-mode + binary orchestrator)
+- `references/repo-setup/runtime/` — the execution triad (mise + `ctl` + docker). **Start at `runtime/overview.md`** for how they interact; then `docker-overview.md` (profiles vs `--config` vs `compose.m.*`), `script-overview.md` (the `ctl`/`scripts` model + `<category>-<name>.sh` convention) + `script-usage.md` (command surface, how to set up/add/modify scripts, `ctl setup` bootstraps deps) + `script-alternatives.md` (adapting off mise/docker/uv→uvenv/bun — the recommended tools are swappable), `mise.md`, and `complex-setups.md` (multi-mode + binary orchestrator)
 - `references/architecture/backend/` — `uv` for apps, `uvenv` for ML, Alembic conventions
 - `references/architecture/frontend/` — Vite/proxy/nginx pair, multi-frontend workspaces, design tokens, light/dark
 - `references/architecture/database/` — **choosing a database** (SQLite vs Postgres, in-process memory vs Redis), `infra/` vs `data/`, postgres/redis/sqlite/seaweed/mongo/neo4j conventions (versions illustrative — check latest)
@@ -179,8 +179,9 @@ references/
 │   │   ├── mise.md                # .mise.toml version contract + bare-name PATH (versions illustrative)
 │   │   ├── docker-overview.md # docker/ layout + path discipline; profiles (selection) vs --config configs vs compose.m.* modifiers
 │   │   ├── docker-details.md      # bind-mounts + data/ layout (nested pgdata trick) + internal-vs-host ports + YAML anchors
-│   │   ├── script-overview.md     # the ctl/scripts model: dev vs up, thin wrapper, the 2 custom bodies, why-host, 3 startup paths
-│   │   ├── script-usage.md        # command surface + dispatcher skeleton + scripts/*.sh map + setup/status + host loop + startup commands
+│   │   ├── script-overview.md     # the ctl/scripts model: dev vs up, thin wrapper, <category>-<name>.sh convention, the 2 custom bodies
+│   │   ├── script-usage.md        # command surface + skeleton + scripts/*.sh map + setup(bootstraps deps)/status + how to add/modify scripts
+│   │   ├── script-alternatives.md # opting out of mise/docker/uv→uvenv·venv·poetry/bun→pnpm·npm: which .sh lines to edit (tools are swappable defaults)
 │   │   └── complex-setups.md      # multi-mode docker/<mode>/ trees + escalate ctl → a Go binary (→ Layout 05)
 │   ├── env-and-config/            # the env/config split (a firm convention area)
 │   │   ├── env-precedence.md          # where a value comes from & who wins: 3 tiers + root .env scope + .env.example + config.local.yaml
@@ -250,7 +251,7 @@ assets/snippets/                   # fragments to drop into a target repo (NOT r
 ├── infra/nginx.conf
 ├── python/{alembic-shim.py, alembic_helpers.py}
 ├── env/{env.example.template, mise.toml.example}
-├── scripts/dev-wrapper.sh→ctl (thin dispatcher) + worker scripts (dev-host/setup/status/check-env/migrate/wait-for-health/test/build/clean).sh
+├── scripts/ctl (thin router → repo root) + _lib.sh (shared: colors/help/dc+discovery/guards) + workers dev-*/docker-*/manage-*.sh
 ├── claude/CLAUDE.md.template
 └── README.md                      # snippet index: what each fragment is + where it drops
 

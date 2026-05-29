@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# ctl — <PROJECT> control plane.  Drop at repo root (chmod +x, no extension — it's the public API).
+#
+# TEMPLATE, not a fixed spec. This is a sensible default toolkit — copy `ctl` + `scripts/`, then
+# add / remove / edit commands to fit the project (most repos won't need every command here).
+# To add a command: drop `scripts/<category>-<name>.sh` (category ∈ dev|docker|manage, see _lib.sh
+# for the worker preamble) and wire one `run <file>` line into the case below.
+#
+# A THIN ROUTER. It sources scripts/_lib.sh, dispatches each subcommand to its worker
+# (scripts/<category>-<name>.sh), and inlines only the trivial `docker compose` passthroughs.
+# Every command supports -h / --help; colors auto-disable when piped or NO_COLOR is set.
+#
+#   Development    dev · migrate · test
+#   Containers     up · down · restart · logs · ps · exec · build · clean · health
+#   Configuration  setup · status
+#
+# Profiles select services; one --config=<name> swaps the deployment config; --<modifier>
+# flags layer compose.m.<modifier>.yaml overlays.  No `ctl prod` verb — prod is
+# `ctl up app edge --config=prod`.  Run `ctl <command> --help` for any command.
+
+set -euo pipefail
+CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$CTL_ROOT/scripts/_lib.sh"
+cd "$CTL_ROOT"
+
+# route to a worker: ctl <cmd> → exec scripts/<file>.sh, passing the rest verbatim
+run() { local s="$CTL_ROOT/scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s — ship it in scripts/"; exec bash "$s" "$@"; }
+
+ctl_help() {
+  printf '%s%s%s — control plane. One entrypoint for dev + containers.\n\n' "$C_B$C_CYN" "ctl" "$C_RESET"
+  printf '%sDevelopment%s (host loop)\n' "$C_B" "$C_RESET"
+  printf '  %-36s %s\n' "dev [target]"                     "apps on host, hot reload (auto-starts data core)"
+  printf '  %-36s %s\n' 'migrate {up|down|new|status}'     "database migrations (Alembic)"
+  printf '  %-36s %s\n' "test [backend|frontend]"          "run test suites"
+  printf '  %-36s %s\n' "lint [backend|frontend]"          "lint backend + frontend"
+  printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"
+  printf '  %-36s %s\n' "up [profile…] [--config] [--mod]" "start the stack          (ctl up --help)"
+  printf '  %-36s %s\n' "down [svc] · restart [svc]"       "stop · restart"
+  printf '  %-36s %s\n' "logs [svc] [-f] · ps"             "tail logs · list containers + host procs"
+  printf '  %-36s %s\n' "exec <svc> [cmd] · shell <svc>"   "run a command · open a client/shell in a container"
+  printf '  %-36s %s\n' "build · clean · health"           "build images · wipe (asks) · health check"
+  printf '\n%sConfiguration%s\n' "$C_B" "$C_RESET"
+  printf '  %-36s %s\n' "setup"                            "interactive .env wizard"
+  printf '  %-36s %s\n' "status"                           "config doctor (env · tools · health)"
+  printf '\n%s-h/--help works on every command:  ctl <command> --help%s\n' "$C_DIM" "$C_RESET"
+}
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  # ── development ──────────────────────────────────────────
+  dev)      run dev-host    "$@" ;;
+  migrate)  run dev-migrate "$@" ;;
+  test)     run dev-test    "$@" ;;
+  lint)     run dev-lint    "$@" ;;
+  # ── containers: substantive workers ──────────────────────
+  up)       run docker-up     "$@" ;;
+  build)    run docker-build  "$@" ;;
+  clean)    run docker-clean  "$@" ;;
+  health)   run docker-health "$@" ;;
+  shell)    run docker-shell  "$@" ;;
+  # ── containers: thin docker compose passthroughs (uniform help + native hint) ──
+  down)     is_help "${1:-}" && { passthrough_help down    "stop the stack (or one service)";    exit 0; }; dc down    "$@" ;;
+  restart)  is_help "${1:-}" && { passthrough_help restart "restart the stack (or one service)"; exit 0; }; dc restart "$@" ;;
+  logs)     is_help "${1:-}" && { passthrough_help logs    "tail container logs (-f to follow)"; exit 0; }; dc logs    "$@" ;;
+  ps)       is_help "${1:-}" && { passthrough_help ps      "list running containers";            exit 0; }
+            dc ps; command -v process-compose >/dev/null 2>&1 && process-compose process list 2>/dev/null || true ;;
+  exec)     is_help "${1:-}" && { print_help exec "Run a command inside a running service container." \
+              'exec <service> [command…] [-h]' \
+              $'Arguments\n  service       the compose service (e.g. backend, postgres)\n  command…      default: an interactive shell\n\nOptions\n  -h, --help    show this help' \
+              "Forwards to \`docker compose exec\`."; exit 0; }
+            [[ $# -ge 1 ]] || die "usage: ctl exec <service> [command…]"
+            svc="$1"; shift; if (( $# )); then dc exec "$svc" "$@"; else dc exec "$svc" sh; fi ;;
+  # ── configuration ────────────────────────────────────────
+  setup)    run manage-setup  "$@" ;;
+  status)   run manage-status "$@" ;;
+  # ── meta ─────────────────────────────────────────────────
+  help|-h|--help) ctl_help ;;
+  *)        err "unknown command: $cmd"; say "run ${C_B}ctl --help${C_RESET} for the command list"; exit 1 ;;
+esac

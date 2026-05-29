@@ -29,33 +29,39 @@ The compose-file convention behind these (filenames, discovery) is owned by `doc
 
 - **Containers → `docker compose`.** `up`/`down`/`ps`/`logs`/`restart` are thin wrappers; `up`'s only real logic is turning profiles + config + modifiers into a `--profile`/`-f`/`--env-file` list, then echoing and running it.
 - **Local multi-process dev → a real runner**, not bash PID juggling. Default **`process-compose`** (declarative `process-compose.yaml`, readiness probes, per-service panes); **`mprocs`** as a lighter option; a bash `trap` only as a 1–2-process fallback (`scripts/dev-host.sh`).
-- **Real command bodies → `scripts/*.sh`**, each owning one job (the uniform one-liners `down`/`ps`/`logs`/`restart` stay inline in `ctl`). See the structure below.
+- **Real command bodies → `scripts/<category>-<name>.sh`**, each owning one job (the trivial one-liners `down`/`restart`/`logs`/`ps`/`exec` stay inline in `ctl`). See the structure below.
+- **Shared concerns → `scripts/_lib.sh`**, sourced by `ctl` and every worker: the color palette + logging, the uniform `--help` renderer, the `dc()`/discovery/assembly helpers, env/tool guards, health. This is what lets each worker stay ~25 lines and look identical.
 
 ## The `scripts/` structure — what you create
 
-`ctl` routes; `scripts/<name>.sh` are the workers. Each is **self-contained** (`set -euo pipefail`, exits non-zero on failure), kebab-case, does one thing.
-
-| Script | `ctl` verb | Role |
-|---|---|---|
-| `setup.sh` | `ctl setup` | **project-custom** — interactive `.env` wizard |
-| `status.sh` | `ctl status` | **project-custom** — config doctor; calls `check-env.sh` |
-| `check-env.sh` | (helper) | diff `.env` keys against `.env.example` |
-| `dev-host.sh` | `ctl dev` (fallback) | bash multi-proc runner (≤2 procs; else `process-compose`) |
-| `wait-for-health.sh` | `ctl dev` | poll compose services until healthy |
-| `migrate.sh` | `ctl migrate` | alembic `up`/`down`/`new`/`status` |
-| `test.sh` · `build.sh` · `clean.sh` | `ctl test`/`build`/`clean` | run suites / build image / wipe caches |
-| `db-init.sh` · `seed.sh` | (project) | optional DB bootstrap / seed |
+`ctl` routes; `scripts/<name>.sh` are the workers, **grouped by a category prefix** so the folder reads as a toolkit. Each sources `_lib.sh`, is self-contained (`set -euo pipefail`, exits non-zero, runnable on its own), and ships a `-h/--help`.
 
 ```
 scripts/
-├── setup.sh  status.sh  check-env.sh
-├── dev-host.sh  wait-for-health.sh
-├── migrate.sh  test.sh  build.sh  clean.sh
-├── db-init.sh  seed.sh
-└── py/{format,lint}.sh   rs/{sqlx-prepare,clippy}.sh   fe/biome.sh    # optional, for 3+ languages
+├── _lib.sh                      # shared: colors, logging, print_help, dc()+discovery, guards, health, confirm
+├── dev-host.sh                  # ctl dev      — ensure data core, run apps on host (process-compose|bash)
+├── dev-migrate.sh               # ctl migrate  — alembic up/down/new/status
+├── dev-test.sh                  # ctl test     — pytest + bun test
+├── dev-lint.sh                  # ctl lint     — ruff + biome (check; stack-specific)
+├── docker-up.sh                 # ctl up       — assemble profiles + --config + .m. modifiers (+ --dry-run)
+├── docker-build.sh              # ctl build    — frontend assets + backend image
+├── docker-clean.sh              # ctl clean    — teardown + wipe volumes/caches (asks; -y to skip)
+├── docker-health.sh             # ctl health   — one-shot health table
+├── docker-shell.sh              # ctl shell    — psql / redis-cli / shell in a container
+├── manage-setup.sh              # ctl setup    — interactive .env wizard (project-custom)
+├── manage-status.sh             # ctl status   — doctor: env·runtimes·docker·health·stack (project-custom)
+└── manage-check-env.sh          # helper       — .env vs .env.example schema diff (used by status)
 ```
 
-How many files is **utility-driven** — add a worker when a command has a real body; keep trivial passthroughs inline. The runnable bodies live in `assets/snippets/scripts/`, with two worked examples in `script-usage.md`.
+| Prefix | Holds | Backing `ctl` verbs |
+|---|---|---|
+| `dev-` | host-loop / development workflow | `dev`, `migrate`, `test`, `lint` |
+| `docker-` | container & compose lifecycle | `up`, `build`, `clean`, `health`, `shell` |
+| `manage-` | config management | `setup`, `status` (+ `check-env` helper) |
+
+Naming syntax is **`<category>-<name>.sh`** (`category ∈ dev | docker | manage`). The prefix is the **file** name only — the `ctl` subcommand stays clean (`ctl migrate`, not `ctl dev-migrate`). Trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`ps`/`exec`) are **not** files — they're one-line forwards inlined in `ctl`, still shown under the Containers group with uniform help.
+
+**Treat the shipped set as a template, not a spec.** It's a sensible default — copy `ctl` + `scripts/`, then add / remove / edit per the project; most repos won't need every command, and `lint`/`shell` are stack-specific (adapt or drop). How many files is **utility-driven**: a command earns a file once it outgrows a one-liner. **To add a command:** drop `scripts/<category>-<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `_lib.sh`) and wire one `run <file>` line into `ctl`'s `case`. The runnable toolkit lives in `assets/snippets/scripts/`; `script-usage.md` has the architecture + worked bodies.
 
 ## `setup` + `status` — the two project-custom bodies
 
@@ -102,7 +108,8 @@ A repo has **one** `ctl`. New need → a profile, a `compose.<config>.yaml`, or 
 
 ## See also
 
-- `script-usage.md` — command surface, dispatcher skeleton, the `scripts/*.sh` map, setup/status detail, host-loop runner, the three startup-path commands
+- `script-usage.md` — command surface, dispatcher skeleton, the `scripts/*.sh` map, setup/status detail, host-loop runner, how to add/modify scripts
+- `script-alternatives.md` — adapting the workers off the recommended defaults (no mise / docker / uv→uvenv·venv·poetry / bun→pnpm·npm)
 - `docker-overview.md` — the profile / config / `.m.` modifier compose convention `ctl up` implements
 - `mise.md` — the project-scoped PATH that makes `ctl` callable bare
 - `complex-setups.md` — when `ctl` outgrows shell (multi-node, Go-CLI orchestrator)
