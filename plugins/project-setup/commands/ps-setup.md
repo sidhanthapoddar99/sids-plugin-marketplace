@@ -28,7 +28,7 @@ The user wants to bootstrap a new project.
 3. **Pick a layout** from `skills/project-setup/references/repo-setup/layouts/*` based on the answers. If the user's shape doesn't cleanly match one, name the closest two and ask.
 4. **Show the proposed tree** as text. List every file you will create.
 5. **Ask once** before writing anything.
-6. **Apply** — write the files, dropping snippets from `assets/snippets/` where they fit. Use `${VAR}` placeholders consistently.
+6. **Apply** — write the files, dropping snippets from `assets/snippets/` where they fit. Use `${VAR}` placeholders consistently. **For the runtime layer, COPY the snippet files verbatim** — `assets/snippets/scripts/ctl` + the whole `scripts/` folder (incl. `_lib.sh` and `_select.sh`) and `assets/snippets/docker/*` — then adapt the project-specific bits. Never regenerate them from the reference prose (the prose is abbreviated; the files are the source of truth). Note `assets/` is a sibling of `skills/` at the plugin root, NOT under `skills/project-setup/`.
 7. **Post-init** — point the user at:
    - `mise install` to install the runtime contract
    - `cp .env.example .env` to start the secrets contract
@@ -66,7 +66,7 @@ The user wants a concrete proposal for restructuring their current repo. **Do no
 
 - Be concise. Long question flows lose users; ask in batches of 3–4 with reasonable defaults flagged.
 - Cite the reference files inline so the user can read why a convention exists (`see references/repo-setup/env-and-config/frontend-env-isolation.md`).
-- When dropping a snippet, name the source (`from assets/snippets/dev-wrapper.sh`).
+- When dropping a snippet, name the source (e.g. `from assets/snippets/scripts/ctl`). Copy the `scripts/` + `docker/` snippets verbatim; don't hand-rewrite them.
 - Never invent file paths — consult `references/integrations/examples-index.md`.
 - Never read `.env` files. `.env.example` is the contract.
 

@@ -18,6 +18,8 @@ services:
     ports:
       - "${PYTHON_PORT:-8000}:8000"
   frontend:
+    # container port 80 assumes a STATIC build served by nginx inside the image. An SSR
+    # server (Next standalone) listens on a real app port instead — change :80 to e.g. :3000.
     ports:
       - "${FRONTEND_PORT:-3000}:80"
   nginx:
