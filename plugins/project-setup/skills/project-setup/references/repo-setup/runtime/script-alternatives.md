@@ -1,6 +1,6 @@
 # Adapting the scripts off the recommended defaults
 
-The `ctl` + `scripts/` toolkit is a **template, not a fixed spec** (see `script-overview.md`). The shipped workers assume four recommended tools; all are swappable. This doc is what to do when the user **explicitly opts out** of one: what the tool buys, what breaks without it, and exactly which `.sh` lines to edit.
+The `ctl` + `scripts/` toolkit is a **template, not a fixed spec** (see `script-overview.md`). The shipped Python+Node workers call four of these defaults — **mise, docker, uv, bun** — and all four are swappable. They're the stack-specific slice of a wider *recommended toolchain* (below); each is a sane modern default, never a lock-in. This doc is what to do when the user **explicitly opts out** of one: what the tool buys, what breaks without it, and exactly which `.sh` lines to edit.
 
 **You edit the generated project's copy — never expect the shipped snippet to change.** The command *surface* (`ctl dev`, `ctl up`, …) and `_lib.sh` (colors, help, discovery) stay constant; only the tool-invoking lines inside the workers change. Keep the contract stable even when the implementation swaps tools.
 
@@ -10,6 +10,21 @@ The `ctl` + `scripts/` toolkit is a **template, not a fixed spec** (see `script-
 | **docker** | the whole container stack + `ctl dev`'s data core | every `docker-*`, `ctl up`/`dev` | prod-like parity; one-command data layer |
 | **uv** (`uv sync`) | in-tree `.venv` from `pyproject.toml` + `uv.lock` | `manage-setup.sh`, `dev-host.sh`, `dev-migrate.sh`, `dev-test.sh` | fast, lockfile-reproducible app deps |
 | **bun** | node deps + dev server + build | `manage-setup.sh`, `dev-host.sh`, `docker-build.sh`, `dev-test.sh` | fast, single-tool node workflow |
+
+### The wider toolchain — recommended, never required
+
+The four above are what the **shipped** workers invoke, because the template targets a Python + Node stack. The recommended toolchain is broader; pick what the project's languages actually need, and treat every cell as a swappable default:
+
+| Layer | Recommended default | Pinned by | Swap to |
+|---|---|---|---|
+| Version manager | **mise** | — | asdf, nvm + pyenv, system installs |
+| Python | **uv** (apps) · **uvenv** (ML / named-global) | mise | venv·pip, poetry, pdm, conda |
+| Node | **bun** | mise | pnpm, npm, yarn |
+| Rust | **cargo** (+ `rust-toolchain.toml`) | mise | system rustup |
+| Go | the **`go`** toolchain | mise | system go |
+| Containers | **docker** compose | — | podman, native services |
+
+**mise is the through-line** — it pins *all* of these runtimes (`python`, `node`, `rust`, `go`, java, ruby; see `mise.md`). Adding a Rust or Go service is the same edit pattern as everything below: the worker calls `cargo build` / `go build` on the line where the Python/Node workers call `uv` / `bun`. "Highly recommended" means good defaults out of the box — it never means mandatory; any cell can be hardcoded to the project's tool of choice.
 
 ## No mise
 
@@ -33,7 +48,7 @@ Affects **all** `docker-*` commands (`up`/`build`/`clean`/`health`/`shell`) plus
 
 The default is **in-tree `uv sync`** (`.venv` from `pyproject.toml` + `uv.lock`) — the **app** pattern (`references/architecture/backend/pyproject-uv-sync-for-apps.md`). Swap per project:
 
-**uvenv** — mise+uv named **global** venvs, conda-style, activate-from-anywhere; the **ML / `requirements.txt`** pattern (`references/architecture/backend/requirements-uvenv-for-ml.md`). Still needs mise + uv (`uvenv doctor` verifies). uvenv installs into a venv (no lockfile sync), so it pairs with `requirements.txt`, not `uv.lock`.
+**uvenv** — mise+uv named **global** venvs, conda-style, activate-from-anywhere; the **ML / `requirements.txt`** pattern (`references/architecture/backend/requirements-uvenv-for-ml.md`). Still needs mise + uv (`uvenv doctor` verifies). uvenv installs into a venv (no lockfile sync), so it pairs with `requirements.txt`, not `uv.lock`. Its operating manual ships alongside this skill — project-setup declares `uvenv` as a plugin dependency, so the full command grammar is on hand whenever `uvenv` comes up.
 
 ```bash
 # manage-setup.sh — replace `uv sync`:

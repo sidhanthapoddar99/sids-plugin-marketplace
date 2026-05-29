@@ -1,11 +1,14 @@
 {
   "name": "project-setup",
-  "description": "Architectural decision-maker for repos — new and existing. Triggers when the user makes any layout, structural, or convention decision: where a file or folder belongs, monorepo vs polyrepo, adding or splitting services, picking a database or ML orchestrator, docker / compose layout, env-config split, secrets, design tokens, modularity, mobile / desktop targets. Not only bootstrap — equally for restructuring established repos. One slash command (/ps-setup) with init | audit | suggest modes. Composes with sibling `dstack` and `documentation-guide` skills.",
+  "description": "Architectural decision-maker for repos — new and existing. Triggers when the user makes any layout, structural, or convention decision: where a file or folder belongs, monorepo vs polyrepo, adding or splitting services, picking a database or ML orchestrator, docker / compose layout, env-config split, secrets, design tokens, modularity, mobile / desktop targets. Not only bootstrap — equally for restructuring established repos. One slash command (/ps-setup) with init | audit | suggest modes. Composes with sibling `dstack` and `documentation-guide` skills, and declares the sibling `uvenv` skill as a dependency (auto-installed) for the ML / named-global Python path.",
   "author": {
     "name": "Sid",
     "email": "developer@neuralabs.org"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
+  "dependencies": [
+    "uvenv"
+  ],
   "skills": [
     "./skills/project-setup/"
   ],
