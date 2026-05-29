@@ -16,11 +16,12 @@ if that's the runner. Read-only; works without .env (falls back to default ports
 is_help "${1:-}" && { usage; exit 0; }
 [[ -f .env ]] && { set -a; source .env; set +a; }     # soft load — ps must never die
 
-step "containers"
+section "containers"
 if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then dc ps
 else say "${C_DIM}docker not reachable${C_RESET}"; fi
 
-step "host dev processes"
+printf '\n'
+section "host dev processes"
 if command -v process-compose >/dev/null 2>&1 && process-compose process list >/dev/null 2>&1; then
   process-compose process list                         # process-compose is the runner — it knows
 else

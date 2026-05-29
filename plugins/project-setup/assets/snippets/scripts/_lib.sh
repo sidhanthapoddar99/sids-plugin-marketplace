@@ -65,6 +65,7 @@ warn() { printf '%s%s!%s %s\n' "${LOG_INDENT:-}" "$C_YEL" "$C_RESET" "$*" >&2; }
 err()  { printf '%s%s✗%s %s\n' "${LOG_INDENT:-}" "$C_RED" "$C_RESET" "$*" >&2; }
 die()  { err "$*"; exit 1; }
 hr()   { printf '%s────────────────────────────────%s\n' "$C_DIM" "$C_RESET"; }
+section() { printf '%s%s%s\n' "$C_B" "$*" "$C_RESET"; hr; }   # bold title + rule line (grouped output, no ▸)
 # row <name> <desc> [width] — two-column help row padded by DISPLAY width (char count,
 # UTF-8-aware via ${#n}), so multibyte glyphs (…, ·) in the name column don't throw off
 # alignment the way `printf %-Ns` does (it pads by bytes). Used by ctl_help + usage blocks.
