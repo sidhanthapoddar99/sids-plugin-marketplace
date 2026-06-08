@@ -18,7 +18,7 @@ The default model is **profile-less**: every service in the chosen compose file 
 
 **Re-add profiles only when the project has several genuinely orthogonal, independently-optional service groups** mixed in arbitrary combinations — workers + observability + edge + debug tooling, toggled à la carte. That's a real shape, but uncommon, and even then a handful of standalone configs often expresses it more legibly. The test: can you *name* several independently-optional groups **and** confirm standalone configs can't express them? If not, stay profile-less.
 
-To re-add the axis: tag services with `profiles:` in `compose.yaml`, restore `list_profiles()` in `_lib.sh` (grep `profiles:` from the base), and give `docker-up.sh` a third selection axis (`--profile`, comma-list) feeding `--profile <p>` flags into the assembly. The interactive picker gains a profiles step *under* the chosen config. It's additive — the config + modifier axes are unchanged.
+To re-add the axis: tag services with `profiles:` in `compose.yaml`, restore `list_profiles()` in `_lib.sh` (grep `profiles:` from the base), and give `container/up.sh` a third selection axis (`--profile`, comma-list) feeding `--profile <p>` flags into the assembly. The interactive picker gains a profiles step *under* the chosen config. It's additive — the config + modifier axes are unchanged.
 
 ---
 

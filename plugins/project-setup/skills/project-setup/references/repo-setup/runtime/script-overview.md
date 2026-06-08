@@ -28,50 +28,54 @@ There is **no profiles axis** — every service in the chosen file runs. (Profil
 
 ### `ctl up` is interactive (and still scriptable)
 
-Bare `ctl up` in a terminal is a guided flow — **pick config → pick modifiers → see a plan → confirm (Run / Back / Cancel)** — built on a dependency-free TUI (`scripts/_select.sh`, no `fzf`/`gum`). It prompts only for the axes you didn't pass on the CLI, renders the real merged plan (`docker compose config` — services, ports, networks, volumes; this also validates the combo early), and prints the exact `--nqa` command that reproduces the run. CI (no TTY) and `--nqa` keep the deterministic flag path untouched. Mechanics in `script-usage.md`.
+Bare `ctl up` in a terminal is a guided flow — **pick config → pick modifiers → see a plan → confirm (Run / Back / Cancel)** — built on a dependency-free TUI (`scripts/common/_select.sh`, no `fzf`/`gum`). It prompts only for the axes you didn't pass on the CLI, renders the real merged plan (`docker compose config` — services, ports, networks, volumes; this also validates the combo early), and prints the exact `--nqa` command that reproduces the run. CI (no TTY) and `--nqa` keep the deterministic flag path untouched. Mechanics in `script-usage.md`.
 
 ## Thin wrapper — delegate, don't hand-roll
 
 `ctl` is **thin routing**, never a 500-line supervisor (that would fight the modularity caps). It delegates:
 
 - **Containers → `docker compose`.** `up`/`down`/`ps`/`logs`/`restart` are thin wrappers; `up`'s logic is turning a config + modifiers into a `-f`/`--env-file` list, planning it, then echoing and running it.
-- **Local multi-process dev → a real runner**, not bash PID juggling. Default **`process-compose`** (declarative `process-compose.yaml`, readiness probes, per-service panes); **`mprocs`** as a lighter option; a bash `trap` only as a 1–2-process fallback (`scripts/dev-host.sh`).
-- **Real command bodies → `scripts/<category>-<name>.sh`**, each owning one job (the trivial one-liners `down`/`restart`/`logs`/`exec` stay inline in `ctl`). See the structure below.
-- **Shared concerns → `scripts/_lib.sh`**, sourced by `ctl` and every worker: the color palette + indent-aware logging, the `row()` aligned-help helper, the uniform `--help` renderer, the `dc()`/discovery/health helpers, env/tool guards. It sources **`scripts/_select.sh`** (the picker). This is what lets each worker stay ~25 lines and look identical.
+- **Local multi-process dev → a real runner**, not bash PID juggling. Default **`process-compose`** (declarative `process-compose.yaml`, readiness probes, per-service panes); **`mprocs`** as a lighter option; a bash `trap` only as a 1–2-process fallback (`scripts/dev/host.sh`).
+- **Real command bodies → `scripts/<category>/<name>.sh`**, each owning one job (the trivial one-liners `down`/`restart`/`logs`/`exec` stay inline in `ctl`). See the structure below.
+- **Shared concerns → `scripts/common/_lib.sh`**, sourced by `ctl` and every worker: the color palette + indent-aware logging, the `row()` aligned-help helper, the uniform `--help` renderer, the `dc()`/discovery/health helpers, env/tool guards. It sources **`scripts/common/_select.sh`** (the picker). This is what lets each worker stay ~25 lines and look identical.
 
 ## The `scripts/` structure — what you create
 
-`ctl` routes; `scripts/<name>.sh` are the workers, **grouped by a category prefix** so the folder reads as a toolkit. Each sources `_lib.sh`, is self-contained (`set -euo pipefail`, exits non-zero, runnable on its own), and ships a `-h/--help`.
+`ctl` routes; `scripts/<category>/<name>.sh` are the workers, **grouped into category folders** so the directory reads as a toolkit. Each sources `common/_lib.sh`, is self-contained (`set -euo pipefail`, exits non-zero, runnable on its own), and ships a `-h/--help`.
 
 ```
 scripts/
-├── _lib.sh                      # shared: colors, indent-aware logging, row()/print_help, dc()+discovery, guards, health
-├── _select.sh                   # dependency-free TUI (tui_select) — single/multi/horizontal; sourced by _lib.sh
-├── dev-host.sh                  # ctl dev      — ensure data core (if any), run apps on host (process-compose|bash)
-├── dev-migrate.sh               # ctl migrate  — alembic up/down/new/status
-├── dev-test.sh                  # ctl test     — pytest + bun test
-├── dev-lint.sh                  # ctl lint     — ruff + biome (check; stack-specific)
-├── docker-up.sh                 # ctl up       — interactive 2-axis assembly: config (replaces base) + .m. modifiers (+ plan/--list)
-├── docker-build.sh              # ctl build    — service images
-├── docker-clean.sh              # ctl clean    — teardown + wipe volumes/caches (asks; -y to skip)
-├── docker-health.sh             # ctl health   — one-shot health table
-├── docker-shell.sh              # ctl shell    — psql / redis-cli / shell in a container
-├── docker-ps.sh                 # ctl ps       — containers + host dev processes (by dev port → PID)
-├── manage-setup.sh              # ctl setup    — .env wizard + secrets + data dirs + deps (project-custom)
-├── manage-status.sh             # ctl status   — doctor: env·runtimes·docker·deps·health·stack (project-custom)
-└── manage-check-env.sh          # helper       — .env vs .env.example schema diff (used by status)
+├── common/             # shared, sourced not routed
+│   ├── _lib.sh         # colors, indent-aware logging, row()/print_help, dc()+discovery, guards, health
+│   └── _select.sh      # dependency-free TUI (tui_select) — single/multi/horizontal; sourced by _lib.sh
+├── dev/                # host-loop / development workflow
+│   ├── host.sh         # ctl dev      — ensure data core (if any), run apps on host (process-compose|bash)
+│   ├── migrate.sh      # ctl migrate  — alembic up/down/new/status
+│   ├── test.sh         # ctl test     — pytest + bun test
+│   └── lint.sh         # ctl lint     — ruff + biome (check; stack-specific)
+├── container/          # container & compose lifecycle
+│   ├── up.sh           # ctl up       — interactive 2-axis assembly: config (replaces base) + .m. modifiers (+ plan/--list)
+│   ├── build.sh        # ctl build    — service images
+│   ├── clean.sh        # ctl clean    — teardown + wipe volumes/caches (asks; -y to skip)
+│   ├── health.sh       # ctl health   — one-shot health table
+│   ├── shell.sh        # ctl shell    — psql / redis-cli / shell in a container
+│   └── ps.sh           # ctl ps       — containers + host dev processes (by dev port → PID)
+└── config/             # config management
+    ├── setup.sh        # ctl setup    — .env wizard + secrets + data dirs + deps (project-custom)
+    ├── status.sh       # ctl status   — doctor: env·runtimes·docker·deps·health·stack (project-custom)
+    └── check-env.sh    # helper       — .env vs .env.example schema diff (used by status)
 ```
 
-| Prefix | Holds | Backing `ctl` verbs |
+| Folder | Holds | Backing `ctl` verbs |
 |---|---|---|
-| `dev-` | host-loop / development workflow | `dev`, `migrate`, `test`, `lint` |
-| `docker-` | container & compose lifecycle | `up`, `build`, `clean`, `health`, `shell`, `ps` |
-| `manage-` | config management | `setup`, `status` (+ `check-env` helper) |
-| (none) | shared libs, sourced not routed | `_lib.sh`, `_select.sh` |
+| `common/` | shared libs, sourced not routed | `_lib.sh`, `_select.sh` |
+| `dev/` | host-loop / development workflow | `dev`, `migrate`, `test`, `lint` |
+| `container/` | container & compose lifecycle | `up`, `build`, `clean`, `health`, `shell`, `ps` |
+| `config/` | config management | `setup`, `status` (+ `check-env` helper) |
 
-Naming syntax is **`<category>-<name>.sh`** (`category ∈ dev | docker | manage`). The prefix is the **file** name only — the `ctl` subcommand stays clean (`ctl migrate`, not `ctl dev-migrate`). Trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`exec`) are **not** files — they're one-line forwards inlined in `ctl`, still shown under the Containers group with uniform help.
+Layout is **`scripts/<category>/<name>.sh`** (`category ∈ common | dev | container | config`). The folder groups; the `ctl` subcommand stays clean — file `dev/migrate.sh`, command `ctl migrate` (not `ctl dev/migrate`). Trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`exec`) are **not** files — they're one-line forwards inlined in `ctl`, still shown under the Containers group with uniform help.
 
-**Treat the shipped set as a template, not a spec.** It's a sensible default — copy `ctl` + `scripts/`, then add / remove / edit per the project; most repos won't need every command, and `migrate`/`lint`/`shell`/`test` are stack-specific (adapt or drop — a no-DB repo drops `migrate`). How many files is **utility-driven**: a command earns a file once it outgrows a one-liner. **To add a command:** drop `scripts/<category>-<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `_lib.sh`) and wire one `run <file>` line into `ctl`'s `case`. The runnable toolkit lives in `assets/snippets/scripts/`; `script-usage.md` has the architecture + worked bodies.
+**Treat the shipped set as a template, not a spec.** It's a sensible default — copy `ctl` + `scripts/`, then add / remove / edit per the project; most repos won't need every command, and `migrate`/`lint`/`shell`/`test` are stack-specific (adapt or drop — a no-DB repo drops `migrate`). How many files is **utility-driven**: a command earns a file once it outgrows a one-liner. **To add a command:** drop `scripts/<category>/<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `common/_lib.sh`) and wire one `run <category>/<name>` line into `ctl`'s `case`. The runnable toolkit lives in `assets/snippets/scripts/`; `script-usage.md` has the architecture + worked bodies.
 
 ## `setup` + `status` — the two project-custom bodies
 

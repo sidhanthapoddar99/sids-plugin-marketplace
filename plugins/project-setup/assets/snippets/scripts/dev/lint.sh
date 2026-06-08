@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# dev-lint.sh — `ctl lint`. Lint backend + frontend (non-mutating; CI-friendly).
+# dev/lint.sh — `ctl lint`. Lint backend + frontend (non-mutating; CI-friendly).
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "lint" "Lint backend + frontend (non-mutating)." \
   'lint [backend|frontend] [-h]' \

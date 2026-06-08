@@ -19,7 +19,7 @@ Read it as: **mise makes `ctl` callable → `ctl` is the single entrypoint → `
 |---|---|---|
 | **mise** | Pin language/tool versions; project-scoped PATH so `ctl` is callable bare | `runtime/mise.md` |
 | **`ctl`** | The *only* entrypoint. A **thin wrapper** that routes to compose / process-compose / `scripts/*.sh` — it assembles flags, it does not implement | `runtime/script-overview.md` |
-| **`scripts/*.sh`** | The bodies `ctl` delegates to — each owns one job (setup, status, migrate, dev-host, health-wait) | `runtime/script-usage.md` |
+| **`scripts/*.sh`** | The bodies `ctl` delegates to — each owns one job (setup, status, migrate, dev/host, health-wait) | `runtime/script-usage.md` |
 | **docker compose** | Container stack: base + a standalone `config` (replaces base) + `compose.m.*` modifiers (profile-less) | `runtime/docker-overview.md` |
 | **env / config** | Root `.env` (shared) → per-service `config.yaml` (`${VAR}`) → real env wins | `env-and-config/` |
 

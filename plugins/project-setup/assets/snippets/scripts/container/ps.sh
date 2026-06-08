@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# docker-ps.sh — `ctl ps`. What's running, in two sections: containers first, then the
+# container/ps.sh — `ctl ps`. What's running, in two sections: containers first, then the
 # host dev processes `ctl dev` started (found by what's listening on the dev ports).
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "ps" "Show what's running: containers, then host dev processes." \
   'ps [-h]' \

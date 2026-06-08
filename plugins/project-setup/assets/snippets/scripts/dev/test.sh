@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# dev-test.sh — `ctl test`. Run backend + frontend suites.
+# dev/test.sh — `ctl test`. Run backend + frontend suites.
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "test" "Run backend + frontend test suites." \
   'test [backend|frontend] [-h]' \

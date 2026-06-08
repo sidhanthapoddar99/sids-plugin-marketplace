@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# dev-migrate.sh — `ctl migrate`. Alembic migrations (the backend owns DDL).
+# dev/migrate.sh — `ctl migrate`. Alembic migrations (the backend owns DDL).
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "migrate" "Run database migrations (Alembic)." \
   'migrate {up|down|new "<msg>"|status} [-h]' \

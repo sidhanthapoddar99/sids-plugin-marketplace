@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# docker-up.sh — `ctl up`. Two-axis, profile-less (the general structure):
+# container/up.sh — `ctl up`. Two-axis, profile-less (the general structure):
 #   config    — single, optional, STANDALONE: a chosen config REPLACES the base file
 #               (`compose.<name>.yaml` alone). Omit = base (compose.yaml = the whole stack).
 #   modifiers — multi, optional: cross-cutting overlays (compose.m.<name>.yaml), empty = none.
@@ -18,7 +18,7 @@
 # instead (base + config, the prod-as-overlay model), change the one assembly line marked below
 # to:  files=("$BASE" "$DOCKER_DIR/compose.$config.yaml")
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "up" "Assemble + start the container stack (interactive, or flag-driven)." \
   'up [config] [--modifier "a,b"] [-a] [--nqa] [-y] [--dry-run] [--list] [-h]' \

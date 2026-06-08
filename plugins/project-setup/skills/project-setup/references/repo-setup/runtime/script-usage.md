@@ -28,7 +28,7 @@ The compose-file convention these assemble (standalone config vs `.m.` modifier,
 
 ### Interactive `ctl up` — pick → plan → confirm
 
-Bare `ctl up` (or any partial invocation) in a terminal is **guided**, built on `scripts/_select.sh` (a dependency-free TUI — arrow keys + `[x]` checkboxes, numbered-prompt fallback with no TTY; no `fzf`/`gum`). It prompts only for the axes you *didn't* pass:
+Bare `ctl up` (or any partial invocation) in a terminal is **guided**, built on `scripts/common/_select.sh` (a dependency-free TUI — arrow keys + `[x]` checkboxes, numbered-prompt fallback with no TTY; no `fzf`/`gum`). It prompts only for the axes you *didn't* pass:
 
 1. **config** — single-select (`base (whole stack)` + each discovered config).
 2. **modifiers** — multi-select (Tab/Space toggle; empty = none).
@@ -71,32 +71,32 @@ Grouped by category (the prefix on the backing script file; the `ctl` verb stays
 
 ```
 Development (host loop)
-  ctl dev [target] [--dry-run]     apps on host, hot reload; auto-ups + waits for the data core   (dev-host.sh)
+  ctl dev [target] [--dry-run]     apps on host, hot reload; auto-ups + waits for the data core   (dev/host.sh)
                                    --help shows each target's exact host command; --dry-run prints them
-  ctl migrate {up|down|new|status} alembic — backend owns DDL                                      (dev-migrate.sh)
-  ctl test [backend|frontend]      run test suites                                                 (dev-test.sh)
-  ctl lint [backend|frontend]      lint backend + frontend (ruff + biome; stack-specific)          (dev-lint.sh)
+  ctl migrate {up|down|new|status} alembic — backend owns DDL                                      (dev/migrate.sh)
+  ctl test [backend|frontend]      run test suites                                                 (dev/test.sh)
+  ctl lint [backend|frontend]      lint backend + frontend (ruff + biome; stack-specific)          (dev/lint.sh)
 
 Containers (docker compose)
-  ctl up [config] [--modifier "a,b"] [-a] [--nqa] [-y] [--dry-run] [--list]   assemble + start     (docker-up.sh)
+  ctl up [config] [--modifier "a,b"] [-a] [--nqa] [-y] [--dry-run] [--list]   assemble + start     (container/up.sh)
   ctl down [svc] / restart [svc]   stop / restart                                       (inline → docker compose)
   ctl logs [svc] [-f]              tail container logs                                  (inline → docker compose)
   ctl exec <svc> [cmd]             run a command in a container (default: shell)        (inline → docker compose)
-  ctl ps                           containers + host dev processes (by dev port → PID)              (docker-ps.sh)
-  ctl shell <svc>                  psql / redis-cli / shell in a container                          (docker-shell.sh)
-  ctl build                        build the service images                                         (docker-build.sh)
-  ctl clean [-y]                   tear down + wipe volumes/caches (asks first)                     (docker-clean.sh)
-  ctl health [svc…]                one-shot health table                                            (docker-health.sh)
+  ctl ps                           containers + host dev processes (by dev port → PID)              (container/ps.sh)
+  ctl shell <svc>                  psql / redis-cli / shell in a container                          (container/shell.sh)
+  ctl build                        build the service images                                         (container/build.sh)
+  ctl clean [-y]                   tear down + wipe volumes/caches (asks first)                     (container/clean.sh)
+  ctl health [svc…]                one-shot health table                                            (container/health.sh)
 
 Configuration
-  ctl setup                        .env wizard + secrets + data dirs + deps — project-custom        (manage-setup.sh)
-  ctl status                       doctor: env · runtimes (mise/uv/bun/uvenv) · docker · deps · health · stack  (manage-status.sh)
+  ctl setup                        .env wizard + secrets + data dirs + deps — project-custom        (config/setup.sh)
+  ctl status                       doctor: env · runtimes (mise/uv/bun/uvenv) · docker · deps · health · stack  (config/status.sh)
   ctl help                         print the grouped contract
 ```
 
 `ctl up --list` (terse) and `ctl status` (full doctor) both surface the auto-discovered configs / modifiers, so "what can I run here" is always one command away.
 
-`ctl dev backend` (backend on the **host**, reloading) and `ctl up` (backend in a **container**) differ by *where it runs* — `dev` = host, `up` = docker. The trivial `down`/`restart`/`logs`/`exec` forwards live inline in `ctl`; everything with a real body — including `ps` (containers + host procs) — is a `scripts/<category>-<name>.sh` worker.
+`ctl dev backend` (backend on the **host**, reloading) and `ctl up` (backend in a **container**) differ by *where it runs* — `dev` = host, `up` = docker. The trivial `down`/`restart`/`logs`/`exec` forwards live inline in `ctl`; everything with a real body — including `ps` (containers + host procs) — is a `scripts/<category>/<name>.sh` worker.
 
 ## Architecture — `ctl` + `_lib.sh` + `_select.sh` + workers
 
@@ -112,15 +112,15 @@ The runnable toolkit ships in `assets/snippets/scripts/` — copy `ctl` (to repo
 #!/usr/bin/env bash
 set -euo pipefail
 CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-source "$CTL_ROOT/scripts/_lib.sh"; cd "$CTL_ROOT"
+source "$CTL_ROOT/scripts/common/_lib.sh"; cd "$CTL_ROOT"
 
 run() { local s="$CTL_ROOT/scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s"; exec bash "$s" "$@"; }
 
 case "${1:-help}" in
-  dev)     shift; run dev-host    "$@" ;;          # real bodies → workers
-  migrate) shift; run dev-migrate "$@" ;;
-  up)      shift; run docker-up   "$@" ;;
-  setup)   shift; run manage-setup "$@" ;;
+  dev)     shift; run dev/host    "$@" ;;          # real bodies → workers
+  migrate) shift; run dev/migrate "$@" ;;
+  up)      shift; run container/up   "$@" ;;
+  setup)   shift; run config/setup "$@" ;;
   # … test/build/clean/health/shell/status route the same way …
   down)    shift; is_help "${1:-}" && { passthrough_help down "stop the stack"; exit 0; }; dc down "$@" ;;
   restart|logs|ps|exec) … ;;                       # trivial docker compose forwards, inline
@@ -131,12 +131,12 @@ esac
 
 `ctl_help` builds its two-column layout with `row()` (one command per line, each with its own description — `row` keeps the columns aligned even with multibyte glyphs).
 
-**`scripts/<category>-<name>.sh` (the workers)** — each sources `_lib.sh`, has a `usage()`, intercepts `-h/--help`, then does its one job with colored output. The uniform shape:
+**`scripts/<category>/<name>.sh` (the workers)** — each sources `common/_lib.sh` (one level up), has a `usage()`, intercepts `-h/--help`, then does its one job with colored output. The uniform shape:
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "migrate" "Run database migrations (Alembic)." \
   'migrate {up|down|new "<msg>"|status} [-h]' \
@@ -152,17 +152,17 @@ require_env
 # … the body (uses dc/step/ok/die from _lib.sh) …
 ```
 
-The load-bearing piece is `docker-up.sh`'s **parse → resolve-missing-axes → assemble → plan/validate → Run/Back/Cancel** flow plus the discovery in `_lib.sh` — a one-line `grep`/glob per axis, convention over a YAML parser. Everything else is thin routing. Each worker stays ~25 lines because `_lib.sh` carries the shared weight.
+The load-bearing piece is `container/up.sh`'s **parse → resolve-missing-axes → assemble → plan/validate → Run/Back/Cancel** flow plus the discovery in `_lib.sh` — a one-line `grep`/glob per axis, convention over a YAML parser. Everything else is thin routing. Each worker stays ~25 lines because `_lib.sh` carries the shared weight.
 
 ### `print_help` body anatomy
 
-`print_help <cmd> <summary> <usage> <body> [dim-note]` leaves `<body>` free-form, but follow one anatomy so every `--help` reads identically: **Arguments / Options → (a discovered/availability block where relevant) → Example**. `docker-up.sh` is the canonical example (Arguments with inline discovered lists → Example).
+`print_help <cmd> <summary> <usage> <body> [dim-note]` leaves `<body>` free-form, but follow one anatomy so every `--help` reads identically: **Arguments / Options → (a discovered/availability block where relevant) → Example**. `container/up.sh` is the canonical example (Arguments with inline discovered lists → Example).
 
 ## `ctl setup` + `ctl status` — the two custom bodies
 
-**`scripts/manage-setup.sh`** (the wizard): copy `.env.example` → `.env` if missing (never overwrite); generate secrets the user shouldn't invent (`openssl rand -hex 32` for `*_PASSWORD/_SECRET/_KEY`); ensure bind-mount data dirs *if there's a data core* (`mkdir -p data/postgres/pgdata data/redis/data`, guarded on `DATA_SVCS`); **install deps** (`uv sync` + `bun install`); end by pointing at `ctl dev`. Idempotent — re-running tops up, never clobbers.
+**`scripts/config/setup.sh`** (the wizard): copy `.env.example` → `.env` if missing (never overwrite); generate secrets the user shouldn't invent (`openssl rand -hex 32` for `*_PASSWORD/_SECRET/_KEY`); ensure bind-mount data dirs *if there's a data core* (`mkdir -p data/postgres/pgdata data/redis/data`, guarded on `DATA_SVCS`); **install deps** (`uv sync` + `bun install`); end by pointing at `ctl dev`. Idempotent — re-running tops up, never clobbers.
 
-**`scripts/manage-status.sh`** (the doctor) is read-only (never dies on a missing `.env` — diagnosing that is the point); it calls `check_env_schema` and layers tool/deps/health checks, each section's result lines nested under its `▸` header via `LOG_INDENT`. Project-specific checks, consistent shape:
+**`scripts/config/status.sh`** (the doctor) is read-only (never dies on a missing `.env` — diagnosing that is the point); it calls `check_env_schema` and layers tool/deps/health checks, each section's result lines nested under its `▸` header via `LOG_INDENT`. Project-specific checks, consistent shape:
 
 | Check | Example |
 |---|---|
@@ -188,7 +188,7 @@ $ ctl status
 ✓ ready
 ```
 
-Report per area, green/yellow/red, with the fix for each red. `check_env_schema` is also exposed as `manage-check-env.sh`.
+Report per area, green/yellow/red, with the fix for each red. `check_env_schema` is also exposed as `config/check-env.sh`.
 
 ## `ctl dev` — the host loop
 
@@ -210,7 +210,7 @@ processes:
 
 `ctl dev` runs all; `ctl dev backend` runs one. `depends_on` orders the host processes; the data-container auto-up orders the containers before them. If a declared dep can't start, fail loudly with the fix, never start half a stack.
 
-### Fallback: bash `trap` (`scripts/dev-host.sh`, ≤ 2 processes)
+### Fallback: bash `trap` (`scripts/dev/host.sh`, ≤ 2 processes)
 
 ```bash
 prefix() { local tag="$1" c="$2"; while IFS= read -r l; do printf '\033[%sm[%s]\033[0m %s\n' "$c" "$tag" "$l"; done; }
@@ -271,7 +271,7 @@ The no-docker path is what `ctl dev` automates; documenting it raw lets a develo
 
 The shipped `ctl` + `scripts/` are a **starting template** — copy them, then edit per project; the workers are custom scripts, not fixed tools. The recommended stack is **mise** (versions + bare-name PATH), **docker** (containers), **uv** (`uv sync` in-tree venv) and **bun** (node) — and `ctl setup` bootstraps a clone end-to-end with them: create `.env`, generate secrets, make data dirs, **install deps**; `ctl status` then reports env · runtimes · docker · **deps (`.venv`/`node_modules`)** · health · stack.
 
-To **add** a command, drop `scripts/<category>-<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `_lib.sh`) and wire one `run` line into `ctl`. To **modify** one, edit its body — the command surface, `_lib.sh`, and `_select.sh` stay constant.
+To **add** a command, drop `scripts/<category>/<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `_lib.sh`) and wire one `run` line into `ctl`. To **modify** one, edit its body — the command surface, `_lib.sh`, and `_select.sh` stay constant.
 
 **Using mise / docker / uv / bun is highly recommended, but not mandatory.** When a project opts out of any of them, **don't fight the template** — follow `script-alternatives.md`, which gives the exact `.sh` lines to edit and the substitute (e.g. `./ctl` instead of bare `ctl` without mise; native Postgres/Redis without docker; **uvenv** named global venvs or `python -m venv`/poetry instead of `uv sync`; pnpm/npm instead of bun). For a project with **no data layer at all**, see `no-data-core.md` (set `DATA_SVCS=()` — the topology swap, the analogue of the tool swap).
 

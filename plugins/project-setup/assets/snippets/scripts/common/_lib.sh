@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# scripts/_lib.sh — shared foundation for `ctl` and every scripts/*.sh worker.
+# scripts/common/_lib.sh — shared foundation for `ctl` and every scripts/*.sh worker.
 # SOURCE this, do not execute it. It provides: colored, indent-aware logging, a uniform
 # --help renderer, docker-compose helpers + config/modifier discovery, env/tool guards,
 # container health, a (none)-aware list filter, and confirm prompts. Keeping it here is
 # what lets each worker stay ~25 lines and look identical.
 #
-# TEMPLATE — adapt per project. Workers are named `<category>-<name>.sh`, category ∈
-# dev | docker | manage (the `ctl` subcommand stays clean — `ctl migrate`, file `dev-migrate.sh`).
-# Add a worker with the preamble below, then wire one `run` line into `ctl`.
+# TEMPLATE — adapt per project. Workers live at `scripts/<category>/<name>.sh`, category ∈
+# common | dev | container | config (the `ctl` subcommand stays clean — `ctl migrate`, file
+# `dev/migrate.sh`). The shared files (this one + `_select.sh`) live in `common/`.
+# Add a worker with the preamble below, then wire one `run <category>/<name>` line into `ctl`.
 #
 # PROFILE-LESS 2-axis model. `ctl up` assembles a single, optional standalone `config`
 # (a compose.<name>.yaml that REPLACES base) + stackable `--modifier` overlays
@@ -21,13 +22,14 @@
 #                               (warn-don't-die) for a defaulted-env / no-data-core project —
 #                               see the soft one-liners marked at each function + no-data-core.md.
 #
-# Worker preamble (copy verbatim at the top of every scripts/<category>-<name>.sh):
+# Worker preamble (copy verbatim at the top of every scripts/<category>/<name>.sh):
 #   #!/usr/bin/env bash
 #   set -euo pipefail
-#   source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+#   source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 # ── repo root — set by ctl before sourcing; else derived from this file ──
-: "${CTL_ROOT:=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)}"
+# This file lives at scripts/common/_lib.sh, so the repo root is two levels up.
+: "${CTL_ROOT:=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)}"
 DOCKER_DIR="docker"
 BASE="$DOCKER_DIR/compose.yaml"
 # [ADAPT] data services, space-separated. Empty = no data core — every consumer below
@@ -173,7 +175,7 @@ port_pid() {
   printf '%s' "$pid"
 }
 
-# ── env schema (used by ctl status and manage-check-env.sh) ──
+# ── env schema (used by ctl status and config/check-env.sh) ──
 check_env_schema() {  # 0 if .env has every key .env.example declares
   # STRICT: missing .env / .env.example is an error.
   # [ADAPT] SOFT (defaulted env): warn-don't-fail — return 0 with a warn when either is absent

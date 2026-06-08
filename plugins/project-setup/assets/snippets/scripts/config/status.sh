@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# manage-status.sh — `ctl status`. Config doctor: env schema, toolchain, docker, deps,
+# config/status.sh — `ctl status`. Config doctor: env schema, toolchain, docker, deps,
 # data-core health, and the discovered stack (configs + modifiers). Read-only — never dies
 # on a missing .env (diagnosing that is the point); reports issues and exits non-zero.
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "status" "Config doctor: env, toolchain (mise/uv/bun/uvenv), docker, deps, stack, health." \
   'status [-h]' \

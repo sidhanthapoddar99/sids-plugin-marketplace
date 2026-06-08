@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# dev-host.sh — `ctl dev`. Ensure the data core (if any), then run apps on the host with hot reload.
+# dev/host.sh — `ctl dev`. Ensure the data core (if any), then run apps on the host with hot reload.
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 # [ADAPT] the host command per target — the ONE source for --help, --dry-run, and the run.
 # Emitted as a string so help/dry-run print EXACTLY what runs (ports resolve from .env once loaded).

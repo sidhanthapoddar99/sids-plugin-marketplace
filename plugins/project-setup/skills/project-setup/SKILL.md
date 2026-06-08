@@ -95,7 +95,7 @@ If the user's shape doesn't cleanly match one, name the closest two and ask whic
 For every layout, the same conventions apply (with layout-specific adjustments documented per-layout). Consult:
 
 - `references/repo-setup/env-and-config/` — root `.env`, per-service `config.yaml`, env precedence (root → per-service → real env wins), frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
-- `references/repo-setup/runtime/` — the execution triad (mise + `ctl` + docker). **Start at `runtime/overview.md`** for how they interact; then `docker-overview.md` (profile-less: standalone `config` vs `compose.m.*` modifiers + expose tiers), `script-overview.md` (the `ctl`/`scripts`/`_select.sh` model + `<category>-<name>.sh` convention) + `script-usage.md` (command surface, the interactive `ctl up` plan flow, how to set up/add/modify scripts, `ctl setup` bootstraps deps) + `script-alternatives.md` (adapting off mise/docker/uv→uvenv/bun — tools are swappable) + `no-data-core.md` (`DATA_SVCS=()` topology swap), `mise.md`, and `complex-setups.md` (profiles as the advanced escalation + multi-mode + binary orchestrator)
+- `references/repo-setup/runtime/` — the execution triad (mise + `ctl` + docker). **Start at `runtime/overview.md`** for how they interact; then `docker-overview.md` (profile-less: standalone `config` vs `compose.m.*` modifiers + expose tiers), `script-overview.md` (the `ctl`/`scripts`/`_select.sh` model + `<category>/<name>.sh` convention) + `script-usage.md` (command surface, the interactive `ctl up` plan flow, how to set up/add/modify scripts, `ctl setup` bootstraps deps) + `script-alternatives.md` (adapting off mise/docker/uv→uvenv/bun — tools are swappable) + `no-data-core.md` (`DATA_SVCS=()` topology swap), `mise.md`, and `complex-setups.md` (profiles as the advanced escalation + multi-mode + binary orchestrator)
 - `references/architecture/backend/` — `uv` for apps, `uvenv` for ML, Alembic conventions
 - `references/architecture/frontend/` — Vite/proxy/nginx pair, multi-frontend workspaces, design tokens, light/dark
 - `references/architecture/database/` — **choosing a database** (SQLite vs Postgres, in-process memory vs Redis), `infra/` vs `data/`, postgres/redis/sqlite/seaweed/mongo/neo4j conventions (versions illustrative — check latest)
@@ -179,7 +179,7 @@ references/
 │   │   ├── mise.md                # .mise.toml version contract + bare-name PATH (versions illustrative)
 │   │   ├── docker-overview.md # docker/ layout + path discipline; profile-less: standalone config (replaces base) vs compose.m.* modifiers + expose tiers
 │   │   ├── docker-details.md      # bind-mounts + data/ layout (nested pgdata trick) + internal-vs-host ports + YAML anchors
-│   │   ├── script-overview.md     # the ctl/scripts/_select.sh model: dev vs up, thin wrapper, <category>-<name>.sh convention, the 2 custom bodies
+│   │   ├── script-overview.md     # the ctl/scripts model (common/ libs + dev|container|config workers): dev vs up, thin wrapper, <category>/<name>.sh convention, the 2 custom bodies
 │   │   ├── script-usage.md        # command surface + skeleton + interactive ctl up (plan/--list) + scripts/*.sh map + setup(bootstraps deps)/status
 │   │   ├── script-alternatives.md # opting out of mise/docker/uv→uvenv·venv·poetry/bun→pnpm·npm: which .sh lines to edit (tools are swappable defaults)
 │   │   ├── no-data-core.md        # DATA_SVCS=() topology swap: apps-as-core for a DB-less project (the analogue of script-alternatives)
@@ -252,7 +252,7 @@ assets/snippets/                   # fragments to drop into a target repo (NOT r
 ├── infra/nginx.conf
 ├── python/{alembic-shim.py, alembic_helpers.py}
 ├── env/{env.example.template, mise.toml.example}
-├── scripts/ctl (thin router → repo root) + _lib.sh (shared: colors/help/dc+discovery/guards) + workers dev-*/docker-*/manage-*.sh
+├── scripts/ctl (thin router → repo root) + common/{_lib.sh,_select.sh} (shared: colors/help/dc+discovery/guards/picker) + workers dev/* container/* config/*
 ├── claude/CLAUDE.md.template
 └── README.md                      # snippet index: what each fragment is + where it drops
 

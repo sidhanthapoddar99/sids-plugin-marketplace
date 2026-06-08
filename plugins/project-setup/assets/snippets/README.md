@@ -11,7 +11,7 @@ assets/snippets/
 ├── infra/             # config baked into containers (nginx)
 ├── python/            # alembic helpers + shim template
 ├── env/               # .env.example + .mise.toml templates
-├── scripts/           # thin ctl dispatcher + _lib.sh + _select.sh picker + worker scripts
+├── scripts/           # thin ctl dispatcher + common/ (_lib.sh + _select.sh) + dev/ container/ config/ workers
 └── claude/            # CLAUDE.md template
 ```
 
@@ -64,27 +64,27 @@ assets/snippets/
 
 **This is a template, not a fixed spec.** It's a sensible default toolkit — copy `ctl` (to the repo root, `chmod +x`, no extension — it's the public API) **and the whole `scripts/` folder**, then add / remove / edit commands to fit the project. Most repos won't need every command shipped here; some (`lint`, `shell`) are stack-specific — adapt or drop them.
 
-`ctl` is a thin router; `scripts/_lib.sh` is the shared foundation (colors + indent-aware logging, `row()` aligned help, uniform `--help`, `dc()` + discovery, `or_none`, guards, container-resolved health) every worker sources; `scripts/_select.sh` is a dependency-free TUI picker (no fzf/gum) sourced by `_lib.sh` and used by the interactive `ctl up`. Each command with a real body is a worker named **`scripts/<category>-<name>.sh`** (category ∈ `dev` | `docker` | `manage` — the `ctl` verb stays clean: `ctl migrate`, file `dev-migrate.sh`). Trivial `docker compose` forwards (`down`/`restart`/`logs`/`exec`) stay inline in `ctl`. Colors auto-disable when piped or `NO_COLOR` is set; every command takes `-h`/`--help`.
+`ctl` is a thin router; `scripts/common/_lib.sh` is the shared foundation (colors + indent-aware logging, `row()` aligned help, uniform `--help`, `dc()` + discovery, `or_none`, guards, container-resolved health) every worker sources; `scripts/common/_select.sh` is a dependency-free TUI picker (no fzf/gum) sourced by `_lib.sh` and used by the interactive `ctl up`. Each command with a real body is a worker at **`scripts/<category>/<name>.sh`** (category ∈ `dev` | `container` | `config`; `common/` holds the shared libs — the `ctl` verb stays clean: `ctl migrate`, file `dev/migrate.sh`). Trivial `docker compose` forwards (`down`/`restart`/`logs`/`exec`) stay inline in `ctl`. Colors auto-disable when piped or `NO_COLOR` is set; every command takes `-h`/`--help`.
 
-**To add a command:** drop `scripts/<category>-<name>.sh` (use the worker preamble in `_lib.sh`) and wire one `run <file>` line into `ctl`'s `case`. See `references/repo-setup/runtime/script-overview.md` (model + map) and `.../script-usage.md` (commands).
+**To add a command:** drop `scripts/<category>/<name>.sh` (use the worker preamble in `common/_lib.sh`) and wire one `run <category>/<name>` line into `ctl`'s `case`. See `references/repo-setup/runtime/script-overview.md` (model + map) and `.../script-usage.md` (commands).
 
 | File | What it is | Drops at |
 |---|---|---|
 | `ctl` | dispatcher — routes every subcommand, inlines trivial compose forwards, executable | `ctl` at repo root (chmod +x) |
-| `_lib.sh` | **shared foundation** sourced by `ctl` + all workers (colors + `LOG_INDENT` logging, `row()`/`print_help`, `dc()`+discovery+`or_none`, guards, container-resolved health, `split_csv`, `confirm`); sources `_select.sh` | `scripts/_lib.sh` |
-| `_select.sh` | **dependency-free TUI picker** (`tui_select`: single/multi/horizontal, arrow+jk nav, `[x]`, numbered fallback) — copy verbatim; used by interactive `ctl up` | `scripts/_select.sh` |
-| `dev-host.sh` | `ctl dev` — ensure data core (if any) + run apps on host (`process-compose` or bash fallback) | `scripts/dev-host.sh` |
-| `dev-migrate.sh` | `ctl migrate {up\|down\|new\|status}` — Alembic | `scripts/dev-migrate.sh` |
-| `dev-test.sh` | `ctl test [backend\|frontend]` — pytest + bun test | `scripts/dev-test.sh` |
-| `dev-lint.sh` | `ctl lint [backend\|frontend]` — ruff + biome (stack-specific; adapt or drop) | `scripts/dev-lint.sh` |
-| `docker-up.sh` | `ctl up` — interactive 2-axis: standalone config (replaces base) + `.m.` modifiers; plan + `--list` + `--attach` + `--nqa`/`-y` | `scripts/docker-up.sh` |
-| `docker-build.sh` / `docker-clean.sh` | `ctl build` / `ctl clean [-y]` | `scripts/docker-{build,clean}.sh` |
-| `docker-health.sh` | `ctl health [svc…]` — one-shot health table | `scripts/docker-health.sh` |
-| `docker-shell.sh` | `ctl shell <svc>` — psql / redis-cli / shell in a container | `scripts/docker-shell.sh` |
-| `docker-ps.sh` | `ctl ps` — containers, then host dev processes (resolved by dev port → PID) | `scripts/docker-ps.sh` |
-| `manage-setup.sh` | `ctl setup` — `.env` wizard (generates `*_PASSWORD/_SECRET/_KEY`), data dirs, installs deps | `scripts/manage-setup.sh` |
-| `manage-status.sh` | `ctl status` — doctor: env · runtimes (mise+pins, uv/bun/uvenv) · docker · deps · health · stack | `scripts/manage-status.sh` |
-| `manage-check-env.sh` | `.env` vs `.env.example` schema diff (helper; used by status) | `scripts/manage-check-env.sh` |
+| `common/_lib.sh` | **shared foundation** sourced by `ctl` + all workers (colors + `LOG_INDENT` logging, `row()`/`print_help`, `dc()`+discovery+`or_none`, guards, container-resolved health, `split_csv`, `confirm`); sources `_select.sh` | `scripts/common/_lib.sh` |
+| `common/_select.sh` | **dependency-free TUI picker** (`tui_select`: single/multi/horizontal, arrow+jk nav, `[x]`, numbered fallback) — copy verbatim; used by interactive `ctl up` | `scripts/common/_select.sh` |
+| `dev/host.sh` | `ctl dev` — ensure data core (if any) + run apps on host (`process-compose` or bash fallback) | `scripts/dev/host.sh` |
+| `dev/migrate.sh` | `ctl migrate {up\|down\|new\|status}` — Alembic | `scripts/dev/migrate.sh` |
+| `dev/test.sh` | `ctl test [backend\|frontend]` — pytest + bun test | `scripts/dev/test.sh` |
+| `dev/lint.sh` | `ctl lint [backend\|frontend]` — ruff + biome (stack-specific; adapt or drop) | `scripts/dev/lint.sh` |
+| `container/up.sh` | `ctl up` — interactive 2-axis: standalone config (replaces base) + `.m.` modifiers; plan + `--list` + `--attach` + `--nqa`/`-y` | `scripts/container/up.sh` |
+| `container/build.sh` / `container/clean.sh` | `ctl build` / `ctl clean [-y]` | `scripts/container/{build,clean}.sh` |
+| `container/health.sh` | `ctl health [svc…]` — one-shot health table | `scripts/container/health.sh` |
+| `container/shell.sh` | `ctl shell <svc>` — psql / redis-cli / shell in a container | `scripts/container/shell.sh` |
+| `container/ps.sh` | `ctl ps` — containers, then host dev processes (resolved by dev port → PID) | `scripts/container/ps.sh` |
+| `config/setup.sh` | `ctl setup` — `.env` wizard (generates `*_PASSWORD/_SECRET/_KEY`), data dirs, installs deps | `scripts/config/setup.sh` |
+| `config/status.sh` | `ctl status` — doctor: env · runtimes (mise+pins, uv/bun/uvenv) · docker · deps · health · stack | `scripts/config/status.sh` |
+| `config/check-env.sh` | `.env` vs `.env.example` schema diff (helper; used by status) | `scripts/config/check-env.sh` |
 
 ### `claude/`
 

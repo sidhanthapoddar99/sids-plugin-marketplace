@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/_select.sh — dependency-free terminal selector widget. SOURCE this; call tui_select.
+# scripts/common/_select.sh — dependency-free terminal selector widget. SOURCE this; call tui_select.
 #
 # A small, reusable picker (no fzf/gum). Single-select, multi-select, and a horizontal
 # action row, with arrow-key nav, [x]/[ ] checkboxes, and an automatic numbered-prompt

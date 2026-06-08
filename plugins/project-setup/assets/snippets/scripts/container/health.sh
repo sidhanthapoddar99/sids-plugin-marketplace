@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# docker-health.sh — `ctl health`. One-shot health check of the data core (or named services).
+# container/health.sh — `ctl health`. One-shot health check of the data core (or named services).
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "health" "One-shot health table for the stack's containers." \
   'health [svc…] [-h]' \

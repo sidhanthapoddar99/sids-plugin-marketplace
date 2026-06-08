@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# docker-shell.sh — `ctl shell`. Open the right client/shell inside a running service container.
+# container/shell.sh — `ctl shell`. Open the right client/shell inside a running service container.
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "shell" "Open a shell or DB client inside a running service container." \
   'shell <service> [-h]' \

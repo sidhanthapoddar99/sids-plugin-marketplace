@@ -14,10 +14,10 @@ With a data core, the data layer is the always-on base and `ctl dev` brings it u
 |---|---|
 | **`_lib.sh`** | `read -r -a DATA_SVCS <<< "${DATA_SVCS:-}"` — **empty default** (was `postgres redis`). Everything below keys off this. |
 | **`_lib.sh`** | If the project has no required secrets, soften the guards (the `[ADAPT]` one-liners are inline): `require_env` → load-if-present-never-die; `check_env_schema` → warn-don't-fail. A defaulted `.env` shouldn't force a `ctl setup` that does nothing. |
-| **`dev-host.sh`** | Already guarded — with `DATA_SVCS` empty it skips the `dc … up -d` + `wait_healthy` and just runs the host apps. `require_tools mise docker` → drop `docker` if dev needs no containers. |
-| **`manage-setup.sh`** | Already guarded — skips `mkdir data/...` when `DATA_SVCS` is empty. |
-| **`manage-status.sh`** | Already guarded — prints "data core: none". Repoint the `containers` health check at your app services (e.g. `health_table backend frontend nginx`). |
-| **`docker-health.sh`** | Already falls back to `dc config --services` (all compose services) when `DATA_SVCS` is empty. |
+| **`dev/host.sh`** | Already guarded — with `DATA_SVCS` empty it skips the `dc … up -d` + `wait_healthy` and just runs the host apps. `require_tools mise docker` → drop `docker` if dev needs no containers. |
+| **`config/setup.sh`** | Already guarded — skips `mkdir data/...` when `DATA_SVCS` is empty. |
+| **`config/status.sh`** | Already guarded — prints "data core: none". Repoint the `containers` health check at your app services (e.g. `health_table backend frontend nginx`). |
+| **`container/health.sh`** | Already falls back to `dc config --services` (all compose services) when `DATA_SVCS` is empty. |
 | **`compose.yaml`** | Remove the `postgres`/`redis` services and the apps' `depends_on: {postgres: service_healthy, …}`. The apps are now the base. |
 
 ## Compose + expose, app-only

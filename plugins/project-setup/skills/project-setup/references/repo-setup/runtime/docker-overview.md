@@ -48,7 +48,7 @@ ctl up prod             # the hardened prod stack (compose.prod.yaml replaces ba
 
 This is how the profile-less model expresses "run a subset": instead of a `data` profile, you write a `compose.data.yaml` that *is* the data-only scenario and select it by name. The redundancy (a standalone config re-declares its services) is real but cheap for a handful of discrete scenarios, and far easier to reason about than profile combinatorics — **redundancy but simpler** is the right trade at this scale.
 
-**Standalone vs overlay configs.** The shipped `docker-up.sh` treats a config as **standalone** (replaces base). If you'd rather a config *overlay* base (`-f base -f config`, the classic prod-as-overlay that avoids re-declaring services), that's a one-line change in `docker-up.sh` (marked `[ADAPT]` there) — `compose.prod.yaml` shows the standalone form; both are valid and the file's role is a documented per-project choice. A config named `<x>` auto-uses `.env.<x>` if present (e.g. `prod` → `.env.prod`).
+**Standalone vs overlay configs.** The shipped `container/up.sh` treats a config as **standalone** (replaces base). If you'd rather a config *overlay* base (`-f base -f config`, the classic prod-as-overlay that avoids re-declaring services), that's a one-line change in `container/up.sh` (marked `[ADAPT]` there) — `compose.prod.yaml` shows the standalone form; both are valid and the file's role is a documented per-project choice. A config named `<x>` auto-uses `.env.<x>` if present (e.g. `prod` → `.env.prod`).
 
 ## Modifiers = cross-cutting overlays (stackable)
 

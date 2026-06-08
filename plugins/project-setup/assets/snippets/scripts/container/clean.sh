@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# docker-clean.sh — `ctl clean`. Tear down the stack and wipe caches + data volumes.
+# container/clean.sh — `ctl clean`. Tear down the stack and wipe caches + data volumes.
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "clean" "Tear down the stack and wipe caches + data volumes." \
   'clean [-y|--yes] [-h]' \

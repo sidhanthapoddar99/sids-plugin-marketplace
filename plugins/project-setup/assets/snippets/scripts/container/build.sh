@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# docker-build.sh — `ctl build`. Build frontend assets + backend image (local/dev tags).
+# container/build.sh — `ctl build`. Build frontend assets + backend image (local/dev tags).
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "build" "Build frontend assets and the backend image (local/dev tags)." \
   'build [-h]' \

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# manage-setup.sh — `ctl setup`. Interactive .env wizard: create .env, generate secrets, make data dirs.
+# config/setup.sh — `ctl setup`. Interactive .env wizard: create .env, generate secrets, make data dirs.
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "setup" "Interactive .env wizard: create .env, generate secrets, make data dirs." \
   'setup [-h]' \

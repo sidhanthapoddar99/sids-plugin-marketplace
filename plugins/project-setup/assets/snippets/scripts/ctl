@@ -3,11 +3,11 @@
 #
 # TEMPLATE, not a fixed spec. This is a sensible default toolkit — copy `ctl` + `scripts/`, then
 # add / remove / edit commands to fit the project (most repos won't need every command here).
-# To add a command: drop `scripts/<category>-<name>.sh` (category ∈ dev|docker|manage, see _lib.sh
-# for the worker preamble) and wire one `run <file>` line into the case below.
+# To add a command: drop `scripts/<category>/<name>.sh` (category ∈ dev|container|config, see
+# common/_lib.sh for the worker preamble) and wire one `run <category>/<name>` line into the case below.
 #
-# A THIN ROUTER. It sources scripts/_lib.sh, dispatches each subcommand to its worker
-# (scripts/<category>-<name>.sh), and inlines only the trivial `docker compose` passthroughs.
+# A THIN ROUTER. It sources scripts/common/_lib.sh, dispatches each subcommand to its worker
+# (scripts/<category>/<name>.sh), and inlines only the trivial `docker compose` passthroughs.
 # Every command supports -h / --help; colors auto-disable when piped or NO_COLOR is set.
 #
 #   Development    dev · migrate · test · lint
@@ -23,7 +23,7 @@
 
 set -euo pipefail
 CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-source "$CTL_ROOT/scripts/_lib.sh"
+source "$CTL_ROOT/scripts/common/_lib.sh"
 cd "$CTL_ROOT"
 
 # route to a worker: ctl <cmd> → exec scripts/<file>.sh, passing the rest verbatim
@@ -57,17 +57,17 @@ ctl_help() {
 cmd="${1:-help}"; shift || true
 case "$cmd" in
   # ── development ──────────────────────────────────────────
-  dev)      run dev-host    "$@" ;;
-  migrate)  run dev-migrate "$@" ;;
-  test)     run dev-test    "$@" ;;
-  lint)     run dev-lint    "$@" ;;
+  dev)      run dev/host    "$@" ;;
+  migrate)  run dev/migrate "$@" ;;
+  test)     run dev/test    "$@" ;;
+  lint)     run dev/lint    "$@" ;;
   # ── containers: substantive workers ──────────────────────
-  up)       run docker-up     "$@" ;;
-  build)    run docker-build  "$@" ;;
-  clean)    run docker-clean  "$@" ;;
-  health)   run docker-health "$@" ;;
-  shell)    run docker-shell  "$@" ;;
-  ps)       run docker-ps     "$@" ;;       # containers + host dev processes
+  up)       run container/up     "$@" ;;
+  build)    run container/build  "$@" ;;
+  clean)    run container/clean  "$@" ;;
+  health)   run container/health "$@" ;;
+  shell)    run container/shell  "$@" ;;
+  ps)       run container/ps     "$@" ;;       # containers + host dev processes
   # ── containers: thin docker compose passthroughs (uniform help + native hint) ──
   down)     is_help "${1:-}" && { passthrough_help down    "stop the stack (or one service)";    exit 0; }; dc down    "$@" ;;
   restart)  is_help "${1:-}" && { passthrough_help restart "restart the stack (or one service)"; exit 0; }; dc restart "$@" ;;
@@ -79,8 +79,8 @@ case "$cmd" in
             [[ $# -ge 1 ]] || die "usage: ctl exec <service> [command…]"
             svc="$1"; shift; if (( $# )); then dc exec "$svc" "$@"; else dc exec "$svc" sh; fi ;;
   # ── configuration ────────────────────────────────────────
-  setup)    run manage-setup  "$@" ;;
-  status)   run manage-status "$@" ;;
+  setup)    run config/setup  "$@" ;;
+  status)   run config/status "$@" ;;
   # ── meta ─────────────────────────────────────────────────
   help|-h|--help) ctl_help ;;
   *)        err "unknown command: $cmd"; say "run ${C_B}ctl --help${C_RESET} for the command list"; exit 1 ;;
