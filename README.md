@@ -44,7 +44,7 @@ To pin to a specific marketplace ref:
 | [`ai-toolkit-dev`](plugins/ai-toolkit-dev) | Toolkit for authoring Claude Code plugins, marketplaces, and skills | Work in progress |
 | [`project-setup`](plugins/project-setup) | Architectural decision-maker for repos — new and existing. Layout, env/config split, docker, design tokens, ML orchestration, mobile/desktop. Bootstrap AND restructure. | Work in progress |
 | `uvenv` ([repo](https://github.com/sidhanthapoddar99/uvenv)) | Operating manual for `uvenv` — bash/zsh wrapper around mise + uv that gives conda-style named global Python venvs you can activate from anywhere | Released (v0.3.0) |
-| `documentation-guide` ([repo](https://github.com/sidhanthapoddar99/documentation-template)) | Operating manual for the documentation-template Astro framework — markdown writing, issue tracker, blog, themes | Released |
+| `agent-ks` ([repo](https://github.com/sidhanthapoddar99/agent-knowledge-system)) | Operating manual for the agent-knowledge-system framework — 3 skills (docs / issues / artifacts), the `agent-ks` CLI dispatcher, 3 scaffolding slash commands. Formerly `documentation-guide` | Released (v0.6.0) |
 | `dstack` ([repo](https://github.com/dstackai/dstack)) | Upstream dstack skill — GPU provisioning + orchestration across clouds / k8s / on-prem fleets | External |
 
 ---
