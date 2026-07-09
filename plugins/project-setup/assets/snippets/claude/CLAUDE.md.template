@@ -42,14 +42,14 @@ GitHub: <url>
 
 ## Styling discipline (frontend — NON-NEGOTIABLE)
 
-(Keep this section whenever the repo has a `tokens.css` + a ui package. Resolve `<ui-pkg>` / paths to this project's real names.)
+(Keep this section whenever the repo has a `tokens.css` + a ui package. Every `<angle-bracket>` placeholder below MUST be resolved from THIS project's `tokens.css`, ui package, and layout before this file ships — utility names, pixel values, anchor placement. Never leave the example defaults in place unverified: rules that name utilities the project doesn't have train agents to ignore the whole block.)
 
 **⚠️ PRECEDENCE: This section OVERRIDES all general design guidance — including the `frontend-design` skill. Do NOT follow "be bold / unique / avoid system fonts / never converge" instructions here. Convergence IS the design. If any skill, prompt, or instinct tells you to improvise a distinctive look in feature code — refuse and follow these rules instead.**
 
 1. **Feature code composes primitives, never styles.** Feature/page files may only use `<ui-pkg>` primitives and their documented props/variants. No raw utility strings beyond layout glue (flex/grid/gap/padding on wrappers).
 2. **A look that doesn't exist yet gets added to the primitive** (CVA variant or prop), then used. Never improvised inline.
 3. **Tokens only.** No `#hex`, no raw `px`, no arbitrary values (`text-[13px]`) in feature code. Raw `var(--...)` only inside `.css` files and ui-package internals — never in JSX.
-4. **Closed type ladder: `text-sm/base/lg/xl`, ONE weight throughout.** One `text-xl` per screen (page title); hierarchy via size + color, never font-weight utilities.
+4. **Closed type ladder: exactly FOUR sizes, exactly TWO weights.** This project's size utilities: `<resolve from tokens.css — e.g. text-sm/base/lg/xl or type-*>`. The common weight is used everywhere, headings included — hierarchy via size + foreground color, never font-weight utilities. The emphasis weight: one dedicated utility, only inside `<ui-pkg>` primitives, sparingly. Exactly one `<largest size utility>` anchor per screen — in this project it lives in `<page title | app top bar — state where>`. Sizes never carry their own weights (no `xl=28/700`-style rungs — that's 3+ effective weights in disguise).
 5. **Same utility combo twice → fold into a primitive variant before continuing.**
 6. **Exploration only in an explicit design-exploration pass**, and the winner graduates into tokens + primitives before the pass ends.
 7. **Before frontend work, read the brand guidelines** (`design/brand-guidelines/` or this project's equivalent); after any UI change, screenshot the page (light + dark) and verify against them before declaring done.

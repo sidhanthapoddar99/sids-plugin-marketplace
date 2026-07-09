@@ -40,13 +40,13 @@
   --blur-md: 16px;
   --blur-lg: 32px;
 
-  /* ─── Typography (closed ladder: one xl per screen; ONE weight throughout) ── */
+  /* ─── Typography (FIRM: exactly 4 sizes, exactly 2 weights; sizes never carry weights) ── */
   --text-sm:   13px;
   --text-base: 15px;
   --text-lg:   18px;
-  --text-xl:   22px;
-  --weight-regular: 400;   /* the weight — hierarchy via size + color, not weight */
-  --weight-emphasis: 600;  /* rare, absolutely-required cases only */
+  --text-xl:   22px;   /* one xl anchor per screen */
+  --weight-regular: 400;   /* used everywhere, headings included — hierarchy via size + color */
+  --weight-emphasis: 600;  /* rare; one dedicated utility, ui-package primitives only */
   --leading-tight:  1.2;
   --leading-normal: 1.5;
   --leading-loose:  1.75;

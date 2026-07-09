@@ -24,7 +24,7 @@ That block includes the precedence rule:
 
 3. **Tokens only.** Never write raw values (`#hex`, raw `px`, arbitrary values like `text-[13px]`) in feature code. Use the semantic utilities backed by `tokens.css` (`text-fg-1/fg-2`, `bg-bg-1/bg-2`, `border-border-1`, `text-sm/base/lg/xl`). Raw `var(--...)` is allowed **only** inside `.css` files and ui-package internals — never in JSX/utility strings. If a needed value has no token, adding the token is the task — not inlining the value.
 
-4. **Typography ladder is closed.** Four sizes — `text-sm / text-base / text-lg / text-xl` — and **one weight throughout**. Hierarchy comes from **size and color**, not weight. Exactly one `text-xl` per screen (the page title); section/card titles `text-lg`; body and controls `text-base`; table cells, labels, meta, captions `text-sm`. Never add font-weight utilities in feature code; emphasis weight exists as a token for the rare case a primitive absolutely requires it.
+4. **Typography ladder is closed — exactly FOUR sizes, exactly TWO weights. This is firm, not a default.** The four sizes (`text-sm / text-base / text-lg / text-xl` by default — resolve the project's actual utility names from its `tokens.css`). The common weight (regular, e.g. 400) is used **everywhere, headings included**; hierarchy comes from **size and foreground color, never weight**. The emphasis weight (e.g. 600) exists for the rare case something must read bolder: applied via a single dedicated utility, **only inside ui-package primitives**, and sparingly. Exactly one largest-size anchor per screen — where it lives (page title vs app chrome/top bar) is a per-project decision, stated in the project's CLAUDE.md. **ANTI-PATTERN:** size×weight rungs where each size bakes its own weight (`xl=28/700, lg=20/600, …`) — that manufactures three-plus effective weights while every individual line looks compliant, and defeats exactly the uniformity the two-weight rule exists for.
 
 5. **Repetition folds early for styling.** If you write the same utility combination **twice**, stop and fold it into a primitive variant before continuing. (This is deliberately stricter than the extract-on-third-use rule for logic — a utility string is cheaper to extract than an abstraction, and styling duplication is where agent drift starts.)
 
@@ -37,16 +37,23 @@ That block includes the precedence rule:
 An agent or a lefthook check can mechanically detect violations:
 
 ```bash
-grep -rE 'text-\[|bg-\[#|\bp-\[' src/features/       # arbitrary values
-grep -rE 'font-(medium|semibold|bold)' src/features/  # weight outside the ladder
-grep -rE 'var\(--' src/features/**/*.tsx              # raw var() in JSX
+grep -rE --include='*.tsx' --include='*.jsx' 'text-\[|bg-\[#|\bp-\[' src/features/        # arbitrary values
+grep -rE --include='*.tsx' --include='*.jsx' 'font-(medium|semibold|bold)' src/features/   # weight utilities in feature code
+grep -rE --include='*.tsx' --include='*.jsx' 'var\(--' src/features/                       # raw var() in JSX
 ```
 
-Empty output = compliant. This is what makes the discipline survive weaker models and parallel workflow builders — enforcement doesn't depend on any agent's judgment. Wiring these into lefthook (see `repo-setup/tooling/lefthook.md`) is a natural follow-up.
+Empty output = compliant. This is what makes the discipline survive weaker models and parallel workflow builders — enforcement doesn't depend on any agent's judgment.
+
+Snippet-safety rules (these commands get copied verbatim into hooks and CI, so they must be shell-proof):
+
+- **grep owns the recursion** (`-r` + `--include`), never a shell glob. `src/features/**/*.tsx` depends on the shell's `globstar`: zsh recurses, but default bash — what lefthook hooks, CI steps, and most agent shells run — degrades `**` to one directory level and the check reports compliant precisely where it isn't looking.
+- **Scope to `.tsx`/`.jsx`** — `var(--…)` and some patterns are *legitimate* in `.css` files and ui-package internals; an unscoped `-r` produces false positives that train agents to ignore the check.
+- **In a hook, invert the exit code** — grep exits 1 when nothing matches (= compliant), so a lefthook/CI line is `! grep -rE --include='*.tsx' … src/features/` (add `|| { echo "styling-discipline violation"; exit 1; }` for a readable failure). Wiring these into lefthook (see `repo-setup/tooling/lefthook.md`) is a natural follow-up.
 
 ## Anti-patterns
 
 - Following `frontend-design`'s "pick a characterful font / be unforgettable" inside an established repo — that skill is for the exploration pass only
 - A second weight "just for this one heading" — hierarchy is size + color
+- Size×weight rungs (`xl=28/700, lg=20/600`) — three-plus effective weights in disguise; sizes never carry their own weights
 - Adding a token for a one-off value — that's a magic number with a name (see `design-tokens.md`)
 - Relaxing the fence for "just a prototype page" that then ships — prototypes go through rule 6 or they follow the rules
