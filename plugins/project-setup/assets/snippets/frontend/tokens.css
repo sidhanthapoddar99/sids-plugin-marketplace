@@ -40,28 +40,14 @@
   --blur-md: 16px;
   --blur-lg: 32px;
 
-  /* ─── Typography (FIRM: exactly 4 sizes, exactly 2 weights; sizes never carry weights) ── */
-  --text-sm:   13px;
-  --text-base: 15px;
-  --text-lg:   18px;
-  --text-xl:   22px;   /* one xl anchor per screen */
-  --weight-regular: 400;   /* used everywhere, headings included — hierarchy via size + color */
-  --weight-emphasis: 600;  /* rare; one dedicated utility, ui-package primitives only */
-  --leading-tight:  1.2;
-  --leading-normal: 1.5;
-  --leading-loose:  1.75;
+  /* ─── Fonts (families ONLY) ───────────────────────────── */
+  /* Type sizes, weights, line-heights, spacing, containers are NOT
+     tokens: use Tailwind's stock scales untouched (text-sm = 14px/1.43
+     etc.). Never remap standard names, never add custom size utilities.
+     Which sizes/weights feature code may use is the project CLAUDE.md
+     allowlist (see styling-discipline rule 4). */
   --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-family-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-
-  /* ─── Spacing (8px base) ──────────────────────────────── */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
 
   /* ─── Radius ──────────────────────────────────────────── */
   --radius-sm: 4px;

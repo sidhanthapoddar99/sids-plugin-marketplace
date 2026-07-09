@@ -125,7 +125,7 @@ When the mode is `audit` or `suggest`:
    - **Matches** (green) — what's already aligned
    - **Drift** (yellow) — minor deviations
    - **Missing** (red) — conventions not present
-4. If the repo has `tokens.css` + a ui package, also run the styling-discipline greps from `references/architecture/frontend/styling-discipline.md` (arbitrary values / font-weight utilities / raw `var()` in feature code) and check that the project `CLAUDE.md` contains the styling-discipline block — a missing block is a **red** finding, because nothing else holds the line for future agents.
+4. If the repo has `tokens.css` + a ui package, also run the styling-discipline greps from `references/architecture/frontend/styling-discipline.md` (arbitrary values / sizes and weights outside the CLAUDE.md allowlist / raw `var()` in feature code) and check that the project `CLAUDE.md` contains the styling-discipline block — a missing block is a **red** finding, because nothing else holds the line for future agents.
 5. For `audit`, stop there.
 6. For `suggest`, follow with a proposed remediation plan — what to add, what to rename, what to split.
 
@@ -209,8 +209,8 @@ references/
 │   │   ├── shared-ui-package.md   # packages/ui, tailwind-config, types, services — what to share
 │   │   ├── vite-proxy-nginx-pair.md   # dev Vite proxy → prod nginx; same /api/* contract
 │   │   ├── api-prefix-routing.md  # all backend routes under /api/* (makes the proxy work)
-│   │   ├── design-tokens.md       # tokens.css single source; no hex/px in component CSS; 4-size/1-weight type ladder
-│   │   ├── styling-discipline.md  # ★ HARD RULES: primitive-first feature code, tokens only, closed ladder, fold-on-second, frontend-design precedence → goes into project CLAUDE.md
+│   │   ├── design-tokens.md       # tokens.css owns brand values only; no hex/px in component CSS; typography = stock Tailwind scales + CLAUDE.md allowlist
+│   │   ├── styling-discipline.md  # ★ HARD RULES: primitive-first feature code, tokens only, stock vocabulary + allowlist policy, fold-on-second, frontend-design precedence → goes into project CLAUDE.md
 │   │   ├── light-dark-data-attr.md    # [data-theme="dark"] on <html>; both modes default
 │   │   ├── shadcn-tailwind.md     # shadcn/ui + tailwind wired to var(--token)
 │   │   ├── nextjs-astro-variants.md   # when Next (SSR) / Astro (static) instead of Vite

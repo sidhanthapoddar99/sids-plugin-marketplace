@@ -27,8 +27,9 @@
 
   body {
     font-family: var(--font-family-base);
-    font-size: var(--text-base);
-    line-height: var(--leading-normal);
+    /* No font-size/line-height here — sizes come from Tailwind's stock
+       utilities per the project's CLAUDE.md allowlist (e.g. text-sm for
+       content, text-base for headings). */
     color: var(--fg-1);
     background: var(--bg-1);
     -webkit-font-smoothing: antialiased;
@@ -36,6 +37,5 @@
 
   code, pre {
     font-family: var(--font-family-mono);
-    font-size: var(--text-sm);
   }
 }

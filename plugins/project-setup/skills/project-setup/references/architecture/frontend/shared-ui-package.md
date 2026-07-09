@@ -85,15 +85,12 @@ import type { Config } from "tailwindcss";
 const sharedConfig: Omit<Config, "content"> = {
   theme: {
     extend: {
+      // Brand tokens only — fontSize/fontWeight/spacing stay stock
+      // (never remapped; see design-tokens.md typography policy)
       colors: {
         // map to CSS vars set by tokens.css
         bg: { 1: "var(--bg-1)", 2: "var(--bg-2)", 3: "var(--bg-3)" },
         fg: { 1: "var(--fg-1)", 2: "var(--fg-2)", 3: "var(--fg-3)" },
-      },
-      spacing: {
-        1: "var(--space-1)",
-        2: "var(--space-2)",
-        // ...
       },
       borderRadius: {
         sm: "var(--radius-sm)",

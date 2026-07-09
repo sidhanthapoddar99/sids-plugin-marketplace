@@ -77,6 +77,12 @@ export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // Brand tokens ONLY. fontSize, fontWeight, spacing, and containers are
+      // deliberately ABSENT — the stock Tailwind scales ship untouched.
+      // Remapping standard names (e.g. fontSize.sm → 13px) makes every
+      // agent-generated line wrong-by-assumption; restraint lives in the
+      // project CLAUDE.md allowlist instead (see design-tokens.md,
+      // "Typography — standard vocabulary, strict usage policy").
       colors: {
         bg: { 1: "var(--bg-1)", 2: "var(--bg-2)", 3: "var(--bg-3)" },
         fg: { 1: "var(--fg-1)", 2: "var(--fg-2)", 3: "var(--fg-3)" },
@@ -86,34 +92,18 @@ export default {
         warning: "var(--warning)",
         danger: "var(--danger)",
       },
-      spacing: {
-        1: "var(--space-1)",
-        2: "var(--space-2)",
-        3: "var(--space-3)",
-        4: "var(--space-4)",
-        5: "var(--space-5)",
-        6: "var(--space-6)",
-        7: "var(--space-7)",
-        8: "var(--space-8)",
-      },
       borderRadius: {
         sm: "var(--radius-sm)",
         md: "var(--radius-md)",
         lg: "var(--radius-lg)",
         xl: "var(--radius-xl)",
       },
-      fontSize: {
-        sm: ["var(--text-sm)", { lineHeight: "var(--leading-normal)" }],
-        base: ["var(--text-base)", { lineHeight: "var(--leading-normal)" }],
-        lg: ["var(--text-lg)", { lineHeight: "var(--leading-tight)" }],
-        xl: ["var(--text-xl)", { lineHeight: "var(--leading-tight)" }],
-      },
     },
   },
 } satisfies Config;
 ```
 
-Tailwind classes (`bg-bg-2`, `text-fg-1`, `p-4`, `rounded-md`, `text-base`) all resolve to `var(--token)`, which means **Tailwind classes auto-switch with theme**.
+Brand classes (`bg-bg-2`, `text-fg-1`, `rounded-md`) resolve to `var(--token)`, which means **they auto-switch with theme**. Size and spacing classes (`text-base`, `p-4`) are stock Tailwind — standard values, theme-independent by design; which of them feature code may use is governed by the project CLAUDE.md allowlist (`styling-discipline.md` rule 4).
 
 ## shadcn defaults override
 
@@ -184,6 +174,7 @@ All tokens consumed via Tailwind classes → CSS vars → flips with `data-theme
 
 - Hex values in `className` strings (`bg-[#fafafa]`) — defeats the system
 - Bypassing the token alias (`tailwind.config.ts` colors as literals) — same
+- Remapping stock scales in `theme.extend` (`fontSize: { sm: "13px" }`, custom `spacing`) — every agent-generated line becomes wrong-by-assumption; restraint belongs in the CLAUDE.md allowlist, not the vocabulary
 - Per-component variants that reinvent variants already in shadcn
 - Forgetting to update `components.json` when paths change
 - Mixing shadcn with another component library (Material UI, Chakra) — pick one

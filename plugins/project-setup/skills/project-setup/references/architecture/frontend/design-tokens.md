@@ -1,6 +1,8 @@
 # Design tokens — `tokens.css` as the single source of truth
 
-Every color, spacing, radius, font-size, blur, shadow lives in **one CSS file** as CSS custom properties (`--bg-1`, `--space-4`, `--radius-md`). Components consume them via `var(--token)` only. **No hex, no raw px in component CSS.**
+Every **brand-specific** value — colors/surfaces, radii, materials (glass/blur), shadows, motion, font families — lives in **one CSS file** as CSS custom properties (`--bg-1`, `--radius-md`). Components consume them via `var(--token)` only. **No hex, no raw px in component CSS.**
+
+Type sizes, font weights, spacing, and container widths are deliberately **not** tokens: those use Tailwind's stock scales, untouched. See "Typography — standard vocabulary, strict usage policy" below.
 
 ## Why tokens.css and not Tailwind / SCSS vars / TS constants?
 
@@ -54,28 +56,20 @@ Every color, spacing, radius, font-size, blur, shadow lives in **one CSS file** 
   --blur-md: 16px;
   --blur-lg: 32px;
 
-  /* ─── Typography ──────────────────────────────────────── */
-  --text-sm:   13px;
-  --text-base: 15px;
-  --text-lg:   18px;
-  --text-xl:   22px;
-  --weight-regular: 400;   /* THE weight — used everywhere */
-  --weight-emphasis: 600;  /* exists for the rare absolutely-required case; not part of the ladder */
-  --leading-tight:  1.2;
-  --leading-normal: 1.5;
-  --leading-loose:  1.75;
+  /* ─── Fonts (families ONLY — sizes, weights, line-heights,
+     and spacing are Tailwind's stock scales, never tokens) ── */
   --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-family-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 
-  /* ─── Spacing (8px base scale) ───────────────────────── */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
+  /* ─── Spacing (non-Tailwind projects ONLY) ────────────── */
+  /* Mirror the stock Tailwind scale verbatim — same numbering,
+     same values (--space-N = N × 0.25rem; full stock block in the
+     Typography section below). Never retune. Tailwind projects
+     use stock utilities (p-4, gap-6) instead. */
+  --space-2: 0.5rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
 
   /* ─── Border radius ──────────────────────────────────── */
   --radius-sm: 4px;
@@ -133,36 +127,73 @@ In a separate stylesheet or below the `:root` block:
 
 See `light-dark-data-attr.md` for the toggle mechanism.
 
-## Four font sizes, two weights — firm
+## Typography — standard vocabulary, strict usage policy
 
-**Exactly FOUR text sizes and exactly TWO weights.** This is the standard, not a suggestion. Default values — 13 / 15 / 18 / 22 px (`sm / base / lg / xl`); pixel values and utility naming may vary per project, the counts may not.
+Typography splits into two layers, and it matters which layer each rule lives in.
 
-- The **common weight** (`--weight-regular`, 400) is used throughout — **headings included**. Hierarchy comes from **size and foreground color, never weight**.
-- The **emphasis weight** (`--weight-emphasis`, 600) is for the rare case something must read bolder: one dedicated utility, applied only inside ui-package primitives, sparingly.
-- The ladder is closed: one largest-size anchor per screen (page title or app chrome — the project decides and records it), `lg` for section/card titles, `base` for body and controls, `sm` for table cells / labels / meta.
+### Vocabulary layer — ship Tailwind's stock theme untouched
 
-**ANTI-PATTERN — size×weight rungs.** Do not pair each size with its own weight (`xl=28/700, lg=20/600, base=15/500…`). That silently manufactures three-plus effective weights while every line looks compliant, and defeats the uniformity the two-weight rule exists for. Sizes never carry weights.
+The full default type scale (`text-xs` … `text-7xl`, with stock line-heights), the full weight set (`font-light` … `font-extrabold`), stock spacing and container scales. **Do not remap standard names to custom values. Do not create custom size utilities.**
+
+Why: agents' training data assumes `text-sm` = 14px/1.43. Remap `text-sm` to 13px and every generated line is subtly **wrong-by-assumption** — spacing math, icon pairing, optical judgments all inherit the error invisibly. And a custom vocabulary (`type-md`) is a token no model has ever seen; it gets forgotten mid-file. `tokens.css` owns only what is genuinely brand-specific: colors/surfaces, radii, materials, shadows, motion, font families.
+
+These are the stock values — the contract every generated line assumes. They come from Tailwind's default theme; a project's stylesheet must resolve them to exactly this:
 
 ```css
-.page-title {
-  font-size: var(--text-xl);
-  color: var(--fg-1);
-}
-.section-title {
-  font-size: var(--text-lg);
-  color: var(--fg-1);
-}
-.body {
-  font-size: var(--text-base);
-  color: var(--fg-1);
-}
-.caption {
-  font-size: var(--text-sm);
-  color: var(--fg-2);
-}
+/* Type scale (size + paired line-height) */
+--text-xs: .75rem;      --text-xs--line-height: calc(1 / .75);
+--text-sm: .875rem;     --text-sm--line-height: calc(1.25 / .875);
+--text-base: 1rem;      --text-base--line-height: calc(1.5 / 1);
+--text-lg: 1.125rem;    --text-lg--line-height: calc(1.75 / 1.125);
+--text-xl: 1.25rem;     --text-xl--line-height: calc(1.75 / 1.25);
+--text-2xl: 1.5rem;     --text-2xl--line-height: calc(2 / 1.5);
+--text-3xl: 1.875rem;   --text-3xl--line-height: calc(2.25 / 1.875);
+--text-4xl: 2.25rem;    --text-4xl--line-height: calc(2.5 / 2.25);
+--text-5xl: 3rem;       --text-5xl--line-height: 1;
+--text-6xl: 3.75rem;    --text-6xl--line-height: 1;
+--text-7xl: 4.5rem;     --text-7xl--line-height: 1;
+--text-8xl: 6rem;       --text-8xl--line-height: 1;
+--text-9xl: 8rem;       --text-9xl--line-height: 1;
+
+/* Weights */
+--font-weight-light: 300;
+--font-weight-normal: 400;
+--font-weight-medium: 500;
+--font-weight-semibold: 600;
+--font-weight-bold: 700;
+--font-weight-extrabold: 800;
+
+/* Spacing (linear: p-N = N × --spacing) + containers */
+--spacing: .25rem;
+--breakpoint-2xl: 96rem;
+--container-xs: 20rem;   --container-sm: 24rem;   --container-md: 28rem;
+--container-lg: 32rem;   --container-xl: 36rem;   --container-2xl: 42rem;
+--container-3xl: 48rem;  --container-4xl: 56rem;  --container-5xl: 64rem;
+--container-6xl: 72rem;
 ```
 
-Utility naming and pixel values adapt per project; the 4-size / 2-weight structure does not. Enforcement rules live in `styling-discipline.md`.
+In a Tailwind project these already exist — ship the default theme and don't touch them. Non-Tailwind projects declare exactly this block (same names, same values, never retuned) and consume it from plain CSS.
+
+### Policy layer — a small per-project allowlist. ALL restraint lives here.
+
+Each project declares in its CLAUDE.md which sizes and weights feature code may use. The default allowlist:
+
+- **`text-sm`** — ~90% of the UI: all content (tables, controls, labels, descriptions)
+- **`text-base`** — headings (card/section titles, top-bar title). The only heading size.
+- **`text-xs`** — sparingly: badges, timestamps, fine meta
+- **`font-normal`** everywhere; **`font-medium` OR `font-semibold`** (pick ONE per project) as the single rare emphasis, applied only inside ui-package primitives. Hierarchy comes from **size and foreground color, never weight**.
+
+Every other size and weight **exists but is banned in feature code** — banned, not deleted. They are reserved for hero surfaces (landing pages, empty states, marketing) via ui-package primitives created in an explicit design pass (`styling-discipline.md` rule 6).
+
+**Why restraint lives in policy, not vocabulary:** a policy change ("allow `text-lg` for page titles") is a one-line CLAUDE.md edit plus a grep sweep. A vocabulary change (retuning custom token values) is a migration across every consumer. Restraint must live in the cheap layer.
+
+### Anti-patterns — the old approaches, named
+
+- **(a) Remapping standard utility names** to non-standard values (`text-sm` → 13px) — every agent-generated line becomes wrong-by-assumption
+- **(b) Inventing custom size vocabularies** (`type-md`, `--text-heading`) — tokens no model has seen
+- **(c) Size×weight rungs** (`xl=28/700, lg=20/600, base=15/500…`) — pairs each size with its own weight, silently manufacturing three-plus effective weights while every line looks compliant. Sizes never carry weights.
+
+Enforcement greps live in `styling-discipline.md`; the per-project allowlist lives in the CLAUDE.md template block.
 
 ## Component CSS rule
 
@@ -190,12 +221,13 @@ Utility naming and pixel values adapt per project; the 4-size / 2-weight structu
 
 ## Real-world reference
 
-- atheneum's `frontend/src/styles/tokens.css` — close to this template; grayscale + glassmorphism, three font sizes
+- atheneum's `frontend/src/styles/tokens.css` — close to this template for colors/surfaces/glass (its custom font sizes predate the stock-scale policy; don't copy those)
 - plane's `packages/ui/styles/` — multi-frontend variant
 
 ## Anti-patterns
 
 - Hex / px in component CSS — defeats the system
+- Remapping standard scale names to custom values, or inventing custom size vocabularies — makes agent output wrong-by-assumption (see Typography section)
 - Size×weight rungs (`xl=28/700, lg=20/600`) — pairs each size with its own weight, silently creating 3+ effective weights; sizes never carry weights
 - Per-component "design tokens" files — collapses into many sources of truth
 - Renaming tokens frequently — every consumer breaks
