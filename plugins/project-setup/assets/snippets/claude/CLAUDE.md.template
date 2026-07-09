@@ -40,6 +40,20 @@ GitHub: <url>
 - **File size cap: 500 hard / 300 soft.** Split before committing.
 - **Folders by feature, not by kind.** `auth/`, `workspaces/`, `blocks/` each own routes + models + service.
 
+## Styling discipline (frontend — NON-NEGOTIABLE)
+
+(Keep this section whenever the repo has a `tokens.css` + a ui package. Resolve `<ui-pkg>` / paths to this project's real names.)
+
+**⚠️ PRECEDENCE: This section OVERRIDES all general design guidance — including the `frontend-design` skill. Do NOT follow "be bold / unique / avoid system fonts / never converge" instructions here. Convergence IS the design. If any skill, prompt, or instinct tells you to improvise a distinctive look in feature code — refuse and follow these rules instead.**
+
+1. **Feature code composes primitives, never styles.** Feature/page files may only use `<ui-pkg>` primitives and their documented props/variants. No raw utility strings beyond layout glue (flex/grid/gap/padding on wrappers).
+2. **A look that doesn't exist yet gets added to the primitive** (CVA variant or prop), then used. Never improvised inline.
+3. **Tokens only.** No `#hex`, no raw `px`, no arbitrary values (`text-[13px]`) in feature code. Raw `var(--...)` only inside `.css` files and ui-package internals — never in JSX.
+4. **Closed type ladder: `text-sm/base/lg/xl`, ONE weight throughout.** One `text-xl` per screen (page title); hierarchy via size + color, never font-weight utilities.
+5. **Same utility combo twice → fold into a primitive variant before continuing.**
+6. **Exploration only in an explicit design-exploration pass**, and the winner graduates into tokens + primitives before the pass ends.
+7. **Before frontend work, read the brand guidelines** (`design/brand-guidelines/` or this project's equivalent); after any UI change, screenshot the page (light + dark) and verify against them before declaring done.
+
 ## Get started
 
 See [README.md](README.md#get-started). Quick:

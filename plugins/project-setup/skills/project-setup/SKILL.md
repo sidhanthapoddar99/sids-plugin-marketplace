@@ -1,6 +1,6 @@
 ---
 name: project-setup
-description: Use when making any architectural, structural, layout, or convention decision about a repo — bootstrapping a new one, restructuring an existing one, adding or splitting services, picking databases or orchestrators, or deciding where a file or folder belongs. Equally for greenfield init and for modifying established codebases. Covers monorepo vs polyrepo, single vs multi backend / frontend, deployed application vs distributed/published package (embeddable UI / SDK + reference host), the `apps/` / `packages/` / `infra/` / `data/` / `docker/` folder split, root `.env` vs per-service `config.yaml`, secrets matrix, profile-less docker-compose (a standalone `config` that replaces base + stackable `.m.` modifiers, expose tiers), the interactive `ctl` control dispatcher (`ctl dev` host loop + `ctl up [config] [--modifier]` with a dependency-free pick→plan→confirm TUI, no separate prod verb), design tokens + light/dark, modularity caps (500/300 lines, folders by feature), ML cloud orchestration (dstack, SkyPilot, spot + checkpoints, inference autoscaling, remote GPU dev via SSH + VS Code, agent SSH access), Python flow (`uv sync` for apps vs `uvenv` + `requirements.txt` for ML), Alembic + raw-SQL shim pattern, production serving (gunicorn/uvicorn workers, worker recycling, graceful shutdown, healthchecks, resource limits, migrations-on-deploy), mobile (Kotlin/Swift), desktop (Tauri / Electron), lefthook, VS Code debugger setup, `.mise.toml`, polyrepo deploy aggregators, Go-CLI infra orchestrators. Triggers on "create a project", "init a repo", "scaffold a monorepo", "bootstrap", "audit my layout", "restructure this repo", "where should X go", "where does X belong", "is this the right place for", "split this backend", "add a backend", "add a frontend", "add a service", "pick a database", "Postgres vs Mongo", "SQLite or Postgres", "do I need Postgres", "in-memory or Redis", "do I need Redis", "app/ or src/", "src layout", "where does the code go", "monorepo or polyrepo", "deployed app or package", "distributed package", "publish a package", "embeddable component", "library vs app", "SDK package", "reference host", "where to put .env", "single .env or per-service", "config.yaml location", "VITE_ leak", "frontend env isolation", "design tokens", "tokens.css", "light/dark mode", "shadcn setup", "multi-frontend", "pnpm workspaces", "turborepo", "compose layout", "deployment modes", "profile-less compose", "standalone config", "interactive ctl up", "expose modifier", "no data core", "bind-mount data", "./dev wrapper", "ctl dispatcher", "control script", "dev vs deploy", "process-compose", "dev script", "setup script", "mise.toml", "alembic", "uv sync vs requirements", "uvenv", "dstack", "SkyPilot", "spot training", "checkpoint training", "remote GPU dev", "agent SSH access", "gunicorn workers", "how many workers", "worker recycling", "max-requests", "uvicorn workers", "production serving", "graceful shutdown", "healthcheck endpoint", "liveness readiness", "resource limits", "migrations on deploy", "production checklist", "Tauri or Electron", "iOS Android repo layout", "lefthook", "VS Code launch.json", "polyrepo aggregator", "deploy repo", "docs folder", "documentation-template", `apps/`, `packages/`, `infra/`, `data/`, `docker/`, `tokens.css`, `config.yaml`, `.env.example`, `.mise.toml`, `compose.yaml`. SKIP when the user is debugging runtime behaviour, editing function bodies, reviewing test output, writing application logic inside an existing file, or operating purely inside the dstack CLI surface (defer to the sibling `dstack` skill) or editing documentation-template content (defer to the sibling `documentation-guide` skill) — this skill owns the structural / placement / convention side, not the in-file work.
+description: Sid's architectural conventions — the single authority for EVERY structural, layout, placement, or convention decision in a repo, greenfield or established. Trigger eagerly whenever a task touches repo structure or project conventions, even mid-task and even when the user doesn't phrase it as a question — bootstrapping / auditing / restructuring a repo; monorepo vs polyrepo; adding or splitting services or frontends; "where does X go / where should this file live / app/ or src/"; deployed app vs published package (embeddable UI / SDK + reference host); choosing a database (SQLite vs Postgres, Redis vs in-memory, Mongo / Neo4j / Seaweed); docker-compose layout — profile-less base + standalone configs + `.m.` modifiers, expose tiers — and the `ctl` dispatcher (`ctl dev` / `ctl up`) with its scripts; root `.env` vs per-service `config.yaml`, secrets matrix, frontend env isolation (`VITE_` / `NEXT_PUBLIC_` leaks); frontend architecture and conventions — Vite proxy / nginx pair, pnpm / turborepo workspaces, shared ui package, shadcn, `tokens.css` design tokens, light/dark theming, and the primitive-first styling discipline that OVERRIDES the frontend-design skill in established repos; modularity caps (500/300 lines, folders by feature); Python flow (`uv sync` for apps, `uvenv` for ML); Alembic migrations (incl. the raw-SQL shim); production serving (gunicorn / uvicorn workers, worker recycling, healthchecks, graceful shutdown, resource limits, migrations-on-deploy); ML cloud orchestration (dstack, SkyPilot, spot + checkpoints, inference autoscaling, remote GPU dev via SSH + VS Code, agent SSH access); mobile (Kotlin / Swift) and desktop (Tauri / Electron); tooling (lefthook, mise, VS Code debugger); polyrepo deploy aggregators. Any mention of `apps/`, `packages/`, `infra/`, `data/`, `docker/`, `tokens.css`, `config.yaml`, `compose.yaml`, `.env.example`, `.mise.toml`, or `ctl` is a trigger. When in doubt, trigger — undertriggering is the failure mode. SKIP only for pure in-file work (debugging runtime behaviour, editing function bodies, test output, application logic); defer dstack CLI operation to the sibling `dstack` skill and docs-site content to the `agent-ks` plugin (ex `documentation-guide`).
 ---
 
 # project-setup
@@ -26,24 +26,33 @@ These are the conventions to apply by default. Most are **firm** — their value
 2. **If you don't have information, ASK.** Do not presume. Common unknowns: sibling repos, whether the project is ML or app, whether the frontend exposes any backend URLs, deployment targets, theming requirements.
 3. **Root holds only config + README + folders — never loose code.** No executable entry file or stray module directly in the repo root; keep the root clean. *(Only exception: project types that genuinely demand a root entry file — e.g. some editor extensions like a VS Code extension.)*
 4. **Per-service `config.yaml`, root `.env`.** Root `.env` holds shared/common vars only. Each backend owns its own `config.yaml`. Frontends have their own env scope (`VITE_*` / `NEXT_PUBLIC_*`) — backend secrets must never leak there.
-5. **Compose lives in `docker/`**, **profile-less**, on two axes: an optional standalone **`config`** (a `compose.<name>.yaml` that *replaces* base — `data` = the data layer alone, `prod` = the hardened stack; ≤1 per run) and stackable **`.m.` modifiers** (`compose.m.<name>.yaml`, cross-cutting overlays applied as `--modifier expose,traefik`). Base declares the whole stack with no profiles; expose is tiered (`expose` edge / `expose_data` for `ctl dev` / `expose_all` debug). Base is port-less; bind-mounts only. Profiles are a rare advanced escalation (`complex-setups.md`), not the default. See `references/repo-setup/runtime/docker-overview.md`.
-6. **One `ctl` dispatcher at repo root.** `ctl dev` runs the local host loop (apps on host, hot reload, auto-starts the data core if any). `ctl up [config] [--modifier "a,b"]` runs the containerised stack — at most one standalone config + stacked `.m.` modifiers, all auto-discovered; **bare `ctl up` in a TTY is interactive** (pick config → pick modifiers → see a `docker compose config` plan that validates the combo → Run/Back/Cancel), printing the exact `--nqa` command that reproduces it, with the flag path 100% intact for CI. There is **no `ctl prod` verb** (production is `ctl up prod`). `down`/`ps`/`logs`/`shell` manage containers; `status`/`setup`/`migrate` round it out. It is a **thin wrapper** delegating to `docker compose`, a process runner (`process-compose`/`mprocs`), and `scripts/*.sh` — sharing `_lib.sh` (logging/help/discovery/health) and `_select.sh` (the dependency-free picker, no fzf/gum). The dispatcher is the public API, callable bare via mise PATH. Name `ctl` is swappable.
+5. **Compose lives in `docker/`, profile-less, on two axes:** an optional standalone **`config`** (`compose.<name>.yaml` that *replaces* base — `data`, `prod`; ≤1 per run) plus stackable **`.m.` modifiers** (`compose.m.<name>.yaml`, applied as `--modifier expose,traefik`; expose is tiered `expose` / `expose_data` / `expose_all`). Base declares the whole stack: no profiles, port-less, bind-mounts only. Profiles are a rare advanced escalation (`complex-setups.md`), not the default. Mechanics: `references/repo-setup/runtime/docker-overview.md`.
+6. **One `ctl` dispatcher at repo root — the only entrypoint.** `ctl dev` = local host loop (apps on host, hot reload, auto-starts the data core if any). `ctl up [config] [--modifier "a,b"]` = the containerised stack; **bare `ctl up` in a TTY is interactive** (pick → plan → confirm, printing the exact flag command so CI stays 100% flag-driven). There is **no `ctl prod` verb** — production is `ctl up prod`. `down`/`ps`/`logs`/`shell`/`status`/`setup`/`migrate` round it out. A **thin wrapper** over `docker compose`, a process runner, and `scripts/*.sh`; the name `ctl` is swappable. Full surface: `references/repo-setup/runtime/script-overview.md` + `script-usage.md`.
 7. **README documents the three startup paths**, and **each service/app ships its own `README.md`** for its host dev loop (see `references/repo-setup/readme-three-paths.md`).
 8. **Examples are evidence, not gospel.** They evolved at different times. Cite them, do not blindly copy.
+9. **Conventions must outlive the session — they live in the project's `CLAUDE.md`.** A skill only reaches the agent that loads it; the project CLAUDE.md reaches every agent, every session. Bootstrap and suggest flows write the hard rules there from `assets/snippets/claude/CLAUDE.md.template` (including the styling-discipline block — see ⚠️ below); the project CLAUDE.md then takes precedence over everything else.
 
 **Ecosystem-dependent typed defaults — pick the right branch, deviate per the rule:**
 
-9. **Where code lives follows the ecosystem — there is no blanket `src/`:**
+10. **Where code lives follows the ecosystem — there is no blanket `src/`:**
    - **Python backend/service** (run, not packaged) → `<name>/app/` — **no `src/`**. It's run, never built into a wheel; `src/` only adds `PYTHONPATH` / `prepend_sys_path` plumbing for zero benefit. Matches the official full-stack FastAPI template (`backend/app/`).
    - **Frontend** (Vite/React/Next) → `<name>/src/` — `src/` per bundler convention.
    - **Distributable package/library** → `<name>/src/<pkg>/` — src-layout earns its keep, forcing clean packaging.
    - *Deviate when:* the ecosystem's own tooling expects a different layout — follow the tool.
-10. **Nesting follows service count:**
+11. **Nesting follows service count:**
     - **One service total** (just a backend, or just a frontend) → top-level `./<name>/` (name is free: `api`/`backend`/`web`/`frontend`/…), with `app/` or `src/` inside.
     - **More than one service** (backend + frontend, or several backends) → group all under `apps/<name>/` (`apps/api/app/`, `apps/web/src/`, …).
     - One-liner: **flat for run-services, `src/` for frontends and packages, nothing loose in root.**
 
 Each service/app folder owns its `README.md`, dependency manifest (`requirements.txt` / `pyproject.toml` / `package.json`), `config.yaml`, and `Dockerfile`.
+
+## ⚠️ VERY IMPORTANT — frontend styling precedence
+
+**If the repo has a `tokens.css` + a ui package, the styling discipline (`references/architecture/frontend/styling-discipline.md`) OVERRIDES any general design guidance — including the `frontend-design` skill. Do not follow "be bold / unique / never converge" instructions in feature work. Convergence IS the design.**
+
+**Whenever you bootstrap such a repo (or apply changes in suggest mode), WRITE the "Styling discipline" block from `assets/snippets/claude/CLAUDE.md.template` into the project's CLAUDE.md** (names resolved to the project's real ui package and paths). In read-only audit mode, don't edit — flag a missing block as a **red** finding instead. This is not optional polish — CLAUDE.md is always in context while skills are not, so the project memory file is the only thing that makes the discipline hold for every future agent, including parallel workers and weak models that never load this skill. The project CLAUDE.md then takes precedence over everything.
+
+`frontend-design` has exactly one legitimate slot: the explicit design-exploration pass (day one, establishing brand/tokens/primitives, or a sanctioned redesign). Its output must graduate into tokens + primitive variants before the pass ends. Everywhere else, it is noise — ignore it.
 
 ## Two workflows
 
@@ -51,9 +60,9 @@ Each service/app folder owns its `README.md`, dependency manifest (`requirements
 
 Walk the full flow: decision tree → question flow → layout → cross-cutting conventions → propose → apply.
 
-### B — single architectural decision (user is in the middle of work)
+### B — single architectural decision (the majority case — user is mid-work)
 
-A surgical version: identify the smallest set of references that bear on the question, surface the convention, explain the trade-off, propose an action. Don't drag the user through the whole question flow when they're asking "where does this `init.sql` belong" — answer from `references/architecture/database/infra-vs-data-folder.md`, cite the rule, suggest the placement.
+A surgical version: identify the smallest set of references that bear on the question, surface the convention, explain the trade-off, propose an action. Route via the annotated **file map** at the bottom of this document — read the 1–3 files whose comments match the decision, nothing more. Don't drag the user through the whole question flow when they're asking "where does this `init.sql` belong" — answer from `references/architecture/database/infra-vs-data-folder.md`, cite the rule, suggest the placement.
 
 Pattern for B:
 
@@ -92,28 +101,17 @@ If the user's shape doesn't cleanly match one, name the closest two and ask whic
 
 ### Step 4 — apply the cross-cutting conventions
 
-For every layout, the same conventions apply (with layout-specific adjustments documented per-layout). Consult:
+For every layout, the same cross-cutting conventions apply (layout-specific adjustments documented per-layout). The annotated **file map** at the bottom of this document is the single index — walk the convention areas the project actually has (`repo-setup/env-and-config`, `repo-setup/runtime`, `repo-setup/tooling`, `architecture/{backend,frontend,database,production,ml-orchestration,platform,modularity}`, `integrations/`) and read the files whose comments match. Ordering hints:
 
-- `references/repo-setup/env-and-config/` — root `.env`, per-service `config.yaml`, env precedence (root → per-service → real env wins), frontend env isolation, build-time vs runtime, `${VAR}` interpolation, secrets matrix
-- `references/repo-setup/runtime/` — the execution triad (mise + `ctl` + docker). **Start at `runtime/overview.md`** for how they interact; then `docker-overview.md` (profile-less: standalone `config` vs `compose.m.*` modifiers + expose tiers), `script-overview.md` (the `ctl`/`scripts`/`_select.sh` model + `<category>/<name>.sh` convention) + `script-usage.md` (command surface, the interactive `ctl up` plan flow, how to set up/add/modify scripts, `ctl setup` bootstraps deps) + `script-alternatives.md` (adapting off mise/docker/uv→uvenv/bun — tools are swappable) + `no-data-core.md` (`DATA_SVCS=()` topology swap), `mise.md`, and `complex-setups.md` (profiles as the advanced escalation + multi-mode + binary orchestrator)
-- `references/architecture/backend/` — `uv` for apps, `uvenv` for ML, Alembic conventions
-- `references/architecture/frontend/` — Vite/proxy/nginx pair, multi-frontend workspaces, design tokens, light/dark
-- `references/architecture/database/` — **choosing a database** (SQLite vs Postgres, in-process memory vs Redis), `infra/` vs `data/`, postgres/redis/sqlite/seaweed/mongo/neo4j conventions (versions illustrative — check latest)
-- `references/architecture/production/` — app server + workers (gunicorn/uvicorn worker count, recycling, timeouts, preload; per-language concurrency models), production-readiness checklist (liveness/readiness, graceful shutdown, resource limits, migrations-on-deploy, logging)
-- `references/architecture/ml-orchestration/` — dstack (composes with the dstack plugin's skill) / SkyPilot / spot+checkpoints / inference autoscaling / remote dev via SSH+VS Code / agent SSH access / CI/CD for ML
-- `references/architecture/modularity/` — 500/300 line caps, folders by feature, extract on third use
-- `references/architecture/platform/` — mobile (Kotlin/Swift), desktop (Tauri default, Electron alt)
-- `references/repo-setup/tooling/` — lefthook (pre-commit), VS Code debugger setup
-- `references/repo-setup/runtime/mise.md` — version pinning contract (versions illustrative — check latest)
-- `references/integrations/claude-folder.md` — `.claude/` conventions (empty by default)
-- `references/repo-setup/readme-three-paths.md` — README contract
-- `references/integrations/docs-integration.md` — defer all docs work to the `documentation-guide` skill; `/docs-init` to scaffold
-- `references/repo-setup/tooling/ci-cd-future.md` — placeholder, GitHub Actions / Vault notes
-- `references/integrations/examples-index.md` — pointers to the real-world examples (atheneum, NeuraSutra, plane, chimere)
+- `repo-setup/runtime/` — **start at `overview.md`**, the one map of how mise + `ctl` + docker + env interact; the other runtime files hang off it.
+- `architecture/ml-orchestration/` — start at `overview.md`; dstack work also composes with the sibling `dstack` plugin's skill.
+- `architecture/frontend/` — any styling surface **must include `styling-discipline.md`** (see ⚠️ above).
+- Docs are a handoff, not our work — see `integrations/docs-integration.md` (the docs plugin is now `agent-ks`, scaffolded via `/agent-ks-init`).
+- Versions in all references are illustrative — check latest stable and let the user pick.
 
 ### Step 5 — propose, then act
 
-- For `/ps-setup` (init): present the proposed tree as text, list every file you'll create, then ask once before writing. Drop snippets from `assets/snippets/` where they fit.
+- For `/ps-setup` (init): present the proposed tree as text, list every file you'll create, then ask once before writing. Drop snippets from `assets/snippets/` where they fit. **Always create the project `CLAUDE.md` from `assets/snippets/claude/CLAUDE.md.template`** — fill the hard rules with this project's real names, and include the styling-discipline block whenever the repo has a frontend. CLAUDE.md is the convention carrier for every future agent (skills don't always load; CLAUDE.md always does) — a bootstrap that skips it defeats the plugin.
 - For `/ps-setup audit`: produce a drift report. Read-only. Do not change files.
 - For `/ps-setup suggest`: produce a proposal for the current repo. Don't change files; if the user wants to apply, they can re-run with init flow on top.
 
@@ -127,8 +125,9 @@ When the mode is `audit` or `suggest`:
    - **Matches** (green) — what's already aligned
    - **Drift** (yellow) — minor deviations
    - **Missing** (red) — conventions not present
-4. For `audit`, stop there.
-5. For `suggest`, follow with a proposed remediation plan — what to add, what to rename, what to split.
+4. If the repo has `tokens.css` + a ui package, also run the styling-discipline greps from `references/architecture/frontend/styling-discipline.md` (arbitrary values / font-weight utilities / raw `var()` in feature code) and check that the project `CLAUDE.md` contains the styling-discipline block — a missing block is a **red** finding, because nothing else holds the line for future agents.
+5. For `audit`, stop there.
+6. For `suggest`, follow with a proposed remediation plan — what to add, what to rename, what to split.
 
 Never edit files in `audit` mode. In `suggest` mode, only edit after explicit confirmation.
 
@@ -147,6 +146,8 @@ Never edit files in `audit` mode. In `suggest` mode, only edit after explicit co
 | Image / runtime versions (postgres:?, redis:?, python:?) | Always — versions in this skill's references are illustrative. Check latest stable, surface options, let the user pick. |
 | ML cloud orchestrator (dstack / SkyPilot / custom / none) | Always ask for ML projects. If dstack, also consult the `dstack` skill in the sibling plugin. |
 | Remote dev / agent SSH access for ML projects | Always ask — different layout surface (`apps/cloud/`, `tasks/`, `scripts/cloud/`) |
+
+**Running autonomously (no user available to ask)?** Don't guess silently and don't stall: take the convention default, proceed, and record every assumption explicitly in the proposal and the generated CLAUDE.md so the user can correct it later. An explicit wrong assumption is recoverable; a silent one becomes drift.
 
 ## What you do not do
 
@@ -208,7 +209,8 @@ references/
 │   │   ├── shared-ui-package.md   # packages/ui, tailwind-config, types, services — what to share
 │   │   ├── vite-proxy-nginx-pair.md   # dev Vite proxy → prod nginx; same /api/* contract
 │   │   ├── api-prefix-routing.md  # all backend routes under /api/* (makes the proxy work)
-│   │   ├── design-tokens.md       # tokens.css single source; no hex/px in component CSS
+│   │   ├── design-tokens.md       # tokens.css single source; no hex/px in component CSS; 4-size/1-weight type ladder
+│   │   ├── styling-discipline.md  # ★ HARD RULES: primitive-first feature code, tokens only, closed ladder, fold-on-second, frontend-design precedence → goes into project CLAUDE.md
 │   │   ├── light-dark-data-attr.md    # [data-theme="dark"] on <html>; both modes default
 │   │   ├── shadcn-tailwind.md     # shadcn/ui + tailwind wired to var(--token)
 │   │   ├── nextjs-astro-variants.md   # when Next (SSR) / Astro (static) instead of Vite
@@ -242,7 +244,7 @@ references/
 │       └── extract-on-third-use.md    # rule of three before extracting a shared helper
 │
 └── integrations/                 # INTENT: peripheral / external-tool handoffs
-    ├── docs-integration.md        # defer docs to the documentation-guide skill; /docs-init handoff
+    ├── docs-integration.md        # docs handoff — plugin renamed documentation-guide → agent-ks (/agent-ks-init); file text predates the rename
     ├── claude-folder.md           # .claude/ stays empty initially; CLAUDE.md template guidance
     └── examples-index.md          # REAL repos to cite (atheneum/NeuraSutra/plane/chimere/uvenv) — never invent paths
 
@@ -253,7 +255,7 @@ assets/snippets/                   # fragments to drop into a target repo (NOT r
 ├── python/{alembic-shim.py, alembic_helpers.py}
 ├── env/{env.example.template, mise.toml.example}
 ├── scripts/ctl (thin router → repo root) + common/{_lib.sh,_select.sh} (shared: colors/help/dc+discovery/guards/picker) + workers dev/* container/* config/*
-├── claude/CLAUDE.md.template
+├── claude/CLAUDE.md.template     # hard rules + NON-NEGOTIABLE styling-discipline block — ALWAYS instantiated on bootstrap
 └── README.md                      # snippet index: what each fragment is + where it drops
 
 commands/ps-setup.md               # the /ps-setup slash command (init | audit | suggest)

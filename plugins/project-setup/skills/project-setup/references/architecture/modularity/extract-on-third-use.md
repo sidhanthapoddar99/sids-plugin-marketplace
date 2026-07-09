@@ -41,6 +41,7 @@ The extract should be **named for what it means**, not for what it does mechanic
 - The pattern is **non-obvious** (clever algorithm, tricky regex) — extract on first use with a name, so callers don't have to understand
 - The pattern is **dangerous** (security-sensitive crypto, parsing untrusted input) — extract on first use to centralise review
 - The pattern is **owned by a different layer** (DB query, HTTP call) — extract immediately into the appropriate module
+- The pattern is **a styling utility combination** — fold into a primitive variant on the **second** use (see `architecture/frontend/styling-discipline.md`); utility strings are cheaper to extract than logic abstractions, and styling duplication is where visual drift starts
 
 ## Anti-patterns
 

@@ -104,15 +104,16 @@ export default {
       },
       fontSize: {
         sm: ["var(--text-sm)", { lineHeight: "var(--leading-normal)" }],
-        md: ["var(--text-md)", { lineHeight: "var(--leading-normal)" }],
+        base: ["var(--text-base)", { lineHeight: "var(--leading-normal)" }],
         lg: ["var(--text-lg)", { lineHeight: "var(--leading-tight)" }],
+        xl: ["var(--text-xl)", { lineHeight: "var(--leading-tight)" }],
       },
     },
   },
 } satisfies Config;
 ```
 
-Tailwind classes (`bg-bg-2`, `text-fg-1`, `p-4`, `rounded-md`, `text-md`) all resolve to `var(--token)`, which means **Tailwind classes auto-switch with theme**.
+Tailwind classes (`bg-bg-2`, `text-fg-1`, `p-4`, `rounded-md`, `text-base`) all resolve to `var(--token)`, which means **Tailwind classes auto-switch with theme**.
 
 ## shadcn defaults override
 
@@ -150,7 +151,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-md font-medium transition-colors",
+  "inline-flex items-center justify-center rounded-md text-base transition-colors",
   {
     variants: {
       variant: {

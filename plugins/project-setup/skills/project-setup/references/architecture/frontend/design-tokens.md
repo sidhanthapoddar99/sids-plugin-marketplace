@@ -55,11 +55,12 @@ Every color, spacing, radius, font-size, blur, shadow lives in **one CSS file** 
   --blur-lg: 32px;
 
   /* ─── Typography ──────────────────────────────────────── */
-  --text-sm: 13px;
-  --text-md: 15px;
-  --text-lg: 18px;
-  --weight-regular: 400;
-  --weight-emphasis: 600;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-lg:   18px;
+  --text-xl:   22px;
+  --weight-regular: 400;   /* THE weight — used everywhere */
+  --weight-emphasis: 600;  /* exists for the rare absolutely-required case; not part of the ladder */
   --leading-tight:  1.2;
   --leading-normal: 1.5;
   --leading-loose:  1.75;
@@ -132,18 +133,21 @@ In a separate stylesheet or below the `:root` block:
 
 See `light-dark-data-attr.md` for the toggle mechanism.
 
-## Three font sizes only
+## Four font sizes, one weight
 
-Default — 13 / 15 / 18 px. Hierarchy via **weight** and **color**, not size.
+Default — 13 / 15 / 18 / 22 px (`sm / base / lg / xl`). **One weight throughout** (`--weight-regular`); hierarchy via **size** and **color**, not weight. `--weight-emphasis` exists for the rare absolutely-required case, never as a routine hierarchy tool. The ladder is closed: one `text-xl` per screen (page title), `text-lg` for section/card titles, `text-base` for body and controls, `text-sm` for table cells / labels / meta.
 
 ```css
-.title {
+.page-title {
+  font-size: var(--text-xl);
+  color: var(--fg-1);
+}
+.section-title {
   font-size: var(--text-lg);
-  font-weight: var(--weight-emphasis);
   color: var(--fg-1);
 }
 .body {
-  font-size: var(--text-md);
+  font-size: var(--text-base);
   color: var(--fg-1);
 }
 .caption {
@@ -152,7 +156,7 @@ Default — 13 / 15 / 18 px. Hierarchy via **weight** and **color**, not size.
 }
 ```
 
-This is opinionated; deviate when a project needs more sizes, but stay token-driven.
+This is opinionated; deviate when a project needs more sizes, but stay token-driven. Enforcement rules live in `styling-discipline.md`.
 
 ## Component CSS rule
 
