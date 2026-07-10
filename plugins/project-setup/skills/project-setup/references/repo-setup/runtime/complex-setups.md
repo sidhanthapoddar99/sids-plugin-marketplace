@@ -152,4 +152,5 @@ A Layout 05 README documents **four** startup paths:
 - `runtime/overview.md` — how mise + ctl + docker + env interact (the simple case)
 - `runtime/docker-overview.md` — the flat (single-mode) profile-less convention: standalone configs + `compose.m.*` modifiers
 - `runtime/script-overview.md` — the shell `ctl` this escalates *from*
+- `runtime/multi-stack.md` — the *across-repos* escalation: several stacks cooperating on one shared network (this page covers escalations within one repo)
 - `layouts/05_infra-orchestrator.md` — the layout entry that points here

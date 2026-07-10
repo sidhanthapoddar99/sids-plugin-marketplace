@@ -14,7 +14,7 @@ from what's listening on the dev ports (PYTHON_PORT / FRONTEND_PORT), or from pr
 if that's the runner. Read-only; works without .env (falls back to default ports)."; }
 
 is_help "${1:-}" && { usage; exit 0; }
-[[ -f .env ]] && { set -a; source .env; set +a; }     # soft load — ps must never die
+load_env_file .env     # soft, non-clobbering load — ps must never die
 
 section "containers"
 if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then dc ps

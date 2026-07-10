@@ -15,6 +15,7 @@ Options
 
 is_help "${1:-}" && { usage; exit 0; }
 require_tools docker
+load_env_file .env   # soft, non-clobbering — diagnostics never die, but dc needs ${VAR} interpolation
 # default target: the data core, else (no data core) every service the base compose defines
 svcs=("$@")
 (( ${#svcs[@]} )) || svcs=("${DATA_SVCS[@]}")

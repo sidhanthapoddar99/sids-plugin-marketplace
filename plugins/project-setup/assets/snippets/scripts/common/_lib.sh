@@ -111,12 +111,28 @@ or_none() { local raw; raw=$(cat); raw="${raw%"${raw##*[![:space:]]}"}"
             [[ -n $raw ]] && printf '%s' "$raw" || printf '%s(none)%s' "$C_DIM" "$C_RESET"; }
 
 # ── guards ──
+# load_env_file [file] — export KEY=value pairs from an env file WITHOUT clobbering
+# variables already set in the real environment: a key already present is never
+# overwritten (tier 3 wins — see env-and-config/env-precedence.md). This is deliberate:
+# `set -a; source .env` assigns unconditionally, so a file value would override inline
+# runs (`NGINX_PORT=8085 ./ctl up`), CI-injected secrets, and secret-store injection.
+# Constraint the skip-if-set loop introduces: plain KEY=value lines only — no multi-line
+# values or command substitution (desirable for env files anyway), and quotes are kept
+# literally (unlike `source`, which parses them) — write values unquoted.
+load_env_file() {
+  local f="${1:-.env}" k v
+  [[ -f $f ]] || return 0
+  while IFS='=' read -r k v || [[ -n $k ]]; do      # `|| [[ -n $k ]]`: keep a last line with no newline
+    [[ $k =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue  # skip blanks, comments, malformed keys
+    v="${v%$'\r'}"                                    # tolerate CRLF files
+    [[ -v $k ]] || export "$k=$v"                     # tier 3: never overwrite a set var
+  done < "$f"
+}
 require_env() {
   # STRICT (data core ⇒ real secrets): die if .env is missing.
-  # [ADAPT] SOFT (defaulted env, no secrets): replace the two lines below with
-  #   [[ -f .env ]] && { set -a; source .env; set +a; } || true; return 0
+  # [ADAPT] SOFT (defaulted env, no secrets): replace the `die` line with `return 0`.
   [[ -f .env ]] || die ".env missing — run \`ctl setup\` (or cp .env.example .env)."
-  set -a; source .env; set +a   # shellcheck disable=SC1091
+  load_env_file .env
 }
 require_tools() {  # require_tools mise docker …
   local t missing=()

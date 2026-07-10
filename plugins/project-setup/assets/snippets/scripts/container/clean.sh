@@ -17,6 +17,7 @@ if (( ! yes )); then
   warn "this DROPS data volumes and clears caches."
   confirm "continue" || { say "aborted."; exit 0; }
 fi
+require_env   # compose interpolates ${VAR} even for `down` — without env, `${X:?}` files fail silently here
 dc down -v 2>/dev/null || true
 rm -rf apps/frontend/node_modules apps/frontend/dist apps/frontend/.vite
 find . -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true

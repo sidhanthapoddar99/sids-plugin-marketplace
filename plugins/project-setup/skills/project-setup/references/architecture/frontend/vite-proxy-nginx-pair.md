@@ -85,6 +85,8 @@ http {
 
 The frontend bundle is built into `/usr/share/nginx/html` by the frontend's Dockerfile; nginx serves it and proxies `/api/*` to the backend container.
 
+> **In-stack only.** The literal `upstream`/`proxy_pass` above resolves `backend` **once at nginx startup** — safe here because `depends_on` guarantees the container exists. If nginx proxies to a service in *another* compose stack (shared network across repos), a down upstream makes nginx crash-loop with `[emerg] host not found in upstream`. Use the `resolver` + variable `proxy_pass` pattern in `references/repo-setup/runtime/multi-stack.md` instead.
+
 ## Frontend Dockerfile (multi-stage)
 
 ```dockerfile
@@ -125,3 +127,4 @@ Frontend code is identical in both. `/api/...` works everywhere.
 - Forgetting WebSocket upgrade headers in nginx — sync silently breaks
 - Proxying `/api` to a host different from where nginx serves — CORS reappears
 - Serving the frontend from the backend (e.g. FastAPI + StaticFiles) — slower in prod, mixes concerns; use nginx
+- A literal `proxy_pass` to a service in **another** compose stack — startup-time DNS resolution crash-loops when that stack is down; see `references/repo-setup/runtime/multi-stack.md`

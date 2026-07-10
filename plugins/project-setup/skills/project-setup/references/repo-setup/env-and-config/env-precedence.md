@@ -35,6 +35,8 @@ config = {**merged, **os.environ}                                          # tie
 
 Files merge most-specific-last, then real env overrides everything. (With `load_dotenv`: root with `override=False`, then the service file with `override=True` over the root keys — just ensure no file load clobbers a pre-existing real env var.)
 
+The same rule applies to shell loaders. The ctl toolkit's `require_env`/`load_env_file` (`scripts/common/_lib.sh`) loads `.env` **skip-if-set** — a key already present in the real environment is never overwritten — which is `override=False` for bash. `set -a; source .env; set +a` is the tempting one-liner, but `source` assigns unconditionally, so a file value would beat an inline override (`NGINX_PORT=8085 ./ctl up`) or a CI-injected secret: the anti-pattern below. The trade: the skip-if-set loop only handles plain `KEY=value` lines (no multi-line values or command substitution — desirable constraints for an env file anyway), where `source` would parse quoting.
+
 ## Root `.env` — shared / common vars only
 
 The root `.env` is **not** a global dumping ground. It holds only what's shared across services or needed by docker compose orchestration.
@@ -86,7 +88,7 @@ TZ=Asia/Kolkata
 
 1. **docker compose** auto-loads root `.env` for `${VAR}` interpolation in compose files.
 2. **per-service `config.yaml`** interpolates `${VAR}` from root `.env` — see `per-service-config.md`.
-3. **`ctl`** sources `.env` at the top (`set -a; source .env; set +a`); `ctl setup` fills it and `ctl status` diffs it against `.env.example` — see `runtime/script-usage.md`.
+3. **`ctl`** loads `.env` at the top via `require_env` — skip-if-set, so a real exported env var is never overwritten (see Loader semantics above); `ctl setup` fills it and `ctl status` diffs it against `.env.example` — see `runtime/script-usage.md`.
 4. **Frontends do not read root `.env`** — see `frontend-env-isolation.md`.
 
 ## `config.local.yaml` — local-only overrides

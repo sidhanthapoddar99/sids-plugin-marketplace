@@ -11,7 +11,7 @@ usage() { print_help "status" "Config doctor: env, toolchain (mise/uv/bun/uvenv)
   -h, --help      show this help"; }
 
 is_help "${1:-}" && { usage; exit 0; }
-[[ -f .env ]] && { set -a; source .env; set +a; }    # soft load — status must never die
+load_env_file .env    # soft, non-clobbering load — status must never die
 rc=0
 
 # Nest every section's result lines (ok/warn/say + check_env_schema's) two spaces under their

@@ -69,14 +69,18 @@ case "$cmd" in
   shell)    run container/shell  "$@" ;;
   ps)       run container/ps     "$@" ;;       # containers + host dev processes
   # ── containers: thin docker compose passthroughs (uniform help + native hint) ──
-  down)     is_help "${1:-}" && { passthrough_help down    "stop the stack (or one service)";    exit 0; }; dc down    "$@" ;;
-  restart)  is_help "${1:-}" && { passthrough_help restart "restart the stack (or one service)"; exit 0; }; dc restart "$@" ;;
-  logs)     is_help "${1:-}" && { passthrough_help logs    "tail container logs (-f to follow)"; exit 0; }; dc logs    "$@" ;;
+  # require_env before every dc call: compose interpolates ${VAR} for ALL subcommands
+  # (down included), so a `${X:?}` in a compose file would make an env-less `ctl down`
+  # fail — a stack you can start but not stop. require_env is non-clobbering + idempotent.
+  down)     is_help "${1:-}" && { passthrough_help down    "stop the stack (or one service)";    exit 0; }; require_env; dc down    "$@" ;;
+  restart)  is_help "${1:-}" && { passthrough_help restart "restart the stack (or one service)"; exit 0; }; require_env; dc restart "$@" ;;
+  logs)     is_help "${1:-}" && { passthrough_help logs    "tail container logs (-f to follow)"; exit 0; }; require_env; dc logs    "$@" ;;
   exec)     is_help "${1:-}" && { print_help exec "Run a command inside a running service container." \
               'exec <service> [command…] [-h]' \
               $'Arguments\n  service       the compose service (e.g. backend, postgres)\n  command…      default: an interactive shell\n\nOptions\n  -h, --help    show this help' \
               "Forwards to \`docker compose exec\`."; exit 0; }
             [[ $# -ge 1 ]] || die "usage: ctl exec <service> [command…]"
+            require_env
             svc="$1"; shift; if (( $# )); then dc exec "$svc" "$@"; else dc exec "$svc" sh; fi ;;
   # ── configuration ────────────────────────────────────────
   setup)    run config/setup  "$@" ;;

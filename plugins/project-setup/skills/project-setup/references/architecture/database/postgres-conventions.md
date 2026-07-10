@@ -77,7 +77,7 @@ database:
   pool_max_overflow: 10
 ```
 
-`postgres` is the compose service name; inside compose's internal network it resolves automatically.
+`postgres` is the compose service name; inside compose's internal network it resolves automatically. (Single-stack advice: on a network **shared across stacks**, generic names collide — project-prefix them, e.g. `myapp-postgres`; see `references/repo-setup/runtime/multi-stack.md`.)
 
 ## Healthcheck pattern
 

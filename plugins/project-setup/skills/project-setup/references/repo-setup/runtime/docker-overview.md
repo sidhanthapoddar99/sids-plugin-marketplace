@@ -50,6 +50,15 @@ This is how the profile-less model expresses "run a subset": instead of a `data`
 
 **Standalone vs overlay configs.** The shipped `container/up.sh` treats a config as **standalone** (replaces base). If you'd rather a config *overlay* base (`-f base -f config`, the classic prod-as-overlay that avoids re-declaring services), that's a one-line change in `container/up.sh` (marked `[ADAPT]` there) — `compose.prod.yaml` shows the standalone form; both are valid and the file's role is a documented per-project choice. A config named `<x>` auto-uses `.env.<x>` if present (e.g. `prod` → `.env.prod`).
 
+### Variant: prod as the base
+
+When the dev loop is host-run (the default here — app containers are only ever prod-shaped), the whole-stack base **is** the prod stack. A project may make that explicit: rename the base to `compose.prod.yaml`, let bare `ctl up` mean prod, and keep `data` (etc.) as the dev-time configs. This is an allowed, documented variant of the 2-axis model — not the default. Two consequences if you adopt it:
+
+- **`list_configs` filters the base by filename.** Update the `compose.yaml` exclusion in `_lib.sh` to `compose.prod.yaml` and set `BASE="$DOCKER_DIR/compose.prod.yaml"` — otherwise "prod" shows up as a duplicate selectable config.
+- **The `.env.<config>` auto-load hook no longer fires for prod.** `ctl up prod` → `.env.prod` only works when prod is a *selected* config; once it's the base, a project needing prod-only env values must reintroduce that load deliberately (e.g. in `container/up.sh`'s env-file assembly).
+
+Companion rule: the dev-time configs (`data`, …) keep their **own bridge network** — see `multi-stack.md` for why the dev loop must never depend on shared infrastructure being up.
+
 ## Modifiers = cross-cutting overlays (stackable)
 
 A config picks the service *set*; a modifier layers a small cross-cutting tweak onto it. File `compose.m.<name>.yaml`, applied `--modifier <name>` (comma-list, repeatable). Modifiers stack and overlay whichever config you chose.
@@ -128,6 +137,7 @@ If the project has no database (static frontend, pure API gateway, SDK, ML repo)
 - Splitting compose by **concern** (`compose.frontend.yaml`) — a config is a whole scenario, not one service; split by scenario / modifier, never by service.
 - Auto-loaded `compose.override.yaml` as a hidden dev variant — the echoed `-f` line is the contract.
 - A `prod` config that only swaps image tags but leaves `--reload` and no limits — see the production references.
+- Generic service names (`postgres`, `backend`) on a **shared** cross-stack network, or a literal `proxy_pass` at another stack's service — single-stack habits that break multi-stack; see `multi-stack.md`.
 
 ## See also
 
@@ -135,4 +145,5 @@ If the project has no database (static frontend, pure API gateway, SDK, ML repo)
 - `no-data-core.md` — `DATA_SVCS=()` + apps-as-core: the exact lines to change for a DB-less project
 - `docker-details.md` — bind-mounts + the `data/` layout (nested pgdata trick), internal-vs-host ports (`${VAR}` for host ports), YAML anchors
 - `complex-setups.md` — profiles as the advanced multi-group escalation; `docker/<mode>/` trees + Go-CLI orchestrator (Layout 05)
+- `multi-stack.md` — several repos' stacks on one shared network: owner/joiner declaration, project-prefixed service names, deploy order, cross-stack env wiring, nginx runtime DNS
 - `references/architecture/production/app-server-and-workers.md` — what the `prod` config carries
