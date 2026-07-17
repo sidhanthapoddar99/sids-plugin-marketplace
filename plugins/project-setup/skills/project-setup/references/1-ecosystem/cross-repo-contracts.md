@@ -22,9 +22,22 @@ Prefer the highest option that works; drop down only when forced.
 
 **Never** path-dependencies on sibling clones (`../other-repo`) for anything that ships. Sibling paths are fine only for a throwaway local spike, never committed as a build input.
 
+## The ecosystem hub — aggregator vs docs-repo hub
+
+Every multi-repo product has exactly **one hub**: the repo that holds the full repo/role map. Which repo that is follows from how the repos couple:
+
+| Coupling | Hub | What it holds |
+|---|---|---|
+| **Deploy-coupled** — repos ship together as one deployment: merged env, one prod compose | The `<product>-deploy` **aggregator** (below) | Ecosystem map + the deploy contracts |
+| **Independently deployed** — each repo owns its own env, DB, and compose; the only shared thing is understanding | The **docs repo** (`<product>-docs`, per `references/1-ecosystem/docs-placement.md`) | Ecosystem map: one section per repo (role, siblings, contracts), architecture decisions, cross-repo guides |
+
+Don't create an aggregator a product doesn't need: if no two repos share env vars or deploy together, there is no merged-env contract to own — the docs repo is the hub, and coupling stays documentation-level by design. The moment two repos start sharing env vars, that's the escalation trigger to introduce an aggregator (`references/1-ecosystem/repo-boundaries.md` § escalation).
+
+A committed **multi-root editor workspace file** (`<product>.code-workspace`) alongside the repos is fine as convenience glue — one-click open of the sibling set. It is never a build/deploy input and never substitutes for the hub's map.
+
 ## The aggregator repo
 
-A polyrepo product gets one `<product>-deploy` aggregator: the **deployment-time source of truth**. It is deploy plumbing only — no business logic. Its contract responsibilities:
+A deploy-coupled polyrepo product gets one `<product>-deploy` aggregator: the **deployment-time source of truth**. It is deploy plumbing only — no business logic. Its contract responsibilities:
 
 | Contract | Rule |
 |---|---|
@@ -66,6 +79,7 @@ Two repos **never** read or write the same tables directly. Cross-repo data acce
 ## Audit checks
 
 - Cross-repo sharing via **unpinned sibling paths** (`../repo` build inputs) = red finding.
+- **No hub** — no repo holds the full ecosystem map — or an aggregator existing with no deploy coupling to own = finding (map goes to the docs repo; a couplingless aggregator is dead weight).
 - **Two repos writing the same database tables** outside a single-owner schema contract = red finding.
 - Aggregator carrying **`build:` directives** or business logic = finding (it must be deploy plumbing over pre-built images).
 - **No `.env.example` sync check** between children and aggregator = finding (envs drift silently, deploys break).

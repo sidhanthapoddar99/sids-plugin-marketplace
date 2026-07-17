@@ -2,8 +2,10 @@
 
 All compose files live under `docker/`. Root keeps at most `.env` / `.env.example`. The stack is shaped by **two axes** — getting the split right is the point of this doc:
 
-- **Config** — *which scenario runs.* The base `compose.yaml` is the default (the whole stack). Each `compose.<name>.yaml` is a **standalone** scenario selected by name (`ctl up <name>`) that **replaces** base — a different service set (just the data layer, the prod stack). **One per run, optional.**
+- **Config** — *which scenario runs.* The base `compose.base.yaml` is the default (the whole stack). Each `compose.<name>.yaml` is a **standalone** scenario selected by name (`ctl up <name>`) that **replaces** base — a different service set (just the data layer, the prod stack). **One per run, optional.**
 - **Modifiers** — *small cross-cutting overlays* layered on whichever config you chose. File `compose.m.<name>.yaml` (the **`.m.`** marks it a modifier at a glance), applied `--modifier <name>`. Stackable. Today: `expose`, `expose_data`, `expose_all`, `traefik`.
+
+**Every compose file is named — there is never a bare `compose.yaml`.** The base is `compose.base.yaml`, a named variant like any other. A bare `compose.yaml` invites `docker compose up` from muscle memory (bypassing `ctl` and the axis model) and doesn't say *which* scenario it is once siblings exist; with every file named, the `docker/` listing reads as the full menu of scenarios.
 
 **There are no profiles.** Every service in the chosen compose file just runs — at the ≤5 services a typical repo has, you almost always want the whole set, so a second "which services" selection axis costs more than it pays. (Profiles are a rare advanced escalation for genuine multi-group service meshes — see `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`. Don't reach for them by default.)
 
@@ -13,7 +15,7 @@ Why this shape works **here specifically**: the default dev loop is `ctl dev` = 
 
 ```
 docker/
-├── compose.yaml                  # base: the WHOLE stack, NO profiles, NO host ports, internal net
+├── compose.base.yaml             # base: the WHOLE stack, NO profiles, NO host ports, internal net
 ├── compose.data.yaml             # CONFIG  (ctl up data): standalone — just postgres + redis
 ├── compose.prod.yaml             # CONFIG  (ctl up prod): standalone — hardened prod stack (.env.production)
 ├── compose.m.expose.yaml         # MODIFIER (--modifier expose):      publish nginx (the edge) only
@@ -22,11 +24,11 @@ docker/
 └── compose.m.traefik.yaml        # MODIFIER (--modifier traefik):     join external traefik-proxy net + labels
 ```
 
-Configs are `compose.<name>.yaml`; modifiers carry the **`.m.`** infix so you can tell them apart from configs without opening them. Per-layout footprint: Layout 01 often needs only `compose.yaml`; Layout 02 carries the full set (base + `data`/`prod` configs + modifiers); Layout 03 = per-repo compose + an image-based aggregator; Layout 04 (ML) usually none; Layout 06 = demo-only base for the reference host. `compose.m.expose` exists only where host ports are actually published. For multi-mode `docker/<mode>/` trees driven by a binary, see `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` (Layout 05).
+Configs are `compose.<name>.yaml`; modifiers carry the **`.m.`** infix so you can tell them apart from configs without opening them. Per-layout footprint: Layout 01 often needs only `compose.base.yaml`; Layout 02 carries the full set (base + `data`/`prod` configs + modifiers); Layout 03 = per-repo compose + an image-based aggregator; Layout 04 (ML) usually none; Layout 06 = demo-only base for the reference host. `compose.m.expose` exists only where host ports are actually published. For multi-mode `docker/<mode>/` trees driven by a binary, see `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` (Layout 05).
 
 ### Path discipline
 
-`docker compose` resolves paths relative to the **first `-f` file**, so with `-f docker/compose.yaml` everything is relative to `docker/`:
+`docker compose` resolves paths relative to the **first `-f` file**, so with `-f docker/compose.base.yaml` everything is relative to `docker/`:
 
 | Need | In the compose file |
 |---|---|
@@ -38,7 +40,7 @@ Init scripts, nginx confs, certs go **adjacent to the service** in `infra/<servi
 
 ## Config = which scenario (standalone, replaces base)
 
-Base `compose.yaml` declares the whole stack, no profiles — `ctl up` (bare) runs all of it. A **config is a standalone file that replaces base**: `ctl up data` runs `docker compose -f docker/compose.data.yaml up`, so *only* what that file declares comes up.
+Base `compose.base.yaml` declares the whole stack, no profiles — `ctl up` (bare) runs all of it. A **config is a standalone file that replaces base**: `ctl up data` runs `docker compose -f docker/compose.data.yaml up`, so *only* what that file declares comes up.
 
 ```
 ctl up                  # base = the whole stack (postgres redis backend frontend nginx)
@@ -54,7 +56,7 @@ This is how the profile-less model expresses "run a subset": instead of a `data`
 
 When the dev loop is host-run (the default here — app containers are only ever prod-shaped), the whole-stack base **is** the prod stack. A project may make that explicit: rename the base to `compose.prod.yaml`, let bare `ctl up` mean prod, and keep `data` (etc.) as the dev-time configs. This is an allowed, documented variant of the 2-axis model — not the default. Two consequences if you adopt it:
 
-- **`list_configs` filters the base by filename.** Update the `compose.yaml` exclusion in `_lib.sh` to `compose.prod.yaml` and set `BASE="$DOCKER_DIR/compose.prod.yaml"` — otherwise "prod" shows up as a duplicate selectable config.
+- **`list_configs` filters the base by filename.** Update the `compose.base.yaml` exclusion in `_lib.sh` to `compose.prod.yaml` and set `BASE="$DOCKER_DIR/compose.prod.yaml"` — otherwise "prod" shows up as a duplicate selectable config.
 - **The `.env.<config>` auto-load hook no longer fires for prod.** `ctl up prod` → `.env.prod` only works when prod is a *selected* config; once it's the base, a project needing prod-only env values must reintroduce that load deliberately (e.g. in `container/up.sh`'s env-file assembly).
 
 Companion rule: the dev-time configs (`data`, …) keep their **own bridge network** — see `references/2-repo/04-docker/03_multi-stack.md` for why the dev loop must never depend on shared infrastructure being up.
@@ -97,7 +99,7 @@ ctl up prod --modifier traefik
 ▸ docker compose -f docker/compose.prod.yaml -f docker/compose.m.traefik.yaml up -d --build
 ```
 
-`ctl up --help` / `--list` auto-discover both lists: configs are `compose.<name>.yaml` (minus base), modifiers are `compose.m.<name>.yaml`. Raw `docker compose -f docker/compose.yaml up` always remains available.
+`ctl up --help` / `--list` auto-discover both lists: configs are `compose.<name>.yaml` (minus base), modifiers are `compose.m.<name>.yaml`. Raw `docker compose -f docker/compose.base.yaml up` always remains available.
 
 ## Example: a standalone slice and the traefik modifier
 
@@ -132,7 +134,8 @@ If the project has no database (static frontend, pure API gateway, SDK, ML repo)
 
 - Reaching for profiles to express "a subset of services" — write a standalone `compose.<name>.yaml` and select it by name. Profiles are the rare multi-group-mesh escalation (`references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`), not the default.
 - A modifier without the `.m.` infix (or a config *with* it) — the marker is the only way `ctl` and a reader tell them apart.
-- Host ports in the `compose.yaml` base — base is internal-only; expose with a modifier (`ctl dev` applies `expose_data` for the data core automatically).
+- A bare `compose.yaml` (or `docker-compose.yml`) in `docker/` — every file is a named variant; the base is `compose.base.yaml`.
+- Host ports in the `compose.base.yaml` base — base is internal-only; expose with a modifier (`ctl dev` applies `expose_data` for the data core automatically).
 - A single "expose everything" modifier — tier it (`expose` edge / `expose_data` / `expose_all`) so the default doesn't over-publish.
 - Splitting compose by **concern** (`compose.frontend.yaml`) — a config is a whole scenario, not one service; split by scenario / modifier, never by service.
 - Auto-loaded `compose.override.yaml` as a hidden dev variant — the echoed `-f` line is the contract.

@@ -21,7 +21,7 @@ Two kinds of thing have two lifecycles, so they get two grammars:
 
 Profile-less. The stack is shaped by exactly two axes:
 
-- **Config** — *which scenario.* At most one. The base `compose.yaml` (the whole stack) is the default; a named `compose.<name>.yaml` is a **standalone** scenario that **replaces** base (`data` = just the data layer, `prod` = the hardened stack).
+- **Config** — *which scenario.* At most one. The base `compose.base.yaml` (the whole stack) is the default; a named `compose.<name>.yaml` is a **standalone** scenario that **replaces** base (`data` = just the data layer, `prod` = the hardened stack).
 - **Modifiers** — stackable cross-cutting overlays layered on the chosen config (`--modifier expose`, `--modifier expose_data,traefik`).
 
 There is **no profiles axis** — every service in the chosen file runs. (Profiles are a rare advanced escalation for multi-group meshes; see `03_complex-setups.md`.) The compose-file convention behind these (filenames, the standalone-vs-overlay choice, expose tiers, discovery) is owned by `references/2-repo/04-docker/00_docker-overview.md`; the exact `ctl up` grammar, the interactive flow, and the assembled `docker compose` line are in `01_script-usage.md`.
@@ -73,7 +73,17 @@ scripts/
 | `container/` | container & compose lifecycle | `up`, `build`, `clean`, `health`, `shell`, `ps` |
 | `config/` | config management | `setup`, `status` (+ `check-env` helper) |
 
-Layout is **`scripts/<category>/<name>.sh`** (`category ∈ common | dev | container | config`). The folder groups; the `ctl` subcommand stays clean — file `dev/migrate.sh`, command `ctl migrate` (not `ctl dev/migrate`). Trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`exec`) are **not** files — they're one-line forwards inlined in `ctl`, still shown under the Containers group with uniform help.
+Layout is **`scripts/<category>/<name>.sh`** (`category ∈ common | dev | container | config`, plus `admin` when the repo has an operator plane — below). The folder groups; the `ctl` subcommand stays clean — file `dev/migrate.sh`, command `ctl migrate` (not `ctl dev/migrate`). Trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`exec`) are **not** files — they're one-line forwards inlined in `ctl`, still shown under the Containers group with uniform help.
+
+### Optional category — `admin/` (operator management)
+
+A repo with an operator/admin plane (`references/3-app/02-backend/02_two-plane-split.md`) grows one more category: **`scripts/admin/manage.sh` behind `ctl manage`** — create / list / disable operator accounts, reset credentials, seed the first admin. Why it's a `ctl` verb and not a runbook note:
+
+- **It's the only sanctioned path for touching operator accounts** — no ad-hoc SQL, no one-off scripts; the operations become reviewable code with the standard worker shape.
+- **It must work in production**, because that's where "seed the first admin" actually happens: the worker talks to the admin backend's API or DB through the same root `.env` contract, whether the stack is `ctl dev` or `ctl up prod` (via `docker compose exec` where needed).
+- Destructive subverbs (disable, credential reset) confirm interactively, `-y` to skip — same UX contract as `ctl clean`.
+
+Not shipped in the snippet toolkit (it's plane-specific); add it as a normal worker when the two-plane split is chosen.
 
 **Treat the shipped set as a template, not a spec.** It's a sensible default — copy `ctl` + `scripts/`, then add / remove / edit per the project; most repos won't need every command, and `migrate`/`lint`/`shell`/`test` are stack-specific (adapt or drop — a no-DB repo drops `migrate`). How many files is **utility-driven**: a command earns a file once it outgrows a one-liner. **To add a command:** drop `scripts/<category>/<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `common/_lib.sh`) and wire one `run <category>/<name>` line into `ctl`'s `case`. The runnable toolkit lives in `assets/snippets/scripts/`; `01_script-usage.md` has the architecture + worked bodies.
 

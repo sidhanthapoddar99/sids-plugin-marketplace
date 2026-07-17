@@ -7,7 +7,7 @@ Owns the L1 decision **where a product's documentation lives** (in-repo `docs/` 
 | Choice | When |
 |---|---|
 | **In-repo `docs/`** (default) | Single-repo product — Layouts 01, 02, 04, 05. One repo → one docs home inside it. |
-| **Separate `<product>-docs` repo** | Product spans multiple repos (Layout 03 — one docs site can't live in all of them), OR docs release / get contributed to on an independent cadence. |
+| **Separate `<product>-docs` repo** | Product spans multiple repos (one docs site can't live in all of them), OR docs release / get contributed to on an independent cadence. In an independently-deployed polyrepo product it also doubles as the **ecosystem hub** — the repo/role map lives here (`references/1-ecosystem/cross-repo-contracts.md` § ecosystem hub). |
 | **None** | Private tool with no docs audience yet. Skip; revisit when external consumers appear. |
 
 **Invariant: one product = one docs home.** Never both in-repo and separate for the same product; never per-repo doc fragments that split one product's documentation across repos.

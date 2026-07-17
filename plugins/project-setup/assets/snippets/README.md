@@ -28,11 +28,11 @@ assets/snippets/
 
 ### `docker/`
 
-**Profile-less, two axes.** `compose.yaml` is the base (the whole stack, no profiles, no host ports); a `compose.<name>.yaml` is a **standalone config** that *replaces* base (`data`, `prod`); `compose.m.<name>.yaml` files are stackable `.m.` modifiers. `ctl up [config] [--modifier "a,b"]` assembles them (bare `ctl up` is interactive). Full convention: `references/2-repo/04-docker/00_docker-overview.md`.
+**Profile-less, two axes.** `compose.base.yaml` is the base (the whole stack, no profiles, no host ports); a `compose.<name>.yaml` is a **standalone config** that *replaces* base (`data`, `prod`); `compose.m.<name>.yaml` files are stackable `.m.` modifiers. `ctl up [config] [--modifier "a,b"]` assembles them (bare `ctl up` is interactive). Full convention: `references/2-repo/04-docker/00_docker-overview.md`.
 
 | File | What it is | Drops at |
 |---|---|---|
-| `compose.yaml` | Base — the whole stack, no profiles, no host ports, internal net; nginx healthcheck active, app ones commented | `docker/compose.yaml` |
+| `compose.base.yaml` | Base — the whole stack, no profiles, no host ports, internal net; nginx healthcheck active, app ones commented | `docker/compose.base.yaml` |
 | `compose.data.yaml` | Standalone config (`ctl up data`) — just postgres + redis (the data-layer slice; worked example) | `docker/compose.data.yaml` |
 | `compose.prod.yaml` | Standalone config (`ctl up prod`) — image tags, resource limits, `.env.production` | `docker/compose.prod.yaml` |
 | `compose.m.expose.yaml` | `--modifier expose` — publish nginx (the edge) only | `docker/compose.m.expose.yaml` |

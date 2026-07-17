@@ -10,8 +10,10 @@ The level above any single repo: how many repos exist, where the boundaries sit,
 | Does a component deserve its own repo | `references/1-ecosystem/repo-boundaries.md` |
 | Deployed vs distributed (the first cut) | `references/1-ecosystem/repo-boundaries.md` |
 | Escalation between the above (repo-split, aggregator, Layout-06 reframe) | `references/1-ecosystem/repo-boundaries.md` |
+| Repo naming convention (shared product prefix + role suffix) | `references/1-ecosystem/repo-boundaries.md` |
 | Docs placement (in-repo `docs/` vs separate docs repo) + docs-plugin handoff | `references/1-ecosystem/docs-placement.md` |
 | How repos share code (publish > pin > vendor) | `references/1-ecosystem/cross-repo-contracts.md` |
+| Ecosystem hub (deploy aggregator vs docs-repo hub) + workspace file | `references/1-ecosystem/cross-repo-contracts.md` |
 | Aggregator repo + merged `.env.example` sync | `references/1-ecosystem/cross-repo-contracts.md` |
 | Cross-repo contracts (image registry/semver, no-shared-tables) | `references/1-ecosystem/cross-repo-contracts.md` |
 
@@ -20,6 +22,8 @@ The level above any single repo: how many repos exist, where the boundaries sit,
 - Every repo has exactly **one role** in the ecosystem, stated in one sentence.
 - Every cross-repo dependency is **pinned and mechanical** (version, ref, or sync script) — never "clone these side by side and hope".
 - One product = one docs home.
+- One product = **one ecosystem hub** — exactly one repo holds the full repo/role map (the deploy aggregator when repos deploy together; otherwise the docs repo — owned by `cross-repo-contracts.md`).
+- Repos in one product share a **name prefix** and carry a role suffix (`<product>-<role>`), applied consistently — naming drift compounds as the repo count grows.
 - Two repos never share database tables outside a single-owner schema contract — cross-repo reads are API calls.
 
 ## What gets recorded, and where
@@ -27,7 +31,8 @@ The level above any single repo: how many repos exist, where the boundaries sit,
 L1 has no single config file — it's recorded redundantly where agents will actually see it:
 
 - **Each repo's CLAUDE.md** states the repo's role and its siblings ("this repo is the deploy aggregator for `<x>`, `<y>`"; "the frontend consumes `@org/sdk` published from `<z>`").
-- The **aggregator repo** (when one exists) holds the full ecosystem map.
+- The **ecosystem hub** (deploy aggregator or docs repo — `cross-repo-contracts.md`) holds the full ecosystem map.
+- A committed **multi-root editor workspace file** (`<product>.code-workspace`) may list the sibling repos for one-click opening — convenience glue only, never a build or deploy input.
 - Sibling-repo questions are in the **always-ask list** — they can never be inferred from inside one repo (`references/01_question-flow.md`).
 
 ## Hands down to L2
@@ -37,6 +42,8 @@ Each repo enters its L2 bootstrap (`references/2-repo/00_index.md`) knowing: its
 ## Audit at this level
 
 - A repo whose CLAUDE.md doesn't state its role/siblings when siblings exist = finding.
+- No repo holding the full ecosystem map (hub-less polyrepo product) = finding (owned by `cross-repo-contracts.md`).
+- Repo names drifting off the shared prefix / role-suffix convention = finding (owned by `repo-boundaries.md`).
 - Cross-repo sharing via unpinned sibling paths = red finding (owned by `cross-repo-contracts.md`).
 - Two repos writing the same database tables = red finding (owned by `cross-repo-contracts.md`).
 - Product docs duplicated across repos, or a docs site with no clear home = finding (owned by `docs-placement.md`).

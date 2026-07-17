@@ -49,6 +49,7 @@ Each app receives: its slot and name (`apps/<group?>/<name>/`), its ecosystem la
 
 - Tree vs the **recorded** layout + variants (a plane-grouped repo with a recorded choice is conformant; an unrecorded exotic tree is the finding).
 - Root contract: loose code, root-manifest runtime deps, polyglot repo with root-rooted workspace, missing/incomplete `.gitignore`.
+- Residue & staleness: README/CLAUDE.md describing a pre-restructure tree (red), graveyard dirs, retired duplicates, committed data archives, loose worktrees (`references/2-repo/02-root-hygiene/00_root-and-hygiene.md` § residue).
 - `ctl` conformance floor mechanically (single-file `ctl` = red).
 - Compose: profiles present without a recorded complex-setup escalation; ports in base; missing prod config.
 - Env: tracked `.env` (red), secrets in a frontend scope (red), `config.yaml` at root.

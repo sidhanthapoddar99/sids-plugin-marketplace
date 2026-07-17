@@ -20,7 +20,7 @@ my-app/
 ├── .mise.toml                      # runtime contract
 ├── ctl                             # single dispatcher
 ├── docker/                         # compose mechanics → references/2-repo/04-docker/00_docker-overview.md
-│   ├── compose.yaml                # base — the whole stack, NO profiles, no host ports
+│   ├── compose.base.yaml                # base — the whole stack, NO profiles, no host ports
 │   ├── compose.data.yaml           # standalone config (ctl up data): just the data layer
 │   ├── compose.prod.yaml           # standalone config (ctl up prod): image tags, limits, .env.production
 │   └── compose.m.<modifier>.yaml   # one per .m. modifier: expose (nginx) / expose_data (DB) / expose_all / traefik
@@ -81,7 +81,7 @@ apps/
 
 The genuinely-unique guidance here is **coordination** when two backends share one DB: DDL gets a single owner and coordination goes over a shared transport — the ownership rules and the neutral `apps/db` escalation are owned by `references/3-app/02-backend/02_two-plane-split.md` (run model: `references/3-app/04-database/01_migrations.md`); the `migrate → sqlx prepare --check → build` ordering `ctl` enforces is owned by `references/3-app/04-database/03_raw-sql-recipe.md`. Don't forget `rust-toolchain.toml` for reproducibility.
 
-For env-var namespacing across services (`PYTHON_PORT`, `RUST_PORT`, shared `DATABASE_URL`/`REDIS_URL`), see `references/2-repo/03-env-config/01_per-service-config.md` and `.../00_env-precedence.md`. Each backend gets its own service in `compose.yaml` with its folder as build context — see `references/2-repo/04-docker/00_docker-overview.md`.
+For env-var namespacing across services (`PYTHON_PORT`, `RUST_PORT`, shared `DATABASE_URL`/`REDIS_URL`), see `references/2-repo/03-env-config/01_per-service-config.md` and `.../00_env-precedence.md`. Each backend gets its own service in `compose.base.yaml` with its folder as build context — see `references/2-repo/04-docker/00_docker-overview.md`.
 
 ## Scaling: more than one frontend
 
@@ -124,7 +124,7 @@ These are shared across every variant above; don't restate them, follow the refs
 
 - **Env precedence & split** — root `.env` is shared backend/infra only; frontends carry their own `VITE_*` `.env`. See `references/2-repo/03-env-config/00_env-precedence.md` and `.../02_frontend-env-isolation.md`.
 - **Per-service config** — each service has its own `config.yaml` reading root `.env` via `${VAR}`, with a gitignored `config.local.yaml`. See `references/2-repo/03-env-config/01_per-service-config.md`.
-- **Docker structure** — profile-less `compose.yaml` (the whole stack) plus standalone configs (`data`, `prod`) and stackable `.m.` modifiers (`expose`/`expose_data`/`expose_all`/`traefik`). See `references/2-repo/04-docker/00_docker-overview.md`.
+- **Docker structure** — profile-less `compose.base.yaml` (the whole stack) plus standalone configs (`data`, `prod`) and stackable `.m.` modifiers (`expose`/`expose_data`/`expose_all`/`traefik`). See `references/2-repo/04-docker/00_docker-overview.md`.
 - **`ctl` dispatcher** — single entry point: `ctl dev` (host) + `ctl up [config] [--modifier "a,b"]` (interactive: pick → plan → confirm) + migrate/test/clean. See `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` (model) and `.../01_script-usage.md` (commands).
 - **Production serving** — gunicorn + uvicorn workers with recycling behind nginx; readiness/liveness, graceful shutdown, migrations-on-deploy. See `references/3-app/10-deployment/00_serving.md` (worker model) and `references/2-repo/04-docker/05_production-readiness.md` (readiness/limits/migrations-on-deploy).
 

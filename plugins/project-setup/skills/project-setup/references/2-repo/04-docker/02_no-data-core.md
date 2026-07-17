@@ -6,7 +6,7 @@ The shipped template is **data-core-shaped**: it assumes a `postgres + redis` co
 
 ## The inversion: apps become the always-on core
 
-With a data core, the data layer is the always-on base and `ctl dev` brings it up for the host apps. With **no** data core, **the apps themselves are the whole base** — backend + frontend + nginx all run in `compose.yaml`, and there's nothing for `ctl dev` to bring up in containers (it just runs the host processes). This is the single biggest adaptation, and it's mostly automatic once `DATA_SVCS` is empty.
+With a data core, the data layer is the always-on base and `ctl dev` brings it up for the host apps. With **no** data core, **the apps themselves are the whole base** — backend + frontend + nginx all run in `compose.base.yaml`, and there's nothing for `ctl dev` to bring up in containers (it just runs the host processes). This is the single biggest adaptation, and it's mostly automatic once `DATA_SVCS` is empty.
 
 ## The lines to change
 
@@ -18,7 +18,7 @@ With a data core, the data layer is the always-on base and `ctl dev` brings it u
 | **`config/setup.sh`** | Already guarded — skips `mkdir data/...` when `DATA_SVCS` is empty. |
 | **`config/status.sh`** | Already guarded — prints "data core: none". Repoint the `containers` health check at your app services (e.g. `health_table backend frontend nginx`). |
 | **`container/health.sh`** | Already falls back to `dc config --services` (all compose services) when `DATA_SVCS` is empty. |
-| **`compose.yaml`** | Remove the `postgres`/`redis` services and the apps' `depends_on: {postgres: service_healthy, …}`. The apps are now the base. |
+| **`compose.base.yaml`** | Remove the `postgres`/`redis` services and the apps' `depends_on: {postgres: service_healthy, …}`. The apps are now the base. |
 
 ## Compose + expose, app-only
 

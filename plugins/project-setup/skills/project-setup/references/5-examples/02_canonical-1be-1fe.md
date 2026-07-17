@@ -27,7 +27,7 @@ deskbook/
 ├── .mise.toml                      # runtime contract: python 3.12, node 20, bun; project-scoped PATH makes `ctl` bare-callable
 ├── ctl                             # THE single dispatcher — host dev loop + container lifecycle (thin router)
 ├── docker/                         # all compose files live here; repo root stays compose-free
-│   ├── compose.yaml                # BASE: whole stack (postgres redis backend frontend nginx), NO profiles, NO host ports
+│   ├── compose.base.yaml                # BASE: whole stack (postgres redis backend frontend nginx), NO profiles, NO host ports
 │   ├── compose.data.yaml           # CONFIG (ctl up data): standalone — just postgres + redis
 │   ├── compose.prod.yaml           # CONFIG (ctl up prod): standalone — hardened stack, image tags, limits, .env.production
 │   ├── compose.m.expose.yaml       # MODIFIER (--modifier expose): publish nginx (the edge) only

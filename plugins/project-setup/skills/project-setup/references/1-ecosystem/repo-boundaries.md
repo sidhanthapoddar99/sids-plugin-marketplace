@@ -53,6 +53,16 @@ Applies to any candidate carve-out (a service, a shared library, the docs). **An
 
 **None of the three → it's a folder, not a repo.** Prefer a folder (or a `packages/` workspace inside Layout 02) until a criterion is genuinely met. A component published as a package (criterion 2) is the distributed case above → Layout 06; docs that release/get contributed independently (criterion 1/3) is the docs-repo case → `references/1-ecosystem/docs-placement.md`.
 
+A **knowledge-only repo** (architecture notes, data contracts, diagrams — no code) is a legitimate repo role when its content spans several repos and can't live in any one of them; give it the same naming convention and a one-sentence role like any other repo. If the product already has a docs repo, fold the content there instead of opening a second knowledge home (one product = one docs home).
+
+## Repo naming — the shared prefix
+
+In a multi-repo product, every repo name is `<product>-<role>` — one shared product prefix, a role suffix that matches the repo's one-sentence role (`-app`, `-api`, `-docs`, `-deploy`, `-toolkit`, …).
+
+- **Pick the prefix once, at the first repo-split**, and record it in the hub's ecosystem map. Renaming repos later is expensive (remotes, CI, links), so drift compounds: each abbreviated or re-hyphenated variant makes the next one look acceptable, and a year in, the workspace listing no longer sorts as one product.
+- **No ad-hoc abbreviations** — a shortened prefix on one repo breaks prefix-sorting and search for the whole set.
+- Working clutter stays out of the repo listing: **git worktrees, scratch checkouts, and data dumps never sit as siblings of the product's repos** — a directory beside the repos reads as a repo (audited by `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` § residue).
+
 ## Escalation triggers between these decisions
 
 Boundaries are re-openable. These L2→L1 triggers say a repo has outgrown its current boundary and must be re-evaluated:
@@ -76,6 +86,7 @@ Boundaries are re-openable. These L2→L1 triggers say a repo has outgrown its c
 - A component with external consumers / its own cadence still living as a folder, never re-evaluated for split = finding.
 - A polyrepo whose services always release together and share a coupled schema = mono/poly mis-boundary finding (should be Layout 02).
 - A repo whose deliverable is a published package but is structured/documented as a deployed service (or vice versa) = deployed-vs-distributed mis-classification.
+- Repo names in one product drifting off the shared prefix / role-suffix convention (abbreviated prefixes, inconsistent hyphenation) = finding.
 - CLAUDE.md that doesn't state whether the repo is deployed or distributed when siblings/consumers exist = finding.
 
 ## See also

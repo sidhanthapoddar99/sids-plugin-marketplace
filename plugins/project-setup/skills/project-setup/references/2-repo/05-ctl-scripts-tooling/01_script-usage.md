@@ -37,7 +37,7 @@ Bare `ctl up` (or any partial invocation) in a terminal is **guided**, built on 
 ```
 ────────────────────────────────
 Plan   config=base   modifiers=[expose]
-compose docker/compose.yaml docker/compose.m.expose.yaml
+compose docker/compose.base.yaml docker/compose.m.expose.yaml
 
   service   ports host:ctr     network    volumes src:dst
   ✓ backend   -                  internal   -
@@ -49,7 +49,7 @@ compose docker/compose.yaml docker/compose.m.expose.yaml
 reproduce  (no prompts)
   ctl up --modifier=expose --nqa
   ctl up --modifier=expose --nqa -y    (also skips this confirm)
-  docker: docker compose -f docker/compose.yaml -f docker/compose.m.expose.yaml up -d --build
+  docker: docker compose -f docker/compose.base.yaml -f docker/compose.m.expose.yaml up -d --build
 ────────────────────────────────
 ```
 
@@ -242,8 +242,8 @@ ctl dev             # apps on host (hot reload), data core in containers
 
 ```bash
 # raw docker compose — what ctl does under the hood
-docker compose -f docker/compose.yaml up -d --build                                   # the whole stack
-docker compose -f docker/compose.yaml -f docker/compose.m.expose.yaml up -d --build    # + nginx published
+docker compose -f docker/compose.base.yaml up -d --build                                   # the whole stack
+docker compose -f docker/compose.base.yaml -f docker/compose.m.expose.yaml up -d --build    # + nginx published
 docker compose -f docker/compose.prod.yaml -f docker/compose.m.traefik.yaml up -d      # production
 
 # no docker — host run (IDE debugger attach, profiling, one service in isolation)

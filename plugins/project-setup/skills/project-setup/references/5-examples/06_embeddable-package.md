@@ -64,7 +64,7 @@ flow-editor/                              # workspace root — the PRODUCT is pa
 │       └── README.md
 │
 ├── docker/                              # optional — ONLY the reference host's demo deps (not the product)
-│   └── compose.yaml                     # profile-less base for local demo services → 00_docker-overview.md
+│   └── compose.base.yaml                     # profile-less base for local demo services → 00_docker-overview.md
 ├── .changeset/                          # changesets: per-package semver bumps + changelog
 ├── docs/                                # optional in-repo docs → 1-ecosystem/docs-placement.md
 ├── .claude/  CLAUDE.md                  # recorded variant choices + styling block → handoffs/claude-folder.md
@@ -173,7 +173,7 @@ ctl help
 | `pnpm-workspace.yaml`, `turbo.json`, workspace wiring | `references/3-app/01-structure-and-stack/02_workspaces-mechanics.md` |
 | `apps/api/app/` flat backend skeleton (optional BFF) | `references/3-app/02-backend/00_app-skeleton.md` |
 | `apps/web/.env.example`, `VITE_*` isolation | `references/2-repo/03-env-config/02_frontend-env-isolation.md` |
-| `docker/compose.yaml` for demo deps | `references/2-repo/04-docker/00_docker-overview.md` |
+| `docker/compose.base.yaml` for demo deps | `references/2-repo/04-docker/00_docker-overview.md` |
 | `ctl` + `scripts/` conformance floor | `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` |
 | Root manifest orchestration-only (T10), `.gitignore` | `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` |
 | `ui/` primitive-first styling, `theme` token overrides | `references/4-feature/04_styling-discipline.md`, `references/3-app/05-package/01_tokens-setup.md` |

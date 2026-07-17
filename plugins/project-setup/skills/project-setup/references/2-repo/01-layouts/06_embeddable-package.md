@@ -83,6 +83,26 @@ Two opposing wants: a clean internal boundary (the headless `core` stays UI-free
 
 So: **multiple workspace packages for the authors, one published package for the consumers.** Boundary preserved, install story simple.
 
+## Source-only phase (named variant)
+
+Early in a package's life — before any external consumer exists — the build step can be deferred: the package ships as **raw source**, `"private": true`, with the `exports` map pointing subpaths straight at `src` entry files (`"./editor": "./src/editor/index.ts"`), and `typecheck` as the only build-adjacent script. The reference host consumes source directly; there is no `dist/`.
+
+Rules that keep this a phase, not a trap:
+
+- **Wire consumption through the workspace link** (`workspace:*`), same as the built form — the consumer's imports never change when the build step arrives. Wiring the reference host via hand-synced tsconfig `paths` + bundler `alias` pairs instead is a documented fallback for repos that deliberately keep independent per-app roots (no shared workspace) — but name the fragility: two config surfaces that must agree, drift breaks resolution silently, and `dedupe` for the framework runtime must be handled by hand. Prefer the workspace.
+- The `exports` map is still the contract — internal paths stay un-importable even when they're plain source.
+- **The first external consumer ends the phase**: add library build tooling (tsup/rollup, ESM + types), flip `exports` to `dist/`, drop `private`. Record "source-only phase" as the chosen variant in CLAUDE.md so audits treat it as a stage, not drift.
+
+## Non-product signalling (harness apps)
+
+Every app in this repo exists to develop the package — and must be **impossible to mistake for a product**, because "run the repo's app" is the default assumption of every new reader and agent. Declare it in all three places a reader might enter:
+
+1. **Manifest** — `"private": true` (JS) / a description saying "dev harness — never deployed" (any ecosystem).
+2. **README first line** — "This is the reference host / dev harness, not the product."
+3. **Build config comment** — the vite/bundler config notes it is never published, never deployed.
+
+Redundant on purpose: each surface is someone's first (and sometimes only) contact with the app.
+
 ## `ctl` shape
 
 ```
@@ -110,6 +130,9 @@ ctl help
 - React (or any host-provided runtime) listed under `dependencies` instead of `peerDependencies` → two-Reacts bug risk.
 - Multiple internal packages published separately when `noExternal` would ship one artifact → install story leaks the internal split.
 - No react-less `core` package (or `core` with a react dep) → the UI-free boundary isn't mechanically enforced.
+- Reference-host consumption via hand-synced tsconfig `paths` + bundler `alias` with no recorded variant choice → wire through the workspace link.
+- A harness app missing its non-product signalling (`private: true` + README disclaimer + build-config note) → finding; someone will deploy it.
+- Source-only phase persisting after an external consumer exists → add the library build; raw-source `exports` are not a contract external tooling can consume.
 
 ## Anti-patterns
 

@@ -31,7 +31,7 @@
 # This file lives at scripts/common/_lib.sh, so the repo root is two levels up.
 : "${CTL_ROOT:=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)}"
 DOCKER_DIR="docker"
-BASE="$DOCKER_DIR/compose.yaml"
+BASE="$DOCKER_DIR/compose.base.yaml"
 # [ADAPT] data services, space-separated. Empty = no data core — every consumer below
 # degrades gracefully (ctl dev won't bring up a core, status/health/setup skip it).
 # e.g. DATA_SVCS="postgres redis" (default), or DATA_SVCS="" for a DB-less project.
@@ -100,7 +100,7 @@ dc() { docker compose -f "$BASE" "$@"; }
 # auto-discovery — no hard-coded lists. compose.m.* = modifiers; the rest (minus base) = configs.
 # (Profile-less by design: a config is a standalone scenario that REPLACES base, not a profile.)
 list_configs()   { local f b; for f in "$DOCKER_DIR"/compose.*.yaml; do [[ -e $f ]] || continue
-                     b=${f##*/}; [[ $b == compose.yaml || $b == compose.m.* ]] && continue
+                     b=${f##*/}; [[ $b == compose.base.yaml || $b == compose.m.* ]] && continue
                      b=${b#compose.}; printf '%s\n' "${b%.yaml}"; done; }
 list_modifiers() { local f b; for f in "$DOCKER_DIR"/compose.m.*.yaml; do [[ -e $f ]] || continue
                      b=${f##*/compose.m.}; printf '%s\n' "${b%.yaml}"; done; }

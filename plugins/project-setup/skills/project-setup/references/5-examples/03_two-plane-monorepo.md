@@ -53,7 +53,7 @@ marketplace/
 ├── ctl                               # single dispatcher; delegates JS cmds into apps/client/ — 05-ctl-scripts-tooling/00_script-overview.md
 ├── lefthook.yml                      # git hooks at the repo root (not husky — workspace isn't here) — 05-ctl-scripts-tooling/04_lefthook.md
 ├── docker/                           # compose mechanics — 04-docker/00_docker-overview.md
-│   ├── compose.yaml                  # base: whole stack, NO profiles, no host ports
+│   ├── compose.base.yaml                  # base: whole stack, NO profiles, no host ports
 │   ├── compose.data.yaml             # standalone (ctl up data): postgres + redis only
 │   ├── compose.prod.yaml             # standalone (ctl up prod): image tags, limits, .env.production
 │   ├── compose.m.expose.yaml         # .m. modifier: publish the public nginx edge

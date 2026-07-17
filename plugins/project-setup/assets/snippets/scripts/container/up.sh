@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # container/up.sh — `ctl up`. Two-axis, profile-less (the general structure):
 #   config    — single, optional, STANDALONE: a chosen config REPLACES the base file
-#               (`compose.<name>.yaml` alone). Omit = base (compose.yaml = the whole stack).
+#               (`compose.<name>.yaml` alone). Omit = base (compose.base.yaml = the whole stack).
 #   modifiers — multi, optional: cross-cutting overlays (compose.m.<name>.yaml), empty = none.
 #
 # Grammar:  ctl up [config] --modifier "a,b"  (also --modifier=a,b)  [-a] [--nqa] [-y] [--dry-run] [--list]

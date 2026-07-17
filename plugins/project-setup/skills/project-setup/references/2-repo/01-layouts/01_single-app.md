@@ -30,7 +30,7 @@ my-tool/
 │   ├── Dockerfile                   # optional
 │   └── README.md                    # this service's host dev loop
 ├── docker/                          # optional — only if the tool needs infra
-│   └── compose.yaml                 # base, port-less, profile-less (+ standalone configs / .m. modifiers if needed — see references/2-repo/04-docker/00_docker-overview.md)
+│   └── compose.base.yaml                 # base, port-less, profile-less (+ standalone configs / .m. modifiers if needed — see references/2-repo/04-docker/00_docker-overview.md)
 ├── scripts/                         # optional — subscripts the wrapper calls
 ├── docs/                            # optional — /agent-ks-init (references/1-ecosystem/docs-placement.md)
 ├── .claude/                         # empty initially

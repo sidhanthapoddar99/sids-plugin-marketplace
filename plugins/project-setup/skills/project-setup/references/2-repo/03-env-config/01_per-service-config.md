@@ -118,6 +118,21 @@ if os.environ.get("APP_ENV") == "production":
 
 Or split into mode-specific YAML (`config.production.yaml`) — but only if the differences are substantial.
 
+## Runtime env-override channel (optional layer)
+
+For deployments where editing YAML is awkward (a container you can only pass env vars to, a PaaS panel), add a last-wins override layer: any config key can be set via a **namespaced double-underscore env var** that mirrors the YAML path:
+
+```
+<APP>__<section>__<key>            # e.g. MYAPP__database__pool_size=50
+```
+
+- **Precedence**: `config.yaml` → `config.<env>.yaml` → `config.local.yaml` → `<APP>__*` env overrides (highest).
+- **Namespace it per service** — the prefix is the service's, so two backends on one host never collide (`MYAPP__…` vs `MYAPP_ADMIN__…`).
+- Double underscore is the path separator because single underscores appear inside key names.
+- This is an *override* channel for ops, not the config's home — a value that's always set this way belongs in the YAML (or in root `.env` behind `${VAR}`).
+
+The loader walks `os.environ` for the prefix and deep-sets each path after the YAML merge. Pydantic-settings offers this natively (`env_nested_delimiter="__"`); hand-rolling it is ~10 lines.
+
 ## `config.template.yaml` (alternative)
 
 Some projects keep a committed `config.template.yaml` (literal-with-placeholders) and let the wrapper copy it to `config.yaml` at first run. Fine when the config has per-deployment values that must be edited (not just secrets), or when env interpolation isn't desired. Default to the `${VAR}` approach unless you have a reason.

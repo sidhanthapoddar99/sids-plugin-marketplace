@@ -13,6 +13,8 @@ Packages are read by *more* people than app code, so navigability matters more, 
 
 **Does NOT live there:** business logic (app-level or `packages/services`), routing (apps own routes), state (UI is presentational; client state → apps or `packages/hooks`), API calls (`packages/services`). Packages depend **down, not up** — a package never imports app code.
 
+**Enforce the boundary mechanically, not by convention.** Two tools, use both where they apply: (a) the dependency graph itself — a package's `package.json` simply doesn't list apps or forbidden runtimes, so the violating import fails to resolve/build; (b) an **import-graph conformance test** — a small test that walks each package's imports and asserts the allowed-dependency direction (packages → packages only, never packages → apps; presentational packages never import `services`). A boundary that only lives in a doc erodes; one that fails CI doesn't.
+
 ## Split into orthogonal packages
 
 One mega-package is a red flag; split by concern and let the set grow as patterns repeat:

@@ -6,7 +6,7 @@
 # debugging the frontend server in isolation, connecting a DB client).
 #
 #   ctl up --modifier expose_all
-#   # raw: docker compose -f docker/compose.yaml -f docker/compose.m.expose_all.yaml up -d --build
+#   # raw: docker compose -f docker/compose.base.yaml -f docker/compose.m.expose_all.yaml up -d --build
 #
 # Targets all services, so it expects the BASE config (whole stack). Layering it on a slice
 # config (e.g. `ctl up data --modifier expose_all`) is rejected by docker compose — the

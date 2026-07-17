@@ -1,4 +1,4 @@
-# docker/compose.yaml — base. The WHOLE stack, NO host ports, internal network only.
+# docker/compose.base.yaml — base. The WHOLE stack, NO host ports, internal network only.
 #
 # PROFILE-LESS: every service here just runs. `ctl up` (bare) brings up all of them
 # (at ≤5 services you almost always want the whole stack). Nothing is reachable from the
@@ -16,7 +16,7 @@
 #
 # Driven from the repo root via `ctl up [config] [--modifier "a,b"]`; the raw form
 # (run FROM THE REPO ROOT so ../ resolves against docker/) is:
-#   docker compose -f docker/compose.yaml up -d --build
+#   docker compose -f docker/compose.base.yaml up -d --build
 #
 # Internal ports (8000 backend, etc.) are fixed conventions — written plainly here and in
 # infra/nginx/nginx.conf, never parameterised. Only the published host port varies (in the

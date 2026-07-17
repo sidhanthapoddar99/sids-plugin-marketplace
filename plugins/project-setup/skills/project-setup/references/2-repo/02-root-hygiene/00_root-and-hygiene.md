@@ -48,9 +48,21 @@ data/**
 !data/**/.gitkeep
 ```
 
+## Residue & staleness — restructures must finish
+
+A restructure isn't done when the tree moves; it's done when everything that *describes or duplicates* the tree moves with it. The residue classes, all audit findings:
+
+- **Stale self-description** — README / CLAUDE.md still describing the pre-restructure layout (old folder names, old compose paths, old startup commands). Worse than missing docs: an agent or contributor will follow them confidently. Every restructure ends with a docs-vs-tree pass over README, CLAUDE.md, and the docs site.
+- **Graveyard directories** — `old/`, `backup/`, `<thing>-v1/` kept "just in case". Git history is the backup; delete them.
+- **Retired duplicates** — a superseded docs site, config system, or tool left beside its replacement. Two of a thing = nobody knows which is true; finish the migration and delete.
+- **Committed data archives** — datasets, dumps, model weights, zip backups sitting beside code. They belong in gitignored `data/` (runtime state) or external storage, never in the tree.
+- **Loose git worktrees / scratch checkouts** inside the repo or beside the product's repos — they read as projects to humans and agents alike. Keep worktrees under a dedicated ignored path (e.g. `.claude/worktrees/`) or outside the project directory entirely.
+
 ## Audit checks
 
 - Loose code / entry files at the repo root (no recorded exception) = red finding.
+- README / CLAUDE.md describing a layout the tree no longer matches (docs-vs-tree drift) = red finding — actively misleads.
+- Graveyard dirs (`old/`, `backup/`, `*-v1/`), retired duplicate systems, committed data archives, or loose worktrees/scratch checkouts = finding each (§ residue above).
 - Root `package.json` with runtime `dependencies` = red finding — tripwire T10 crossed (root became a runtime).
 - `.env` (any level) not ignored, or `data/` tracked = red finding.
 - No `.gitignore`, or one missing an ecosystem that's present in the repo = finding.

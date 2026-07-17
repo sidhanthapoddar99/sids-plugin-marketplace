@@ -1,6 +1,6 @@
 # Complex setups — profiles, multi-mode compose trees + binary orchestrators
 
-The standard runtime (one `docker/` with a profile-less `compose.yaml` + standalone configs + `compose.m.*` modifiers, driven by the `ctl` shell dispatcher) covers the vast majority of repos. This doc is for the escalations you reach when that's not enough:
+The standard runtime (one `docker/` with a profile-less `compose.base.yaml` + standalone configs + `compose.m.*` modifiers, driven by the `ctl` shell dispatcher) covers the vast majority of repos. This doc is for the escalations you reach when that's not enough:
 
 0. **Profiles** — a genuine multi-group service mesh (several *independently-optional* service groups in arbitrary combinations) that standalone configs can't express legibly. → re-add a profiles axis. (The default model is profile-less; this is the rare opt-in.)
 1. **Multi-mode compose** — you need structurally *different* stacks (single-node vs a multi-node cluster vs prod), not just overlays on one base. → `docker/<mode>/` directories.
@@ -18,29 +18,29 @@ The default model is **profile-less**: every service in the chosen compose file 
 
 **Re-add profiles only when the project has several genuinely orthogonal, independently-optional service groups** mixed in arbitrary combinations — workers + observability + edge + debug tooling, toggled à la carte. That's a real shape, but uncommon, and even then a handful of standalone configs often expresses it more legibly. The test: can you *name* several independently-optional groups **and** confirm standalone configs can't express them? If not, stay profile-less.
 
-To re-add the axis: tag services with `profiles:` in `compose.yaml`, restore `list_profiles()` in `_lib.sh` (grep `profiles:` from the base), and give `container/up.sh` a third selection axis (`--profile`, comma-list) feeding `--profile <p>` flags into the assembly. The interactive picker gains a profiles step *under* the chosen config. It's additive — the config + modifier axes are unchanged.
+To re-add the axis: tag services with `profiles:` in `compose.base.yaml`, restore `list_profiles()` in `_lib.sh` (grep `profiles:` from the base), and give `container/up.sh` a third selection axis (`--profile`, comma-list) feeding `--profile <p>` flags into the assembly. The interactive picker gains a profiles step *under* the chosen config. It's additive — the config + modifier axes are unchanged.
 
 ---
 
 ## Part 1 — multi-mode docker (`docker/<mode>/`)
 
-When modes differ in *which and how many* services run (not just config), one profiled `compose.yaml` can't express it — a single-node stack and a 5-peer cluster are different topologies. Split by **mode directory**, each a self-contained mini-stack:
+When modes differ in *which and how many* services run (not just config), one profiled `compose.base.yaml` can't express it — a single-node stack and a 5-peer cluster are different topologies. Split by **mode directory**, each a self-contained mini-stack:
 
 ```
 docker/
 ├── singlenode/
-│   └── compose.yaml                 # one of each service
+│   └── compose.base.yaml                 # one of each service
 ├── multinode/
-│   ├── compose.yaml                 # base: N peers (scale via deploy.replicas / --scale)
+│   ├── compose.base.yaml                 # base: N peers (scale via deploy.replicas / --scale)
 │   ├── compose.m.no-ports.yaml      # modifier: strip host ports (behind a proxy)
 │   ├── compose.m.traefik.yaml       # modifier: external Traefik edge
 │   ├── compose.m.reset.yaml         # modifier: fresh-state (wipe volumes on up)
 │   └── compose.m.test-temp.yaml     # modifier: ephemeral, tmpfs-backed test run
 └── prod/
-    └── compose.yaml                 # production topology (image tags, limits)
+    └── compose.base.yaml                 # production topology (image tags, limits)
 ```
 
-- **Each mode is a directory**, not a file. Its `compose.yaml` is that mode's base.
+- **Each mode is a directory**, not a file. Its `compose.base.yaml` is that mode's base.
 - **Within a mode, the same conventions hold**: `compose.m.<modifier>.yaml` for cross-cutting overlays, port-less base. The `.m.` marker means the same thing here as in the flat layout.
 - **Multi-mode is itself the common reason to want profiles** (Part 0): a mode like `multinode` may genuinely have optional groups (`--profile obs` to add observability). If a mode needs them, re-add the axis *for that mode* per Part 0 — it's still the opt-in, not the baseline.
 - Path discipline is unchanged (`../../apps`, `../../infra` — note the extra `..` because compose files are now one level deeper). See `references/2-repo/04-docker/01_docker-details.md`.
@@ -50,7 +50,7 @@ The binary (Part 2) picks the mode directory and assembles the `-f` list; the mo
 ```bash
 # both must work:
 cch multinode up
-docker compose -f docker/multinode/compose.yaml -f docker/multinode/compose.m.no-ports.yaml up -d
+docker compose -f docker/multinode/compose.base.yaml -f docker/multinode/compose.m.no-ports.yaml up -d
 ```
 
 ---
@@ -125,7 +125,7 @@ The binary is a **convenience over** `docker compose`, not a replacement. Keep d
 A Layout 05 README documents **four** startup paths:
 
 1. The binary — `cch multinode up` (preferred)
-2. Raw compose — `docker compose -f docker/multinode/compose.yaml up -d`
+2. Raw compose — `docker compose -f docker/multinode/compose.base.yaml up -d`
 3. Per-service host run (IDE debugging)
 4. Building the binary — `cd cchain && go build -o ../cch`
 

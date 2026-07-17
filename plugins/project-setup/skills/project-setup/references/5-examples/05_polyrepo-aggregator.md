@@ -25,7 +25,7 @@ Each is an ordinary app repo — full shape lives in the app examples. What matt
 storefront-api/                        # Layout 02 — see example 02/03 for the full internals
 ├── .env / .env.example                # SUBSET: only the keys this service consumes
 ├── apps/api/                          # flat app/ backend + domain folders
-├── docker/compose.yaml                # its OWN dev/prod compose — build: from source lives HERE
+├── docker/compose.base.yaml                # its OWN dev/prod compose — build: from source lives HERE
 ├── Dockerfile                         # CI: build → test → push ${REGISTRY}/storefront-api:<sha> and :<tag>
 ├── ctl
 └── README.md                          # dev instructions; defers deploy to storefront-deploy

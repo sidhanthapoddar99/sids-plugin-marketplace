@@ -4,7 +4,7 @@
 # locally behind the reverse proxy. nginx is in base, so this overlays cleanly:
 #
 #   ctl up --modifier expose
-#   # raw: docker compose -f docker/compose.yaml -f docker/compose.m.expose.yaml up -d --build
+#   # raw: docker compose -f docker/compose.base.yaml -f docker/compose.m.expose.yaml up -d --build
 #
 # The app then answers at http://localhost:${NGINX_PORT} (default 8080). backend, frontend,
 # postgres and redis stay internal-only — reach the app through nginx. To publish the data

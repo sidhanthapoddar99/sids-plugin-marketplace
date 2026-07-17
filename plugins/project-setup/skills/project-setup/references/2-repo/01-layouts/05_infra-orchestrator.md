@@ -16,12 +16,12 @@ my-chain/                             # generic: a multinode test harness
 │   └── <services>/                   # the actual services (Layout 01–02 shape internally)
 ├── docker/
 │   ├── singlenode/
-│   │   └── compose.yaml
+│   │   └── compose.base.yaml
 │   ├── multinode/
-│   │   ├── compose.yaml              # base topology
+│   │   ├── compose.base.yaml              # base topology
 │   │   └── compose.m.<modifier>.yaml # per-mode overlays — convention owned by 03_complex-setups.md
 │   └── prod/
-│       └── compose.yaml
+│       └── compose.base.yaml
 ├── cchain/                           # the CLI orchestrator package (anatomy → 03_complex-setups.md)
 │   ├── main.go
 │   ├── cmd/                          # subcommands
@@ -39,11 +39,11 @@ my-chain/                             # generic: a multinode test harness
 
 | Axis | Layout 02 | Layout 05 |
 |---|---|---|
-| `docker/` layout | flat files (`compose.yaml`, `compose.<name>.yaml`) | `docker/<mode>/` directories, one self-contained mini-stack per mode |
+| `docker/` layout | flat files (`compose.base.yaml`, `compose.<name>.yaml`) | `docker/<mode>/` directories, one self-contained mini-stack per mode |
 | Orchestration surface | `ctl` shell dispatcher | compiled binary at the orchestration layer |
 | Cross-run state | none | binary owns operational state (node count, ports, peers) |
 
-The binary is a **convenience over** `docker compose`, never a replacement — the compose files stay plain and directly runnable. Both `cch multinode up` and `docker compose -f docker/multinode/compose.yaml up -d` must always work. This rule and its rationale are owned by `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` § "Keep compose plain".
+The binary is a **convenience over** `docker compose`, never a replacement — the compose files stay plain and directly runnable. Both `cch multinode up` and `docker compose -f docker/multinode/compose.base.yaml up -d` must always work. This rule and its rationale are owned by `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` § "Keep compose plain".
 
 ## Audit checks
 

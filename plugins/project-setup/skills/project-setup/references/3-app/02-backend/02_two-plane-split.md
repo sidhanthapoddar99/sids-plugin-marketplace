@@ -8,7 +8,7 @@ Split admin (operator) and user (platform) into **separate backends** when they 
 
 | Signal | What it means |
 |---|---|
-| **Separate identity namespace** | Operators get their own credentials table, their own session/refresh-token namespace, no third-party OAuth, and bootstrap via a break-glass CLI — never a public signup flow |
+| **Separate identity namespace** | Operators get their own credentials table, their own session/refresh-token namespace, no third-party OAuth, and bootstrap via a break-glass CLI — never a public signup flow. That CLI is `ctl manage` (`scripts/admin/manage.sh`) — the only sanctioned path for operator-account lifecycle, dev and prod alike (owned by `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` § admin category) |
 | **Independent exposure** | The admin surface can stay off the public edge entirely (internal network, VPN, separate expose tier) while the platform is public |
 | **Independent deploy cadence** | Admin tooling ships on its own schedule without redeploying the user-facing service |
 

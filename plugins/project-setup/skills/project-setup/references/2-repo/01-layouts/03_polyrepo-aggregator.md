@@ -11,7 +11,7 @@ Owns the **shape of the aggregator repo**: the `<product>-deploy` repo that comp
 ├── <product>-backend-py/             # own repo — Layout 01 or 02 internally
 │   ├── .env / .env.example           # subset — only its own keys
 │   ├── apps/<svc>/
-│   ├── docker/compose.yaml
+│   ├── docker/compose.base.yaml
 │   ├── ctl
 │   └── README.md
 ├── <product>-backend-rs/             # own repo — similar shape

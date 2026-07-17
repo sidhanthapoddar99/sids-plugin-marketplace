@@ -40,7 +40,7 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
 ```
 /srv/my-app/
 ├── .env.production           # chmod 600, owned by root or app user
-├── docker-compose.yaml -> /home/user/my-app/docker/compose.yaml
+├── docker-compose.yaml -> /home/user/my-app/docker/compose.base.yaml
 ├── docker-compose.prod.yaml -> /home/user/my-app/docker/compose.prod.yaml
 └── ctl                       # `ctl up prod` runs the deploy
 ```
