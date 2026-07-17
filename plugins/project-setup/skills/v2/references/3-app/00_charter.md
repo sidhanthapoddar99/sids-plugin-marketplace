@@ -7,7 +7,7 @@ The internal structure of each runnable app and each workspace package: its skel
 | Decision | Rule / default | Owner |
 |---|---|---|
 | **Backend skeleton** | Flat `app/` (run-service, no `src/`): `main.py` + `core/` + feature folders; `src/<pkg>/` only for distributables. Includes the `pyproject.toml` + `uv sync` flow. | `references/3-app/backend/app-skeleton.md` |
-| **Backend domain layer** | Flat until tripwire T2 (~8–10 features) or the domain model settles → `app/<domain>/<feature>/` with aggregator routers. Domains named by ownership nouns, never activities or nav labels. | `references/3-app/backend/domain-grouping.md` |
+| **Backend domain layer** | Flat until tripwire T2 or the domain model settles → `app/<domain>/<feature>/` with aggregator routers. Domains named by ownership nouns, never activities or nav labels. | `references/3-app/backend/domain-grouping.md` |
 | **Migration style + owner** | Plain Alembic (autogenerate + review) default; raw-SQL three-file pattern when non-Python consumers read the schema; two backends over one DB → neutral `apps/db`, `ctl migrate` only. | `references/3-app/backend/migrations.md` |
 | **App-level serving** | Per-language worker model + recycling + timeouts + health endpoints. Python is the outlier needing worker-process recycling; Rust/Go/Node scale via replicas. | `references/3-app/backend/serving.md` |
 | **ML Python flow** | `requirements.txt` + uvenv global env for ML projects (Layout 04) — deliberately different from the app flow. | `references/3-app/backend/ml-python-flow.md` |

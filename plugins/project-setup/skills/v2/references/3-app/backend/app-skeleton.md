@@ -176,7 +176,7 @@ CMD ["gunicorn", "app.main:app", "-c", "gunicorn.conf.py"]
 
 ## Why this is different from ML
 
-App repos need **pinned** deps (reproducible deploys), **per-project** envs (each backend its own `.venv`), and a **committed lockfile** for CI. ML repos want broad ranges, a shared env, and notebook ergonomics — a deliberately different shape. Full comparison + the ML flow: `references/3-app/backend/ml-python-flow.md`. Don't force one onto the other.
+ML repos use a deliberately different flow (broad `requirements.txt`, one shared uvenv env) — the ML flow + the full app-vs-ML comparison are owned by `references/3-app/backend/ml-python-flow.md`. Don't force one onto the other.
 
 ## Anti-patterns
 

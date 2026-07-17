@@ -43,12 +43,7 @@ apps/web/
 
 ### Env split
 
-| Var prefix | Scope |
-|---|---|
-| `NEXT_PUBLIC_*` | Baked into client bundle |
-| (no prefix) | Server-only, available in server components + API routes |
-
-The same isolation rule applies — backend secrets stay un-prefixed; never `NEXT_PUBLIC_DATABASE_URL`. The full public-var leak doctrine is owned by `references/2-repo/env-and-config/frontend-env-isolation.md`.
+`NEXT_PUBLIC_*` is baked into the client bundle; un-prefixed vars stay server-only (server components + API routes) — backend secrets stay un-prefixed, never `NEXT_PUBLIC_DATABASE_URL`. The full public-var leak doctrine is owned by `references/2-repo/env-and-config/frontend-env-isolation.md`.
 
 ### Dev proxy
 
@@ -65,7 +60,7 @@ export default {
 };
 ```
 
-The `/api/*` prefix convention still holds (routing contract owned by `references/2-repo/deployment/proxy-and-exposure.md`). Because `rewrites()` runs server-side, `BACKEND_URL` here can be a **server-only** var (no `NEXT_PUBLIC_` prefix) — unlike Vite, where any proxy target the browser depends on must be `VITE_*` and therefore public. See the Vite-vs-Next env-split comparison in `references/2-repo/env-and-config/frontend-env-isolation.md`.
+The `/api/*` prefix convention still holds (routing contract owned by `references/2-repo/deployment/proxy-and-exposure.md`). Because `rewrites()` runs server-side, `BACKEND_URL` here can stay a **server-only** var — the Vite-vs-Next env-split contrast is owned by `references/2-repo/env-and-config/frontend-env-isolation.md`.
 
 ### `data-theme` SSR-safe
 
@@ -153,7 +148,7 @@ import Counter from "@/components/Counter.tsx";
 
 ## Tokens / theming still work the same
 
-`tokens.css` + `[data-theme="dark"]` is identical across all three frameworks; the Tailwind config is the same. shadcn works in Next (officially supported); Astro can use shadcn React islands. All of this — the token vocabulary, the theme toggle, the shadcn wiring — is owned by `references/3-app/frontend/tokens-setup.md`. In a multi-app workspace, share the tokens via `packages/styles` rather than per-framework token files.
+`tokens.css` + `[data-theme="dark"]` is identical across all three frameworks; the Tailwind config is the same. shadcn works in Next (officially supported); Astro can use shadcn React islands. All of this — the token vocabulary, the theme toggle, the shadcn wiring, the share-via-`packages/styles` rule — is owned by `references/3-app/frontend/tokens-setup.md`.
 
 ## Anti-patterns
 

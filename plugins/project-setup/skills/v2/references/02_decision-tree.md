@@ -6,7 +6,7 @@ Maps the question-flow answers (`references/01_question-flow.md`) onto a layout 
 
 ## Layout selection
 
-The **first cut** is *deployed vs distributed* — does the repo run the product, or publish a package an external host runs? Most repos are deployed (Layouts 01–05). If the deliverable is a package a separate host consumes, it's Layout 06 regardless of how many backends/frontends it has internally.
+The **first cut** is *deployed vs distributed* — does the repo run the product, or publish a package an external host runs? (Criteria + tell-tales owned by `references/1-ecosystem/repo-boundaries.md`.) Most repos are deployed (Layouts 01–05). If the deliverable is a package a separate host consumes, it's Layout 06 regardless of how many backends/frontends it has internally.
 
 ```
 STEP 1 — does this repo RUN the product, or PUBLISH a package an external host runs?
@@ -112,40 +112,26 @@ Two axes (profile-less) — at most one standalone **`config`** (a `compose.<nam
 
 ### Design tokens location
 
-| Case | Tokens file |
-|---|---|
-| 02, single frontend | `apps/frontend/src/styles/tokens.css` |
-| 02, multiple frontends | `packages/styles/src/tokens.css` (shared); each app imports |
+Single frontend → `apps/frontend/src/styles/tokens.css`; multiple frontends → shared `packages/styles/src/tokens.css` — owned by `references/3-app/frontend/tokens-setup.md`.
 
 ### Docs location
 
-| Layout | Docs |
-|---|---|
-| 01, 02, 04, 05 | in-repo `docs/` via documentation-template (`/docs-init`) |
-| 03 polyrepo | separate `<product>-docs` repo |
+In-repo `docs/` for single-repo layouts (01, 02, 04, 05); a separate `<product>-docs` repo for Layout 03 — decision + `agent-ks` handoff owned by `references/1-ecosystem/docs-placement.md`.
 
 ## Escalation rules
 
-These decisions only apply once a project crosses a complexity threshold:
+These decisions only apply once a project crosses a complexity threshold. The layout-internal (L2) migrations are owned here; the boundary escalations (mono→poly, deployed→distributed, aggregator) are owned by `references/1-ecosystem/repo-boundaries.md` — one line each below.
 
 | Trigger | Action |
 |---|---|
-| `ctl` shell dispatcher grows past ~150 lines or needs structured state across compose runs | Move orchestration to a Go binary (Layout 05; see `references/2-repo/runtime/complex-setups.md`). |
+| `ctl` shell dispatcher crosses tripwire T7 (size / structured state across compose runs) | Move orchestration to a Go binary (Layout 05; threshold + criteria: `references/2-repo/runtime/complex-setups.md`). |
 | A single app grows a second app (backend or frontend) | Migrate Layout 01 → 02: introduce `apps/`, move the existing app under `apps/<name>/`. |
 | Within Layout 02, frontends start sharing code | Introduce `pnpm-workspace.yaml` + `turbo.json` + `packages/` — still Layout 02. |
-| Within Layout 02, services grow independent deploy cadences/boundaries | The mesh end of Layout 02; if they need separate repos, escalate to Layout 03. |
+| Within Layout 02, services grow independent deploy cadences/boundaries | The mesh end of Layout 02; separate repos → Layout 03 (`references/1-ecosystem/repo-boundaries.md`). |
 | `requirements.txt` flow grows reproducibility needs | Migrate Layout 04-style → 01-style with `pyproject.toml` + `uv.lock`. |
-| Two repos start sharing env vars | Introduce a Layout 03 aggregator repo. |
-| A deployed app's frontend (or engine) starts being consumed by an *external* repo | Re-frame as Layout 06: the consumed part becomes a published `packages/<pkg>/` (peerDeps, `exports`), the current app demotes to a reference host. |
+| Two repos start sharing env vars | Introduce a Layout 03 aggregator repo (`references/1-ecosystem/repo-boundaries.md`). |
+| A deployed app's frontend (or engine) starts being consumed by an *external* repo | Re-frame as Layout 06 — the deployed→distributed reframe (`references/1-ecosystem/repo-boundaries.md`). |
 
 ## Open questions the skill should always re-ask
 
-Even with a clear layout, these are project-specific and must be asked:
-
-1. **Deployed vs distributed** — does this repo *run* the product, or *publish a package* an external host runs? If distributed → Layout 06 (the repo's own app is a reference host, not the product).
-2. **Sibling repos** — does this repo expect another repo to be cloned next to it?
-3. **External services** — Traefik present? Self-hosted Postgres elsewhere? Cloud DB?
-4. **Deployment surface** — single target, multiple (WSL dev / bare server / cloud)?
-5. **Open source vs private** — affects CI/CD defaults (GitHub Actions vs none).
-6. **Theming** — both modes (default) or marketing-page light-only?
-7. **Build-time env vars** — every `VITE_*` / `NEXT_PUBLIC_*` must be confirmed: is it safe to bake into the bundle?
+Even with a clear layout, some questions are project-specific and must be asked every time — the ALWAYS-ask list is owned by `references/01_question-flow.md` § "Special — never assume, always ask".

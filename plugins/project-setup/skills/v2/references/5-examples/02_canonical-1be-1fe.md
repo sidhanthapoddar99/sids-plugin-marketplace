@@ -49,7 +49,7 @@ deskbook/
 ├── data/                           # bind-mount targets, gitignored except .gitkeep
 │   ├── postgres/pgdata/.gitkeep    # nested one level (postgres wants an empty dir it owns)
 │   └── redis/data/.gitkeep
-├── docs/                           # documentation-plugin template, scaffolded via /docs-init (in-repo docs choice)
+├── docs/                           # agent-knowledge-system, scaffolded via /agent-ks-init (in-repo docs choice)
 ├── .claude/                        # stays empty initially — no committed settings/agents by default
 ├── CLAUDE.md                       # project memory: layout summary + links, deferred decisions (e.g. "T2 deferred")
 ├── README.md                       # root contract: the three startup paths, map of apps/
@@ -94,7 +94,7 @@ apps/backend/
 └── README.md                       # this backend's host dev loop (the no-docker isolation path)
 ```
 
-Feature count here is 4 (`auth bookings spaces notifications`), well under the ~8–10 tripwire — so **no domain layer**, and that deferral is one line in `CLAUDE.md`. When the product's domain model settles or the list crosses the threshold, features flatten into `app/<domain>/<feature>/` — owned by `references/3-app/backend/domain-grouping.md` (T2). The `{router,service,repository,models}.py` internals, the feature-seam merge rule, and the file-subdivision tripwire (T3) are owned by `references/4-feature/feature-folders.md`. DTO placement (kept in each feature's `models.py`, never a shared models package) is owned by `references/4-feature/types-and-contracts.md`.
+Feature count here is 4 (`auth bookings spaces notifications`), well under the T2 threshold — so **no domain layer**, and that deferral is one line in `CLAUDE.md`. When the product's domain model settles or the list crosses the threshold, features flatten into `app/<domain>/<feature>/` — owned by `references/3-app/backend/domain-grouping.md` (T2). The `{router,service,repository,models}.py` internals, the feature-seam merge rule, and the file-subdivision tripwire (T3) are owned by `references/4-feature/feature-folders.md`. DTO placement (kept in each feature's `models.py`, never a shared models package) is owned by `references/4-feature/types-and-contracts.md`.
 
 Migrations: single replica here, so the container migrates itself (`docker-entrypoint.sh` → `alembic upgrade head` → exec gunicorn). Multi-replica would switch to a one-shot migrate service — decision owned by `references/3-app/backend/migrations.md`, recipe by `references/3-app/backend/alembic-recipe.md`.
 
@@ -198,7 +198,7 @@ Everyday flow: `ctl setup` (once) → `ctl dev`. `ctl dev` auto-ups the data cor
 | DTO / type placement (both planes) | `references/4-feature/types-and-contracts.md` |
 | `styles/tokens.css`, light/dark, shadcn/tailwind | `references/3-app/frontend/tokens-setup.md` |
 | Styling discipline (primitive-first) | `references/4-feature/styling-discipline.md` |
-| 500/300 caps, extraction, folders-by-feature | `references/4-feature/caps-and-extraction.md` |
+| file caps (T5), extraction (T9), folders-by-feature | `references/4-feature/caps-and-extraction.md` |
 | `docs/` in-repo choice | `references/1-ecosystem/docs-placement.md` |
 | `.claude/` empty + `CLAUDE.md` template | `references/handoffs/claude-folder.md` |
 

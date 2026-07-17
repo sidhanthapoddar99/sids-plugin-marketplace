@@ -70,10 +70,10 @@ If the package assumes "there is one of me and one host", it'll break the moment
 
 For SDKs with logic + UI, split into a **react-less headless engine** and a **React UI layer** so the engine can be filled and reused by hosts that aren't React at all:
 
-- `packages/core/` (or `src/core/`) — the engine. Its `package.json` has **no `react` dependency**, so the dependency graph *mechanically enforces* UI-free: import React into `core` and the build breaks. The boundary is the manifest, not a comment.
+- `packages/core/` (or `src/core/`) — the engine, kept react-less by contract.
 - `packages/<pkg>/` (or `src/ui/`) — the React component that wraps the engine and renders it.
 
-This lets the engine be consumed headlessly (server, CLI, a non-React host) while the UI layer stays optional. The **packaging** side of this split — the react-less `package.json` in the tree and bundling `core` into one published artifact (`noExternal`) — is owned by `references/2-repo/layouts/06_embeddable-package.md` § single-artifact delivery.
+This lets the engine be consumed headlessly (server, CLI, a non-React host) while the UI layer stays optional. The **packaging** side of this split — the react-less `package.json` that mechanically enforces the boundary, and bundling `core` into one published artifact (`noExternal`) — is owned by `references/2-repo/layouts/06_embeddable-package.md` § single-artifact delivery.
 
 ## Anti-patterns
 
@@ -81,7 +81,8 @@ This lets the engine be consumed headlessly (server, CLI, a non-React host) whil
 - Baking service URLs / secrets / save-locations into the package — they're seams, filled by the host.
 - Module-level singletons — break the per-instance mount model.
 - Skipping the headless/UI split — UI leaks into the engine; the engine stops being reusable headlessly.
-- Treating the reference host (`apps/web`) as the product — it's a harness (packaging-side anti-patterns are owned by layout 06).
+
+(Repo-shape + packaging anti-patterns — treating the reference host as the product, peerDependency mistakes — are owned by `references/2-repo/layouts/06_embeddable-package.md`.)
 
 ## See also
 

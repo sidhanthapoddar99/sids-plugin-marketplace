@@ -38,23 +38,7 @@ Split **vertically by feature** (below), not horizontally by kind.
 
 ### Enforcement
 
-Lint rule (varies per language). For TS/JS, biome:
-
-```json
-{
-  "linter": {
-    "rules": {
-      "complexity": {
-        "noExcessiveCognitiveComplexity": { "level": "warn", "options": { "maxAllowedComplexity": 15 } }
-      }
-    }
-  }
-}
-```
-
-(Cognitive complexity is a related-but-different metric; lines-per-file is harder to enforce without custom tooling. The discipline is mostly cultural — caught in review.)
-
-A simple repo-level CI check:
+Lines-per-file has no stock lint rule in most ecosystems, so the discipline is mostly cultural — caught in review. A simple repo-level CI check:
 
 ```bash
 # .github/workflows/checks.yml
@@ -225,9 +209,9 @@ The rule scales up: a workspace's `crates/` (or `packages/`) can be pure feature
 
 ## The domain-layer ceiling
 
-Feature folders are the organising unit **up to ~8–10 of them**. Past that — or once the product's domain model settles — the flat list itself stops communicating the product, and a **domain layer** goes above it: `app/<domain>/<feature>/`. That threshold (T2), the domain naming rules, feature-seam boundaries, and the adapter-modules pattern are owned by `references/3-app/backend/domain-grouping.md`.
+Feature folders are the organising unit up to the domain tripwire (T2). Past it — or once the product's domain model settles — the flat list itself stops communicating the product, and a **domain layer** goes above it: `app/<domain>/<feature>/`. The threshold, naming rules, and grouping mechanics are owned by `references/3-app/backend/domain-grouping.md`; feature-seam boundaries and the adapter-modules pattern by `references/4-feature/feature-folders.md`.
 
-Feature folders also subdivide **internally** past ~10 source files (T3): backend feature-folder internals are owned by `references/4-feature/feature-folders.md`; the frontend twin (`api/`, thin `pages/`) by `references/4-feature/api-and-pages.md`.
+Feature folders also subdivide **internally** at tripwire T3: backend feature-folder internals are owned by `references/4-feature/feature-folders.md`; the frontend twin (`api/`, thin `pages/`) by `references/4-feature/api-and-pages.md`.
 
 ## Audit checks
 
@@ -235,7 +219,6 @@ Feature folders also subdivide **internally** past ~10 source files (T3): backen
 - No logic pattern duplicated in 3+ places without a named helper; no premature single-use abstraction (T9)
 - No repeated utility-string combination in feature code (T8 → styling-discipline.md greps)
 - No per-kind buckets (`controllers/`, `models/`, `services/`) scattering one feature across the tree; no catch-all `helpers/`/`utils/`/`common/`
-- Feature-folder count within ~8–10 or a recorded domain layer (T2 → domain-grouping.md)
 
 ## Anti-patterns
 

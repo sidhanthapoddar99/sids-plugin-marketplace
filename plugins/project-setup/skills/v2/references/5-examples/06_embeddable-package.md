@@ -182,4 +182,4 @@ ctl help
 ## See also
 
 - `references/5-examples/00_index.md` — how to read these examples and the example ↔ layout map.
-- `references/handoffs/examples-registry.md` — cite a registered real Layout 06 repo if one exists; none is registered yet, so propose the pattern on its own merits and flag the absence.
+- `references/handoffs/examples-registry.md` — cite a registered real Layout 06 repo if one exists; never invent one.

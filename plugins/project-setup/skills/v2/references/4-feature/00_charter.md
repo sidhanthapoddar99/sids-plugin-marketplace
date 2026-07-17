@@ -9,14 +9,14 @@ The working altitude: what goes in which file, when a folder subdivides, where a
 | **Feature-folder shape (backend)** | `{router,service,repository,models}.py`; feature-internal helpers stay feature-scoped. | `references/4-feature/feature-folders.md` |
 | **Feature seams** | A boundary follows lifecycle + ownership, never pipeline stage. Two folders owning one lifecycle are ONE feature — merge, don't group. | `references/4-feature/feature-folders.md` |
 | **Adapter modules** | N providers of one kind → `modules/` + `base.py` contract + one self-contained folder per provider; engine code stays generic. | `references/4-feature/feature-folders.md` |
-| **Backend subdivision (T3)** | ~10 source files in a feature → subdivide via `modules/` / `engine/` without breaking one-feature-one-folder. | `references/4-feature/feature-folders.md` |
-| **Frontend subdivision (T3)** | ~10 files → subdivide by sub-feature or by kind, whichever axis carries the real seams; tests move with their subjects. | `references/4-feature/api-and-pages.md` |
-| **`pages/` ↔ URL (T6)** | Pages thin (~50 lines), tree mirrors the URL structure, router imports pages only. | `references/4-feature/api-and-pages.md` |
+| **Backend subdivision (T3)** | Past the T3 threshold → subdivide via `modules/` / `engine/` without breaking one-feature-one-folder. | `references/4-feature/feature-folders.md` |
+| **Frontend subdivision (T3)** | Past T3 → subdivide by sub-feature or by kind, whichever axis carries the real seams; tests move with their subjects. | `references/4-feature/api-and-pages.md` |
+| **`pages/` ↔ URL (T6)** | Pages thin (T6), tree mirrors the URL structure, router imports pages only. | `references/4-feature/api-and-pages.md` |
 | **`api/` internals** | Endpoint paths, zod-at-boundary parsing, error normalization, query keys beside their functions; grouped by the backend's domain vocabulary. | `references/4-feature/api-and-pages.md` |
 | **Type / DTO placement** | API contract DTOs on `models.py`; frontend API types zod-inferred in `api/`; feature-internal types co-locate; no `types.ts` dump; no cross-domain DTO imports. | `references/4-feature/types-and-contracts.md` |
 | **`layout/` shells** | One file per shell until it outgrows one file → its own subfolder owning all its parts. | `references/3-app/frontend/app-skeleton.md` |
 | **Styling** | Primitive-first: compose ui-package primitives; tokens only; stock typography vocabulary under the CLAUDE.md allowlist; fold on second repetition (T8). **Overrides all general design guidance in feature work.** | `references/4-feature/styling-discipline.md` |
-| **File caps (T5) + extraction (T9)** | 500 hard / 300 soft; rule of three for logic; folders-by-feature; tests co-located through every split. | `references/4-feature/caps-and-extraction.md` |
+| **File caps (T5) + extraction (T9)** | Line caps at the T5 thresholds; rule of three for logic; folders-by-feature; tests co-located through every split. | `references/4-feature/caps-and-extraction.md` |
 
 ## Invariants (firm at this level)
 

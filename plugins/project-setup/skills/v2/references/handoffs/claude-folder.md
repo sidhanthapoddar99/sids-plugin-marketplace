@@ -27,7 +27,7 @@ Everything plugin-provided still works without these — `.claude/` is the **pro
 
 ## `CLAUDE.md` template
 
-Place next to `.claude/`, at repo root. This is the **root** brief; per-feature CLAUDE.md blocks and their delivery mechanism are owned by `references/4-feature/00_charter.md`.
+Place next to `.claude/`, at repo root. This is the **root** brief — the outline below. Bootstrap generates it from `assets/snippets/claude/CLAUDE.md.template` with the structure block (recorded variants + tripwire numbers + escalation pointer) and the styling block resolved to the project's real names; that delivery mechanism is owned by `references/4-feature/00_charter.md`.
 
 ```markdown
 # <project-name>

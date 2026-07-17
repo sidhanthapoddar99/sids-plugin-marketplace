@@ -122,8 +122,6 @@ A dedicated `<product>-docs` repo, initialised separately with `/agent-ks-init`.
 - Building a docs scaffolder inside `project-setup` — defeats composition; use `/agent-ks-init`.
 - Forcing a docs site on every project — tiny tools may not need one; skip.
 - A different docs structure per project — agent-knowledge-system is the single answer.
-- Mixing in-repo and separate-repo docs in one product.
-- Hand-syncing content between docs and README — link, don't duplicate.
 
 ## See also
 

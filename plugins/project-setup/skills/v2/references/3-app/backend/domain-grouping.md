@@ -85,7 +85,7 @@ Bootstrap-time layout is a starting point, never a contract. When the product's 
 
 - `references/4-feature/feature-folders.md` — the altitude below: feature shape, feature seams, merge rule, adapter modules, T3
 - `references/4-feature/types-and-contracts.md` — type/DTO placement for both planes
-- `references/4-feature/caps-and-extraction.md` — folders-by-feature and the 500/300 line caps (T5)
+- `references/4-feature/caps-and-extraction.md` — folders-by-feature and the line caps (T5)
 - `references/3-app/frontend/app-skeleton.md` — the frontend twin (skeleton + feature subdivision)
 - `references/3-app/backend/two-plane-split.md` — when domains outgrow one backend entirely
 - `references/3-app/00_charter.md` — the app-level charter this reference serves

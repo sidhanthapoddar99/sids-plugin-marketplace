@@ -1,10 +1,10 @@
 # Cross-repo contracts — the allowed coupling points
 
-Owns the L1 rules for **how separate repos in one product couple**: the ranked code-sharing options, the deploy **aggregator** repo and its contracts, the **`.env.example` sync** contract, the **image registry / semver** contract, and the **no-shared-tables** rule. Every cross-repo dependency must be *pinned and mechanical* — a version, a ref, or a sync script — never "clone these side by side and hope".
+Owns the L1 rules for **how separate repos in one product couple**: the ranked code-sharing options, the deploy **aggregator** repo and its contracts, the **`.env.example` sync** contract, the **image registry / semver** contract, and the **no-shared-tables** rule.
 
-*When* to be polyrepo at all (mono-vs-poly, own-repo criteria, deployed-vs-distributed, escalation triggers) is owned by `references/1-ecosystem/repo-boundaries.md`. The aggregator repo's on-disk **shape** and the script bodies are owned by `references/2-repo/layouts/03_polyrepo-aggregator.md`. This file owns the *contracts* those shapes enforce.
+*When* to be polyrepo at all (mono-vs-poly, own-repo criteria, deployed-vs-distributed, escalation triggers) is owned by `references/1-ecosystem/repo-boundaries.md`. The aggregator repo's on-disk **shape** is owned by `references/2-repo/layouts/03_polyrepo-aggregator.md`; worked script bodies live in `references/5-examples/05_polyrepo-aggregator.md`. This file owns the *contracts* those shapes enforce.
 
-## Invariant
+## Invariants
 
 - Every cross-repo dependency is **pinned and mechanical** (version, ref, or sync script).
 - **Two repos never share database tables** outside a single-owner schema contract; cross-repo reads are API calls.
@@ -33,7 +33,7 @@ A polyrepo product gets one `<product>-deploy` aggregator: the **deployment-time
 | **Ecosystem map** | Its README is the product's ops runbook and the full repo/role map. |
 | **Deploy dispatcher** | Its own `ctl up prod` pulls images, runs migrations (one-shot container), restarts services. |
 
-The aggregator never builds; child repos never deploy. Repo tree, `scripts/` layout, and the `ctl` body: `references/2-repo/layouts/03_polyrepo-aggregator.md`.
+The aggregator never builds; child repos never deploy. Repo tree, `scripts/` layout, and `ctl` role: `references/2-repo/layouts/03_polyrepo-aggregator.md`.
 
 ## `.env.example` sync contract
 
@@ -42,7 +42,7 @@ Each child repo owns the subset of keys it needs; the aggregator owns the union.
 - **Direction 1 (aggregator):** a sync script fetches each child's `.env.example` and asserts the aggregator's committed template equals the merge — else fail and require a review + commit.
 - **Direction 2 (child CI):** each child asserts *its* keys are a **subset** of the aggregator's, catching a service that adds a var the aggregator doesn't yet know about.
 
-The rule is the contract (union at aggregator, subset at each child, both checked mechanically). Script bodies (`sync-env-templates.sh`, `check-env-drift.sh`) live in `references/2-repo/layouts/03_polyrepo-aggregator.md`. Env precedence and per-service config within a repo: `references/2-repo/env-and-config/env-precedence.md`.
+The rule is the contract (union at aggregator, subset at each child, both checked mechanically). Worked script bodies (`sync-env-templates.sh`, `check-env-drift.sh`): `references/5-examples/05_polyrepo-aggregator.md`. Env precedence and per-service config within a repo: `references/2-repo/env-and-config/env-precedence.md`.
 
 ## Image registry / semver contract
 

@@ -109,7 +109,7 @@ One decision, one owner file. The normative rule (variants, tripwire, audit chec
 | health/readiness, graceful shutdown, limits, migrations-on-deploy checklist | `deployment/production-readiness.md` | — |
 | native iOS/Android under `apps/` | `platform/mobile.md` | — |
 | Tauri/Electron desktop; shares `packages/` | `platform/desktop.md` | — |
-| ML cloud orchestration (9 files: overview, dstack, skypilot, custom, spot, inference, remote-dev, agent-ssh, cicd) | `ml-orchestration/` | — |
+| ML cloud orchestration (6 files: custom-orchestrator, spot-instances-and-checkpoints, inference-autoscaling, remote-dev-ssh-vscode, agent-ssh-access, cicd-for-ml) | `ml-orchestration/` | — |
 | lefthook / vscode-debugger / ci-cd tooling | `tooling/` | — |
 
 ### L3 App (`references/3-app/`)

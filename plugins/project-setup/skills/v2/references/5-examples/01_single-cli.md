@@ -33,14 +33,14 @@ tablefmt/                            # repo root — an INDEX, not a runtime: co
 │   │       ├── core/                # shared internals: config load, io helpers (the "lowest level containing all consumers")
 │   │       │   ├── config.py
 │   │       │   └── io.py
-│   │       └── formats/             # feature folders — one module per supported format; subdivide at ~10 files (T3)
+│   │       └── formats/             # feature folders — one module per supported format; subdivides at tripwire T3
 │   │           ├── csv.py
 │   │           └── json.py
 │   ├── tests/                       # mirrors src/; imports the installed package (that's what src-layout buys)
 │   │   ├── test_csv.py
 │   │   └── test_json.py
 │   └── README.md                    # THIS service's host dev loop (the run paths that apply: dispatcher + raw host)
-├── docs/                            # optional — hand off to the docs plugin via /docs-init if it needs a site
+├── docs/                            # optional — hand off to the docs plugin via /agent-ks-init if it needs a site
 ├── .claude/                         # empty initially — the CLAUDE.md blocks carry the recorded structure
 ├── CLAUDE.md                        # repo role + (no) siblings, chosen variants (distributable/src-layout), tripwire numbers, escalation pointer
 ├── README.md                        # root INDEX: what it is, `pip install tablefmt`, usage, links inward to the service README
@@ -66,7 +66,7 @@ Recorded in CLAUDE.md; when one trips, re-open `references/02_decision-tree.md`:
 - A frontend is added (even a small admin dashboard) → introduce `apps/`, move the service under it.
 - A second backend in another language is added.
 - The CLI grows to *manage* a database (not just connect to one) → it needs `data/`, compose, migrations.
-- `ctl` outgrows shell (structured state across runs) at ~150 lines (T7) → escalate to a binary (`references/2-repo/runtime/complex-setups.md`).
+- `ctl` outgrows shell (structured state across runs) — tripwire T7 → escalate to a binary (`references/2-repo/runtime/complex-setups.md`).
 
 ## Which references govern what
 
@@ -76,15 +76,15 @@ Recorded in CLAUDE.md; when one trips, re-open `references/02_decision-tree.md`:
 | root as index, single-package containment, `.gitignore`, root-manifest exception | root contract | `references/2-repo/root-and-hygiene.md` |
 | `src/tablefmt/` vs flat `app/`, `pyproject.toml`, `[tool.uv] package = true`, `uv.lock`, `pytest.pythonpath = ["src"]` | run-service vs distributable + the uv flow | `references/3-app/backend/app-skeleton.md` |
 | `core/` (shared internals) placement | code at the lowest level containing all consumers | `references/3-app/backend/app-skeleton.md` |
-| `formats/` feature modules; subdivide at ~10 files | feature-folder shape + T3 | `references/4-feature/feature-folders.md` |
-| when `formats/` reaches ~8–10 sibling folders → a domain layer | T2 domain grouping | `references/3-app/backend/domain-grouping.md` |
-| file/function size caps (500/300, T5), rule-of-three extraction (T9), folders-by-feature | modularity caps | `references/4-feature/caps-and-extraction.md` |
+| `formats/` feature modules; internal subdivision | feature-folder shape + T3 | `references/4-feature/feature-folders.md` |
+| when `formats/` crosses the T2 threshold → a domain layer | T2 domain grouping | `references/3-app/backend/domain-grouping.md` |
+| file/function size caps (T5), rule-of-three extraction (T9), folders-by-feature | modularity caps | `references/4-feature/caps-and-extraction.md` |
 | `ctl` + `scripts/{common,dev,build}/` + conformance floor | control-plane model | `references/2-repo/runtime/script-overview.md` |
 | `ctl` verb bodies, worker skeleton, adding a command | dispatcher mechanics | `references/2-repo/runtime/script-usage.md` |
 | `.mise.toml`, bare `ctl` on PATH, python pin | runtime version contract | `references/2-repo/runtime/mise.md` |
 | service `README.md` (run paths) + root `README.md` index | README contract | `references/2-repo/readme-three-paths.md` |
 | `config.yaml` / `.env` precedence (if the CLI reads config) | env + config flow | `references/2-repo/env-and-config/env-precedence.md` |
-| `docs/` + `/docs-init` handoff | in-repo vs separate docs | `references/1-ecosystem/docs-placement.md` |
+| `docs/` + `/agent-ks-init` handoff | in-repo vs separate docs | `references/1-ecosystem/docs-placement.md` |
 | `.claude/` empty + CLAUDE.md template (role, variants, tripwire numbers, escalation pointer) | delivery mechanism | `references/handoffs/claude-folder.md` |
 | the L2 decision index this repo instantiates | repo-level charter | `references/2-repo/00_charter.md` |
 

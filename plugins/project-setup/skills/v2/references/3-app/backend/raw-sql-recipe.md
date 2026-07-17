@@ -135,7 +135,6 @@ Drift fails locally before code lands. **The rule:** the consuming language neve
 
 ## Anti-patterns
 
-- Letting the consumer (Rust `sqlx`, etc.) autogenerate the schema from queries — the schema becomes implicit and loses its single owner.
 - Writing the `.up.sql` and forgetting the shim — Alembic won't apply it.
 - `op.execute` blocks inside the Python shim — defeats the source-of-truth split; the SQL belongs in the `.sql` file.
 - `.down.sql` left silently empty — at least comment why it's forward-only.

@@ -112,13 +112,9 @@ public/           # static assets served as-is
 | `styles/` | All CSS. Contents + discipline owned by `references/3-app/frontend/tokens-setup.md`. Replaced by `packages/styles` in a workspace. |
 | `layout/` | App shells. Each shell subdivides into its own folder once it outgrows one file (see below). |
 | `components/ui/` | shadcn primitives + wrappers — standalone apps only. Edit freely (copy-not-import). Graduates to `packages/ui` in a workspace. |
-| `components/` | Common composed components — page header, empty states, confirm dialog. |
 | `features/` | Per-feature substance. Folders by feature; subdivision (tripwire T3) + internals owned by `references/4-feature/api-and-pages.md`. |
 | `pages/` | Thin route components mirroring the URL tree; compose from `features/`. Thinness (tripwire T6) owned by `references/4-feature/api-and-pages.md`. |
-| `hooks/` | Shared hooks (feature-specific hooks live in their feature). |
 | `api/` | The only place server communication lives. Endpoint/zod/error/query-key doctrine owned by `references/4-feature/api-and-pages.md`. |
-| `lib/` | Pure utilities — formatters, parsers. No React, no IO. |
-| `stores/` | Client state (zustand or equivalent). Server state belongs to the query layer in `api/`. |
 
 Context providers co-locate with what they provide (theme → `layout/` or the ui package; session → `api/` or the services package). No `context/` catch-all folder — it's a kind-folder.
 
@@ -128,7 +124,7 @@ The skeleton holds only if the layers stay one-directional:
 
 | Folder | May import from | Never contains |
 |---|---|---|
-| `pages/` | `features/`, `layout/`, `components/` | business logic, fetch calls, >~50 lines per file (T6) |
+| `pages/` | `features/`, `layout/`, `components/` | business logic, fetch calls, files past the T6 thinness threshold |
 | `features/` | `api/`, `components/`, `hooks/`, `lib/`, `stores/`, ui package | raw `fetch`/axios, route wiring |
 | `layout/` | `components/`, ui package | feature knowledge |
 | `components/` | ui package, `lib/` | server communication, feature-specific logic |

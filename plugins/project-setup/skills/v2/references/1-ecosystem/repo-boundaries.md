@@ -70,7 +70,6 @@ Boundaries are re-openable. These L2→L1 triggers say a repo has outgrown its c
 - Carving a repo out with **none** of the three own-repo criteria met — a folder would have done.
 - Treating a **distributed** repo's reference host (`apps/web`) as "the app" — it's a harness; the package is the product. This is the mistake that makes an embeddable package read as a headless service.
 - "Microservices" for résumé reasons.
-- Two repos sharing database tables directly instead of via a single-owner schema contract or API calls.
 
 ## Audit checks
 

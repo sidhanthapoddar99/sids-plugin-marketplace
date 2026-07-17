@@ -159,7 +159,7 @@ State bind-mounts under `data/<service>/` (gitignored), config files under `infr
 
 ## Which to pick
 
-The cross-engine selection table (Postgres for relational/ACID, Redis for cache/sessions/streams, MongoDB for truly-variable documents, Neo4j/Kuzu for graph, SeaweedFS for blobs, Meilisearch for fuzzy search, pgvector before a separate vector DB, TimescaleDB before InfluxDB) and the "default to Postgres + Redis, add others only on evidence a Postgres extension can't do the job" rule are owned by `references/2-repo/databases-provisioning.md`.
+The cross-engine selection table and the "default to Postgres + Redis; add others only on evidence a Postgres extension can't do the job" rule are owned by `references/2-repo/databases-provisioning.md`.
 
 ## See also
 

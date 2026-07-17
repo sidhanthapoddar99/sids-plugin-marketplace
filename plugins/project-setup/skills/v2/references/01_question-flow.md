@@ -8,12 +8,12 @@ Run this in order before proposing any layout. The order is **level-ordered** (s
 
 1. **One repo, or multiple repos working together?**
    - One → single repo: Layout 01 (exactly one app) or Layout 02 (two or more apps) — continue to shape it
-   - Multiple → Layout 03 (also run Batch 6 — polyrepo specifics)
+   - Multiple → Layout 03 (also run Batch 6 — polyrepo specifics). Mono-vs-poly criteria: `references/1-ecosystem/repo-boundaries.md`.
 2. **Sibling repos / dependencies?** Does this repo expect another repo to exist (deploy aggregator, published SDK it consumes, docs repo)? Cannot be inferred from inside one repo — always ask.
 3. **Deployed application, or distributed package?**
    - **Deployed** — the repo *runs* the product (you `ctl up` it; production is `ctl up prod`). Layouts 01–05.
    - **Distributed** — the deliverable is a **published package** an external host installs and runs; the repo's own app is a **reference host**, not the product. → Layout 06.
-   - Tell-tales: "another repo will consume this", "it gets embedded", "we publish to npm/PyPI", "the frontend *is* the product".
+   - Criteria + tell-tales owned by `references/1-ecosystem/repo-boundaries.md`.
 4. **Docs: in-repo `docs/` or a separate docs repo?**
    - Default **in-repo** for a single-repo product; **separate `<product>-docs`** when the product spans multiple repos or docs release independently (`references/1-ecosystem/docs-placement.md`). Never both.
 
@@ -29,7 +29,7 @@ Run this in order before proposing any layout. The order is **level-ordered** (s
    - **BFF**: the backend exists to serve this frontend (aggregation/session/proxy).
    - **No backend here**: frontend against an external API (may actually be Layout 01).
 9. **Grouping topology** (when 2+ apps): flat `apps/` (default), plane-grouped (`apps/server/` + `apps/client/`), or hybrid?
-   - Apply the tripwire default — plane-grouped once 2+ frontends AND (2+ backends OR frontend-only packages) — but **ask when both fit**; record the pick. See `references/2-repo/grouping-topology.md`.
+   - Apply the tripwire T1 default, but **ask when both fit**; record the pick. Threshold + variants: `references/2-repo/grouping-topology.md`.
 10. **What languages?**
     - For Python: **app or ML?** (never inferred from extensions — ML → Layout 04, uvenv + `requirements.txt`)
     - For Rust + Python: confirm the coordination mechanism.
@@ -87,7 +87,7 @@ The skeletons themselves are **defaults, not questions** (backend `app/` + featu
 
 ## Batch 9 — ML orchestration (only for Layout 04 ML projects)
 
-37. **Cloud orchestration**: dstack (default — sibling plugin owns CLI mechanics) / SkyPilot / both / neither / custom (needs strong justification).
+37. **Cloud GPUs**: none (local / bare-metal only) / cloud — via `scripts/cloud/` wrappers over the provider CLI, escalating to a thin custom CLI only past the script ceiling (`references/2-repo/ml-orchestration/custom-orchestrator.md`).
 38. **Spot or on-demand?** Spot for training/sweeps; on-demand for inference SLAs / final runs.
 39. **Training cadence**: one-shot / sweep / continuous / batch → checkpoints + retry vs managed service (`references/2-repo/ml-orchestration/`).
 40. **Inference**: none / batch (queue + workers) / online (endpoint + autoscale)?

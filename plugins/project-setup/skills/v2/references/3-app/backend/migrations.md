@@ -89,7 +89,7 @@ Rules of thumb:
 
 - **Single replica, single backend → entrypoint-migrates.** First `compose up` and the schema just exists; idempotent no-op on every subsequent boot. This is the default.
 - **Multi-replica → one-shot.** Same `alembic upgrade head`, different orchestration: run it once as a gate, not once per replica.
-- **Two backends, one DB → neutral owner, never on boot.** Making one backend the DDL owner creates a false hierarchy and couples schema changes to that app's deploy cadence; the migrations move to `apps/db`. The full apps/db structure + one-DB ownership rules are owned by `references/3-app/backend/two-plane-split.md` — don't restate them here.
+- **Two backends, one DB → neutral owner, never on boot.** The migrations move to a standalone `apps/db`; the rationale, structure, and one-DB ownership rules are owned by `references/3-app/backend/two-plane-split.md`.
 
 ## What the skill should ask
 

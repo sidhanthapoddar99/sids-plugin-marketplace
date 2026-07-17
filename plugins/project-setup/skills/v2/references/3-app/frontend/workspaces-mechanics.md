@@ -2,7 +2,7 @@
 
 Recipes only, zero decisions. This file owns the **config file bodies** for a pnpm + turborepo frontend workspace (the default for Vite/React): the root manifest, `pnpm-workspace.yaml` + `catalog:`, `turbo.json` + `globalEnv`, the bun alternative, and the `ctl` delegation surface. Copy these; do not re-derive them.
 
-The decisions these bodies serve live elsewhere — **owned by `references/2-repo/grouping-topology.md`**: whether to introduce a workspace at all (2+ frontends that actually share code), where the workspace roots (repo root for JS-only, frontend group folder for polyglot), and which scope each package sits at. Package internals (export surface, what lives in each package, tailwind wiring, tripwire T4) are **owned by `references/3-app/frontend/shared-packages.md`**.
+The decisions these bodies serve live elsewhere: whether to introduce a workspace at all (2+ frontends that actually share code) is **owned by `references/2-repo/layouts/02_multi-app-monorepo.md` § "Scaling: more than one frontend"**; where the workspace roots (repo root for JS-only, frontend group folder for polyglot) and which scope each package sits at are **owned by `references/2-repo/grouping-topology.md`**. Package internals (export surface, what lives in each package, tailwind wiring, tripwire T4) are **owned by `references/3-app/frontend/shared-packages.md`**.
 
 ## Where the config files sit
 

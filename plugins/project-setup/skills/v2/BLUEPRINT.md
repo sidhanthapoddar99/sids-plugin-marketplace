@@ -54,7 +54,7 @@ Build spec for the v2 references library, staged in `skills/v2/`. The live skill
 | `deployment/proxy-and-exposure.md` | the `/api/*` routing contract, Vite-proxy↔nginx pair, Traefik/expose posture | `architecture/frontend/vite-proxy-nginx-pair.md` + `api-prefix-routing.md` |
 | `deployment/production-readiness.md` | health/readiness, graceful shutdown, limits, migrations-on-deploy checklist (worker model = link to 3-app serving) | `architecture/production/production-readiness.md` |
 | `platform/mobile.md` `platform/desktop.md` | as today | `architecture/platform/*` |
-| `ml-orchestration/` (9 files, same names) | as today | `architecture/ml-orchestration/*` |
+| `ml-orchestration/` (6 files: custom-orchestrator, spot-instances-and-checkpoints, inference-autoscaling, remote-dev-ssh-vscode, agent-ssh-access, cicd-for-ml — tool-agnostic `scripts/cloud/` doctrine, no third-party orchestrator) | as today | `architecture/ml-orchestration/*` |
 | `tooling/lefthook.md` `tooling/vscode-debugger.md` `tooling/ci-cd-future.md` | as today | `repo-setup/tooling/*` |
 
 ### 3-app/
@@ -99,7 +99,7 @@ Complete, ANONYMIZED, annotated project trees — every folder/file commented wi
 | `01_single-cli.md` | Layout 01: a distributable CLI tool (src-layout, minimal ctl, no compose) |
 | `02_canonical-1be-1fe.md` | Layout 02 flat: FastAPI + Vite, full runtime triad, tokens, alembic, the whole canonical stack — the flagship example |
 | `03_two-plane-monorepo.md` | Layout 02 plane-grouped: apps/server/{api-platform,api-admin} + apps/db + apps/client/{platform,admin,packages/} workspace-rooted at client/; domains inside a backend; full src/ skeleton inside a frontend |
-| `04_ml-training-project.md` | Layout 04: uvenv, configs/, tasks/*.dstack.yml, scripts/cloud/, checkpoints |
+| `04_ml-training-project.md` | Layout 04: uvenv, configs/, scripts/cloud/, checkpoints |
 | `05_polyrepo-aggregator.md` | Layout 03: three service repos + the -deploy aggregator (env sync, image-based compose) |
 | `06_embeddable-package.md` | Layout 06: packages/editor product + react-less core + reference host |
 

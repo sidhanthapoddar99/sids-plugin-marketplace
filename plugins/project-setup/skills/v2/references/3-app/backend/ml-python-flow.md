@@ -1,6 +1,6 @@
 # ML Python flow — `requirements.txt` + uvenv global env
 
-The Python dependency flow for ML projects (Layout 04). Deliberately different from the app flow — see `references/3-app/backend/app-skeleton.md` for the app side and the full comparison. This file owns the ML variant: broad `requirements.txt`, one shared named global env via uvenv, and the `uvenv-name` handshake with `ctl`.
+The Python dependency flow for ML projects (Layout 04). Deliberately different from the app flow (`pyproject` + `uv sync`, owned by `references/3-app/backend/app-skeleton.md`). This file owns the ML variant — broad `requirements.txt`, one shared named global env via uvenv, the `uvenv-name` handshake with `ctl` — and the app-vs-ML comparison below.
 
 ## Why this is different
 
@@ -132,4 +132,4 @@ No docker compose. No frontend. No `pyproject.toml` typically (but optional if y
 
 - `references/3-app/backend/app-skeleton.md` — the app flow this is deliberately different from
 - `references/2-repo/layouts/04_ml-project.md` — the full ML repo shape
-- `references/2-repo/ml-orchestration/overview.md` — cloud orchestration (dstack / SkyPilot / spot)
+- `references/2-repo/ml-orchestration/custom-orchestrator.md` — cloud GPU runs via `scripts/cloud/` wrappers (spot + checkpoints, remote dev)

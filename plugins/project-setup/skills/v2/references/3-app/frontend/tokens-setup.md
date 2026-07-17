@@ -128,7 +128,7 @@ This default is intentional and conservative — modify per project, but stay wi
 }
 ```
 
-**Lint rule** (biome or custom): forbid hex and raw px in `src/components/**/*.css`. Allowed only in `src/styles/tokens.css` (and the dark-mode block). (`**` here is a lint-config glob the tool expands itself; if you implement the check as a shell command instead, use the shell-proof `grep -r --include` form from `references/4-feature/styling-discipline.md` — shell `**` silently under-recurses in default bash.) The full feature-code enforcement greps are owned by `styling-discipline.md`.
+**Lint rule** (biome or custom): forbid hex and raw px in `src/components/**/*.css`. Allowed only in `src/styles/tokens.css` (and the dark-mode block). (`**` here is a lint-config glob the tool expands itself; shell-command checks use the shell-proof `grep -r --include` form owned by `references/4-feature/styling-discipline.md`.) The full feature-code enforcement greps are owned by `styling-discipline.md`.
 
 ## Typography and spacing are NOT tokens
 
@@ -171,7 +171,7 @@ These are the stock values a project's stylesheet must resolve to (Tailwind's de
 --container-6xl: 72rem;
 ```
 
-**Which of these sizes/weights feature code may actually use** — the per-project allowlist (default: `text-sm` for ~90% of the UI, `text-base` for headings, `text-xs` sparingly; `font-normal` + one emphasis weight) and its anti-patterns (remapping standard names, custom size vocabularies, size×weight rungs) — is a **usage** decision owned by `references/4-feature/styling-discipline.md` and declared in the project's CLAUDE.md. Do not restate it here; the vocabulary is set up here, the restraint is applied there.
+**Which of these sizes/weights feature code may actually use** — the per-project allowlist and its anti-patterns — is a **usage** decision owned by `references/4-feature/styling-discipline.md` and declared in the project's CLAUDE.md. Do not restate it here; the vocabulary is set up here, the restraint is applied there.
 
 ## Dark mode
 

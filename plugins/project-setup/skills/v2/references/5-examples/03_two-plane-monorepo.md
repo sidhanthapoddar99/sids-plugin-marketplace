@@ -139,7 +139,7 @@ marketplace/
 │   └── postgres/init/01_extensions.sql
 ├── data/                             # bind-mount targets, gitignored except .gitkeep
 │   └── postgres/pgdata/.gitkeep
-├── docs/                             # documentation plugin via /docs-init — 1-ecosystem/docs-placement.md
+├── docs/                             # documentation plugin via /agent-ks-init — 1-ecosystem/docs-placement.md
 ├── .claude/                          # empty initially — handoffs/claude-folder.md
 ├── CLAUDE.md                         # carries the recorded-variant table above
 ├── README.md                        # root README: three paths — readme-three-paths.md
@@ -148,7 +148,7 @@ marketplace/
 
 ## Zoom-in — inside a backend (the domain layer)
 
-`api-platform` crossed the T2 tripwire (~8–10 features), so its features group into **domains** (`catalog`, `orders`, `access`); each domain has an aggregator `router.py` and the app entrypoint mounts one router per domain. `api-admin` has 5 features and **stays flat** with a recorded deferral — a domain layer over 5 features is ceremony. Domain names are ownership nouns (`catalog`, not `listing-management`). Both backends keep the flat `app/` (run-service, no `src/`). Governed by `references/3-app/backend/domain-grouping.md` (grouping) and `references/3-app/backend/app-skeleton.md` (the `app/` shape); feature-folder internals by `references/4-feature/feature-folders.md`.
+`api-platform` crossed the T2 tripwire, so its features group into **domains** (`catalog`, `orders`, `access`); each domain has an aggregator `router.py` and the app entrypoint mounts one router per domain. `api-admin` has 5 features and **stays flat** with a recorded deferral — a domain layer over 5 features is ceremony. Domain names are ownership nouns (`catalog`, not `listing-management`). Both backends keep the flat `app/` (run-service, no `src/`). Governed by `references/3-app/backend/domain-grouping.md` (grouping) and `references/3-app/backend/app-skeleton.md` (the `app/` shape); feature-folder internals by `references/4-feature/feature-folders.md`.
 
 ## Zoom-in — the database contract (why `apps/db` is neutral)
 

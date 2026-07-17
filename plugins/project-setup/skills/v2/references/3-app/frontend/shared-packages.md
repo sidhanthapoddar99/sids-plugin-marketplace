@@ -51,7 +51,7 @@ packages/ui/
 
 - **UI package**: flat `src/<component>.tsx` while under ~15 components; past that, group by component family (`src/forms/`, `src/overlays/`) — **tripwire T4** below.
 - **Services / types packages**: one folder (or file) per domain area, **mirroring the owning backend's domain names** where a mapping exists, so the contract surfaces stay findable by the same vocabulary end to end.
-- The same **500/300 line caps apply** — shared code gets no exemption (owned by `references/4-feature/caps-and-extraction.md`, tripwire T5).
+- The same **T5 line caps apply** — shared code gets no exemption (owned by `references/4-feature/caps-and-extraction.md`).
 
 ## The export surface
 
@@ -176,7 +176,7 @@ A ui package with **~15 components flat** in `src/` has outgrown a flat pile —
 - A dependency on a package written as a real version (`"0.0.1"`) instead of `workspace:*` = finding (pnpm warns; fix).
 - A package importing app-specific code (depending *up*) = red finding.
 - One mega `packages/shared` holding UI + logic + types = finding; split by concern.
-- A package over the 500/300 caps = finding (no exemption for shared code).
+- A package over the T5 caps = finding (no exemption for shared code).
 
 ## Anti-patterns
 
@@ -193,5 +193,5 @@ A ui package with **~15 components flat** in `src/` has outgrown a flat pile —
 - `references/3-app/frontend/app-skeleton.md` — the app `src/` skeleton + workspace reconciliation (never both local and package)
 - `references/3-app/frontend/tokens-setup.md` — `tokens.css`, light/dark, typography policy the tailwind preset defers to
 - `references/4-feature/types-and-contracts.md` — full type/DTO placement doctrine
-- `references/4-feature/caps-and-extraction.md` — 500/300 caps (T5), extract-on-third-use (T9)
+- `references/4-feature/caps-and-extraction.md` — file caps (T5), extract-on-third-use (T9)
 - `references/00_altitude-model.md` — master tripwire table (T4)
