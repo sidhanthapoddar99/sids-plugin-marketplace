@@ -9,7 +9,7 @@ Every app is a unit that runs or deploys on its own. It owns, at its root:
 - its **dependency manifest** (`pyproject.toml` / `package.json` / `Cargo.toml` / `build.gradle.kts`),
 - its **`config.yaml`** (backends) or env scope (frontends — `VITE_*` / `NEXT_PUBLIC_*`),
 - its **own `README.md`** — the host dev loop for this app (strong default #7, `references/2-repo/02-root-hygiene/01_readme-three-paths.md`),
-- its **own tests**, co-located per L4 (`references/4-feature/caps-and-extraction.md`),
+- its **own tests**, co-located per L4 (`references/4-feature/05_caps-and-extraction.md`),
 - its **Dockerfile** if it ships as an image (`references/3-app/10-deployment/01_app-packaging.md`),
 - **one clear entry point** per its kind's convention (`app.main:app`, `src/main.tsx`, `main.rs`, …).
 

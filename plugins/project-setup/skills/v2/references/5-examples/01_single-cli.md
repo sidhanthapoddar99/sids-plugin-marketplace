@@ -76,9 +76,9 @@ Recorded in CLAUDE.md; when one trips, re-open `references/02_decision-tree.md`:
 | root as index, single-package containment, `.gitignore`, root-manifest exception | root contract | `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` |
 | `src/tablefmt/` vs flat `app/`, `pyproject.toml`, `[tool.uv] package = true`, `uv.lock`, `pytest.pythonpath = ["src"]` | run-service vs distributable + the uv flow | `references/3-app/02-backend/00_app-skeleton.md` |
 | `core/` (shared internals) placement | code at the lowest level containing all consumers | `references/3-app/02-backend/00_app-skeleton.md` |
-| `formats/` feature modules; internal subdivision | feature-folder shape + T3 | `references/4-feature/feature-folders.md` |
+| `formats/` feature modules; internal subdivision | feature-folder shape + T3 | `references/4-feature/01_feature-folders.md` |
 | when `formats/` crosses the T2 threshold → a domain layer | T2 domain grouping | `references/3-app/02-backend/01_domain-grouping.md` |
-| file/function size caps (T5), rule-of-three extraction (T9), folders-by-feature | modularity caps | `references/4-feature/caps-and-extraction.md` |
+| file/function size caps (T5), rule-of-three extraction (T9), folders-by-feature | modularity caps | `references/4-feature/05_caps-and-extraction.md` |
 | `ctl` + `scripts/{common,dev,build}/` + conformance floor | control-plane model | `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` |
 | `ctl` verb bodies, worker skeleton, adding a command | dispatcher mechanics | `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md` |
 | `.mise.toml`, bare `ctl` on PATH, python pin | runtime version contract | `references/2-repo/06-runtime-environment/01_mise.md` |

@@ -21,7 +21,7 @@ Ask it as an identity question, not a count question: **"does any surface need a
 Two backends over one Postgres works — under strict ownership:
 
 - **Every fact kind has exactly one writing owner.** For each table (or column family), one backend writes it; the other reads it. Document the ownership table.
-- **The schema is the only shared contract.** No shared ORM/models package between the backends — each declares its **own DTOs** against the schema (see the DTO rules in `references/4-feature/types-and-contracts.md`).
+- **The schema is the only shared contract.** No shared ORM/models package between the backends — each declares its **own DTOs** against the schema (see the DTO rules in `references/4-feature/03_types-and-contracts.md`).
 - Coordination beyond the schema goes over a transport — Postgres LISTEN/NOTIFY, Redis streams, HTTP — never concurrent writes to the same tables.
 
 ## Migrations get a neutral owner: a standalone `apps/db`
@@ -72,7 +72,7 @@ The identity planes are separate; the **visual language is not**. Both frontends
 
 - `references/3-app/04-database/01_migrations.md` — migration style + DDL owner decision that `apps/db` implements
 - `references/3-app/04-database/03_raw-sql-recipe.md` — the raw-SQL three-file mechanics `apps/db` can run
-- `references/4-feature/types-and-contracts.md` — DTO ownership rules both backends follow
+- `references/4-feature/03_types-and-contracts.md` — DTO ownership rules both backends follow
 - `references/2-repo/01-layouts/00_grouping-topology.md` — the grouping topology this pairs with
 - `references/2-repo/03-env-config/02_frontend-env-isolation.md` — env split + frontend isolation
 - `references/2-repo/00_index.md` — the repo-level charter that routes here

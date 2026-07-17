@@ -2,7 +2,7 @@
 
 This file owns the **internals of three `src/` skeleton slots**: `api/` (the single server-communication layer), `pages/` (thin route components), and `features/` (where substance lives, and when it subdivides). It carries the frontend half of tripwire **T3** (feature-folder subdivision) and **T6** (thin `pages/`).
 
-What is *not* here: which folders the skeleton contains, the layer import matrix, `layout/` shells, and workspace-package reconciliation are L3 — owned by `references/3-app/03-web-app/00_app-skeleton.md`. What every *type* placed in these folders looks like (zod-inferred API types, feature-internal types, `packages/types`) is owned by `references/4-feature/types-and-contracts.md`. This file states the *mechanisms*; that file states the *placements*.
+What is *not* here: which folders the skeleton contains, the layer import matrix, `layout/` shells, and workspace-package reconciliation are L3 — owned by `references/3-app/03-web-app/00_app-skeleton.md`. What every *type* placed in these folders looks like (zod-inferred API types, feature-internal types, `packages/types`) is owned by `references/4-feature/03_types-and-contracts.md`. This file states the *mechanisms*; that file states the *placements*.
 
 Applies to every Vite/React app; Next/Astro variants keep the same doctrine with the framework's routing layer in place of `pages/` (`references/3-app/03-web-app/01_framework-variants.md`).
 
@@ -11,7 +11,7 @@ Applies to every Vite/React app; Next/Astro variants keep the same doctrine with
 **No component, hook, page, or store calls `fetch`/axios directly.** All server communication goes through functions in `api/` (or the workspace `packages/services` equivalent), which own:
 
 - **Endpoint paths** — the only place URL strings exist.
-- **The response boundary** — zod schemas (or equivalent) parse every response at the edge, so unvalidated data never enters the app. TS types are *inferred* from those schemas — placement owned by `references/4-feature/types-and-contracts.md`.
+- **The response boundary** — zod schemas (or equivalent) parse every response at the edge, so unvalidated data never enters the app. TS types are *inferred* from those schemas — placement owned by `references/4-feature/03_types-and-contracts.md`.
 - **Error normalization** — every failure becomes one app-wide error shape.
 - **The query-key vocabulary** — TanStack Query keys (or equivalent) live beside the functions they cache, so key collisions and invalidation stay reviewable in one place.
 
@@ -37,7 +37,7 @@ grep -rEn --include='*.ts' --include='*.tsx' '\bfetch\(|axios' src/ | grep -v '^
 
 When a feature folder crosses **~10 source files (T3)**, subdivide — by sub-feature (`features/sources/configs/`, `features/sources/runs/`) or by kind within the feature (`pages/`, `dialogs/`, `sections/`) — **whichever axis carries the real seams**. Tests co-locate with what they test through the split. Crossing the threshold obligates the split or a recorded deferral (one line in the project CLAUDE.md), same as every structural tripwire.
 
-This is the frontend twin of the backend feature subdivision in `references/4-feature/feature-folders.md`; both planes share the ~10-file threshold and the merge-vs-group discipline.
+This is the frontend twin of the backend feature subdivision in `references/4-feature/01_feature-folders.md`; both planes share the ~10-file threshold and the merge-vs-group discipline.
 
 ## Audit checks
 
@@ -58,8 +58,8 @@ This is the frontend twin of the backend feature subdivision in `references/4-fe
 ## See also
 
 - `references/3-app/03-web-app/00_app-skeleton.md` — the `src/` skeleton these slots belong to, the layer import matrix, `layout/` shells, workspace reconciliation
-- `references/4-feature/types-and-contracts.md` — where API/feature/store/prop types live (both planes)
+- `references/4-feature/03_types-and-contracts.md` — where API/feature/store/prop types live (both planes)
 - `references/3-app/02-backend/01_domain-grouping.md` — the backend domain vocabulary `api/` mirrors
-- `references/4-feature/feature-folders.md` — the backend twin: feature shape, seams, subdivision (T3 backend)
+- `references/4-feature/01_feature-folders.md` — the backend twin: feature shape, seams, subdivision (T3 backend)
 - `references/3-app/05-package/00_shared-packages.md` — `packages/services` (the workspace `api/` equivalent) internals and export surface
 - `references/4-feature/00_charter.md` — the feature-level charter this reference serves

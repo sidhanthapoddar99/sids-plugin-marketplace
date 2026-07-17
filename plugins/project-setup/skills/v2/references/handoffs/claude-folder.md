@@ -77,7 +77,7 @@ The CLAUDE.md is **agent-first**. Designed for an LLM agent walking into the rep
 ## Why empty by default
 
 - **No premature structure.** Most repos never need a custom agent or command. Pre-creating folders gives a false impression that they're expected.
-- **Build up as you discover repetition.** Same rule as "extract on third use" (see `references/4-feature/caps-and-extraction.md`) — don't make scaffolding for hypothetical needs.
+- **Build up as you discover repetition.** Same rule as "extract on third use" (see `references/4-feature/05_caps-and-extraction.md`) — don't make scaffolding for hypothetical needs.
 - **Plugin capabilities cover the common case.** `agent-ks`, `project-setup`, `ai-toolkit-dev` ship via plugin; project-local additions are the exception.
 
 ## What about `.claude/settings.local.json`?

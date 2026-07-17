@@ -70,7 +70,7 @@ marketplace/
 │   │   │   ├── app/                  # FLAT app/ (run-service, no src/) — references/3-app/02-backend/00_app-skeleton.md
 │   │   │   │   ├── main.py           # mounts one router per domain
 │   │   │   │   ├── core/             # cross-cutting: db, settings, security, health
-│   │   │   │   ├── catalog/          # DOMAIN (T2 tripped) — domain-grouping.md
+│   │   │   │   ├── catalog/          # DOMAIN (T2 tripped) — references/3-app/02-backend/01_domain-grouping.md
 │   │   │   │   │   ├── router.py     # aggregator router for the domain
 │   │   │   │   │   ├── listings/     # feature: {router,service,repository,models}.py
 │   │   │   │   │   └── search/       # feature
@@ -98,7 +98,7 @@ marketplace/
 │   │       ├── Dockerfile
 │   │       └── README.md
 │   ├── db/                           # NEUTRAL migrations owner — imports NO backend code
-│   │   ├── pyproject.toml            # alembic + psycopg only — two-plane-split.md
+│   │   ├── pyproject.toml            # alembic + psycopg only — references/3-app/02-backend/02_two-plane-split.md
 │   │   ├── alembic.ini
 │   │   ├── alembic/
 │   │   │   ├── env.py                # raw-SQL shim: runs the .sql files — raw-sql-recipe.md
@@ -128,7 +128,7 @@ marketplace/
 │       └── packages/                 # FRONTEND-ONLY packages — inside the client group (lowest common consumer)
 │           ├── ui/                   # shadcn primitives + wrappers (T4) — references/3-app/05-package/00_shared-packages.md
 │           ├── styles/               # the single tokens.css, globals, light/dark — references/3-app/05-package/01_tokens-setup.md
-│           ├── types/                # shared TS types (zod-inferred) — 4-feature/types-and-contracts.md
+│           ├── types/                # shared TS types (zod-inferred) — 4-feature/03_types-and-contracts.md
 │           ├── services/             # shared auth/session + API clients (shapes, not sessions)
 │           ├── tailwind-config/      # shared Tailwind preset
 │           └── typescript-config/
@@ -148,15 +148,15 @@ marketplace/
 
 ## Zoom-in — inside a backend (the domain layer)
 
-`api-platform` crossed the T2 tripwire, so its features group into **domains** (`catalog`, `orders`, `access`); each domain has an aggregator `router.py` and the app entrypoint mounts one router per domain. `api-admin` has 5 features and **stays flat** with a recorded deferral — a domain layer over 5 features is ceremony. Domain names are ownership nouns (`catalog`, not `listing-management`). Both backends keep the flat `app/` (run-service, no `src/`). Governed by `references/3-app/02-backend/01_domain-grouping.md` (grouping) and `references/3-app/02-backend/00_app-skeleton.md` (the `app/` shape); feature-folder internals by `references/4-feature/feature-folders.md`.
+`api-platform` crossed the T2 tripwire, so its features group into **domains** (`catalog`, `orders`, `access`); each domain has an aggregator `router.py` and the app entrypoint mounts one router per domain. `api-admin` has 5 features and **stays flat** with a recorded deferral — a domain layer over 5 features is ceremony. Domain names are ownership nouns (`catalog`, not `listing-management`). Both backends keep the flat `app/` (run-service, no `src/`). Governed by `references/3-app/02-backend/01_domain-grouping.md` (grouping) and `references/3-app/02-backend/00_app-skeleton.md` (the `app/` shape); feature-folder internals by `references/4-feature/01_feature-folders.md`.
 
 ## Zoom-in — the database contract (why `apps/db` is neutral)
 
-One Postgres, strict single-writer ownership: `api-platform` writes `listings`/`orders`/`users`; `api-admin` writes `moderation`/`disputes`/`operators` and *reads* the catalog/order tables it moderates. No shared ORM/models package — each backend declares its own DTOs against the schema (`references/4-feature/types-and-contracts.md`). DDL belongs to **neither** backend: `apps/db` is the sole owner, imports no backend code, and runs only via `ctl migrate {up|down|new|status}` — never on a backend's boot (two backends racing entrypoint migrations is exactly the failure this prevents). The raw-SQL three-file pattern fits because the `.sql` is readable by every consumer regardless of language. Governed by `references/3-app/02-backend/02_two-plane-split.md`, `references/3-app/04-database/01_migrations.md`, `references/3-app/04-database/03_raw-sql-recipe.md`.
+One Postgres, strict single-writer ownership: `api-platform` writes `listings`/`orders`/`users`; `api-admin` writes `moderation`/`disputes`/`operators` and *reads* the catalog/order tables it moderates. No shared ORM/models package — each backend declares its own DTOs against the schema (`references/4-feature/03_types-and-contracts.md`). DDL belongs to **neither** backend: `apps/db` is the sole owner, imports no backend code, and runs only via `ctl migrate {up|down|new|status}` — never on a backend's boot (two backends racing entrypoint migrations is exactly the failure this prevents). The raw-SQL three-file pattern fits because the `.sql` is readable by every consumer regardless of language. Governed by `references/3-app/02-backend/02_two-plane-split.md`, `references/3-app/04-database/01_migrations.md`, `references/3-app/04-database/03_raw-sql-recipe.md`.
 
 ## Zoom-in — inside a frontend (the `src/` skeleton) + workspace reconciliation
 
-Each frontend under `apps/client/` keeps the identical hard `src/` skeleton (`main.tsx`, `App.tsx`, `layout/`, `components/`, `features/`, `pages/`, `hooks/`, `api/`, `lib/`, `stores/`). Three layers are **absent locally** because they graduated to shared packages — `components/ui/` → `packages/ui`, `styles/` → `packages/styles`, shared clients → `packages/services`. Never both: a local `styles/` beside `packages/styles` is a red finding. The two planes share the visual language (one `tokens.css`, one `ui`) even though sessions never cross. Governed by `references/3-app/03-web-app/00_app-skeleton.md` (skeleton + reconciliation), `references/3-app/05-package/00_shared-packages.md` (package internals, T4), `references/4-feature/styling-discipline.md` (usage rules).
+Each frontend under `apps/client/` keeps the identical hard `src/` skeleton (`main.tsx`, `App.tsx`, `layout/`, `components/`, `features/`, `pages/`, `hooks/`, `api/`, `lib/`, `stores/`). Three layers are **absent locally** because they graduated to shared packages — `components/ui/` → `packages/ui`, `styles/` → `packages/styles`, shared clients → `packages/services`. Never both: a local `styles/` beside `packages/styles` is a red finding. The two planes share the visual language (one `tokens.css`, one `ui`) even though sessions never cross. Governed by `references/3-app/03-web-app/00_app-skeleton.md` (skeleton + reconciliation), `references/3-app/05-package/00_shared-packages.md` (package internals, T4), `references/4-feature/04_styling-discipline.md` (usage rules).
 
 ## Zoom-in — workspace rooting (polyglot repo)
 
@@ -172,14 +172,14 @@ This is a polyglot repo (Python backends + TS frontends), so the JS workspace ro
 | `apps/db/alembic/` raw-SQL three-file mechanics | `references/3-app/04-database/03_raw-sql-recipe.md` |
 | Flat `app/` shape, `core/`, `main.py` | `references/3-app/02-backend/00_app-skeleton.md` |
 | Domains inside a backend (T2), aggregator routers | `references/3-app/02-backend/01_domain-grouping.md` |
-| Feature-folder internals, T3 subdivision | `references/4-feature/feature-folders.md` |
-| DTO placement, no shared models package | `references/4-feature/types-and-contracts.md` |
+| Feature-folder internals, T3 subdivision | `references/4-feature/01_feature-folders.md` |
+| DTO placement, no shared models package | `references/4-feature/03_types-and-contracts.md` |
 | `apps/client/` workspace rooting, packages placement | `references/2-repo/01-layouts/00_grouping-topology.md`, `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` |
 | `apps/client/packages/{ui,styles,types,services}` internals | `references/3-app/05-package/00_shared-packages.md` |
 | pnpm/turbo config bodies, `ctl` delegation | `references/3-app/01-structure-and-stack/02_workspaces-mechanics.md` |
 | Each frontend's `src/` skeleton + reconciliation | `references/3-app/03-web-app/00_app-skeleton.md` |
 | `tokens.css`, light/dark, shadcn wiring | `references/3-app/05-package/01_tokens-setup.md` |
-| Styling discipline in feature code | `references/4-feature/styling-discipline.md` |
+| Styling discipline in feature code | `references/4-feature/04_styling-discipline.md` |
 | `.env` split + `VITE_*` isolation across planes | `references/2-repo/03-env-config/00_env-precedence.md`, `.../02_frontend-env-isolation.md` |
 | `config.yaml` per service, secrets matrix | `references/2-repo/03-env-config/01_per-service-config.md`, `.../03_secrets-matrix.md` |
 | `docker/` compose base + `.m.` modifiers, expose tiers | `references/2-repo/04-docker/00_docker-overview.md` |

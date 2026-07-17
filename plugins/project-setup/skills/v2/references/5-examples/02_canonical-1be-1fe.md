@@ -94,7 +94,7 @@ apps/backend/
 └── README.md                       # this backend's host dev loop (the no-docker isolation path)
 ```
 
-Feature count here is 4 (`auth bookings spaces notifications`), well under the T2 threshold — so **no domain layer**, and that deferral is one line in `CLAUDE.md`. When the product's domain model settles or the list crosses the threshold, features flatten into `app/<domain>/<feature>/` — owned by `references/3-app/02-backend/01_domain-grouping.md` (T2). The `{router,service,repository,models}.py` internals, the feature-seam merge rule, and the file-subdivision tripwire (T3) are owned by `references/4-feature/feature-folders.md`. DTO placement (kept in each feature's `models.py`, never a shared models package) is owned by `references/4-feature/types-and-contracts.md`.
+Feature count here is 4 (`auth bookings spaces notifications`), well under the T2 threshold — so **no domain layer**, and that deferral is one line in `CLAUDE.md`. When the product's domain model settles or the list crosses the threshold, features flatten into `app/<domain>/<feature>/` — owned by `references/3-app/02-backend/01_domain-grouping.md` (T2). The `{router,service,repository,models}.py` internals, the feature-seam merge rule, and the file-subdivision tripwire (T3) are owned by `references/4-feature/01_feature-folders.md`. DTO placement (kept in each feature's `models.py`, never a shared models package) is owned by `references/4-feature/03_types-and-contracts.md`.
 
 Migrations: single replica here, so the container migrates itself (`docker-entrypoint.sh` → `alembic upgrade head` → exec gunicorn). Multi-replica would switch to a one-shot migrate service — decision owned by `references/3-app/04-database/01_migrations.md`, recipe by `references/3-app/04-database/02_alembic-recipe.md`.
 
@@ -138,7 +138,7 @@ apps/frontend/
 └── README.md                       # this frontend's host dev loop
 ```
 
-The `src/` top level is a **hard skeleton** (these names, this altitude); folders appear when a thing needs them, not as empty placeholders. The skeleton, layer import-rules, and the local-vs-package reconciliation rule are owned by `references/3-app/03-web-app/00_app-skeleton.md`. What lives *inside* `api/` (endpoints, zod schemas, error normalization, query keys, domain mirroring, T6 thin pages) and how `features/` subdivides (T3) are owned by `references/4-feature/api-and-pages.md`. `tokens.css` contents, the light/dark `data-theme` mechanism, and shadcn/tailwind wiring are owned by `references/3-app/05-package/01_tokens-setup.md`; the primitive-first styling rules feature code lives under are owned by `references/4-feature/styling-discipline.md`.
+The `src/` top level is a **hard skeleton** (these names, this altitude); folders appear when a thing needs them, not as empty placeholders. The skeleton, layer import-rules, and the local-vs-package reconciliation rule are owned by `references/3-app/03-web-app/00_app-skeleton.md`. What lives *inside* `api/` (endpoints, zod schemas, error normalization, query keys, domain mirroring, T6 thin pages) and how `features/` subdivides (T3) are owned by `references/4-feature/02_api-and-pages.md`. `tokens.css` contents, the light/dark `data-theme` mechanism, and shadcn/tailwind wiring are owned by `references/3-app/05-package/01_tokens-setup.md`; the primitive-first styling rules feature code lives under are owned by `references/4-feature/04_styling-discipline.md`.
 
 ## The runtime triad — `ctl` + `scripts/` + `docker/`
 
@@ -190,15 +190,15 @@ Everyday flow: `ctl setup` (once) → `ctl dev`. `ctl dev` auto-ups the data cor
 | `infra/nginx` ↔ Vite proxy, `/api/*` routing | `references/2-repo/04-docker/04_proxy-and-exposure.md` |
 | `gunicorn.conf.py`, healthchecks, migrations-on-deploy | `references/3-app/10-deployment/00_serving.md`, `references/2-repo/04-docker/05_production-readiness.md` |
 | Backend flat `app/`, uv flow, `main.py`/`core/` | `references/3-app/02-backend/00_app-skeleton.md` |
-| Backend feature folders (`{router,service,repository,models}.py`) | `references/4-feature/feature-folders.md` |
+| Backend feature folders (`{router,service,repository,models}.py`) | `references/4-feature/01_feature-folders.md` |
 | Domain layer deferral (T2) | `references/3-app/02-backend/01_domain-grouping.md` |
 | `alembic/`, entrypoint-migrates | `references/3-app/04-database/01_migrations.md`, `references/3-app/04-database/02_alembic-recipe.md` |
 | Frontend `src/` skeleton, layer rules, config files | `references/3-app/03-web-app/00_app-skeleton.md` |
-| `src/api/`, `src/pages/`, `src/features/` internals (T3/T6) | `references/4-feature/api-and-pages.md` |
-| DTO / type placement (both planes) | `references/4-feature/types-and-contracts.md` |
+| `src/api/`, `src/pages/`, `src/features/` internals (T3/T6) | `references/4-feature/02_api-and-pages.md` |
+| DTO / type placement (both planes) | `references/4-feature/03_types-and-contracts.md` |
 | `styles/tokens.css`, light/dark, shadcn/tailwind | `references/3-app/05-package/01_tokens-setup.md` |
-| Styling discipline (primitive-first) | `references/4-feature/styling-discipline.md` |
-| file caps (T5), extraction (T9), folders-by-feature | `references/4-feature/caps-and-extraction.md` |
+| Styling discipline (primitive-first) | `references/4-feature/04_styling-discipline.md` |
+| file caps (T5), extraction (T9), folders-by-feature | `references/4-feature/05_caps-and-extraction.md` |
 | `docs/` in-repo choice | `references/1-ecosystem/docs-placement.md` |
 | `.claude/` empty + `CLAUDE.md` template | `references/handoffs/claude-folder.md` |
 

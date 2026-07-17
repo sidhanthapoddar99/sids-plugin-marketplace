@@ -53,13 +53,13 @@ Structure gets numbers, like the file caps — checkable while working, not vibe
 |---|---|---|---|---|
 | T1 | apps in a flat `apps/` hiding planes | 2+ frontends AND (2+ backends OR frontend-only packages) | plane-grouped topology | L2 (`references/2-repo/01-layouts/00_grouping-topology.md`) |
 | T2 | feature folders per app | ~8–10 | introduce a domain layer | L3 (`references/3-app/02-backend/01_domain-grouping.md`) |
-| T3 | source files per feature folder | ~10 | subdivide the feature | L4 (frontend: `references/4-feature/api-and-pages.md`; backend twin: `references/4-feature/feature-folders.md`) |
+| T3 | source files per feature folder | ~10 | subdivide the feature | L4 (frontend: `references/4-feature/02_api-and-pages.md`; backend twin: `references/4-feature/01_feature-folders.md`) |
 | T4 | components flat in a ui package | ~15 | group by component family | L3 (`references/3-app/05-package/00_shared-packages.md`) |
-| T5 | lines per file | 500 hard / 300 soft | split | L4 (`references/4-feature/caps-and-extraction.md`) |
-| T6 | lines per `pages/` file | ~50 | substance moves to `features/` | L4 (`references/4-feature/api-and-pages.md`) |
+| T5 | lines per file | 500 hard / 300 soft | split | L4 (`references/4-feature/05_caps-and-extraction.md`) |
+| T6 | lines per `pages/` file | ~50 | substance moves to `features/` | L4 (`references/4-feature/02_api-and-pages.md`) |
 | T7 | `ctl` dispatcher size / needs structured state | ~150 lines | escalate to a binary | L2 (`references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`) |
-| T8 | same utility combo twice (styling) | 2 | fold into a primitive variant | L4 (`references/4-feature/styling-discipline.md`) |
-| T9 | same logic three times | 3 | extract a shared helper | L4 (`references/4-feature/caps-and-extraction.md`) |
+| T8 | same utility combo twice (styling) | 2 | fold into a primitive variant | L4 (`references/4-feature/04_styling-discipline.md`) |
+| T9 | same logic three times | 3 | extract a shared helper | L4 (`references/4-feature/05_caps-and-extraction.md`) |
 | T10 | runtime deps in a root manifest | 1 | move it into the app/package folder | L2 (`references/2-repo/02-root-hygiene/00_root-and-hygiene.md`) |
 
 ## Ownership map — decision axis → owner file
@@ -150,11 +150,11 @@ One decision, one owner file. The normative rule (variants, tripwire, audit chec
 | Decision axis | Owner file | Tripwire |
 |---|---|---|
 | L4 index, delivery via CLAUDE.md blocks, mechanical audit greps, hands-back-up rule | `00_charter.md` | — |
-| `{router,service,repository,models}.py` shape, feature seams, adapter-modules, backend subdivision | `feature-folders.md` | T3 (backend) |
-| `api/` internals (endpoints, zod, error norm, query keys, domain mirroring), thin pages, URL mirroring, fetch grep, frontend subdivision | `api-and-pages.md` | T3 (frontend), T6 |
-| all type/DTO placement, both planes | `types-and-contracts.md` | — |
-| primitive-first styling hard rules + precedence + greps | `styling-discipline.md` | T8 |
-| 500/300 caps, rule of three, rule of two styling, folders-by-feature, test co-location | `caps-and-extraction.md` | T5, T9 |
+| `{router,service,repository,models}.py` shape, feature seams, adapter-modules, backend subdivision | `01_feature-folders.md` | T3 (backend) |
+| `api/` internals (endpoints, zod, error norm, query keys, domain mirroring), thin pages, URL mirroring, fetch grep, frontend subdivision | `02_api-and-pages.md` | T3 (frontend), T6 |
+| all type/DTO placement, both planes | `03_types-and-contracts.md` | — |
+| primitive-first styling hard rules + precedence + greps | `04_styling-discipline.md` | T8 |
+| 500/300 caps, rule of three, rule of two styling, folders-by-feature, test co-location | `05_caps-and-extraction.md` | T5, T9 |
 
 ### Handoffs (`references/handoffs/`)
 

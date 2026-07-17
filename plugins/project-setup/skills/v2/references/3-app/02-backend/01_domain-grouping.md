@@ -48,16 +48,16 @@ A domain collates features that **own one body of data and change together**. It
 ## Mechanics — routers and domain-shared placement
 
 - Each domain gets an **aggregator router** (`app/<domain>/router.py`) that mounts its features' routers; the app entrypoint mounts **one router per domain**. Adding a feature to a domain touches the domain router, not the entrypoint.
-- Feature folders keep the standard `{router,service,repository,models}.py` shape — owned by `references/4-feature/feature-folders.md`.
+- Feature folders keep the standard `{router,service,repository,models}.py` shape — owned by `references/4-feature/01_feature-folders.md`.
 - **Domain-shared machinery lives at the domain root** — a helper several features of one domain use goes in `app/<domain>/`, not in global `core/`. `core/` is reserved for code shared across domains. This is the general placement rule: code lives at the lowest level that contains all its consumers.
 
 ## What lives one level down (L4)
 
 Grouping *organises* features; it does not define them. These are owned by the feature level:
 
-- **Feature seams** — what a feature boundary is (lifecycle + ownership), the merge rule for two folders that are one feature, and the backend subdivision tripwire (T3): `references/4-feature/feature-folders.md`.
-- **The adapter-modules pattern** — integrating N external providers of one kind (`modules/`, `base.py`, self-contained provider folders): `references/4-feature/feature-folders.md`.
-- **Type & DTO placement** — where API contract types live, no cross-domain DTO imports, no shared models package: `references/4-feature/types-and-contracts.md`.
+- **Feature seams** — what a feature boundary is (lifecycle + ownership), the merge rule for two folders that are one feature, and the backend subdivision tripwire (T3): `references/4-feature/01_feature-folders.md`.
+- **The adapter-modules pattern** — integrating N external providers of one kind (`modules/`, `base.py`, self-contained provider folders): `references/4-feature/01_feature-folders.md`.
+- **Type & DTO placement** — where API contract types live, no cross-domain DTO imports, no shared models package: `references/4-feature/03_types-and-contracts.md`.
 
 A domain layer never repairs a wrong feature split — merge the seam first (see feature-folders), then group.
 
@@ -83,9 +83,9 @@ Bootstrap-time layout is a starting point, never a contract. When the product's 
 
 ## See also
 
-- `references/4-feature/feature-folders.md` — the altitude below: feature shape, feature seams, merge rule, adapter modules, T3
-- `references/4-feature/types-and-contracts.md` — type/DTO placement for both planes
-- `references/4-feature/caps-and-extraction.md` — folders-by-feature and the line caps (T5)
+- `references/4-feature/01_feature-folders.md` — the altitude below: feature shape, feature seams, merge rule, adapter modules, T3
+- `references/4-feature/03_types-and-contracts.md` — type/DTO placement for both planes
+- `references/4-feature/05_caps-and-extraction.md` — folders-by-feature and the line caps (T5)
 - `references/3-app/03-web-app/00_app-skeleton.md` — the frontend twin (skeleton + feature subdivision)
 - `references/3-app/02-backend/02_two-plane-split.md` — when domains outgrow one backend entirely
 - `references/3-app/00_index.md` — the app-level charter this reference serves

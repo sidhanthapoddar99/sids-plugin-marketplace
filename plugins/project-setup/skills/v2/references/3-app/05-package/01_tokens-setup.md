@@ -2,7 +2,7 @@
 
 Owns the **setup and wiring** of the frontend styling system: what `tokens.css` contains and where it lives, the light/dark `[data-theme]` mechanism and its toggle, and the shadcn + Tailwind config that consumes the tokens. This is the plumbing every app inherits.
 
-The **feature-code usage discipline** — primitive-first composition, the typography usage allowlist, the enforcement greps — is L4 and owned by `references/4-feature/styling-discipline.md`. This file establishes the vocabulary; that file governs how feature code may use it.
+The **feature-code usage discipline** — primitive-first composition, the typography usage allowlist, the enforcement greps — is L4 and owned by `references/4-feature/04_styling-discipline.md`. This file establishes the vocabulary; that file governs how feature code may use it.
 
 ## `tokens.css` — the single source of truth
 
@@ -128,7 +128,7 @@ This default is intentional and conservative — modify per project, but stay wi
 }
 ```
 
-**Lint rule** (biome or custom): forbid hex and raw px in `src/components/**/*.css`. Allowed only in `src/styles/tokens.css` (and the dark-mode block). (`**` here is a lint-config glob the tool expands itself; shell-command checks use the shell-proof `grep -r --include` form owned by `references/4-feature/styling-discipline.md`.) The full feature-code enforcement greps are owned by `styling-discipline.md`.
+**Lint rule** (biome or custom): forbid hex and raw px in `src/components/**/*.css`. Allowed only in `src/styles/tokens.css` (and the dark-mode block). (`**` here is a lint-config glob the tool expands itself; shell-command checks use the shell-proof `grep -r --include` form owned by `references/4-feature/04_styling-discipline.md`.) The full feature-code enforcement greps are owned by `styling-discipline.md`.
 
 ## Typography and spacing are NOT tokens
 
@@ -171,7 +171,7 @@ These are the stock values a project's stylesheet must resolve to (Tailwind's de
 --container-6xl: 72rem;
 ```
 
-**Which of these sizes/weights feature code may actually use** — the per-project allowlist and its anti-patterns — is a **usage** decision owned by `references/4-feature/styling-discipline.md` and declared in the project's CLAUDE.md. Do not restate it here; the vocabulary is set up here, the restraint is applied there.
+**Which of these sizes/weights feature code may actually use** — the per-project allowlist and its anti-patterns — is a **usage** decision owned by `references/4-feature/04_styling-discipline.md` and declared in the project's CLAUDE.md. Do not restate it here; the vocabulary is set up here, the restraint is applied there.
 
 ## Dark mode
 
@@ -355,7 +355,7 @@ export default {
       // deliberately ABSENT — the stock Tailwind scales ship untouched.
       // Remapping standard names (e.g. fontSize.sm → 13px) makes every
       // agent-generated line wrong-by-assumption; the usage allowlist lives
-      // in project CLAUDE.md (see references/4-feature/styling-discipline.md).
+      // in project CLAUDE.md (see references/4-feature/04_styling-discipline.md).
       colors: {
         bg: { 1: "var(--bg-1)", 2: "var(--bg-2)", 3: "var(--bg-3)" },
         fg: { 1: "var(--fg-1)", 2: "var(--fg-2)", 3: "var(--fg-3)" },
@@ -457,7 +457,7 @@ All tokens consumed via Tailwind classes → CSS vars → flips with `data-theme
 
 ## See also
 
-- `references/4-feature/styling-discipline.md` — the feature-code usage discipline this vocabulary feeds: primitive-first rules, the typography usage allowlist, enforcement greps, the CLAUDE.md precedence block.
+- `references/4-feature/04_styling-discipline.md` — the feature-code usage discipline this vocabulary feeds: primitive-first rules, the typography usage allowlist, enforcement greps, the CLAUDE.md precedence block.
 - `references/3-app/05-package/00_shared-packages.md` — `packages/styles` and `packages/ui` internals when multiple frontends share the tokens + primitives.
 - `references/3-app/03-web-app/01_framework-variants.md` — how Next/Astro apply the `data-theme` + SSR-flash mechanism.
 - `references/3-app/03-web-app/00_app-skeleton.md` — where `src/styles/` and `src/components/ui/` sit in the frontend skeleton.

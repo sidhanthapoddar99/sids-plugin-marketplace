@@ -22,7 +22,7 @@ Security- and compliance-relevant actions (login, permission change, data export
 ## Where it sits in the skeleton
 
 - **Request logging + audit** → middleware in the backend `core/` (`references/3-app/02-backend/00_app-skeleton.md`), ahead of / around the handlers.
-- **Telemetry + error tracking** → a **`telemetry` adapter module** — one internal interface, one adapter per provider, behind it. This is the adapter-modules pattern (`references/4-feature/feature-folders.md`): features call `telemetry.track(...)`, never a vendor SDK directly, so the provider is swappable and opt-out is enforced in one place.
+- **Telemetry + error tracking** → a **`telemetry` adapter module** — one internal interface, one adapter per provider, behind it. This is the adapter-modules pattern (`references/4-feature/01_feature-folders.md`): features call `telemetry.track(...)`, never a vendor SDK directly, so the provider is swappable and opt-out is enforced in one place.
 
 ## Product telemetry — as an adapter, opt-out honored
 
@@ -38,7 +38,7 @@ Product analytics goes through the same telemetry adapter. **Honor opt-out** at 
 
 ## See also
 
-- `references/4-feature/feature-folders.md` — the adapter-modules pattern the telemetry adapter uses
+- `references/4-feature/01_feature-folders.md` — the adapter-modules pattern the telemetry adapter uses
 - `references/3-app/02-backend/00_app-skeleton.md` — where request/audit middleware sits (`core/`)
 - `references/3-app/09-security-hardening/00_edge-protection.md` — forwarded-header client IP
 - `references/3-app/09-security-hardening/01_rate-limiting.md` — throttle events worth recording

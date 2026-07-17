@@ -1,6 +1,6 @@
 # Feature folders — the backend feature shape and its seams
 
-The L4 backend feature: what a feature folder contains, what makes something *one* feature (and when two folders are secretly one), how a feature that integrates several external providers is shaped, and when a big feature subdivides without fragmenting. The layer above — grouping features into domains (tripwire T2, naming, aggregator routers) — is L3, owned by `references/3-app/02-backend/01_domain-grouping.md`. Where API contract types actually live is owned by `references/4-feature/types-and-contracts.md`.
+The L4 backend feature: what a feature folder contains, what makes something *one* feature (and when two folders are secretly one), how a feature that integrates several external providers is shaped, and when a big feature subdivides without fragmenting. The layer above — grouping features into domains (tripwire T2, naming, aggregator routers) — is L3, owned by `references/3-app/02-backend/01_domain-grouping.md`. Where API contract types actually live is owned by `references/4-feature/03_types-and-contracts.md`.
 
 ## The feature-folder shape
 
@@ -15,7 +15,7 @@ One feature, one folder, four standard files:
 ```
 
 - **Feature-internal helpers stay feature-scoped.** A util used only inside this feature lives in the feature folder (its own file or a small `helpers.py`), not hoisted to `core/`. Code lives at the lowest level that contains all its consumers.
-- **`models.py`** names the contract file in the shape; *what* goes in it — DTO placement, cross-domain import rules, the raw-SQL "no ORM models" case — is owned by `references/4-feature/types-and-contracts.md`. Don't restate those rules here.
+- **`models.py`** names the contract file in the shape; *what* goes in it — DTO placement, cross-domain import rules, the raw-SQL "no ORM models" case — is owned by `references/4-feature/03_types-and-contracts.md`. Don't restate those rules here.
 - The shape is uniform whether the app is flat (`app/<feature>/`) or grouped (`app/<domain>/<feature>/`). Domains don't change the feature shape — see `references/3-app/02-backend/01_domain-grouping.md`.
 
 ## Feature seams — what is one feature
@@ -55,7 +55,7 @@ A feature folder that keeps the four-file shape stays flat. When it crosses **~1
 - Add an `engine/` subfolder when the generic machinery itself grows past a file or two.
 - The one-feature-one-folder invariant holds throughout: subdivision deepens the folder, it does not fragment the feature.
 
-Crossing T3 obligates either the subdivision or a recorded deferral (one line in CLAUDE.md: what, why, until when) — silent growth is the failure mode. The **frontend twin** of T3 (subdivide a frontend feature by sub-feature or by kind) is owned by `references/4-feature/api-and-pages.md`.
+Crossing T3 obligates either the subdivision or a recorded deferral (one line in CLAUDE.md: what, why, until when) — silent growth is the failure mode. The **frontend twin** of T3 (subdivide a frontend feature by sub-feature or by kind) is owned by `references/4-feature/02_api-and-pages.md`.
 
 ## Audit checks
 
@@ -75,7 +75,7 @@ Crossing T3 obligates either the subdivision or a recorded deferral (one line in
 ## See also
 
 - `references/3-app/02-backend/01_domain-grouping.md` — the altitude above: grouping features into domains (T2), naming, aggregator routers, domain-shared placement
-- `references/4-feature/types-and-contracts.md` — what lives in `models.py`; no cross-domain DTO imports; no shared models package
-- `references/4-feature/api-and-pages.md` — the frontend twin: feature subdivision (T3), `api/` internals, thin pages (T6)
-- `references/4-feature/caps-and-extraction.md` — file caps (T5), rule of three (T9), folders-by-feature, test co-location
+- `references/4-feature/03_types-and-contracts.md` — what lives in `models.py`; no cross-domain DTO imports; no shared models package
+- `references/4-feature/02_api-and-pages.md` — the frontend twin: feature subdivision (T3), `api/` internals, thin pages (T6)
+- `references/4-feature/05_caps-and-extraction.md` — file caps (T5), rule of three (T9), folders-by-feature, test co-location
 - `references/4-feature/00_charter.md` — the L4 charter this reference serves

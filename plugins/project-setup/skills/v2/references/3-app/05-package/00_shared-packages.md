@@ -51,7 +51,7 @@ packages/ui/
 
 - **UI package**: flat `src/<component>.tsx` while under ~15 components; past that, group by component family (`src/forms/`, `src/overlays/`) — **tripwire T4** below.
 - **Services / types packages**: one folder (or file) per domain area, **mirroring the owning backend's domain names** where a mapping exists, so the contract surfaces stay findable by the same vocabulary end to end.
-- The same **T5 line caps apply** — shared code gets no exemption (owned by `references/4-feature/caps-and-extraction.md`).
+- The same **T5 line caps apply** — shared code gets no exemption (owned by `references/4-feature/05_caps-and-extraction.md`).
 
 ## The export surface
 
@@ -163,7 +163,7 @@ export default {
 
 ## Type packages
 
-`packages/types` holds **cross-app entity types** and types codegen'd from the backend; an app's `api/` may re-export them, never redefine them. The full type/DTO placement doctrine (zod-inferred API types, no cross-domain imports, no `types.ts` dump, both planes) is owned by `references/4-feature/types-and-contracts.md` — this file only fixes that the *package* is where cross-app types sit.
+`packages/types` holds **cross-app entity types** and types codegen'd from the backend; an app's `api/` may re-export them, never redefine them. The full type/DTO placement doctrine (zod-inferred API types, no cross-domain imports, no `types.ts` dump, both planes) is owned by `references/4-feature/03_types-and-contracts.md` — this file only fixes that the *package* is where cross-app types sit.
 
 ## Tripwire T4 — flat components in a ui package
 
@@ -182,9 +182,9 @@ A ui package with **~15 components flat** in `src/` has outgrown a flat pile —
 
 - One mega `packages/shared` containing everything — split by concern.
 - Business logic or state in `packages/utils` / `packages/ui` — keep packages reusable, stateless, presentational.
-- Per-app duplication of the same component — extract on third use (tripwire T9, `references/4-feature/caps-and-extraction.md`).
+- Per-app duplication of the same component — extract on third use (tripwire T9, `references/4-feature/05_caps-and-extraction.md`).
 - A package pulling heavy deps consumed by only one app — keep packages slim.
-- Hand-written response types living in `packages/types` next to the backend — infer/codegen instead (see `references/4-feature/types-and-contracts.md`).
+- Hand-written response types living in `packages/types` next to the backend — infer/codegen instead (see `references/4-feature/03_types-and-contracts.md`).
 
 ## See also
 
@@ -192,6 +192,6 @@ A ui package with **~15 components flat** in `src/` has outgrown a flat pile —
 - `references/3-app/01-structure-and-stack/02_workspaces-mechanics.md` — root manifest, `catalog:`, `turbo.json`, `ctl`
 - `references/3-app/03-web-app/00_app-skeleton.md` — the app `src/` skeleton + workspace reconciliation (never both local and package)
 - `references/3-app/05-package/01_tokens-setup.md` — `tokens.css`, light/dark, typography policy the tailwind preset defers to
-- `references/4-feature/types-and-contracts.md` — full type/DTO placement doctrine
-- `references/4-feature/caps-and-extraction.md` — file caps (T5), extract-on-third-use (T9)
+- `references/4-feature/03_types-and-contracts.md` — full type/DTO placement doctrine
+- `references/4-feature/05_caps-and-extraction.md` — file caps (T5), extract-on-third-use (T9)
 - `references/00_altitude-model.md` — master tripwire table (T4)

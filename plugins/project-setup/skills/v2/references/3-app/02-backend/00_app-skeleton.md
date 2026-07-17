@@ -123,7 +123,7 @@ asyncio_mode = "auto"
 
 No `src/`. The service runs from its own root, so `app.main:app` resolves with no `PYTHONPATH` plumbing. This matches the official full-stack FastAPI template.
 
-**Firm names at this altitude:** `main.py` (the app object), `core/` (app-wide config / db session / shared dependencies), and one folder per feature. **Below the feature folder the shape is owned elsewhere:** the `{router,service,repository,models}.py` contract lives in `references/4-feature/feature-folders.md`; when to flatten features into `app/<domain>/<feature>/` (tripwire T2) and how domains are named lives in `references/3-app/02-backend/01_domain-grouping.md`.
+**Firm names at this altitude:** `main.py` (the app object), `core/` (app-wide config / db session / shared dependencies), and one folder per feature. **Below the feature folder the shape is owned elsewhere:** the `{router,service,repository,models}.py` contract lives in `references/4-feature/01_feature-folders.md`; when to flatten features into `app/<domain>/<feature>/` (tripwire T2) and how domains are named lives in `references/3-app/02-backend/01_domain-grouping.md`.
 
 ## The top-level skeleton — distributable package (only when it's actually shipped)
 
@@ -191,7 +191,7 @@ ML repos use a deliberately different flow (broad `requirements.txt`, one shared
 ## See also
 
 - `references/3-app/02-backend/01_domain-grouping.md` — feature → domain grouping (T2), domain naming
-- `references/4-feature/feature-folders.md` — the `{router,service,repository,models}.py` contract
+- `references/4-feature/01_feature-folders.md` — the `{router,service,repository,models}.py` contract
 - `references/3-app/04-database/01_migrations.md` — Alembic vs raw-SQL and the migration owner
 - `references/3-app/10-deployment/00_serving.md` — production worker model (gunicorn CMD)
 - `references/3-app/02-backend/03_ml-python-flow.md` — the ML flow this is deliberately different from

@@ -176,7 +176,7 @@ ctl help
 | `docker/compose.yaml` for demo deps | `references/2-repo/04-docker/00_docker-overview.md` |
 | `ctl` + `scripts/` conformance floor | `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` |
 | Root manifest orchestration-only (T10), `.gitignore` | `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` |
-| `ui/` primitive-first styling, `theme` token overrides | `references/4-feature/styling-discipline.md`, `references/3-app/05-package/01_tokens-setup.md` |
+| `ui/` primitive-first styling, `theme` token overrides | `references/4-feature/04_styling-discipline.md`, `references/3-app/05-package/01_tokens-setup.md` |
 | Recorded variant choices + styling block in CLAUDE.md | `references/handoffs/claude-folder.md` |
 
 ## See also

@@ -4,7 +4,7 @@ Conventions for LLM and agent-integration code living inside an app. The governi
 
 ## It is a provider boundary — reuse the adapter-modules pattern
 
-One adapter module per provider, behind one internal interface. This is the **same adapter-modules pattern** the modularity doctrine prescribes for N interchangeable providers — the `base.py` contract, the self-contained per-provider folder, the generic engine that reads adapters only through the contract. That pattern is owned by `references/4-feature/feature-folders.md` § adapter-modules; do not restate its rules here, apply them:
+One adapter module per provider, behind one internal interface. This is the **same adapter-modules pattern** the modularity doctrine prescribes for N interchangeable providers — the `base.py` contract, the self-contained per-provider folder, the generic engine that reads adapters only through the contract. That pattern is owned by `references/4-feature/01_feature-folders.md` § adapter-modules; do not restate its rules here, apply them:
 
 - The provider-agnostic engine (your agent loop, your orchestration) talks to an internal `LLMClient`/`base` interface.
 - Each provider (Anthropic, others) is a self-contained adapter mapping its API to that interface.
@@ -22,7 +22,7 @@ Isolate streaming, tool-call dispatch, and ret/backoff inside the adapter — th
 
 ## Evals and fixtures
 
-Model-dependent behaviour needs regression coverage. Place evals/fixtures beside the feature's tests (`tests/evals/`, recorded prompt→expected-shape cases), co-located per L4 (`references/4-feature/caps-and-extraction.md`). Keep a small set of golden cases that must pass before a prompt or model change ships.
+Model-dependent behaviour needs regression coverage. Place evals/fixtures beside the feature's tests (`tests/evals/`, recorded prompt→expected-shape cases), co-located per L4 (`references/4-feature/05_caps-and-extraction.md`). Keep a small set of golden cases that must pass before a prompt or model change ships.
 
 ## SDK choices — typed defaults
 
@@ -44,7 +44,7 @@ Model IDs and generation params (temperature, max tokens, model name) live in **
 
 ## See also
 
-- `references/4-feature/feature-folders.md` — the adapter-modules pattern this reuses (owner)
+- `references/4-feature/01_feature-folders.md` — the adapter-modules pattern this reuses (owner)
 - `references/3-app/08-ai/00_mcp-servers.md` — MCP servers (a related tool-surface boundary)
 - `references/3-app/08-ai/02_ai-keys-and-safety.md` — key usage, proxy route, prompt-injection posture
 - `references/2-repo/03-env-config/01_per-service-config.md` — model IDs/params in config

@@ -33,7 +33,7 @@ The set of tools an MCP server exposes **is its contract**, exactly like an API.
 
 ## Anti-patterns
 
-- **Business logic in the MCP layer** — the server should call the app's existing service layer, not reimplement it. The MCP handler is a thin adapter over `service.py`, mirroring the router/service split (`references/4-feature/feature-folders.md`).
+- **Business logic in the MCP layer** — the server should call the app's existing service layer, not reimplement it. The MCP handler is a thin adapter over `service.py`, mirroring the router/service split (`references/4-feature/01_feature-folders.md`).
 - **Unpinned third-party MCP servers** — a floating version silently changes the available tools.
 - **Committing a token into `.mcp.json`** — reference an env var instead.
 - **A single mega-tool** that takes a free-form command — expose discrete, typed tools, not an exec passthrough.

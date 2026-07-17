@@ -45,7 +45,7 @@ Each service/app folder owns its `README.md`, dependency manifest (`requirements
 
 ## ⚠️ VERY IMPORTANT — frontend styling precedence
 
-**If the repo has a `tokens.css` + a ui package, the styling discipline (`references/4-feature/styling-discipline.md`) OVERRIDES any general design guidance — including the `frontend-design` skill. Do not follow "be bold / unique / never converge" instructions in feature work. Convergence IS the design.**
+**If the repo has a `tokens.css` + a ui package, the styling discipline (`references/4-feature/04_styling-discipline.md`) OVERRIDES any general design guidance — including the `frontend-design` skill. Do not follow "be bold / unique / never converge" instructions in feature work. Convergence IS the design.**
 
 **Whenever you bootstrap such a repo (or apply changes in suggest mode), WRITE the "Styling discipline" block from `assets/snippets/claude/CLAUDE.md.template` into the project's CLAUDE.md** (names resolved to the project's real ui package and paths). In read-only audit mode, don't edit — flag a missing block as a **red** finding. CLAUDE.md is always in context while skills are not, so the project memory file is the only thing that makes the discipline hold for every future agent, including parallel workers and weak models that never load this skill.
 
@@ -104,7 +104,7 @@ For every layout, the same cross-cutting conventions apply (layout-specific adju
 
 - `references/2-repo/06-runtime-environment/` — **start at `00_runtime-triad.md`**, the one map of how mise + `ctl` + docker + env interact; the docker files (`references/2-repo/04-docker/`) and `ctl`/tooling files (`references/2-repo/05-ctl-scripts-tooling/`) hang off it.
 - `references/2-repo/07-ml-orchestration/` — start at `00_custom-orchestrator.md`.
-- `references/3-app/03-web-app/` + `references/3-app/05-package/` + `references/4-feature/` — any styling surface **must include `references/4-feature/styling-discipline.md`** (see ⚠️ above).
+- `references/3-app/03-web-app/` + `references/3-app/05-package/` + `references/4-feature/` — any styling surface **must include `references/4-feature/04_styling-discipline.md`** (see ⚠️ above).
 - `references/3-app/08-ai/` — only when the product touches LLMs; keys are backend-only via a proxy route (`references/3-app/08-ai/02_ai-keys-and-safety.md`). `references/3-app/09-security-hardening/` — edge/captcha, app-owned rate limits, telemetry+audit (edge infra itself stays L2).
 - Docs are a handoff, not our work — see `references/1-ecosystem/docs-placement.md` (the docs plugin is now `agent-ks`, scaffolded via `/agent-ks-init`).
 - Versions in all references are illustrative — check latest stable and let the user pick.
@@ -125,7 +125,7 @@ When the mode is `audit` or `suggest`:
    - **L1** (`references/1-ecosystem/00_charter.md`): siblings/roles stated in CLAUDE.md when siblings exist; cross-repo sharing pinned; one docs home.
    - **L2** (`references/2-repo/00_index.md`): root contract (loose code at root, runtime deps in a root manifest = T10, polyglot repo with a root-rooted workspace, missing/incomplete `.gitignore`, tracked `.env` = red); **`ctl` conformance floor** — `_lib.sh` sourced, `scripts/common/` present, verbs routed to workers; a single-file `ctl` with inlined bodies = **red**; compose axes (ports in base, profiles without a recorded escalation); env split; README three paths.
    - **L3** (`references/3-app/00_index.md`): **count** feature folders per app (T2) and files per feature folder (T3) — crossings with no recorded deferral = findings; frontend skeleton presence (`pages/`, `api/` in a grown app); local `ui`/`styles` duplicating workspace packages = red; migration ownership (two backends sharing DDL, migrations-on-boot in a two-backend repo = red — `references/3-app/02-backend/02_two-plane-split.md`).
-   - **L4** (`references/4-feature/00_charter.md`): the mechanical greps — server calls outside `api/`, and (when `tokens.css` + a ui package exist) the styling-discipline greps from `references/4-feature/styling-discipline.md`; file caps (T5); a missing styling block in CLAUDE.md = **red**, because nothing else holds the line for future agents.
+   - **L4** (`references/4-feature/00_charter.md`): the mechanical greps — server calls outside `api/`, and (when `tokens.css` + a ui package exist) the styling-discipline greps from `references/4-feature/04_styling-discipline.md`; file caps (T5); a missing styling block in CLAUDE.md = **red**, because nothing else holds the line for future agents.
 4. For each convention area, list findings tagged by level:
    - **Matches** (green) — what's already aligned
    - **Drift** (yellow) — minor deviations
@@ -272,11 +272,11 @@ references/
 │
 ├── 4-feature/                      # L4: folders, files, content — delivered via CLAUDE.md blocks, never asked
 │   ├── 00_charter.md               # L4 index, delivery mechanism (CLAUDE.md blocks), mechanical audit greps, hands-back-up rule
-│   ├── feature-folders.md          # {router,service,repository,models}.py shape, feature seams, adapter-modules, backend subdivision (T3 backend)
-│   ├── api-and-pages.md            # api/ internals (endpoints, zod, error norm, query keys, domain mirroring), thin pages (T6), URL mirroring, fetch grep, frontend subdivision (T3 frontend)
-│   ├── types-and-contracts.md      # ALL type/DTO placement, both planes: models.py DTOs, no cross-domain imports, zod-inferred types, packages/types re-export
-│   ├── styling-discipline.md       # ★ HARD RULES: primitive-first feature code, tokens only, stock vocabulary + allowlist, fold-on-second (T8) → into project CLAUDE.md
-│   └── caps-and-extraction.md      # 500/300 caps (T5), rule of three (T9) / rule of two styling (T8 cite), folders-by-feature + kind-folder exceptions, test co-location
+│   ├── 01_feature-folders.md       # {router,service,repository,models}.py shape, feature seams, adapter-modules, backend subdivision (T3 backend)
+│   ├── 02_api-and-pages.md         # api/ internals (endpoints, zod, error norm, query keys, domain mirroring), thin pages (T6), URL mirroring, fetch grep, frontend subdivision (T3 frontend)
+│   ├── 03_types-and-contracts.md   # ALL type/DTO placement, both planes: models.py DTOs, no cross-domain imports, zod-inferred types, packages/types re-export
+│   ├── 04_styling-discipline.md    # ★ HARD RULES: primitive-first feature code, tokens only, stock vocabulary + allowlist, fold-on-second (T8) → into project CLAUDE.md
+│   └── 05_caps-and-extraction.md   # 500/300 caps (T5), rule of three (T9) / rule of two styling (T8 cite), folders-by-feature + kind-folder exceptions, test co-location
 │
 ├── 5-examples/                     # complete ANONYMIZED annotated project trees; each ends with "which references govern each part"
 │   ├── 00_index.md                 # what the examples are, how to read them, mapping example ↔ layout ↔ key variants

@@ -112,9 +112,9 @@ public/           # static assets served as-is
 | `styles/` | All CSS. Contents + discipline owned by `references/3-app/05-package/01_tokens-setup.md`. Replaced by `packages/styles` in a workspace. |
 | `layout/` | App shells. Each shell subdivides into its own folder once it outgrows one file (see below). |
 | `components/ui/` | shadcn primitives + wrappers — standalone apps only. Edit freely (copy-not-import). Graduates to `packages/ui` in a workspace. |
-| `features/` | Per-feature substance. Folders by feature; subdivision (tripwire T3) + internals owned by `references/4-feature/api-and-pages.md`. |
-| `pages/` | Thin route components mirroring the URL tree; compose from `features/`. Thinness (tripwire T6) owned by `references/4-feature/api-and-pages.md`. |
-| `api/` | The only place server communication lives. Endpoint/zod/error/query-key doctrine owned by `references/4-feature/api-and-pages.md`. |
+| `features/` | Per-feature substance. Folders by feature; subdivision (tripwire T3) + internals owned by `references/4-feature/02_api-and-pages.md`. |
+| `pages/` | Thin route components mirroring the URL tree; compose from `features/`. Thinness (tripwire T6) owned by `references/4-feature/02_api-and-pages.md`. |
+| `api/` | The only place server communication lives. Endpoint/zod/error/query-key doctrine owned by `references/4-feature/02_api-and-pages.md`. |
 
 Context providers co-locate with what they provide (theme → `layout/` or the ui package; session → `api/` or the services package). No `context/` catch-all folder — it's a kind-folder.
 
@@ -194,11 +194,11 @@ Both variants are legitimate — the rule is **never both**. A local `components
 
 ## See also
 
-- `references/4-feature/api-and-pages.md` — `api/` internals (endpoints, zod, error norm, query keys, fetch grep), `pages/` vs `features/`, tripwires T3/T6
-- `references/4-feature/types-and-contracts.md` — where every kind of type/DTO lives
+- `references/4-feature/02_api-and-pages.md` — `api/` internals (endpoints, zod, error norm, query keys, fetch grep), `pages/` vs `features/`, tripwires T3/T6
+- `references/4-feature/03_types-and-contracts.md` — where every kind of type/DTO lives
 - `references/3-app/05-package/01_tokens-setup.md` — `styles/` contents, light/dark data-attr, shadcn/tailwind wiring
 - `references/3-app/05-package/00_shared-packages.md` — package internals + export surface (T4)
 - `references/3-app/01-structure-and-stack/02_workspaces-mechanics.md` — pnpm/turbo/bun config bodies, `ctl` shape
 - `references/2-repo/01-layouts/00_grouping-topology.md` — app slots, workspace rooting, package placement
-- `references/4-feature/styling-discipline.md` — the primitive-first styling rules feature code lives under
+- `references/4-feature/04_styling-discipline.md` — the primitive-first styling rules feature code lives under
 - `references/3-app/00_index.md` — the L3 app charter this reference serves

@@ -100,11 +100,11 @@ The former `07-platform/` also held DB-provisioning, mobile, desktop, and PWA �
 | v2 path | Owns | Sources |
 |---|---|---|
 | `00_charter.md` | L4 index, the delivery mechanism (CLAUDE.md blocks), mechanical audit greps, hands-back-up rule | `levels/04_feature.md` |
-| `feature-folders.md` | `{router,service,repository,models}.py` shape, feature seams (lifecycle boundaries, merge rule), adapter-modules pattern, T3 subdivision (backend) | `domain-grouping-tripwire.md` (L4 half) |
-| `api-and-pages.md` | `api/` internals (endpoints, zod, error norm, query keys, domain mirroring, T6 thin pages, URL mirroring, fetch grep) + frontend feature subdivision | `intra-app-structure.md` (L4 half) |
-| `types-and-contracts.md` | ALL type/DTO placement, both planes: models.py DTOs, no cross-domain imports, no shared models pkg, zod-inferred types, packages/types re-export, no types.ts dump | `domain-grouping-tripwire.md` § DTO + `intra-app-structure.md` § types |
-| `styling-discipline.md` | the primitive-first hard rules + precedence + greps (unchanged in substance) | `architecture/frontend/styling-discipline.md` |
-| `caps-and-extraction.md` | 500/300 caps (T5), rule of three (T9) / rule of two styling (T8), folders-by-feature rule + kind-folder exceptions, test co-location | `modularity/file-size-caps.md` + `extract-on-third-use.md` + `folders-by-feature.md` |
+| `01_feature-folders.md` | `{router,service,repository,models}.py` shape, feature seams (lifecycle boundaries, merge rule), adapter-modules pattern, T3 subdivision (backend) | `domain-grouping-tripwire.md` (L4 half) |
+| `02_api-and-pages.md` | `api/` internals (endpoints, zod, error norm, query keys, domain mirroring, T6 thin pages, URL mirroring, fetch grep) + frontend feature subdivision | `intra-app-structure.md` (L4 half) |
+| `03_types-and-contracts.md` | ALL type/DTO placement, both planes: models.py DTOs, no cross-domain imports, no shared models pkg, zod-inferred types, packages/types re-export, no types.ts dump | `domain-grouping-tripwire.md` § DTO + `intra-app-structure.md` § types |
+| `04_styling-discipline.md` | the primitive-first hard rules + precedence + greps (unchanged in substance) | `architecture/frontend/styling-discipline.md` |
+| `05_caps-and-extraction.md` | 500/300 caps (T5), rule of three (T9) / rule of two styling (T8), folders-by-feature rule + kind-folder exceptions, test co-location | `modularity/file-size-caps.md` + `extract-on-third-use.md` + `folders-by-feature.md` |
 
 ### 5-examples/
 

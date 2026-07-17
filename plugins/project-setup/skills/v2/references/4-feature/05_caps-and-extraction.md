@@ -100,7 +100,7 @@ The one-line form for a project CLAUDE.md: *"Three usages of similar code is the
 
 ## Rule of two for styling (T8)
 
-The styling counterpart to the rule of three: **the same utility combination appearing twice → fold it into a ui-package primitive variant** before continuing. The threshold is 2, not 3, because a utility string is cheaper to extract than a logic abstraction, and styling duplication is where agent visual drift starts. This is the family-member number; the styling-specific mechanics (which primitive, CVA variants, the grep checks, the CLAUDE.md precedence over `frontend-design`) are owned by `references/4-feature/styling-discipline.md`.
+The styling counterpart to the rule of three: **the same utility combination appearing twice → fold it into a ui-package primitive variant** before continuing. The threshold is 2, not 3, because a utility string is cheaper to extract than a logic abstraction, and styling duplication is where agent visual drift starts. This is the family-member number; the styling-specific mechanics (which primitive, CVA variants, the grep checks, the CLAUDE.md precedence over `frontend-design`) are owned by `references/4-feature/04_styling-discipline.md`.
 
 ## Folders by feature, not by kind
 
@@ -209,9 +209,9 @@ The rule scales up: a workspace's `crates/` (or `packages/`) can be pure feature
 
 ## The domain-layer ceiling
 
-Feature folders are the organising unit up to the domain tripwire (T2). Past it — or once the product's domain model settles — the flat list itself stops communicating the product, and a **domain layer** goes above it: `app/<domain>/<feature>/`. The threshold, naming rules, and grouping mechanics are owned by `references/3-app/02-backend/01_domain-grouping.md`; feature-seam boundaries and the adapter-modules pattern by `references/4-feature/feature-folders.md`.
+Feature folders are the organising unit up to the domain tripwire (T2). Past it — or once the product's domain model settles — the flat list itself stops communicating the product, and a **domain layer** goes above it: `app/<domain>/<feature>/`. The threshold, naming rules, and grouping mechanics are owned by `references/3-app/02-backend/01_domain-grouping.md`; feature-seam boundaries and the adapter-modules pattern by `references/4-feature/01_feature-folders.md`.
 
-Feature folders also subdivide **internally** at tripwire T3: backend feature-folder internals are owned by `references/4-feature/feature-folders.md`; the frontend twin (`api/`, thin `pages/`) by `references/4-feature/api-and-pages.md`.
+Feature folders also subdivide **internally** at tripwire T3: backend feature-folder internals are owned by `references/4-feature/01_feature-folders.md`; the frontend twin (`api/`, thin `pages/`) by `references/4-feature/02_api-and-pages.md`.
 
 ## Audit checks
 
@@ -236,7 +236,7 @@ Feature folders also subdivide **internally** at tripwire T3: backend feature-fo
 ## See also
 
 - `references/3-app/02-backend/01_domain-grouping.md` — the domain-layer ceiling (T2), naming, feature seams
-- `references/4-feature/feature-folders.md` — backend feature-folder internals + subdivision (T3)
-- `references/4-feature/api-and-pages.md` — frontend feature subdivision, thin pages (T6)
-- `references/4-feature/styling-discipline.md` — the styling-specific side of T8 (primitive variants, greps)
+- `references/4-feature/01_feature-folders.md` — backend feature-folder internals + subdivision (T3)
+- `references/4-feature/02_api-and-pages.md` — frontend feature subdivision, thin pages (T6)
+- `references/4-feature/04_styling-discipline.md` — the styling-specific side of T8 (primitive variants, greps)
 - `references/handoffs/examples-registry.md` — registered repos illustrating feature-folder layouts

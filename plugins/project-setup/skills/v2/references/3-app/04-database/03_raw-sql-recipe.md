@@ -144,5 +144,5 @@ Drift fails locally before code lands. **The rule:** the consuming language neve
 - `references/3-app/04-database/01_migrations.md` — when to choose this style (and the run-model decision)
 - `references/3-app/04-database/02_alembic-recipe.md` — the shared Alembic base (`env.py`, `alembic.ini`, entrypoint)
 - `references/3-app/02-backend/02_two-plane-split.md` — when two backends share one DB, these files live in a neutral `apps/db` app
-- `references/4-feature/types-and-contracts.md` — the per-consumer DTO rules (each language declares its own against the schema)
+- `references/4-feature/03_types-and-contracts.md` — the per-consumer DTO rules (each language declares its own against the schema)
 - `references/handoffs/examples-registry.md` — cite a registered repo using this pattern if one exists
