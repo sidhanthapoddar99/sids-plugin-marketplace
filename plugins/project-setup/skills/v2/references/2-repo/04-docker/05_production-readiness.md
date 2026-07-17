@@ -1,6 +1,6 @@
 # Production readiness checklist
 
-The "before you deploy" list — everything around the app server that separates a dev stack from a production-grade one: health checks, graceful shutdown, restart policy, resource limits, logging, migrations-on-deploy, reverse-proxy hardening, and observability. The **per-language worker model** (gunicorn workers, recycling, timeouts) is owned by `references/3-app/backend/serving.md` — cited by link below, not restated here.
+The "before you deploy" list — everything around the app server that separates a dev stack from a production-grade one: health checks, graceful shutdown, restart policy, resource limits, logging, migrations-on-deploy, reverse-proxy hardening, and observability. The **per-language worker model** (gunicorn workers, recycling, timeouts) is owned by `references/3-app/10-deployment/00_serving.md` — cited by link below, not restated here.
 
 ## Health checks — liveness vs readiness
 
@@ -59,7 +59,7 @@ On `SIGTERM` (what `docker stop` / orchestrator rollout sends), the app must:
 3. Close DB / redis pools cleanly
 4. Exit 0
 
-Gunicorn handles 1–2 via `--graceful-timeout` (worker model owned by `references/3-app/backend/serving.md`). For app-level cleanup (closing pools), use lifespan hooks:
+Gunicorn handles 1–2 via `--graceful-timeout` (worker model owned by `references/3-app/10-deployment/00_serving.md`). For app-level cleanup (closing pools), use lifespan hooks:
 
 ```python
 from contextlib import asynccontextmanager
@@ -114,7 +114,7 @@ services:
 ```
 
 - **Set memory limits** — an unbounded leak takes down the whole host otherwise. With a limit, the container OOMs alone and restarts.
-- **Match worker count to CPU limit** — owned by `references/3-app/backend/serving.md`.
+- **Match worker count to CPU limit** — owned by `references/3-app/10-deployment/00_serving.md`.
 - Stateful services (postgres) need higher, deliberately-chosen limits — don't starve the DB.
 
 ## Logging
@@ -136,7 +136,7 @@ logging.basicConfig(
 
 ## Migrations on deploy
 
-Which run model applies — entrypoint-migrates (single replica) vs one-shot (N replicas) vs neutral `apps/db` owner — is owned by `references/3-app/backend/migrations.md`; the single-replica entrypoint recipe by `references/3-app/backend/alembic-recipe.md` § "Docker entrypoint — the container migrates itself". This file owns the multi-replica **one-shot** mechanics: never let N replicas race `upgrade head` on boot — run migrations once, as a gate the app `depends_on`:
+Which run model applies — entrypoint-migrates (single replica) vs one-shot (N replicas) vs neutral `apps/db` owner — is owned by `references/3-app/04-database/01_migrations.md`; the single-replica entrypoint recipe by `references/3-app/04-database/02_alembic-recipe.md` § "Docker entrypoint — the container migrates itself". This file owns the multi-replica **one-shot** mechanics: never let N replicas race `upgrade head` on boot — run migrations once, as a gate the app `depends_on`:
 
 ```yaml
 # docker/compose.prod.yaml — a one-shot migrate service
@@ -166,7 +166,7 @@ services:
 - Security headers (HSTS, X-Content-Type-Options, etc.)
 - Gzip / brotli for text responses
 
-(The `/api/*` routing contract and expose posture are owned by `references/2-repo/deployment/proxy-and-exposure.md`.)
+(The `/api/*` routing contract and expose posture are owned by `references/2-repo/04-docker/04_proxy-and-exposure.md`.)
 
 ## Observability (the next step, not day-one)
 
@@ -210,9 +210,9 @@ The skill can drop this checklist into `docs/` or the README's Deploy section.
 
 ## See also
 
-- `references/3-app/backend/serving.md` — worker / recycling / timeout detail (worker model owner)
-- `references/2-repo/deployment/proxy-and-exposure.md` — `/api/*` contract, nginx/Traefik front door
-- `references/2-repo/env-and-config/secrets-matrix.md` — prod secrets handling
-- `references/2-repo/runtime/docker-overview.md` — the prod config (standalone)
-- `references/3-app/backend/migrations.md` — the migration run-model decision this section implements
-- `references/3-app/backend/alembic-recipe.md` — migration mechanics
+- `references/3-app/10-deployment/00_serving.md` — worker / recycling / timeout detail (worker model owner)
+- `references/2-repo/04-docker/04_proxy-and-exposure.md` — `/api/*` contract, nginx/Traefik front door
+- `references/2-repo/03-env-config/03_secrets-matrix.md` — prod secrets handling
+- `references/2-repo/04-docker/00_docker-overview.md` — the prod config (standalone)
+- `references/3-app/04-database/01_migrations.md` — the migration run-model decision this section implements
+- `references/3-app/04-database/02_alembic-recipe.md` — migration mechanics

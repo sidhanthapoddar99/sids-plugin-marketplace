@@ -1,6 +1,6 @@
 # Proxy and exposure — the `/api/*` contract
 
-Owns the front-door routing contract: every backend route lives under `/api/*`, Vite proxies it in dev, nginx routes it in prod, and the reverse proxy is the sole entry point. Same URL contract in both environments, so frontend code never knows which one it's in. The compose expose-tier mechanics (`compose.m.expose*.yaml`, the Traefik modifier) are owned by `references/2-repo/runtime/docker-overview.md`; this file owns the *posture* those tiers implement.
+Owns the front-door routing contract: every backend route lives under `/api/*`, Vite proxies it in dev, nginx routes it in prod, and the reverse proxy is the sole entry point. Same URL contract in both environments, so frontend code never knows which one it's in. The compose expose-tier mechanics (`compose.m.expose*.yaml`, the Traefik modifier) are owned by `references/2-repo/04-docker/00_docker-overview.md`; this file owns the *posture* those tiers implement.
 
 ## The `/api/*` rule
 
@@ -99,7 +99,7 @@ export default defineConfig(({ mode }) => {
 
 Frontend code calls `/api/users` — Vite intercepts and forwards to `http://localhost:8000/api/users`. No CORS, no `VITE_API_URL` per environment.
 
-> Vite has no server runtime, so the proxy target lives in build/dev env that is effectively client-adjacent. With Next.js the equivalent proxy (`next.config` `rewrites()`) runs server-side and can use server-only env. See the Vite-vs-Next env-split comparison in `references/2-repo/env-and-config/frontend-env-isolation.md`.
+> Vite has no server runtime, so the proxy target lives in build/dev env that is effectively client-adjacent. With Next.js the equivalent proxy (`next.config` `rewrites()`) runs server-side and can use server-only env. See the Vite-vs-Next env-split comparison in `references/2-repo/03-env-config/02_frontend-env-isolation.md`.
 
 ## Prod — nginx routing
 
@@ -149,7 +149,7 @@ http {
 
 The frontend bundle is built into `/usr/share/nginx/html` by the frontend's Dockerfile; nginx serves it and proxies `/api/*` to the backend container.
 
-> **In-stack only.** The literal `upstream`/`proxy_pass` above resolves `backend` **once at nginx startup** — safe here because `depends_on` guarantees the container exists. If nginx proxies to a service in *another* compose stack (shared network across repos), a down upstream makes nginx crash-loop with `[emerg] host not found in upstream`. Use the `resolver` + variable `proxy_pass` pattern in `references/2-repo/runtime/multi-stack.md` instead.
+> **In-stack only.** The literal `upstream`/`proxy_pass` above resolves `backend` **once at nginx startup** — safe here because `depends_on` guarantees the container exists. If nginx proxies to a service in *another* compose stack (shared network across repos), a down upstream makes nginx crash-loop with `[emerg] host not found in upstream`. Use the `resolver` + variable `proxy_pass` pattern in `references/2-repo/04-docker/03_multi-stack.md` instead.
 
 ### Frontend Dockerfile (multi-stage)
 
@@ -225,7 +225,7 @@ The reverse proxy is the **sole entry point**. The base compose is port-less; yo
 | All exposed | every service | debugging — talk to a service directly, bypassing nginx |
 | Traefik ingress | edge joins a shared external Traefik net | production ingress behind a shared Traefik |
 
-These postures are implemented by the tiered `expose` / `expose_data` / `expose_all` / `traefik` compose **modifiers** — the file bodies, the `ctl up --modifier` mechanics, and the rationale for tiering live in `references/2-repo/runtime/docker-overview.md`. Don't restate them here; this file only fixes the posture (edge is the front door, everything else opts in).
+These postures are implemented by the tiered `expose` / `expose_data` / `expose_all` / `traefik` compose **modifiers** — the file bodies, the `ctl up --modifier` mechanics, and the rationale for tiering live in `references/2-repo/04-docker/00_docker-overview.md`. Don't restate them here; this file only fixes the posture (edge is the front door, everything else opts in).
 
 ## When the `/api/*` rule bends
 
@@ -243,13 +243,13 @@ These postures are implemented by the tiered `expose` / `expose_data` / `expose_
 - Forgetting WebSocket upgrade headers in nginx — sync silently breaks
 - Proxying `/api` to a host different from where nginx serves — CORS reappears
 - Serving the frontend from the backend (e.g. FastAPI + StaticFiles) — slower in prod, mixes concerns; use nginx
-- A literal `proxy_pass` to a service in **another** compose stack — startup-time DNS resolution crash-loops when that stack is down; see `references/2-repo/runtime/multi-stack.md`
+- A literal `proxy_pass` to a service in **another** compose stack — startup-time DNS resolution crash-loops when that stack is down; see `references/2-repo/04-docker/03_multi-stack.md`
 - Publishing every service by default — over-exposes; keep the edge the sole entry point
 
 ## See also
 
-- `references/2-repo/runtime/docker-overview.md` — expose-tier modifiers + Traefik modifier mechanics
-- `references/2-repo/runtime/multi-stack.md` — cross-stack nginx `resolver` pattern
-- `references/2-repo/env-and-config/frontend-env-isolation.md` — Vite vs Next env split
-- `references/2-repo/deployment/production-readiness.md` — reverse-proxy hardening (TLS, limits, timeouts)
-- `references/3-app/backend/serving.md` — the app-server workers nginx sits in front of
+- `references/2-repo/04-docker/00_docker-overview.md` — expose-tier modifiers + Traefik modifier mechanics
+- `references/2-repo/04-docker/03_multi-stack.md` — cross-stack nginx `resolver` pattern
+- `references/2-repo/03-env-config/02_frontend-env-isolation.md` — Vite vs Next env split
+- `references/2-repo/04-docker/05_production-readiness.md` — reverse-proxy hardening (TLS, limits, timeouts)
+- `references/3-app/10-deployment/00_serving.md` — the app-server workers nginx sits in front of

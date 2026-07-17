@@ -1,6 +1,6 @@
 # README contract — three startup paths
 
-The README must document three ways to start the project. The three paths themselves — including the exact raw `docker compose` / host-run commands — are owned by `references/2-repo/runtime/script-usage.md`; this doc is the **full README contract** (structure, command table, audit checklist) that surfaces them as a top-level convention.
+The README must document three ways to start the project. The three paths themselves — including the exact raw `docker compose` / host-run commands — are owned by `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md`; this doc is the **full README contract** (structure, command table, audit checklist) that surfaces them as a top-level convention.
 
 ## The shape: Prerequisites → Quick start (ctl) → Manual (no ctl)
 
@@ -125,7 +125,7 @@ ctl setup                  # interactive .env wizard — prompts for missing key
 
 For when you don't want the dispatcher — debugging compose itself, attaching a debugger to one service, or a host where `ctl` isn't set up. Two ways:
 
-- **Raw `docker compose -f docker/…`** — what `ctl up` assembles under the hood. Don't hand-write the `-f` lines here: the exact commands (with the current `.m.` modifier filenames) are owned by **`references/2-repo/runtime/script-usage.md`** — paste them from there so the README never drifts.
+- **Raw `docker compose -f docker/…`** — what `ctl up` assembles under the hood. Don't hand-write the `-f` lines here: the exact commands (with the current `.m.` modifier filenames) are owned by **`references/2-repo/05-ctl-scripts-tooling/01_script-usage.md`** — paste them from there so the README never drifts.
 - **Per-service host run** — `cd apps/<service>` and follow **that service's own `README.md`**. Each service README owns its native start commands (`uv run …`, `bun dev`, …) and is **ctl-agnostic** — it never mentions `ctl`, because `ctl` is a project-level layer wrapping these same commands. The root README points; the service READMEs tell.
 
 ---
@@ -240,6 +240,6 @@ Missing any → drift report flags it.
 
 ## See also
 
-- `references/2-repo/runtime/script-usage.md` — the exact raw `docker compose` / host-run commands the three paths surface
-- `references/2-repo/root-and-hygiene.md` — the root-as-index contract the README serves as the index of
-- `references/2-repo/00_charter.md` — the repo-level charter this reference serves
+- `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md` — the exact raw `docker compose` / host-run commands the three paths surface
+- `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` — the root-as-index contract the README serves as the index of
+- `references/2-repo/00_index.md` — the repo-level charter this reference serves

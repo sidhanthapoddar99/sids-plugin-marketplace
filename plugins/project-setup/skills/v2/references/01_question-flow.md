@@ -21,7 +21,7 @@ Run this in order before proposing any layout. The order is **level-ordered** (s
 
 5. **How many backends?** (count distinct services with their own runtime, not modules) — a *parameter of Layout 02*. For 2+: which languages, and what they coordinate via (Postgres / Redis streams / HTTP).
 6. **Does any surface need a separate identity/security plane** — operator/admin vs end-user (own credentials table, internal-only exposure, independent deploy cadence)?
-   - Yes → the two-plane split: separate backends + the neutral `apps/db` migrations owner (`references/3-app/backend/two-plane-split.md`). The backend count falls out of this answer — don't guess it from Q5 alone.
+   - Yes → the two-plane split: separate backends + the neutral `apps/db` migrations owner (`references/3-app/02-backend/02_two-plane-split.md`). The backend count falls out of this answer — don't guess it from Q5 alone.
    - A different look/nav for admins is **not** a yes — that's role-gated routes.
 7. **How many frontends?** For 2+: do they share UI/types/styles → workspace + `packages/`.
 8. **Frontend↔backend relationship** — where does the contract gravity sit?
@@ -29,7 +29,7 @@ Run this in order before proposing any layout. The order is **level-ordered** (s
    - **BFF**: the backend exists to serve this frontend (aggregation/session/proxy).
    - **No backend here**: frontend against an external API (may actually be Layout 01).
 9. **Grouping topology** (when 2+ apps): flat `apps/` (default), plane-grouped (`apps/server/` + `apps/client/`), or hybrid?
-   - Apply the tripwire T1 default, but **ask when both fit**; record the pick. Threshold + variants: `references/2-repo/grouping-topology.md`.
+   - Apply the tripwire T1 default, but **ask when both fit**; record the pick. Threshold + variants: `references/2-repo/01-layouts/00_grouping-topology.md`.
 10. **What languages?**
     - For Python: **app or ML?** (never inferred from extensions — ML → Layout 04, uvenv + `requirements.txt`)
     - For Rust + Python: confirm the coordination mechanism.
@@ -40,60 +40,64 @@ Run this in order before proposing any layout. The order is **level-ordered** (s
 12. **Package manager?** Bun (default single frontend) / pnpm (default for workspaces; turborepo needs it) / npm-yarn (only if a framework requires).
 13. **If workspace: which shared packages, at which scope, rooted where?**
     - Packages: `ui`, `styles`, `tailwind-config`, `typescript-config`, `services`, `types`, …
-    - **Scope**: frontend-only packages live inside the client group; cross-plane packages force root `packages/` (consumer rule — `references/2-repo/grouping-topology.md`).
-    - **Rooting**: JS-only repo → workspace at repo root (orchestration-only manifest); polyglot → workspace at the frontend group folder (`references/2-repo/grouping-topology.md`).
+    - **Scope**: frontend-only packages live inside the client group; cross-plane packages force root `packages/` (consumer rule — `references/2-repo/01-layouts/00_grouping-topology.md`).
+    - **Rooting**: JS-only repo → workspace at repo root (orchestration-only manifest); polyglot → workspace at the frontend group folder (`references/2-repo/01-layouts/00_grouping-topology.md`).
 14. **Theming**: both light + dark (default, `[data-theme]`), or light-only (marketing pages)?
 15. **Frontend env exposure**: which backend URLs does the frontend need? Each becomes a `VITE_*`/`NEXT_PUBLIC_*` baked into the **client-visible bundle** — confirm the user understands, and that no secret is among them.
+16. **Non-web surfaces?** Web is the default. Ask whether the product also needs: a **mobile** app (native iOS/Android, own codebase under `apps/` → `references/3-app/07-mobile-app/00_mobile-app.md`); a **desktop** app (Tauri default / Electron → `references/3-app/06-desktop-app/00_desktop-app.md`); or a **PWA** — the *existing* web frontend made installable + offline via a manifest + service worker, **not** a separate app (`references/3-app/03-web-app/02_pwa.md`). PWA and native are not exclusive — a product can ship both over the same backend contract.
 
 ## L2 — Batch 4: dev mode + runtime
 
-16. **Dev mode**: apps on host + DBs in containers (default — hot reload, debugger attach), or fully containerised (rare, total-parity teams)?
-17. **Hot reload**: confirm the host-side runners (bun dev / uvicorn --reload / cargo-watch).
-18. **`ctl` subcommands**: which day-to-day flows need shortcuts?
+17. **Dev mode**: apps on host + DBs in containers (default — hot reload, debugger attach), or fully containerised (rare, total-parity teams)?
+18. **Hot reload**: confirm the host-side runners (bun dev / uvicorn --reload / cargo-watch).
+19. **`ctl` subcommands**: which day-to-day flows need shortcuts?
     - Defaults: `dev`, `up [config] [--modifier "a,b"]` (interactive bare; prod = `ctl up prod`), `down`, `migrate`, `test`, `clean`, `help`; add language-specific (`sqlx-prepare`, `train`).
-    - Install is **copy-verbatim from `assets/snippets/scripts/`**, then adapt by deletion — the conformance floor in `references/2-repo/runtime/script-overview.md`.
+    - Install is **copy-verbatim from `assets/snippets/scripts/`**, then adapt by deletion — the conformance floor in `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`.
 
 ## L2 — Batch 5: deployment + secrets
 
-19. **Deployment targets**: single environment or multiple (dev WSL / bare server / cloud)?
-20. **Reverse proxy**: external Traefik (→ `traefik` modifier) / nginx-as-edge (→ `infra/nginx/`) / raw ports (→ `expose` modifier)?
-21. **Production serving**: per language — Python: gunicorn + uvicorn workers (count, recycling, graceful timeout — `references/3-app/backend/serving.md`); Rust/Go/Node: replicas. Confirm health endpoints, graceful shutdown, limits, migrations-as-pre-traffic-step (`references/2-repo/deployment/production-readiness.md`).
-22. **Secrets**: local (`.env` + `config.local.yaml`, `openssl rand -hex 32` instructions in `.env.example`) / CI (which store) / prod (`.env.production` via compose `env_file`, or Vault later)?
-23. **Open source vs private**: license, CI defaults. For a pure OSS **package** repo, this is also where the root-manifest exception may apply — record it if taken (`references/2-repo/root-and-hygiene.md`).
+20. **Deployment targets**: single environment or multiple (dev WSL / bare server / cloud)?
+21. **Reverse proxy**: external Traefik (→ `traefik` modifier) / nginx-as-edge (→ `infra/nginx/`) / raw ports (→ `expose` modifier)?
+22. **Production serving**: per language — Python: gunicorn + uvicorn workers (count, recycling, graceful timeout — `references/3-app/10-deployment/00_serving.md`); Rust/Go/Node: replicas. Confirm health endpoints, graceful shutdown, limits, migrations-as-pre-traffic-step (`references/2-repo/04-docker/05_production-readiness.md`).
+23. **Secrets**: local (`.env` + `config.local.yaml`, `openssl rand -hex 32` instructions in `.env.example`) / CI (which store) / prod (`.env.production` via compose `env_file`, or Vault later)?
+24. **Open source vs private**: license, CI defaults. For a pure OSS **package** repo, this is also where the root-manifest exception may apply — record it if taken (`references/2-repo/02-root-hygiene/00_root-and-hygiene.md`).
 
 ## L1 — Batch 6: polyrepo specifics (only if Q1 = multiple)
 
-24. **How many repos?** List them and their roles (one sentence each).
-25. **Is there an aggregator repo?** (recommended) — owns the canonical merged `.env.example` + prod compose over built images. If none, propose `<product>-deploy`.
-26. **How do child `.env.example` keys stay in sync?** Default: a sync script in the aggregator that fetches each child's `.env.example` and asserts the union.
+25. **How many repos?** List them and their roles (one sentence each).
+26. **Is there an aggregator repo?** (recommended) — owns the canonical merged `.env.example` + prod compose over built images. If none, propose `<product>-deploy`.
+27. **How do child `.env.example` keys stay in sync?** Default: a sync script in the aggregator that fetches each child's `.env.example` and asserts the union.
 
 ## L2 — Batch 7: supporting infra + hygiene
 
-27. **Databases — pick the right floor** (`references/2-repo/databases-provisioning.md`): SQLite vs Postgres (concurrent writers, sharing, extensions); in-process memory vs Redis (coupled to worker count, Q21); Mongo/Neo4j/Kuzu/Seaweed per requirement.
-28. **Image + runtime versions**: **never inherit defaults silently** — check current latest stable (`mise ls-remote …`, registry tags) and let the user pick. Versions in this skill's references are illustrative.
-29. **Hygiene** (not a question — state it): `.gitignore` generated from `assets/snippets/env/gitignore.template`, keeping only the sections for ecosystems present; `data/**` + `.gitkeep` negation; `.vscode/`/`.claude/` selectively committed.
-30. **Docs handoff**: for in-repo docs, create the `docs/` slot and point at the docs plugin's init command (`references/1-ecosystem/docs-placement.md`).
-31. **`.claude/` + CLAUDE.md**: `.claude/` stays empty initially; CLAUDE.md is generated from the template **with the repo + structure + styling blocks resolved** — this is where every variant chosen above gets recorded.
-32. **Pre-commit hooks (lefthook)?** Default yes for Layout 02; ask for 01/04.
-33. **`.vscode/` debug configs?** Optional — `references/2-repo/tooling/vscode-debugger.md`.
+28. **Databases — pick the right floor** (`references/3-app/04-database/00_provisioning.md`): SQLite vs Postgres (concurrent writers, sharing, extensions); in-process memory vs Redis (coupled to worker count, Q22); Mongo/Neo4j/Kuzu/Seaweed per requirement.
+29. **Image + runtime versions**: **never inherit defaults silently** — check current latest stable (`mise ls-remote …`, registry tags) and let the user pick. Versions in this skill's references are illustrative.
+30. **Hygiene** (not a question — state it): `.gitignore` generated from `assets/snippets/env/gitignore.template`, keeping only the sections for ecosystems present; `data/**` + `.gitkeep` negation; `.vscode/`/`.claude/` selectively committed.
+31. **Docs handoff**: for in-repo docs, create the `docs/` slot and point at the docs plugin's init command (`references/1-ecosystem/docs-placement.md`).
+32. **`.claude/` + CLAUDE.md**: `.claude/` stays empty initially; CLAUDE.md is generated from the template **with the repo + structure + styling blocks resolved** — this is where every variant chosen above gets recorded.
+33. **Pre-commit hooks (lefthook)?** Default yes for Layout 02; ask for 01/04.
+34. **`.vscode/` debug configs?** Optional — `references/2-repo/05-ctl-scripts-tooling/05_vscode-debugger.md`.
 
 ## L3 — Batch 8: per-app (run once per app; mostly confirm defaults)
 
-The skeletons themselves are **defaults, not questions** (backend `app/` + feature folders per `references/3-app/backend/app-skeleton.md`; frontend `src/` skeleton per `references/3-app/frontend/app-skeleton.md`). Ask only:
+The skeletons themselves are **defaults, not questions** (backend `app/` + feature folders per `references/3-app/02-backend/00_app-skeleton.md`; frontend `src/` skeleton per `references/3-app/03-web-app/00_app-skeleton.md`). Ask only:
 
-34. **Migration style, per backend**: Alembic autogenerate (default, Python-only) vs raw-SQL three-file pattern (non-Python schema consumers / hand-tuned DDL / SQL review culture)? **If two backends share one DB, the owner is the standalone `apps/db` — state it, don't ask it** (`references/3-app/backend/two-plane-split.md`). Migration-tool decision: `references/3-app/backend/migrations.md`.
-35. **Frontend state + data libraries**: zustand (client state) + TanStack Query (server state) defaults — confirm; the names go into the structure block.
-36. **For each workspace package**: its export surface (barrel + documented sub-paths) and whether it publishes externally (→ Layout 06 publishing rules apply to it).
+35. **Stack, per app** (only if L2 didn't dictate it): language/framework/runtime for this app — confirm the default for its kind or pick per `references/3-app/01-structure-and-stack/01_stack-decision.md`; record the pick + reason.
+36. **Migration style, per backend**: Alembic autogenerate (default, Python-only) vs raw-SQL three-file pattern (non-Python schema consumers / hand-tuned DDL / SQL review culture)? **If two backends share one DB, the owner is the standalone `apps/db` — state it, don't ask it** (`references/3-app/02-backend/02_two-plane-split.md`). Migration-tool decision: `references/3-app/04-database/01_migrations.md`.
+37. **Frontend state + data libraries**: zustand (client state) + TanStack Query (server state) defaults — confirm; the names go into the structure block.
+38. **For each workspace package**: its export surface (barrel + documented sub-paths) and whether it publishes externally (→ Layout 06 publishing rules apply to it).
+39. **Does the product touch LLMs?** Only then does the AI surface apply: MCP server placement (`references/3-app/08-ai/00_mcp-servers.md`), agent/LLM code as an adapter-per-provider boundary (`references/3-app/08-ai/01_agent-sdks.md`), and keys backend-only via a proxy route (`references/3-app/08-ai/02_ai-keys-and-safety.md`). If no LLM, skip `08-ai/` entirely.
+40. **Security-hardening tier, per public app**: none / captcha (Turnstile) / full WAF for the edge (`references/3-app/09-security-hardening/00_edge-protection.md`); app-owned per-user/per-key rate limits (`references/3-app/09-security-hardening/01_rate-limiting.md`); telemetry + audit (`references/3-app/09-security-hardening/02_telemetry-and-audit.md`). Tier is exposure-driven, not a default.
 
 ## Batch 9 — ML orchestration (only for Layout 04 ML projects)
 
-37. **Cloud GPUs**: none (local / bare-metal only) / cloud — via `scripts/cloud/` wrappers over the provider CLI, escalating to a thin custom CLI only past the script ceiling (`references/2-repo/ml-orchestration/custom-orchestrator.md`).
-38. **Spot or on-demand?** Spot for training/sweeps; on-demand for inference SLAs / final runs.
-39. **Training cadence**: one-shot / sweep / continuous / batch → checkpoints + retry vs managed service (`references/2-repo/ml-orchestration/`).
-40. **Inference**: none / batch (queue + workers) / online (endpoint + autoscale)?
-41. **Remote dev**: one-command GPU box + SSH + VS Code Remote flow wanted?
-42. **Agent access to the remote box?** → `references/2-repo/ml-orchestration/agent-ssh-access.md`; permissions configured explicitly.
-43. **CI/CD for ML**: cheap (every PR) / medium (nightly) / expensive (on tag) tiers.
+41. **Cloud GPUs**: none (local / bare-metal only) / cloud — via `scripts/cloud/` wrappers over the provider CLI, escalating to a thin custom CLI only past the script ceiling (`references/2-repo/07-ml-orchestration/00_custom-orchestrator.md`).
+42. **Spot or on-demand?** Spot for training/sweeps; on-demand for inference SLAs / final runs.
+43. **Training cadence**: one-shot / sweep / continuous / batch → checkpoints + retry vs managed service (`references/2-repo/07-ml-orchestration/`).
+44. **Inference**: none / batch (queue + workers) / online (endpoint + autoscale)?
+45. **Remote dev**: one-command GPU box + SSH + VS Code Remote flow wanted?
+46. **Agent access to the remote box?** → `references/2-repo/07-ml-orchestration/04_agent-ssh-access.md`; permissions configured explicitly.
+47. **CI/CD for ML**: cheap (every PR) / medium (nightly) / expensive (on tag) tiers.
 
 ## Special — never assume, always ask
 

@@ -17,14 +17,14 @@ For the per-installation registry of the user's **real** repos (never invented),
 
 | Example | Layout | Variant set shown | Primary owners |
 |---|---|---|---|
-| `01_single-cli.md` | 01 single-app | distributable CLI · **src-layout** · minimal `ctl` (no docker verbs) · no compose / no data / no infra | `references/2-repo/layouts/01_single-app.md`, `references/3-app/backend/app-skeleton.md` |
-| `02_canonical-1be-1fe.md` | 02 flat | FastAPI **run-service** (flat `app/`) + Vite frontend · full runtime triad (`ctl`/docker/mise) · tokens.css · Alembic · Vite-proxy↔nginx pair | `references/2-repo/layouts/02_multi-app-monorepo.md`, `references/3-app/frontend/app-skeleton.md`, `references/2-repo/runtime/overview.md` |
-| `03_two-plane-monorepo.md` | 02 plane-grouped | `apps/server/{api-platform,api-admin}` + `apps/db` neutral owner + `apps/client/{platform,admin,packages/}` **workspace-rooted at `client/`** · backend domain layer · full `src/` skeleton | `references/2-repo/grouping-topology.md`, `references/3-app/backend/domain-grouping.md`, `references/3-app/backend/two-plane-split.md` |
-| `04_ml-training-project.md` | 04 ML | uvenv global env + `requirements.txt` · `configs/` · `scripts/cloud/` · checkpoints | `references/2-repo/layouts/04_ml-project.md`, `references/3-app/backend/ml-python-flow.md`, `references/2-repo/ml-orchestration/` |
-| `05_polyrepo-aggregator.md` | 03 polyrepo | three independent service repos + a `-deploy` **aggregator** repo · `env.example` sync · image-based (registry) compose | `references/2-repo/layouts/03_polyrepo-aggregator.md`, `references/1-ecosystem/cross-repo-contracts.md` |
-| `06_embeddable-package.md` | 06 embeddable | `packages/editor` product + **framework-less core** + a reference host app · single-artifact publishing · embedding seams | `references/2-repo/layouts/06_embeddable-package.md`, `references/3-app/frontend/embeddable-seams.md` |
+| `01_single-cli.md` | 01 single-app | distributable CLI · **src-layout** · minimal `ctl` (no docker verbs) · no compose / no data / no infra | `references/2-repo/01-layouts/01_single-app.md`, `references/3-app/02-backend/00_app-skeleton.md` |
+| `02_canonical-1be-1fe.md` | 02 flat | FastAPI **run-service** (flat `app/`) + Vite frontend · full runtime triad (`ctl`/docker/mise) · tokens.css · Alembic · Vite-proxy↔nginx pair | `references/2-repo/01-layouts/02_multi-app-monorepo.md`, `references/3-app/03-web-app/00_app-skeleton.md`, `references/2-repo/06-runtime-environment/00_runtime-triad.md` |
+| `03_two-plane-monorepo.md` | 02 plane-grouped | `apps/server/{api-platform,api-admin}` + `apps/db` neutral owner + `apps/client/{platform,admin,packages/}` **workspace-rooted at `client/`** · backend domain layer · full `src/` skeleton | `references/2-repo/01-layouts/00_grouping-topology.md`, `references/3-app/02-backend/01_domain-grouping.md`, `references/3-app/02-backend/02_two-plane-split.md` |
+| `04_ml-training-project.md` | 04 ML | uvenv global env + `requirements.txt` · `configs/` · `scripts/cloud/` · checkpoints | `references/2-repo/01-layouts/04_ml-project.md`, `references/3-app/02-backend/03_ml-python-flow.md`, `references/2-repo/07-ml-orchestration/` |
+| `05_polyrepo-aggregator.md` | 03 polyrepo | three independent service repos + a `-deploy` **aggregator** repo · `env.example` sync · image-based (registry) compose | `references/2-repo/01-layouts/03_polyrepo-aggregator.md`, `references/1-ecosystem/cross-repo-contracts.md` |
+| `06_embeddable-package.md` | 06 embeddable | `packages/editor` product + **framework-less core** + a reference host app · single-artifact publishing · embedding seams | `references/2-repo/01-layouts/06_embeddable-package.md`, `references/3-app/05-package/02_embeddable-seams.md` |
 
-Layouts 01/02/03/04/06 are covered by a dedicated example; **Layout 05** (Go-CLI-driven infra orchestrator) has no standalone example here — its shape lives in `references/2-repo/layouts/05_infra-orchestrator.md` and its escalation trigger in `references/2-repo/runtime/complex-setups.md`.
+Layouts 01/02/03/04/06 are covered by a dedicated example; **Layout 05** (Go-CLI-driven infra orchestrator) has no standalone example here — its shape lives in `references/2-repo/01-layouts/05_infra-orchestrator.md` and its escalation trigger in `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`.
 
 ## Reading order
 

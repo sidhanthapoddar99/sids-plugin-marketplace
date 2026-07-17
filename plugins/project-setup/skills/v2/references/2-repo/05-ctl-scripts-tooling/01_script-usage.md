@@ -1,6 +1,6 @@
 # `ctl` + `scripts/` — usage reference
 
-The command surface, the dispatcher skeleton, the interactive `ctl up` flow, the `scripts/*.sh` map, the host dev loop, and the three startup-path commands. For the model (why `dev` vs `up`, the thin-wrapper principle, the two custom bodies, why-host) start at `script-overview.md`.
+The command surface, the dispatcher skeleton, the interactive `ctl up` flow, the `scripts/*.sh` map, the host dev loop, and the three startup-path commands. For the model (why `dev` vs `up`, the thin-wrapper principle, the two custom bodies, why-host) start at `00_script-overview.md`.
 
 > **These code blocks are ILLUSTRATIVE.** The source of truth is the runnable snippet under **`assets/snippets/scripts/<file>`** (`assets/` is a sibling of `skills/` at the plugin root). Copy verbatim, then adapt — don't regenerate from this prose.
 
@@ -24,7 +24,7 @@ ctl up prod --modifier traefik
 ▸ docker compose -f docker/compose.prod.yaml -f docker/compose.m.traefik.yaml up -d --build
 ```
 
-The compose-file convention these assemble (standalone config vs `.m.` modifier, the expose tiers, path discipline) is `docker-overview.md`.
+The compose-file convention these assemble (standalone config vs `.m.` modifier, the expose tiers, path discipline) is `references/2-repo/04-docker/00_docker-overview.md`.
 
 ### Interactive `ctl up` — pick → plan → confirm
 
@@ -226,7 +226,7 @@ wait
 
 ## Three startup paths — the commands
 
-Every README documents all three (concept in `script-overview.md`). The exact commands:
+Every README documents all three (concept in `00_script-overview.md`). The exact commands:
 
 ````markdown
 ## Get started
@@ -255,7 +255,7 @@ cd apps/frontend && bun install && bun dev                                      
 
 The no-docker path is what `ctl dev` automates; documenting it raw lets a developer attach a debugger to one service. **Prod** is `ctl up prod` — keep development (`ctl dev`) distinct from deployment in the README's Deploy section.
 
-`/ps-setup audit` checks the README shows all three paths (full checklist: `references/2-repo/readme-three-paths.md`). Drift to flag: only `ctl dev` (can't debug compose), only `docker compose` (no fast-iteration story), only raw host run (everyone reinvents the flow).
+`/ps-setup audit` checks the README shows all three paths (full checklist: `references/2-repo/02-root-hygiene/01_readme-three-paths.md`). Drift to flag: only `ctl dev` (can't debug compose), only `docker compose` (no fast-iteration story), only raw host run (everyone reinvents the flow).
 
 ## Anti-patterns
 
@@ -273,14 +273,14 @@ The shipped `ctl` + `scripts/` are a **starting template** — copy them, then e
 
 To **add** a command, drop `scripts/<category>/<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `_lib.sh`) and wire one `run` line into `ctl`. To **modify** one, edit its body — the command surface, `_lib.sh`, and `_select.sh` stay constant.
 
-**Using mise / docker / uv / bun is highly recommended, but not mandatory.** When a project opts out of any of them, **don't fight the template** — follow `script-alternatives.md`, which gives the exact `.sh` lines to edit and the substitute (e.g. `./ctl` instead of bare `ctl` without mise; native Postgres/Redis without docker; **uvenv** named global venvs or `python -m venv`/poetry instead of `uv sync`; pnpm/npm instead of bun). For a project with **no data layer at all**, see `no-data-core.md` (set `DATA_SVCS=()` — the topology swap, the analogue of the tool swap).
+**Using mise / docker / uv / bun is highly recommended, but not mandatory.** When a project opts out of any of them, **don't fight the template** — follow `02_script-alternatives.md`, which gives the exact `.sh` lines to edit and the substitute (e.g. `./ctl` instead of bare `ctl` without mise; native Postgres/Redis without docker; **uvenv** named global venvs or `python -m venv`/poetry instead of `uv sync`; pnpm/npm instead of bun). For a project with **no data layer at all**, see `references/2-repo/04-docker/02_no-data-core.md` (set `DATA_SVCS=()` — the topology swap, the analogue of the tool swap).
 
 ## See also
 
-- `script-overview.md` — the model (dev vs up, thin wrapper, the two custom bodies, why-host, three-paths concept)
-- `script-alternatives.md` — adapting the scripts off mise / docker / uv / bun (incl. uvenv)
-- `no-data-core.md` — `DATA_SVCS=()` + apps-as-core: the exact lines to change for a DB-less project
-- `docker-overview.md` — standalone config / `.m.` modifiers / expose tiers; `docker/` layout + path discipline
-- `mise.md` — project-scoped PATH; `ctl` callable bare
+- `00_script-overview.md` — the model (dev vs up, thin wrapper, the two custom bodies, why-host, three-paths concept)
+- `02_script-alternatives.md` — adapting the scripts off mise / docker / uv / bun (incl. uvenv)
+- `references/2-repo/04-docker/02_no-data-core.md` — `DATA_SVCS=()` + apps-as-core: the exact lines to change for a DB-less project
+- `references/2-repo/04-docker/00_docker-overview.md` — standalone config / `.m.` modifiers / expose tiers; `docker/` layout + path discipline
+- `references/2-repo/06-runtime-environment/01_mise.md` — project-scoped PATH; `ctl` callable bare
 - `assets/snippets/scripts/ctl` (+ `scripts/*.sh`, `_lib.sh`, `_select.sh`) — the runnable dispatcher, workers, and picker
-- `references/2-repo/deployment/proxy-and-exposure.md` — dev proxy → prod nginx
+- `references/2-repo/04-docker/04_proxy-and-exposure.md` — dev proxy → prod nginx

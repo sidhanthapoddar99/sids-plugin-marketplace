@@ -25,12 +25,12 @@ STEP 2 — (deployed only) pick the deployed layout:
 
 **The number of backends/frontends is a parameter of Layout 02, not a separate layout.** Inside the multi-app monorepo:
 
-- multiple backends → coordinate via Postgres / Redis Streams / HTTP (see the layout's *more-than-one-backend* section); if the second backend exists for a separate **identity/security plane** (operator vs end-user), apply `references/3-app/backend/two-plane-split.md` (incl. the neutral `apps/db` migrations owner)
+- multiple backends → coordinate via Postgres / Redis Streams / HTTP (see the layout's *more-than-one-backend* section); if the second backend exists for a separate **identity/security plane** (operator vs end-user), apply `references/3-app/02-backend/02_two-plane-split.md` (incl. the neutral `apps/db` migrations owner)
 - multiple frontends sharing UI/types/styles → `packages/` workspaces (pnpm + turborepo)
-- **how `apps/` is arranged is its own decision** — flat / plane-grouped / hybrid, plus where the workspace roots and packages scope: owned by `references/2-repo/grouping-topology.md`
+- **how `apps/` is arranged is its own decision** — flat / plane-grouped / hybrid, plus where the workspace roots and packages scope: owned by `references/2-repo/01-layouts/00_grouping-topology.md`
 - many small services each with their own boundary/deploy cadence → the mesh end of the spectrum (the signal you may be approaching Layout 03 or 05)
 
-See `references/2-repo/layouts/02_multi-app-monorepo.md`.
+See `references/2-repo/01-layouts/02_multi-app-monorepo.md`.
 
 ## Per-layout defaults
 
@@ -47,7 +47,7 @@ See `references/2-repo/layouts/02_multi-app-monorepo.md`.
 
 ### Where does code live? (`app/` vs `src/`)
 
-An L3 (app-level) decision — **owned elsewhere, don't restate here**. The one L2 fact this picker needs: **one app total → top-level `./<name>/`; two or more → group under `apps/<name>/`** (this is the physical difference between Layout 01 and 02). The inner-layout rule (flat `app/` for run-services, `src/` for frontends and packages, nothing loose in root) and the per-layout path patterns live in `references/3-app/backend/app-skeleton.md` (backends) and `references/3-app/frontend/app-skeleton.md` (frontends).
+An L3 (app-level) decision — **owned elsewhere, don't restate here**. The one L2 fact this picker needs: **one app total → top-level `./<name>/`; two or more → group under `apps/<name>/`** (this is the physical difference between Layout 01 and 02). The inner-layout rule (flat `app/` for run-services, `src/` for frontends and packages, nothing loose in root) and the per-layout path patterns live in `references/3-app/02-backend/00_app-skeleton.md` (backends) and `references/3-app/03-web-app/00_app-skeleton.md` (frontends).
 
 ### `apps/` vs `packages/` — three categories, not two
 
@@ -59,7 +59,7 @@ The common framing is "`apps/` = deployables, `packages/` = internal shared code
 | **Internal shared lib** | `packages/<name>/` | consumed *in-repo* by sibling apps via the workspace | bundled by the consuming app | no (workspace-internal) |
 | **Published product package** | `packages/<name>/` (the product) | an artifact installed by an **external** repo (npm / PyPI) | **`peerDependency`** — the host owns the React instance | **yes** — `package.json` `exports`, build tooling (tsup/rollup), semver |
 
-The third category is the one the two-category model erases. When the deliverable is the package itself (Layout 06), the repo's `apps/web` is a **reference host** — a dev harness — not the product. Publishing mechanics (exports, peerDeps, single-artifact bundling) live in `references/2-repo/layouts/06_embeddable-package.md`; the embedding-seams (inversion-of-control) pattern in `references/3-app/frontend/embeddable-seams.md`.
+The third category is the one the two-category model erases. When the deliverable is the package itself (Layout 06), the repo's `apps/web` is a **reference host** — a dev harness — not the product. Publishing mechanics (exports, peerDeps, single-artifact bundling) live in `references/2-repo/01-layouts/06_embeddable-package.md`; the embedding-seams (inversion-of-control) pattern in `references/3-app/05-package/02_embeddable-seams.md`.
 
 ### Where does `config.yaml` live?
 
@@ -71,7 +71,7 @@ The third category is the one the two-category model erases. When the deliverabl
 | 04 (ML) | `configs/<experiment>.yaml` (per-experiment) |
 | 05 | per-service inside `apps/`; orchestrator config in its own folder |
 
-**Never `config.yaml` at repo root.** Root has only `.env` / `.env.example`. Full rule: `references/2-repo/env-and-config/per-service-config.md`.
+**Never `config.yaml` at repo root.** Root has only `.env` / `.env.example`. Full rule: `references/2-repo/03-env-config/01_per-service-config.md`.
 
 ### Where do env vars live?
 
@@ -83,11 +83,11 @@ The third category is the one the two-category model erases. When the deliverabl
 | Production overrides | `.env.production` (compose `env_file`) |
 | Local overrides | `.env.local`, `config.local.yaml` (gitignored) |
 
-See `references/2-repo/env-and-config/env-precedence.md` for the load order (root → per-service → real env wins).
+See `references/2-repo/03-env-config/00_env-precedence.md` for the load order (root → per-service → real env wins).
 
 ### What compose structure does the layout need?
 
-Two axes (profile-less) — at most one standalone **`config`** (a `compose.<name>.yaml` that *replaces* base; `data`, `prod`) and stackable **`.m.` modifiers** (`--modifier expose,traefik`). The filenames, the `ctl up` grammar, the per-layout footprint, and worked examples are the canonical doc's job — **owned by `references/2-repo/runtime/docker-overview.md`** (orchestrator trees: `references/2-repo/runtime/complex-setups.md`). Don't restate them here.
+Two axes (profile-less) — at most one standalone **`config`** (a `compose.<name>.yaml` that *replaces* base; `data`, `prod`) and stackable **`.m.` modifiers** (`--modifier expose,traefik`). The filenames, the `ctl up` grammar, the per-layout footprint, and worked examples are the canonical doc's job — **owned by `references/2-repo/04-docker/00_docker-overview.md`** (orchestrator trees: `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`). Don't restate them here.
 
 ### Python flow per layout
 
@@ -112,7 +112,19 @@ Two axes (profile-less) — at most one standalone **`config`** (a `compose.<nam
 
 ### Design tokens location
 
-Single frontend → `apps/frontend/src/styles/tokens.css`; multiple frontends → shared `packages/styles/src/tokens.css` — owned by `references/3-app/frontend/tokens-setup.md`.
+Single frontend → `apps/frontend/src/styles/tokens.css`; multiple frontends → shared `packages/styles/src/tokens.css` — owned by `references/3-app/05-package/01_tokens-setup.md`.
+
+### Platform targets (non-web surfaces)
+
+Web is the default surface. A repo may also target — ask before assuming web-only (question-flow Q16):
+
+| Surface | What it is | Owner |
+|---|---|---|
+| **Mobile** | native iOS (Swift) + Android (Kotlin), own codebases under `apps/`, sharing the backend contract | `references/3-app/07-mobile-app/00_mobile-app.md` |
+| **Desktop** | Tauri (default) / Electron wrapper; shares `packages/` with web | `references/3-app/06-desktop-app/00_desktop-app.md` |
+| **PWA** | the *existing* web frontend made installable + offline (manifest + service worker) — **not** a new app under `apps/` | `references/3-app/03-web-app/02_pwa.md` |
+
+PWA and native are not exclusive — a product can ship both over one backend contract.
 
 ### Docs location
 
@@ -124,7 +136,7 @@ These decisions only apply once a project crosses a complexity threshold. The la
 
 | Trigger | Action |
 |---|---|
-| `ctl` shell dispatcher crosses tripwire T7 (size / structured state across compose runs) | Move orchestration to a Go binary (Layout 05; threshold + criteria: `references/2-repo/runtime/complex-setups.md`). |
+| `ctl` shell dispatcher crosses tripwire T7 (size / structured state across compose runs) | Move orchestration to a Go binary (Layout 05; threshold + criteria: `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`). |
 | A single app grows a second app (backend or frontend) | Migrate Layout 01 → 02: introduce `apps/`, move the existing app under `apps/<name>/`. |
 | Within Layout 02, frontends start sharing code | Introduce `pnpm-workspace.yaml` + `turbo.json` + `packages/` — still Layout 02. |
 | Within Layout 02, services grow independent deploy cadences/boundaries | The mesh end of Layout 02; separate repos → Layout 03 (`references/1-ecosystem/repo-boundaries.md`). |

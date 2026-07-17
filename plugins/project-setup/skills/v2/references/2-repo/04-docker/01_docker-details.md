@@ -1,6 +1,6 @@
 # Docker details — bind-mounts, data dirs, ports, anchors
 
-The lower-level docker conventions `references/2-repo/runtime/docker-overview.md` builds on: how stateful services bind to the host (bind-mounts + the `data/` layout, including the Postgres nested-dir trick), the internal-vs-host port rule, and when to reach for YAML anchors.
+The lower-level docker conventions `references/2-repo/04-docker/00_docker-overview.md` builds on: how stateful services bind to the host (bind-mounts + the `data/` layout, including the Postgres nested-dir trick), the internal-vs-host port rule, and when to reach for YAML anchors.
 
 ## Bind-mounts, not named volumes
 
@@ -31,11 +31,11 @@ data/
 └── meili/
 ```
 
-The gitignore negation pattern that commits the structure (via `.gitkeep`) but never the data is owned by `references/2-repo/root-and-hygiene.md` § `.gitignore` doctrine — fresh clones can `ctl dev` immediately.
+The gitignore negation pattern that commits the structure (via `.gitkeep`) but never the data is owned by `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` § `.gitignore` doctrine — fresh clones can `ctl dev` immediately.
 
 ### `${DATA_DIR}` override
 
-Compose uses `${DATA_DIR:-../data}` (default in-repo — relative to `docker/`, per the path discipline in `references/2-repo/runtime/docker-overview.md`). Override via env: prod `DATA_DIR=/srv/my-app/data` (`.env.production`); faster disk `DATA_DIR=/mnt/ssd/my-app` (`.env.local`); tmpfs `DATA_DIR=/tmp/my-app` (CI).
+Compose uses `${DATA_DIR:-../data}` (default in-repo — relative to `docker/`, per the path discipline in `references/2-repo/04-docker/00_docker-overview.md`). Override via env: prod `DATA_DIR=/srv/my-app/data` (`.env.production`); faster disk `DATA_DIR=/mnt/ssd/my-app` (`.env.local`); tmpfs `DATA_DIR=/tmp/my-app` (CI).
 
 Break the rule only for: enormous ephemeral data (compile caches → a named volume, document it), or a volume shared across stacks (external bind — default to transparency).
 
@@ -94,7 +94,7 @@ services:
 | Collisions | Impossible (separate namespaces) | Possible across stacks → vary it |
 | Referenced as | `http://backend:8000` | `localhost:${BACKEND_PORT}` (dev/humans only) |
 
-In dev (apps on host) the app binds a host port directly; in containers it's the internal port + compose network. The constant internal port keeps the two modes consistent. Host ports are published by the `expose` modifiers (`compose.m.expose*.yaml`), not the base — see `references/2-repo/runtime/docker-overview.md`.
+In dev (apps on host) the app binds a host port directly; in containers it's the internal port + compose network. The constant internal port keeps the two modes consistent. Host ports are published by the `expose` modifiers (`compose.m.expose*.yaml`), not the base — see `references/2-repo/04-docker/00_docker-overview.md`.
 
 **Anti-patterns:** hardcoding the published host port (collides across stacks — vary it via `${VAR}`); hardcoding `http://localhost:8000` for service-to-service calls (use `http://backend:8000` over the compose network).
 
@@ -115,6 +115,6 @@ services:
 
 ## See also
 
-- `references/2-repo/runtime/docker-overview.md` — the compose model (standalone configs + `.m.` modifiers, profile-less), folder layout, path discipline
-- `references/2-repo/env-and-config/per-service-config.md` · `references/2-repo/env-and-config/frontend-env-isolation.md` — the env/config side (`${VAR}` interpolation, build-time vs runtime)
-- `references/2-repo/runtime/complex-setups.md` — multi-mode `docker/<mode>/` trees (Layout 05)
+- `references/2-repo/04-docker/00_docker-overview.md` — the compose model (standalone configs + `.m.` modifiers, profile-less), folder layout, path discipline
+- `references/2-repo/03-env-config/01_per-service-config.md` · `references/2-repo/03-env-config/02_frontend-env-isolation.md` — the env/config side (`${VAR}` interpolation, build-time vs runtime)
+- `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` — multi-mode `docker/<mode>/` trees (Layout 05)

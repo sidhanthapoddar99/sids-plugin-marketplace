@@ -2,7 +2,7 @@
 
 A complete, anonymized polyrepo product: three independently-released service repos plus a `-deploy` aggregator. The service repos are sketched briefly (each is internally a Layout 01/02, covered by other examples); the **aggregator is shown in full** — merged `.env.example`, image-based compose, sync script — because that repo is what Layout 03 is about. Domain here is a generic storefront product.
 
-This is a worked instance of `references/2-repo/layouts/03_polyrepo-aggregator.md`. The *contracts* it demonstrates (env sync, image/semver, no shared tables, sharing rank) are owned by `references/1-ecosystem/cross-repo-contracts.md`; the *when-polyrepo* call by `references/1-ecosystem/repo-boundaries.md`. Nothing here is normative — see the mapping table at the end.
+This is a worked instance of `references/2-repo/01-layouts/03_polyrepo-aggregator.md`. The *contracts* it demonstrates (env sync, image/semver, no shared tables, sharing rank) are owned by `references/1-ecosystem/cross-repo-contracts.md`; the *when-polyrepo* call by `references/1-ecosystem/repo-boundaries.md`. Nothing here is normative — see the mapping table at the end.
 
 ## Ecosystem — a directory of sibling repos (NOT one repo)
 
@@ -145,7 +145,7 @@ The aggregator never builds; the child repos never deploy.
 
 ## Anti-patterns (shown by their absence)
 
-- No `build:` anywhere in the aggregator compose — it defeats the point (see `references/2-repo/layouts/03_polyrepo-aggregator.md`).
+- No `build:` anywhere in the aggregator compose — it defeats the point (see `references/2-repo/01-layouts/03_polyrepo-aggregator.md`).
 - No shared `DATABASE_URL` across `storefront-api` and `storefront-workers` — cross-service reads go through the API; the no-shared-tables rule is owned by `references/1-ecosystem/cross-repo-contracts.md`.
 - No business logic in `storefront-deploy` — it is deploy plumbing only.
 - Deploy is documented once, in the aggregator README — not scattered across child READMEs.
@@ -156,17 +156,17 @@ The aggregator never builds; the child repos never deploy.
 |---|---|
 | Whether to be polyrepo at all (mono-vs-poly, own-repo criteria) | `references/1-ecosystem/repo-boundaries.md` |
 | Env-sync contract, image/semver contract, sharing rank, no-shared-tables | `references/1-ecosystem/cross-repo-contracts.md` |
-| Aggregator repo *shape*, `scripts/` + `ctl` roles | `references/2-repo/layouts/03_polyrepo-aggregator.md` |
+| Aggregator repo *shape*, `scripts/` + `ctl` roles | `references/2-repo/01-layouts/03_polyrepo-aggregator.md` |
 | The `storefront-docs` repo + handoff to the docs plugin | `references/1-ecosystem/docs-placement.md` |
-| Each service repo's internal shape | `references/2-repo/layouts/01_single-app.md`, `references/2-repo/layouts/02_multi-app-monorepo.md` |
-| Per-service `.env.example` subset, `VITE_*` isolation | `references/2-repo/env-and-config/env-precedence.md`, `references/2-repo/env-and-config/frontend-env-isolation.md` |
-| Aggregator compose / image references, edge `nginx` | `references/2-repo/runtime/docker-overview.md`, `references/2-repo/deployment/proxy-and-exposure.md` |
-| `ctl up prod` dispatcher | `references/2-repo/runtime/script-overview.md` |
-| `migrate.sh` migrations-on-deploy | `references/2-repo/deployment/production-readiness.md` |
-| Child READMEs deferring deploy to the aggregator | `references/2-repo/readme-three-paths.md` |
+| Each service repo's internal shape | `references/2-repo/01-layouts/01_single-app.md`, `references/2-repo/01-layouts/02_multi-app-monorepo.md` |
+| Per-service `.env.example` subset, `VITE_*` isolation | `references/2-repo/03-env-config/00_env-precedence.md`, `references/2-repo/03-env-config/02_frontend-env-isolation.md` |
+| Aggregator compose / image references, edge `nginx` | `references/2-repo/04-docker/00_docker-overview.md`, `references/2-repo/04-docker/04_proxy-and-exposure.md` |
+| `ctl up prod` dispatcher | `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` |
+| `migrate.sh` migrations-on-deploy | `references/2-repo/04-docker/05_production-readiness.md` |
+| Child READMEs deferring deploy to the aggregator | `references/2-repo/02-root-hygiene/01_readme-three-paths.md` |
 
 ## See also
 
-- `references/2-repo/layouts/03_polyrepo-aggregator.md` — the layout this example instantiates
+- `references/2-repo/01-layouts/03_polyrepo-aggregator.md` — the layout this example instantiates
 - `references/5-examples/03_two-plane-monorepo.md` — the monorepo you'd step *down* to if the split isn't warranted
 - `references/5-examples/00_index.md` — example ↔ layout ↔ variant map

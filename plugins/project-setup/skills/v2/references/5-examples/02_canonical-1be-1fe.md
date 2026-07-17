@@ -1,21 +1,21 @@
 # Example 02 — canonical 1 backend + 1 frontend (the flagship)
 
-A complete, annotated worked example of **Layout 02 flat** at its most common point: one FastAPI backend, one Vite/React frontend, shared Postgres + Redis, one release cadence. Invented product: **Deskbook**, a workplace desk-and-room booking app. Every folder and file below is commented with its purpose; the closing table maps each part to the reference that owns its rule. This example is deliberately **below every subdivision tripwire** — flat backend features, no domain layer (T2), no workspace, single frontend — so it reads as the baseline everything else scales from. Nothing here is normative; the linked owner files are. Governing layout: `references/2-repo/layouts/02_multi-app-monorepo.md`.
+A complete, annotated worked example of **Layout 02 flat** at its most common point: one FastAPI backend, one Vite/React frontend, shared Postgres + Redis, one release cadence. Invented product: **Deskbook**, a workplace desk-and-room booking app. Every folder and file below is commented with its purpose; the closing table maps each part to the reference that owns its rule. This example is deliberately **below every subdivision tripwire** — flat backend features, no domain layer (T2), no workspace, single frontend — so it reads as the baseline everything else scales from. Nothing here is normative; the linked owner files are. Governing layout: `references/2-repo/01-layouts/02_multi-app-monorepo.md`.
 
 ## Stack at a glance
 
 | Concern | Choice here | Owner reference |
 |---|---|---|
-| Repo shape | one monorepo, `apps/{backend,frontend}` | `references/2-repo/layouts/02_multi-app-monorepo.md` |
-| Backend | FastAPI, flat `app/`, uv | `references/3-app/backend/app-skeleton.md` |
-| Frontend | Vite + React 19, `src/` skeleton | `references/3-app/frontend/app-skeleton.md` |
-| Data | Postgres (primary) + Redis (cache/queue) | `references/2-repo/databases-provisioning.md` |
-| Migrations | Alembic, entrypoint-migrates | `references/3-app/backend/migrations.md` |
-| Runtime control | `ctl` dispatcher + `scripts/` tree | `references/2-repo/runtime/script-overview.md` |
-| Containers | profile-less `docker/` (base + configs + `.m.` modifiers) | `references/2-repo/runtime/docker-overview.md` |
-| Edge / routing | Vite dev proxy ↔ nginx prod pair, `/api/*` | `references/2-repo/deployment/proxy-and-exposure.md` |
-| Env | root `.env` (backend/infra) + frontend-local `VITE_*` | `references/2-repo/env-and-config/env-precedence.md` |
-| Design tokens | single `tokens.css`, light/dark data-attr | `references/3-app/frontend/tokens-setup.md` |
+| Repo shape | one monorepo, `apps/{backend,frontend}` | `references/2-repo/01-layouts/02_multi-app-monorepo.md` |
+| Backend | FastAPI, flat `app/`, uv | `references/3-app/02-backend/00_app-skeleton.md` |
+| Frontend | Vite + React 19, `src/` skeleton | `references/3-app/03-web-app/00_app-skeleton.md` |
+| Data | Postgres (primary) + Redis (cache/queue) | `references/3-app/04-database/00_provisioning.md` |
+| Migrations | Alembic, entrypoint-migrates | `references/3-app/04-database/01_migrations.md` |
+| Runtime control | `ctl` dispatcher + `scripts/` tree | `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` |
+| Containers | profile-less `docker/` (base + configs + `.m.` modifiers) | `references/2-repo/04-docker/00_docker-overview.md` |
+| Edge / routing | Vite dev proxy ↔ nginx prod pair, `/api/*` | `references/2-repo/04-docker/04_proxy-and-exposure.md` |
+| Env | root `.env` (backend/infra) + frontend-local `VITE_*` | `references/2-repo/03-env-config/00_env-precedence.md` |
+| Design tokens | single `tokens.css`, light/dark data-attr | `references/3-app/05-package/01_tokens-setup.md` |
 
 ## The whole repo
 
@@ -94,9 +94,9 @@ apps/backend/
 └── README.md                       # this backend's host dev loop (the no-docker isolation path)
 ```
 
-Feature count here is 4 (`auth bookings spaces notifications`), well under the T2 threshold — so **no domain layer**, and that deferral is one line in `CLAUDE.md`. When the product's domain model settles or the list crosses the threshold, features flatten into `app/<domain>/<feature>/` — owned by `references/3-app/backend/domain-grouping.md` (T2). The `{router,service,repository,models}.py` internals, the feature-seam merge rule, and the file-subdivision tripwire (T3) are owned by `references/4-feature/feature-folders.md`. DTO placement (kept in each feature's `models.py`, never a shared models package) is owned by `references/4-feature/types-and-contracts.md`.
+Feature count here is 4 (`auth bookings spaces notifications`), well under the T2 threshold — so **no domain layer**, and that deferral is one line in `CLAUDE.md`. When the product's domain model settles or the list crosses the threshold, features flatten into `app/<domain>/<feature>/` — owned by `references/3-app/02-backend/01_domain-grouping.md` (T2). The `{router,service,repository,models}.py` internals, the feature-seam merge rule, and the file-subdivision tripwire (T3) are owned by `references/4-feature/feature-folders.md`. DTO placement (kept in each feature's `models.py`, never a shared models package) is owned by `references/4-feature/types-and-contracts.md`.
 
-Migrations: single replica here, so the container migrates itself (`docker-entrypoint.sh` → `alembic upgrade head` → exec gunicorn). Multi-replica would switch to a one-shot migrate service — decision owned by `references/3-app/backend/migrations.md`, recipe by `references/3-app/backend/alembic-recipe.md`.
+Migrations: single replica here, so the container migrates itself (`docker-entrypoint.sh` → `alembic upgrade head` → exec gunicorn). Multi-replica would switch to a one-shot migrate service — decision owned by `references/3-app/04-database/01_migrations.md`, recipe by `references/3-app/04-database/02_alembic-recipe.md`.
 
 ## Frontend — `apps/frontend/`
 
@@ -138,7 +138,7 @@ apps/frontend/
 └── README.md                       # this frontend's host dev loop
 ```
 
-The `src/` top level is a **hard skeleton** (these names, this altitude); folders appear when a thing needs them, not as empty placeholders. The skeleton, layer import-rules, and the local-vs-package reconciliation rule are owned by `references/3-app/frontend/app-skeleton.md`. What lives *inside* `api/` (endpoints, zod schemas, error normalization, query keys, domain mirroring, T6 thin pages) and how `features/` subdivides (T3) are owned by `references/4-feature/api-and-pages.md`. `tokens.css` contents, the light/dark `data-theme` mechanism, and shadcn/tailwind wiring are owned by `references/3-app/frontend/tokens-setup.md`; the primitive-first styling rules feature code lives under are owned by `references/4-feature/styling-discipline.md`.
+The `src/` top level is a **hard skeleton** (these names, this altitude); folders appear when a thing needs them, not as empty placeholders. The skeleton, layer import-rules, and the local-vs-package reconciliation rule are owned by `references/3-app/03-web-app/00_app-skeleton.md`. What lives *inside* `api/` (endpoints, zod schemas, error normalization, query keys, domain mirroring, T6 thin pages) and how `features/` subdivides (T3) are owned by `references/4-feature/api-and-pages.md`. `tokens.css` contents, the light/dark `data-theme` mechanism, and shadcn/tailwind wiring are owned by `references/3-app/05-package/01_tokens-setup.md`; the primitive-first styling rules feature code lives under are owned by `references/4-feature/styling-discipline.md`.
 
 ## The runtime triad — `ctl` + `scripts/` + `docker/`
 
@@ -167,36 +167,36 @@ scripts/
     └── check-env.sh                #   helper      — .env vs .env.example schema diff
 ```
 
-Everyday flow: `ctl setup` (once) → `ctl dev`. `ctl dev` auto-ups the data core (postgres + redis, with ports via `expose_data`), runs `uv sync` + `bun install`, then runs uvicorn `--reload` and `bun dev` on the host in the foreground. Containers go through `ctl up`: bare `ctl up` = the whole stack; `ctl up data` = just the data layer; `ctl up prod` = the hardened stack. There is **no `ctl prod` verb** — prod is a config. The dispatcher model (thin-router doctrine, the conformance floor, the two project-custom bodies) is owned by `references/2-repo/runtime/script-overview.md`; the exact command surface and interactive flow by `references/2-repo/runtime/script-usage.md`. The two profile-less compose axes (config replaces base; stackable `.m.` modifiers) are owned by `references/2-repo/runtime/docker-overview.md`.
+Everyday flow: `ctl setup` (once) → `ctl dev`. `ctl dev` auto-ups the data core (postgres + redis, with ports via `expose_data`), runs `uv sync` + `bun install`, then runs uvicorn `--reload` and `bun dev` on the host in the foreground. Containers go through `ctl up`: bare `ctl up` = the whole stack; `ctl up data` = just the data layer; `ctl up prod` = the hardened stack. There is **no `ctl prod` verb** — prod is a config. The dispatcher model (thin-router doctrine, the conformance floor, the two project-custom bodies) is owned by `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`; the exact command surface and interactive flow by `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md`. The two profile-less compose axes (config replaces base; stackable `.m.` modifiers) are owned by `references/2-repo/04-docker/00_docker-overview.md`.
 
 ## Env split
 
-- **Root `.env`** — shared backend + infra only (`DATABASE_URL`, `REDIS_URL`, `SECRET_KEY`), gitignored; `.env.example` is the committed contract. Owned by `references/2-repo/env-and-config/env-precedence.md`.
-- **`apps/frontend/.env`** — the frontend's own `VITE_*` vars, isolated so no server secret can leak into the client bundle. Owned by `references/2-repo/env-and-config/frontend-env-isolation.md`.
-- **`apps/backend/config.yaml`** reads root `.env` via `${VAR}` — the per-service config pattern, owned by `references/2-repo/env-and-config/per-service-config.md`. The secret-by-environment matrix is owned by `references/2-repo/env-and-config/secrets-matrix.md`.
+- **Root `.env`** — shared backend + infra only (`DATABASE_URL`, `REDIS_URL`, `SECRET_KEY`), gitignored; `.env.example` is the committed contract. Owned by `references/2-repo/03-env-config/00_env-precedence.md`.
+- **`apps/frontend/.env`** — the frontend's own `VITE_*` vars, isolated so no server secret can leak into the client bundle. Owned by `references/2-repo/03-env-config/02_frontend-env-isolation.md`.
+- **`apps/backend/config.yaml`** reads root `.env` via `${VAR}` — the per-service config pattern, owned by `references/2-repo/03-env-config/01_per-service-config.md`. The secret-by-environment matrix is owned by `references/2-repo/03-env-config/03_secrets-matrix.md`.
 
 ## Which references govern each part
 
 | Part of this tree | Owner reference |
 |---|---|
-| `apps/{backend,frontend}` split, whole layout | `references/2-repo/layouts/02_multi-app-monorepo.md` |
-| Root README, gitignore, orchestration-only root | `references/2-repo/root-and-hygiene.md`, `references/2-repo/readme-three-paths.md` |
-| `ctl` + `scripts/` tree, conformance floor | `references/2-repo/runtime/script-overview.md`, `references/2-repo/runtime/script-usage.md` |
-| `docker/` compose files (base/configs/`.m.` modifiers) | `references/2-repo/runtime/docker-overview.md`, `references/2-repo/runtime/docker-details.md` |
-| `.mise.toml` runtime contract | `references/2-repo/runtime/mise.md` |
-| `.env` / `.env.example` / `config.yaml` split | `references/2-repo/env-and-config/env-precedence.md`, `.../per-service-config.md`, `.../frontend-env-isolation.md`, `.../secrets-matrix.md` |
-| `infra/` vs `data/`, Postgres + Redis choice | `references/2-repo/databases-provisioning.md` |
-| Postgres / Redis usage conventions | `references/3-app/database-usage/postgres.md`, `references/3-app/database-usage/redis.md` |
-| `infra/nginx` ↔ Vite proxy, `/api/*` routing | `references/2-repo/deployment/proxy-and-exposure.md` |
-| `gunicorn.conf.py`, healthchecks, migrations-on-deploy | `references/3-app/backend/serving.md`, `references/2-repo/deployment/production-readiness.md` |
-| Backend flat `app/`, uv flow, `main.py`/`core/` | `references/3-app/backend/app-skeleton.md` |
+| `apps/{backend,frontend}` split, whole layout | `references/2-repo/01-layouts/02_multi-app-monorepo.md` |
+| Root README, gitignore, orchestration-only root | `references/2-repo/02-root-hygiene/00_root-and-hygiene.md`, `references/2-repo/02-root-hygiene/01_readme-three-paths.md` |
+| `ctl` + `scripts/` tree, conformance floor | `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`, `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md` |
+| `docker/` compose files (base/configs/`.m.` modifiers) | `references/2-repo/04-docker/00_docker-overview.md`, `references/2-repo/04-docker/01_docker-details.md` |
+| `.mise.toml` runtime contract | `references/2-repo/06-runtime-environment/01_mise.md` |
+| `.env` / `.env.example` / `config.yaml` split | `references/2-repo/03-env-config/00_env-precedence.md`, `.../01_per-service-config.md`, `.../02_frontend-env-isolation.md`, `.../03_secrets-matrix.md` |
+| `infra/` vs `data/`, Postgres + Redis choice | `references/3-app/04-database/00_provisioning.md` |
+| Postgres / Redis usage conventions | `references/3-app/04-database/05_postgres.md`, `references/3-app/04-database/06_redis.md` |
+| `infra/nginx` ↔ Vite proxy, `/api/*` routing | `references/2-repo/04-docker/04_proxy-and-exposure.md` |
+| `gunicorn.conf.py`, healthchecks, migrations-on-deploy | `references/3-app/10-deployment/00_serving.md`, `references/2-repo/04-docker/05_production-readiness.md` |
+| Backend flat `app/`, uv flow, `main.py`/`core/` | `references/3-app/02-backend/00_app-skeleton.md` |
 | Backend feature folders (`{router,service,repository,models}.py`) | `references/4-feature/feature-folders.md` |
-| Domain layer deferral (T2) | `references/3-app/backend/domain-grouping.md` |
-| `alembic/`, entrypoint-migrates | `references/3-app/backend/migrations.md`, `references/3-app/backend/alembic-recipe.md` |
-| Frontend `src/` skeleton, layer rules, config files | `references/3-app/frontend/app-skeleton.md` |
+| Domain layer deferral (T2) | `references/3-app/02-backend/01_domain-grouping.md` |
+| `alembic/`, entrypoint-migrates | `references/3-app/04-database/01_migrations.md`, `references/3-app/04-database/02_alembic-recipe.md` |
+| Frontend `src/` skeleton, layer rules, config files | `references/3-app/03-web-app/00_app-skeleton.md` |
 | `src/api/`, `src/pages/`, `src/features/` internals (T3/T6) | `references/4-feature/api-and-pages.md` |
 | DTO / type placement (both planes) | `references/4-feature/types-and-contracts.md` |
-| `styles/tokens.css`, light/dark, shadcn/tailwind | `references/3-app/frontend/tokens-setup.md` |
+| `styles/tokens.css`, light/dark, shadcn/tailwind | `references/3-app/05-package/01_tokens-setup.md` |
 | Styling discipline (primitive-first) | `references/4-feature/styling-discipline.md` |
 | file caps (T5), extraction (T9), folders-by-feature | `references/4-feature/caps-and-extraction.md` |
 | `docs/` in-repo choice | `references/1-ecosystem/docs-placement.md` |
@@ -207,5 +207,5 @@ Everyday flow: `ctl setup` (once) → `ctl dev`. `ctl dev` auto-ups the data cor
 - `references/5-examples/00_index.md` — how to read the examples; example ↔ layout ↔ variant map
 - `references/5-examples/01_single-cli.md` — the step down (one distributable app, no compose)
 - `references/5-examples/03_two-plane-monorepo.md` — the step up (plane-grouped, two backends + workspace)
-- `references/2-repo/layouts/02_multi-app-monorepo.md` — the layout this example instantiates (scaling axes)
-- `references/3-app/00_charter.md` — the app-level decision index every part above serves
+- `references/2-repo/01-layouts/02_multi-app-monorepo.md` — the layout this example instantiates (scaling axes)
+- `references/3-app/00_index.md` — the app-level decision index every part above serves

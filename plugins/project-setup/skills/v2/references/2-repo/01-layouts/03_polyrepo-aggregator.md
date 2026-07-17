@@ -62,6 +62,6 @@ Docs repo placement and the handoff protocol are owned by `references/1-ecosyste
 - `references/1-ecosystem/repo-boundaries.md` — mono vs poly, own-repo criteria, escalation triggers (the WHEN)
 - `references/1-ecosystem/cross-repo-contracts.md` — env sync, image/semver contracts, sharing ranking, no-shared-tables (the contract rules)
 - `references/1-ecosystem/docs-placement.md` — the docs repo and its handoff
-- `references/2-repo/layouts/02_multi-app-monorepo.md` — the monorepo alternative (step down)
-- `references/2-repo/layouts/05_infra-orchestrator.md` — when orchestrating many repos becomes the main job
+- `references/2-repo/01-layouts/02_multi-app-monorepo.md` — the monorepo alternative (step down)
+- `references/2-repo/01-layouts/05_infra-orchestrator.md` — when orchestrating many repos becomes the main job
 - `references/5-examples/05_polyrepo-aggregator.md` — worked example: three service repos + the `-deploy` aggregator

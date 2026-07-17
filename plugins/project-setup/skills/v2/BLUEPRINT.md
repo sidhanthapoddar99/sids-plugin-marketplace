@@ -38,45 +38,62 @@ Build spec for the v2 references library, staged in `skills/v2/`. The live skill
 
 | v2 path | Owns | Sources |
 |---|---|---|
-| `00_charter.md` | L2 decision index → owners; invariants; variants list; audit list | `levels/02_repo.md` |
-| `layouts/01_single-app.md` | the one-app repo shape (repo-level tree only; src-vs-app detail = 1 line + link) | same-named |
-| `layouts/02_multi-app-monorepo.md` | the multi-app shape, backend/frontend scaling spectrum, mesh end, core-vs-BFF axis; topology = 1 line + link to grouping-topology.md | same-named (topology section MOVES OUT) |
-| `layouts/03_polyrepo-aggregator.md` | the aggregator repo's SHAPE (when-polyrepo lives in 1-ecosystem) | `layouts/03_polyrepo-with-aggregator.md` |
-| `layouts/04_ml-project.md` | ML repo shape | same-named |
-| `layouts/05_infra-orchestrator.md` | Go-CLI-driven compose tree shape | same-named |
-| `layouts/06_embeddable-package.md` | package+reference-host repo shape, publishing mechanics, single-artifact delivery (when-distributed lives in 1-ecosystem; embedding seams detail in 3-app) | `layouts/06_…`, keep publishing here |
-| `grouping-topology.md` | **NEW OWNER**: flat/plane-grouped/hybrid variants + decision rule + workspace rooting (JS-only vs polyglot) + package placement scope — one decision cluster, one file | layout 02 § topology, `root-and-hygiene.md` § rooting, `multi-frontend-workspaces.md` § rooting+scope |
-| `root-and-hygiene.md` | root-as-index, orchestration-only root manifest, single-package containment + exceptions, `.gitignore` doctrine (rooting = 1 line + link to grouping-topology) | `repo-setup/root-and-hygiene.md` |
-| `readme-three-paths.md` | root README contract + per-service READMEs | same-named |
-| `runtime/overview.md` `runtime/mise.md` `runtime/docker-overview.md` `runtime/docker-details.md` `runtime/multi-stack.md` `runtime/script-overview.md` `runtime/script-usage.md` `runtime/script-alternatives.md` `runtime/no-data-core.md` `runtime/complex-setups.md` | as today (already well-owned); migrate + fix links + scope-check | `repo-setup/runtime/*` |
-| `env-and-config/env-precedence.md` `…/per-service-config.md` `…/frontend-env-isolation.md` `…/secrets-matrix.md` | as today | `repo-setup/env-and-config/*` |
-| `databases-provisioning.md` | engine choice (right floor) + infra/ vs data/ placement — ONE file (usage conventions live in 3-app) | `architecture/database/choosing-a-database.md` + `infra-vs-data-folder.md` |
-| `deployment/proxy-and-exposure.md` | the `/api/*` routing contract, Vite-proxy↔nginx pair, Traefik/expose posture | `architecture/frontend/vite-proxy-nginx-pair.md` + `api-prefix-routing.md` |
-| `deployment/production-readiness.md` | health/readiness, graceful shutdown, limits, migrations-on-deploy checklist (worker model = link to 3-app serving) | `architecture/production/production-readiness.md` |
-| `platform/mobile.md` `platform/desktop.md` | as today | `architecture/platform/*` |
-| `ml-orchestration/` (6 files: custom-orchestrator, spot-instances-and-checkpoints, inference-autoscaling, remote-dev-ssh-vscode, agent-ssh-access, cicd-for-ml — tool-agnostic `scripts/cloud/` doctrine, no third-party orchestrator) | as today | `architecture/ml-orchestration/*` |
-| `tooling/lefthook.md` `tooling/vscode-debugger.md` `tooling/ci-cd-future.md` | as today | `repo-setup/tooling/*` |
+| `00_index.md` | L2 decision index → owners; invariants; variants list; audit list | `levels/02_repo.md` |
+| `01-layouts/00_grouping-topology.md` | **NEW OWNER**: flat/plane-grouped/hybrid variants + decision rule + workspace rooting (JS-only vs polyglot) + package placement scope — one decision cluster, one file (grouped with layouts: decided with the layout) | layout 02 § topology, `00_root-and-hygiene.md` § rooting, `multi-frontend-workspaces.md` § rooting+scope |
+| `01-layouts/01_single-app.md` | the one-app repo shape (repo-level tree only; src-vs-app detail = 1 line + link) | same-named |
+| `01-layouts/02_multi-app-monorepo.md` | the multi-app shape, backend/frontend scaling spectrum, mesh end, core-vs-BFF axis; topology = 1 line + link to grouping-topology | same-named (topology section MOVES OUT) |
+| `01-layouts/03_polyrepo-aggregator.md` | the aggregator repo's SHAPE (when-polyrepo lives in 1-ecosystem) | `layouts/03_polyrepo-with-aggregator.md` |
+| `01-layouts/04_ml-project.md` | ML repo shape | same-named |
+| `01-layouts/05_infra-orchestrator.md` | Go-CLI-driven compose tree shape | same-named |
+| `01-layouts/06_embeddable-package.md` | package+reference-host repo shape, publishing mechanics, single-artifact delivery (when-distributed lives in 1-ecosystem; embedding seams detail in 3-app) | `layouts/06_…`, keep publishing here |
+| `02-root-hygiene/00_root-and-hygiene.md` | root-as-index, orchestration-only root manifest, single-package containment + exceptions, `.gitignore` doctrine (rooting = 1 line + link to grouping-topology) | `repo-setup/00_root-and-hygiene.md` |
+| `02-root-hygiene/01_readme-three-paths.md` | root README contract + per-service READMEs | same-named |
+| `03-env-config/00_env-precedence.md` `…/01_per-service-config.md` `…/02_frontend-env-isolation.md` `…/03_secrets-matrix.md` | as today | `repo-setup/env-and-config/*` |
+| `04-docker/00_docker-overview.md` `…/01_docker-details.md` `…/02_no-data-core.md` `…/03_multi-stack.md` | docker/ layout + path discipline, bind-mounts/ports, DB-less topology swap, multi-stack (as today); migrate + fix links + scope-check | `repo-setup/runtime/*` (docker + no-data-core) |
+| `04-docker/04_proxy-and-exposure.md` | the `/api/*` routing contract, Vite-proxy↔nginx pair, Traefik/expose posture | `architecture/frontend/vite-proxy-nginx-pair.md` + `api-prefix-routing.md` |
+| `04-docker/05_production-readiness.md` | health/readiness, graceful shutdown, limits, migrations-on-deploy checklist (worker model = link to 3-app serving) | `architecture/production/05_production-readiness.md` |
+| `05-ctl-scripts-tooling/00_script-overview.md` `…/01_script-usage.md` `…/02_script-alternatives.md` `…/03_complex-setups.md` | the ctl/scripts model + usage + opt-out alternatives + complex-setups escalation (as today); migrate + fix links + scope-check | `repo-setup/runtime/*` (script + complex-setups) |
+| `05-ctl-scripts-tooling/04_lefthook.md` `…/05_vscode-debugger.md` `…/06_ci-cd-future.md` | as today | `repo-setup/tooling/*` |
+| `06-runtime-environment/00_runtime-triad.md` `06-runtime-environment/01_mise.md` | the ONE runtime-interaction map (mise+ctl+docker+env) + `.mise.toml` version contract (as today; `overview.md` renamed → `00_runtime-triad.md`) | `repo-setup/runtime/*` (overview + mise) |
+| `07-ml-orchestration/` (6 files: custom-orchestrator, spot-instances-and-checkpoints, inference-autoscaling, remote-dev-ssh-vscode, agent-ssh-access, cicd-for-ml — tool-agnostic `scripts/cloud/` doctrine, no third-party orchestrator) | as today — renamed from `07-platform/ml-orchestration/` and flattened up one level | `architecture/ml-orchestration/*` |
+
+The former `07-platform/` also held DB-provisioning, mobile, desktop, and PWA — **all four moved DOWN to L3 `3-app/`** (they are app-kind decisions); `07-platform/` no longer exists. See the 3-app section for their new homes.
 
 ### 3-app/
 
 | v2 path | Owns | Sources |
 |---|---|---|
-| `00_charter.md` | L3 decision index, per-app questions, invariants, audit list | `levels/03_app.md` |
-| `backend/app-skeleton.md` | flat `app/` rule (run-service vs src-layout), pyproject+uv flow, the top-level skeleton (`main.py`, `core/`, feature folders) | `architecture/backend/pyproject-uv-sync-for-apps.md`, skeleton bits of layouts |
-| `backend/domain-grouping.md` | the domain layer: tripwire T2, ownership-noun naming, aggregator routers, domain-shared placement, reconcile/consolidation (feature-folder INTERNALS → 4-feature) | `architecture/modularity/domain-grouping-tripwire.md` (split: L3 half) |
-| `backend/migrations.md` | **NEW OWNER (decision)**: Alembic default vs raw-SQL vs when-not-Alembic vs no-tool; entrypoint-migrates vs one-shot vs neutral owner | decision halves of `alembic-default.md`, `alembic-with-raw-sql.md`, `when-not-alembic.md` |
-| `backend/alembic-recipe.md` | mechanics: init recipe, ini/env.py, daily flow, docker entrypoint | `alembic-default.md` (recipe half) |
-| `backend/raw-sql-recipe.md` | mechanics: 3-file pattern, shim, helpers, sqlx drift check | `alembic-with-raw-sql.md` (recipe half) |
-| `backend/two-plane-split.md` | admin/user split decision + `apps/db` neutral owner + one-DB ownership | `architecture/backend/two-plane-split.md` |
-| `backend/serving.md` | per-language worker model, recycling, timeouts (split OUT of production/) | `architecture/production/app-server-and-workers.md` |
-| `backend/ml-python-flow.md` | requirements.txt + uvenv global env for ML | `architecture/backend/requirements-uvenv-for-ml.md` |
-| `frontend/app-skeleton.md` | **THE answer to "structure of the frontend"**: app placement + config files + the hard `src/` skeleton + layer import rules + workspace-reconciliation (local vs packages) + layout-shells rule (api/pages/types INTERNALS → 4-feature) | `architecture/frontend/single-frontend.md` + `intra-app-structure.md` MERGED (L3 halves) |
-| `frontend/workspaces-mechanics.md` | mechanics only: pnpm/turbo/bun config bodies, catalog, globalEnv, ctl shape (decisions → grouping-topology) | `multi-frontend-workspaces.md` (mechanics half) |
-| `frontend/shared-packages.md` | package internals: what lives in ui/styles/services/types, export surface, ~15-component grouping (T4), tailwind-config wiring | `shared-ui-package.md` + `intra-app-structure.md` § packages |
-| `frontend/tokens-setup.md` | tokens.css content/location, light-dark data-attr, shadcn wiring (USAGE discipline → 4-feature) | `design-tokens.md`, `light-dark-data-attr.md`, `shadcn-tailwind.md` (merge; keep sub-sections) |
-| `frontend/framework-variants.md` | Next/Astro variants | `nextjs-astro-variants.md` |
-| `frontend/embeddable-seams.md` | embedding seams / IoC config API / per-instance mounts (repo shape + publishing stay in layout 06) | `architecture/frontend/embeddable-package-and-reference-host.md` |
-| `database-usage/postgres.md` `…/redis.md` `…/sqlite.md` `…/other-engines.md` | per-engine usage conventions | `architecture/database/{postgres,redis,sqlite,mongodb-neo4j-seaweed}-…` |
+| `00_index.md` | L3 decision index, per-app questions, invariants, audit list (renamed from `00_charter.md`) | `levels/03_app.md` |
+| `01-structure-and-stack/00_app-anatomy.md` | **NEW**: the every-app contract — self-contained, no cross-app imports, app-vs-package test, must/never contain | newly authored |
+| `01-structure-and-stack/01_stack-decision.md` | **NEW (decision)**: which lang/framework/runtime/engine an app uses, per kind + criteria; one line + link per owned option | newly authored |
+| `01-structure-and-stack/02_workspaces-mechanics.md` | mechanics: pnpm/turbo/bun config bodies, catalog, globalEnv, ctl shape (moved from `frontend/workspaces-mechanics.md`; decisions → grouping-topology) | `multi-frontend-workspaces.md` (mechanics half) |
+| `02-backend/00_app-skeleton.md` | flat `app/` rule (run-service vs src-layout), pyproject+uv flow, top-level skeleton (`main.py`, `core/`, feature folders) | `architecture/backend/pyproject-uv-sync-for-apps.md`, skeleton bits of layouts |
+| `02-backend/01_domain-grouping.md` | the domain layer: T2, ownership-noun naming, aggregator routers, domain-shared placement (feature-folder INTERNALS → 4-feature) | `architecture/modularity/domain-grouping-tripwire.md` (L3 half) |
+| `02-backend/02_two-plane-split.md` | admin/user split decision + `apps/db` neutral owner + one-DB ownership | `architecture/backend/two-plane-split.md` |
+| `02-backend/03_ml-python-flow.md` | requirements.txt + uvenv global env for ML | `architecture/backend/requirements-uvenv-for-ml.md` |
+| `03-web-app/00_app-skeleton.md` | **THE answer to "structure of the frontend"**: app placement + config + hard `src/` skeleton + import rules + workspace reconciliation + layout-shells (api/pages/types INTERNALS → 4-feature) | `architecture/frontend/single-frontend.md` + `intra-app-structure.md` MERGED (L3 halves) |
+| `03-web-app/01_framework-variants.md` | Next/Astro variants | `nextjs-astro-variants.md` |
+| `03-web-app/02_pwa.md` | PWA = existing web frontend + manifest/service worker (not a separate app); PWA vs native/desktop; offline scope + push reality check (**MOVED DOWN** from L2 `07-platform/`) | newly authored |
+| `04-database/00_provisioning.md` | engine choice (right floor) + infra/ vs data/ placement — repo-wide decision now housed at L3 (**MOVED DOWN** from L2 `07-platform/`) | `architecture/database/choosing-a-database.md` + `infra-vs-data-folder.md` |
+| `04-database/01_migrations.md` | **NEW OWNER (decision)**: Alembic vs raw-SQL vs when-not-Alembic vs no-tool; entrypoint-migrates vs one-shot vs neutral owner (moved from `backend/migrations.md`) | decision halves of `alembic-default.md`, `alembic-with-raw-sql.md`, `when-not-alembic.md` |
+| `04-database/02_alembic-recipe.md` | mechanics: init recipe, ini/env.py, daily flow, docker entrypoint (moved from `backend/`) | `alembic-default.md` (recipe half) |
+| `04-database/03_raw-sql-recipe.md` | mechanics: 3-file pattern, shim, helpers, sqlx drift check (moved from `backend/`) | `alembic-with-raw-sql.md` (recipe half) |
+| `04-database/04_sqlite.md` `05_postgres.md` `06_redis.md` `07_other-engines.md` | per-engine usage conventions (moved from `database-usage/`) | `architecture/database/{sqlite,postgres,redis,mongodb-neo4j-seaweed}-…` |
+| `05-package/00_shared-packages.md` | package internals: ui/styles/services/types, export surface, ~15-component grouping (T4), tailwind-config wiring (moved from `frontend/`) | `shared-ui-package.md` + `intra-app-structure.md` § packages |
+| `05-package/01_tokens-setup.md` | tokens.css content/location, light-dark data-attr, shadcn wiring (USAGE → 4-feature; moved from `frontend/`) | `design-tokens.md`, `light-dark-data-attr.md`, `shadcn-tailwind.md` |
+| `05-package/02_embeddable-seams.md` | embedding seams / IoC config API / per-instance mounts (repo shape + publishing → layout 06; moved from `frontend/`) | `architecture/frontend/embeddable-package-and-reference-host.md` |
+| `06-desktop-app/00_desktop-app.md` | Tauri (default) / Electron; reuses web `packages/` (**MOVED DOWN** from L2 `07-platform/`; extended with a packages-reuse section) | `architecture/platform/desktop*` |
+| `07-mobile-app/00_mobile-app.md` | native iOS (Swift) + Android (Kotlin) under `apps/` (**MOVED DOWN** from L2 `07-platform/`) | `architecture/platform/mobile*` |
+| `08-ai/00_mcp-servers.md` | **NEW**: MCP server placement (app vs package), `.mcp.json` config, local stdio vs remote HTTP, tool-surface versioning | newly authored |
+| `08-ai/01_agent-sdks.md` | **NEW**: LLM code as a provider boundary — adapter-per-provider (cites the L4 owner), prompt placement, streaming isolation, evals, SDK defaults | newly authored |
+| `08-ai/02_ai-keys-and-safety.md` | **NEW**: AI key USAGE (backend-only, proxy route), prompt-injection posture, AI-call audit (key STORAGE → `2-repo/03-env-config/03_secrets-matrix.md`) | newly authored |
+| `09-security-hardening/00_edge-protection.md` | **NEW**: bot/abuse — Cloudflare/WAF posture, Turnstile/captcha placement (backend verify), route + tier decision (edge infra stays L2) | newly authored |
+| `09-security-hardening/01_rate-limiting.md` | **NEW**: layers; app OWNS per-user/per-key limits (Redis-backed when multi-instance); 429 + Retry-After (proxy connection limits stay L2) | newly authored |
+| `09-security-hardening/02_telemetry-and-audit.md` | **NEW**: structured request logs, audit events, error tracking, telemetry adapter (opt-out), no secrets/PII in logs | newly authored |
+| `10-deployment/00_serving.md` | per-language worker model, recycling, timeouts (moved from `backend/serving.md`) | `architecture/production/app-server-and-workers.md` |
+| `10-deployment/01_app-packaging.md` | **NEW**: Dockerfile-per-app (multi-stage, non-root, pinned base), image naming/tag, healthcheck contract, `.dockerignore` (orchestration → `2-repo/04-docker/`) | newly authored |
+
+**3-app/ counts:** 32 files across `00_index.md` + folders `01`–`10`. **9 are newly authored** — 2 in `01-structure-and-stack/` (app-anatomy, stack-decision), 3 in `08-ai/`, 3 in `09-security-hardening/`, 1 in `10-deployment/` (app-packaging). 4 moved DOWN from L2 `07-platform/` (provisioning, pwa, desktop, mobile); the remaining files are renames within 3-app. Whole library: **89 files** under `references/` (was 80; +9 new).
 
 ### 4-feature/
 

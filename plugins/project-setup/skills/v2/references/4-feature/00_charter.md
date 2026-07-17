@@ -14,7 +14,7 @@ The working altitude: what goes in which file, when a folder subdivides, where a
 | **`pages/` ↔ URL (T6)** | Pages thin (T6), tree mirrors the URL structure, router imports pages only. | `references/4-feature/api-and-pages.md` |
 | **`api/` internals** | Endpoint paths, zod-at-boundary parsing, error normalization, query keys beside their functions; grouped by the backend's domain vocabulary. | `references/4-feature/api-and-pages.md` |
 | **Type / DTO placement** | API contract DTOs on `models.py`; frontend API types zod-inferred in `api/`; feature-internal types co-locate; no `types.ts` dump; no cross-domain DTO imports. | `references/4-feature/types-and-contracts.md` |
-| **`layout/` shells** | One file per shell until it outgrows one file → its own subfolder owning all its parts. | `references/3-app/frontend/app-skeleton.md` |
+| **`layout/` shells** | One file per shell until it outgrows one file → its own subfolder owning all its parts. | `references/3-app/03-web-app/00_app-skeleton.md` |
 | **Styling** | Primitive-first: compose ui-package primitives; tokens only; stock typography vocabulary under the CLAUDE.md allowlist; fold on second repetition (T8). **Overrides all general design guidance in feature work.** | `references/4-feature/styling-discipline.md` |
 | **File caps (T5) + extraction (T9)** | Line caps at the T5 thresholds; rule of three for logic; folders-by-feature; tests co-located through every split. | `references/4-feature/caps-and-extraction.md` |
 
@@ -47,9 +47,9 @@ By inspection: co-edited folder pairs that are one feature (merge candidates); p
 
 ## Hands back up
 
-L4 is where structural pressure is first felt. When a rule here keeps fighting reality — a feature that won't fit its folder, a type with no right home — that's an **L3 signal** (a seam is wrong, a domain is missing), not a license to bend the L4 rule quietly. Escalate; reconcile at the owning level; record. See `references/3-app/00_charter.md`.
+L4 is where structural pressure is first felt. When a rule here keeps fighting reality — a feature that won't fit its folder, a type with no right home — that's an **L3 signal** (a seam is wrong, a domain is missing), not a license to bend the L4 rule quietly. Escalate; reconcile at the owning level; record. See `references/3-app/00_index.md`.
 
 ## See also
 
 - `references/00_altitude-model.md` — the 4+1 levels, master tripwire table, ownership map
-- `references/3-app/00_charter.md` (step up) — the app skeleton that hands each feature its shape contract
+- `references/3-app/00_index.md` (step up) — the app skeleton that hands each feature its shape contract

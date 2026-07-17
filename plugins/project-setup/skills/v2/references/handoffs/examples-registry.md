@@ -29,7 +29,7 @@ Drifts (where it predates or deviates from current conventions):
 
 When `/ps-setup` (or a single-decision lookup) wants a real-world example:
 
-1. Identify the closest layout / convention area (layouts live under `references/2-repo/layouts/`; worked trees under `references/5-examples/`).
+1. Identify the closest layout / convention area (layouts live under `references/2-repo/01-layouts/`; worked trees under `references/5-examples/`).
 2. Cite the **most relevant registered example** and, where possible, a specific file in it.
 3. If no registered example covers the pattern: cite the convention from this references library, say plainly that no registered example demonstrates it yet, and propose the pattern on its own merits. **Never fabricate a path or repo.**
 

@@ -8,13 +8,13 @@ The standard runtime (one `docker/` with a profile-less `compose.yaml` + standal
 
 They travel together: the kind of project that needs `docker/<mode>/` (e.g. a blockchain test harness with 1/N/prod node topologies) is usually the kind that needs a binary to manage it. This is **Layout 05**.
 
-> The simple runtime is documented in `docker-overview.md` (compose) and `script-overview.md` (ctl). This doc only covers the deltas for complex setups. Don't reach for any of it preemptively.
+> The simple runtime is documented in `references/2-repo/04-docker/00_docker-overview.md` (compose) and `00_script-overview.md` (ctl). This doc only covers the deltas for complex setups. Don't reach for any of it preemptively.
 
 ---
 
 ## Part 0 — profiles (the advanced service-selection axis)
 
-The default model is **profile-less**: every service in the chosen compose file runs, and "a subset" is expressed as a standalone `compose.<name>.yaml` selected by name (`docker-overview.md`). At ≤5 services where you almost always want the whole set, a profile axis costs more than it pays — synthetic `all`/`none` entries, mutual-exclusion logic, config-aware recomputation — for a payoff that never materialises.
+The default model is **profile-less**: every service in the chosen compose file runs, and "a subset" is expressed as a standalone `compose.<name>.yaml` selected by name (`references/2-repo/04-docker/00_docker-overview.md`). At ≤5 services where you almost always want the whole set, a profile axis costs more than it pays — synthetic `all`/`none` entries, mutual-exclusion logic, config-aware recomputation — for a payoff that never materialises.
 
 **Re-add profiles only when the project has several genuinely orthogonal, independently-optional service groups** mixed in arbitrary combinations — workers + observability + edge + debug tooling, toggled à la carte. That's a real shape, but uncommon, and even then a handful of standalone configs often expresses it more legibly. The test: can you *name* several independently-optional groups **and** confirm standalone configs can't express them? If not, stay profile-less.
 
@@ -43,7 +43,7 @@ docker/
 - **Each mode is a directory**, not a file. Its `compose.yaml` is that mode's base.
 - **Within a mode, the same conventions hold**: `compose.m.<modifier>.yaml` for cross-cutting overlays, port-less base. The `.m.` marker means the same thing here as in the flat layout.
 - **Multi-mode is itself the common reason to want profiles** (Part 0): a mode like `multinode` may genuinely have optional groups (`--profile obs` to add observability). If a mode needs them, re-add the axis *for that mode* per Part 0 — it's still the opt-in, not the baseline.
-- Path discipline is unchanged (`../../apps`, `../../infra` — note the extra `..` because compose files are now one level deeper). See `docker-details.md`.
+- Path discipline is unchanged (`../../apps`, `../../infra` — note the extra `..` because compose files are now one level deeper). See `references/2-repo/04-docker/01_docker-details.md`.
 
 The binary (Part 2) picks the mode directory and assembles the `-f` list; the modes themselves are plain compose and **must remain runnable directly**:
 
@@ -129,7 +129,7 @@ A Layout 05 README documents **four** startup paths:
 3. Per-service host run (IDE debugging)
 4. Building the binary — `cd cchain && go build -o ../cch`
 
-(The standard three-path contract is in `overview.md`; complex setups add the build path.)
+(The standard three-path contract is in `references/2-repo/06-runtime-environment/00_runtime-triad.md`; complex setups add the build path.)
 
 ---
 
@@ -145,12 +145,12 @@ A Layout 05 README documents **four** startup paths:
 - Reinventing what `docker compose` already does (health, deps, log multiplexing) — call it underneath.
 - Conflating orchestrator state and service state — the orchestrator manages compose, never application data.
 - Not documenting the binary's state file — operators need to know it exists and where.
-- Using `docker/<mode>/` for a project that only needs overlays — that's the flat layout (`docker-overview.md`), not this.
+- Using `docker/<mode>/` for a project that only needs overlays — that's the flat layout (`references/2-repo/04-docker/00_docker-overview.md`), not this.
 
 ## See also
 
-- `overview.md` — how mise + ctl + docker + env interact (the simple case)
-- `docker-overview.md` — the flat (single-mode) profile-less convention: standalone configs + `compose.m.*` modifiers
-- `script-overview.md` — the shell `ctl` this escalates *from*
-- `multi-stack.md` — the *across-repos* escalation: several stacks cooperating on one shared network (this page covers escalations within one repo)
-- `references/2-repo/layouts/05_infra-orchestrator.md` — the layout entry that points here
+- `references/2-repo/06-runtime-environment/00_runtime-triad.md` — how mise + ctl + docker + env interact (the simple case)
+- `references/2-repo/04-docker/00_docker-overview.md` — the flat (single-mode) profile-less convention: standalone configs + `compose.m.*` modifiers
+- `00_script-overview.md` — the shell `ctl` this escalates *from*
+- `references/2-repo/04-docker/03_multi-stack.md` — the *across-repos* escalation: several stacks cooperating on one shared network (this page covers escalations within one repo)
+- `references/2-repo/01-layouts/05_infra-orchestrator.md` — the layout entry that points here

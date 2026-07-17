@@ -6,8 +6,8 @@ This file **shows**; it owns no rules. Every part is annotated with the referenc
 
 Read alongside:
 
-- `references/2-repo/layouts/06_embeddable-package.md` — the repo shape, publishing mechanics, single-artifact delivery, `ctl` shape (the normative layout).
-- `references/3-app/frontend/embeddable-seams.md` — the embedding seams / IoC config API / per-instance mount model (the normative seam rules).
+- `references/2-repo/01-layouts/06_embeddable-package.md` — the repo shape, publishing mechanics, single-artifact delivery, `ctl` shape (the normative layout).
+- `references/3-app/05-package/02_embeddable-seams.md` — the embedding seams / IoC config API / per-instance mount model (the normative seam rules).
 - `references/1-ecosystem/repo-boundaries.md` — why this is distributed-not-deployed (the decision that routes here).
 
 ## The shape in one line
@@ -19,9 +19,9 @@ Read alongside:
 ```
 flow-editor/                              # workspace root — the PRODUCT is packages/flow-editor
 ├── package.json                          # private:true, orchestration-only manifest (no runtime deps) — T10
-├── pnpm-workspace.yaml                   # workspace globs: packages/*, apps/*  → workspaces-mechanics.md
-├── turbo.json                            # build/test pipeline (dev, build, test, publish) → workspaces-mechanics.md
-├── ctl                                   # the ONE entrypoint: dev/build/test/publish/clean → script-overview.md
+├── pnpm-workspace.yaml                   # workspace globs: packages/*, apps/*  → references/3-app/01-structure-and-stack/02_workspaces-mechanics.md
+├── turbo.json                            # build/test pipeline (dev, build, test, publish) → references/3-app/01-structure-and-stack/02_workspaces-mechanics.md
+├── ctl                                   # the ONE entrypoint: dev/build/test/publish/clean → 00_script-overview.md
 ├── scripts/                              # ctl workers (copied verbatim, adapted by deletion — conformance floor)
 │   ├── common/{_lib.sh,_select.sh}
 │   └── dev/  container/  config/
@@ -33,7 +33,7 @@ flow-editor/                              # workspace root — the PRODUCT is pa
 │   │   ├── src/
 │   │   │   ├── index.ts                  # the public API surface — the ONLY entry consumers import
 │   │   │   ├── FlowEditor.tsx            # the embeddable React component (mounts one editor instance)
-│   │   │   ├── config.ts                 # the SEAM contract (services/storage/theme) → embeddable-seams.md
+│   │   │   ├── config.ts                 # the SEAM contract (services/storage/theme) → references/3-app/05-package/02_embeddable-seams.md
 │   │   │   ├── core/                     # re-exports @you/flow-core for internal use (bundled at publish)
 │   │   │   └── ui/                        # React UI layer: nodes, toolbar, panels (primitive-first) → styling-discipline
 │   │   ├── tests/                        # unit tests for the component + config wiring
@@ -57,14 +57,14 @@ flow-editor/                              # workspace root — the PRODUCT is pa
 │   │       ├── demos/                      # multiple mounts on one page → proves per-instance model
 │   │       └── mocks/                      # local storage + auth stubs that fill the seams
 │   └── api/                              # OPTIONAL BFF — present ONLY because this demo needs a backend
-│       ├── app/                          # flat app/ (run-service, no src/) → backend/app-skeleton.md
+│       ├── app/                          # flat app/ (run-service, no src/) → references/3-app/02-backend/00_app-skeleton.md
 │       │   ├── main.py
 │       │   └── core/
 │       ├── config.yaml
 │       └── README.md
 │
 ├── docker/                              # optional — ONLY the reference host's demo deps (not the product)
-│   └── compose.yaml                     # profile-less base for local demo services → docker-overview.md
+│   └── compose.yaml                     # profile-less base for local demo services → 00_docker-overview.md
 ├── .changeset/                          # changesets: per-package semver bumps + changelog
 ├── docs/                                # optional in-repo docs → 1-ecosystem/docs-placement.md
 ├── .claude/  CLAUDE.md                  # recorded variant choices + styling block → handoffs/claude-folder.md
@@ -75,7 +75,7 @@ Everything under `apps/` exists to develop `packages/flow-editor/`. Delete `apps
 
 ## The published `package.json` (instance)
 
-Concrete instance of the publishing rules owned by `references/2-repo/layouts/06_embeddable-package.md` — don't restate them, this only shows a filled-in shape.
+Concrete instance of the publishing rules owned by `references/2-repo/01-layouts/06_embeddable-package.md` — don't restate them, this only shows a filled-in shape.
 
 ```jsonc
 // packages/flow-editor/package.json
@@ -108,14 +108,14 @@ Consumers run `npm i @you/flow-editor` and receive one package; `@you/flow-core`
 
 ## The seam contract (instance)
 
-The editor never reaches for its own services — the host injects them. Full seam rules (injection, per-instance mount, no baked secrets) are owned by `references/3-app/frontend/embeddable-seams.md`; this is just the filled-in shape both hosts satisfy.
+The editor never reaches for its own services — the host injects them. Full seam rules (injection, per-instance mount, no baked secrets) are owned by `references/3-app/05-package/02_embeddable-seams.md`; this is just the filled-in shape both hosts satisfy.
 
 ```ts
 // packages/flow-editor/src/config.ts
 export interface FlowEditorConfig {
   services: { apiBaseUrl: string; authToken: () => Promise<string> };  // host owns endpoints + tokens
   storage:  { onSave: (g: Graph) => Promise<void>; open: (id: string) => Promise<Graph> };  // host decides where
-  theme?:   "light" | "dark" | TokenOverrides;                          // host controls look → tokens-setup.md
+  theme?:   "light" | "dark" | TokenOverrides;                          // host controls look → references/3-app/05-package/01_tokens-setup.md
 }
 ```
 
@@ -131,7 +131,7 @@ Same contract, two implementations — the package can't tell which host it's in
 
 ## `ctl` shape + publish flow
 
-`ctl` shape is owned by `references/2-repo/layouts/06_embeddable-package.md`; this shows the concrete verbs and the publish sequence.
+`ctl` shape is owned by `references/2-repo/01-layouts/06_embeddable-package.md`; this shows the concrete verbs and the publish sequence.
 
 ```
 ctl dev        # runs apps/web (reference host) with @you/flow-editor hot-linked
@@ -156,27 +156,27 @@ ctl help
 |---|---|---|
 | Deployed vs distributed | **distributed** (published package) | `references/1-ecosystem/repo-boundaries.md` |
 | `apps/` vs `packages/` category | **published product** in `packages/` (third category) | `references/02_decision-tree.md` |
-| Framework runtime | React as **peerDependency** (host owns it) | `references/2-repo/layouts/06_embeddable-package.md` |
-| Internal boundary vs install story | **two workspace packages, one published artifact** (`noExternal`) | `references/2-repo/layouts/06_embeddable-package.md` |
-| Engine/UI split | **react-less `flow-core`** + React `ui/` | `references/3-app/frontend/embeddable-seams.md` |
-| Config delivery | **injected at mount**, no package `.env` | `references/3-app/frontend/embeddable-seams.md` |
-| Reference-host env | `VITE_*` throwaway URLs, no leaked secrets | `references/2-repo/env-and-config/frontend-env-isolation.md` |
+| Framework runtime | React as **peerDependency** (host owns it) | `references/2-repo/01-layouts/06_embeddable-package.md` |
+| Internal boundary vs install story | **two workspace packages, one published artifact** (`noExternal`) | `references/2-repo/01-layouts/06_embeddable-package.md` |
+| Engine/UI split | **react-less `flow-core`** + React `ui/` | `references/3-app/05-package/02_embeddable-seams.md` |
+| Config delivery | **injected at mount**, no package `.env` | `references/3-app/05-package/02_embeddable-seams.md` |
+| Reference-host env | `VITE_*` throwaway URLs, no leaked secrets | `references/2-repo/03-env-config/02_frontend-env-isolation.md` |
 
 ## Which references govern each part
 
 | Part of the tree | Governed by |
 |---|---|
-| Overall repo shape, tree, `ctl`, publishing, single-artifact delivery | `references/2-repo/layouts/06_embeddable-package.md` |
-| `config.ts` seams, IoC injection, per-instance mount, headless/UI split | `references/3-app/frontend/embeddable-seams.md` |
+| Overall repo shape, tree, `ctl`, publishing, single-artifact delivery | `references/2-repo/01-layouts/06_embeddable-package.md` |
+| `config.ts` seams, IoC injection, per-instance mount, headless/UI split | `references/3-app/05-package/02_embeddable-seams.md` |
 | Why the repo is distributed (routes to Layout 06) | `references/1-ecosystem/repo-boundaries.md` |
 | `apps/` vs `packages/` three-category placement | `references/02_decision-tree.md` |
-| `pnpm-workspace.yaml`, `turbo.json`, workspace wiring | `references/3-app/frontend/workspaces-mechanics.md` |
-| `apps/api/app/` flat backend skeleton (optional BFF) | `references/3-app/backend/app-skeleton.md` |
-| `apps/web/.env.example`, `VITE_*` isolation | `references/2-repo/env-and-config/frontend-env-isolation.md` |
-| `docker/compose.yaml` for demo deps | `references/2-repo/runtime/docker-overview.md` |
-| `ctl` + `scripts/` conformance floor | `references/2-repo/runtime/script-overview.md` |
-| Root manifest orchestration-only (T10), `.gitignore` | `references/2-repo/root-and-hygiene.md` |
-| `ui/` primitive-first styling, `theme` token overrides | `references/4-feature/styling-discipline.md`, `references/3-app/frontend/tokens-setup.md` |
+| `pnpm-workspace.yaml`, `turbo.json`, workspace wiring | `references/3-app/01-structure-and-stack/02_workspaces-mechanics.md` |
+| `apps/api/app/` flat backend skeleton (optional BFF) | `references/3-app/02-backend/00_app-skeleton.md` |
+| `apps/web/.env.example`, `VITE_*` isolation | `references/2-repo/03-env-config/02_frontend-env-isolation.md` |
+| `docker/compose.yaml` for demo deps | `references/2-repo/04-docker/00_docker-overview.md` |
+| `ctl` + `scripts/` conformance floor | `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` |
+| Root manifest orchestration-only (T10), `.gitignore` | `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` |
+| `ui/` primitive-first styling, `theme` token overrides | `references/4-feature/styling-discipline.md`, `references/3-app/05-package/01_tokens-setup.md` |
 | Recorded variant choices + styling block in CLAUDE.md | `references/handoffs/claude-folder.md` |
 
 ## See also

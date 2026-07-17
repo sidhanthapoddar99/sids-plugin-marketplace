@@ -2,7 +2,7 @@
 
 The repo root is an **index, not a runtime**. It orchestrates (`ctl`, config contracts, README) and links inward; the things that actually run — apps, packages, workspaces — live inside folders. This reference owns that rule, the orchestration-only root-manifest rule, the single-package containment rule (with its recorded exceptions), and the `.gitignore` doctrine.
 
-Workspace rooting — where the JS workspace physically sits, and the tooling frictions that follow — is owned by `references/2-repo/grouping-topology.md`; don't restate it here.
+Workspace rooting — where the JS workspace physically sits, and the tooling frictions that follow — is owned by `references/2-repo/01-layouts/00_grouping-topology.md`; don't restate it here.
 
 ## What may exist at root
 
@@ -16,7 +16,7 @@ Some ecosystems require a manifest at the workspace root (`package.json` for pnp
 - **No source.** No `src/`, no entry point, nothing importable.
 - **Scripts delegate** — `"dev": "turbo dev"`, never a script that *is* the app.
 
-A root manifest that accumulates real dependencies is the first symptom of the root becoming a runtime; audits flag it red. Tooling artifacts the workspace manager creates at its root (`node_modules/`, lockfile) are acceptable *at the workspace root* — which is not always the repo root (owned by `references/2-repo/grouping-topology.md`).
+A root manifest that accumulates real dependencies is the first symptom of the root becoming a runtime; audits flag it red. Tooling artifacts the workspace manager creates at its root (`node_modules/`, lockfile) are acceptable *at the workspace root* — which is not always the repo root (owned by `references/2-repo/01-layouts/00_grouping-topology.md`).
 
 ## Single-package repos — contain the package
 
@@ -38,7 +38,7 @@ One committed `.gitignore` at the repo root, **curated per-ecosystem at bootstra
 3. **Ecosystem artifacts** — only the sections for ecosystems present: Python (`__pycache__/`, `.venv/`, tool caches), JS (`node_modules/`, `dist/`, `.turbo/`), etc. New ecosystem joins the repo → its section joins the file.
 4. **Logs & OS junk** — `*.log`, `.DS_Store`.
 
-**Not** blanket-ignored: `.vscode/` — debugger/launch configs are selectively committed (`references/2-repo/tooling/vscode-debugger.md`); `.claude/` — project agent config is committed.
+**Not** blanket-ignored: `.vscode/` — debugger/launch configs are selectively committed (`references/2-repo/05-ctl-scripts-tooling/05_vscode-debugger.md`); `.claude/` — project agent config is committed.
 
 The `data/` pattern (negation must un-ignore directories before it can re-include files):
 
@@ -55,7 +55,7 @@ data/**
 - `.env` (any level) not ignored, or `data/` tracked = red finding.
 - No `.gitignore`, or one missing an ecosystem that's present in the repo = finding.
 
-(Workspace-rooting audit — polyglot repo rooted at the repo root — is owned by `references/2-repo/grouping-topology.md`.)
+(Workspace-rooting audit — polyglot repo rooted at the repo root — is owned by `references/2-repo/01-layouts/00_grouping-topology.md`.)
 
 ## Anti-patterns
 
@@ -66,7 +66,7 @@ data/**
 
 ## See also
 
-- `references/2-repo/grouping-topology.md` — workspace rooting (JS-only vs polyglot), the tooling-friction table, package placement scope
-- `references/2-repo/layouts/01_single-app.md` — the containment tree for one-app repos
-- `references/2-repo/env-and-config/env-precedence.md`, `references/2-repo/env-and-config/secrets-matrix.md` — what the secrets sections protect
-- `references/2-repo/00_charter.md` — the repo-level charter this reference serves
+- `references/2-repo/01-layouts/00_grouping-topology.md` — workspace rooting (JS-only vs polyglot), the tooling-friction table, package placement scope
+- `references/2-repo/01-layouts/01_single-app.md` — the containment tree for one-app repos
+- `references/2-repo/03-env-config/00_env-precedence.md`, `references/2-repo/03-env-config/03_secrets-matrix.md` — what the secrets sections protect
+- `references/2-repo/00_index.md` — the repo-level charter this reference serves

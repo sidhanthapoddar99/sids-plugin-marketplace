@@ -5,7 +5,7 @@ All compose files live under `docker/`. Root keeps at most `.env` / `.env.exampl
 - **Config** — *which scenario runs.* The base `compose.yaml` is the default (the whole stack). Each `compose.<name>.yaml` is a **standalone** scenario selected by name (`ctl up <name>`) that **replaces** base — a different service set (just the data layer, the prod stack). **One per run, optional.**
 - **Modifiers** — *small cross-cutting overlays* layered on whichever config you chose. File `compose.m.<name>.yaml` (the **`.m.`** marks it a modifier at a glance), applied `--modifier <name>`. Stackable. Today: `expose`, `expose_data`, `expose_all`, `traefik`.
 
-**There are no profiles.** Every service in the chosen compose file just runs — at the ≤5 services a typical repo has, you almost always want the whole set, so a second "which services" selection axis costs more than it pays. (Profiles are a rare advanced escalation for genuine multi-group service meshes — see `references/2-repo/runtime/complex-setups.md`. Don't reach for them by default.)
+**There are no profiles.** Every service in the chosen compose file just runs — at the ≤5 services a typical repo has, you almost always want the whole set, so a second "which services" selection axis costs more than it pays. (Profiles are a rare advanced escalation for genuine multi-group service meshes — see `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`. Don't reach for them by default.)
 
 Why this shape works **here specifically**: the default dev loop is `ctl dev` = apps on the **host** (uvicorn `--reload`, `bun dev`), only the data core in containers. Source is never bind-mounted; docker is for prod-like environments, not dev. So app *containers* are only ever prod-shaped — the dev↔prod *config* difference that would force overlays mostly evaporates, and "run the whole stack, or one named slice" is what's left.
 
@@ -22,7 +22,7 @@ docker/
 └── compose.m.traefik.yaml        # MODIFIER (--modifier traefik):     join external traefik-proxy net + labels
 ```
 
-Configs are `compose.<name>.yaml`; modifiers carry the **`.m.`** infix so you can tell them apart from configs without opening them. A single app (Layout 01) often needs only `compose.yaml`. ML (Layout 04) usually needs none. For multi-mode `docker/<mode>/` trees driven by a binary, see `references/2-repo/runtime/complex-setups.md` (Layout 05).
+Configs are `compose.<name>.yaml`; modifiers carry the **`.m.`** infix so you can tell them apart from configs without opening them. A single app (Layout 01) often needs only `compose.yaml`. ML (Layout 04) usually needs none. For multi-mode `docker/<mode>/` trees driven by a binary, see `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` (Layout 05).
 
 ### Path discipline
 
@@ -34,7 +34,7 @@ Configs are `compose.<name>.yaml`; modifiers carry the **`.m.`** infix so you ca
 | Bind a data dir | `${DATA_DIR:-../data}/postgres/pgdata:/var/lib/postgresql/data` — `${DATA_DIR}` from `.env`, fallback `../data` |
 | Reference infra config | `../infra/<service>/<file>:/container/path:ro` |
 
-Init scripts, nginx confs, certs go **adjacent to the service** in `infra/<service>/`, never in `docker/`. See `references/2-repo/runtime/docker-details.md`.
+Init scripts, nginx confs, certs go **adjacent to the service** in `infra/<service>/`, never in `docker/`. See `references/2-repo/04-docker/01_docker-details.md`.
 
 ## Config = which scenario (standalone, replaces base)
 
@@ -57,7 +57,7 @@ When the dev loop is host-run (the default here — app containers are only ever
 - **`list_configs` filters the base by filename.** Update the `compose.yaml` exclusion in `_lib.sh` to `compose.prod.yaml` and set `BASE="$DOCKER_DIR/compose.prod.yaml"` — otherwise "prod" shows up as a duplicate selectable config.
 - **The `.env.<config>` auto-load hook no longer fires for prod.** `ctl up prod` → `.env.prod` only works when prod is a *selected* config; once it's the base, a project needing prod-only env values must reintroduce that load deliberately (e.g. in `container/up.sh`'s env-file assembly).
 
-Companion rule: the dev-time configs (`data`, …) keep their **own bridge network** — see `references/2-repo/runtime/multi-stack.md` for why the dev loop must never depend on shared infrastructure being up.
+Companion rule: the dev-time configs (`data`, …) keep their **own bridge network** — see `references/2-repo/04-docker/03_multi-stack.md` for why the dev loop must never depend on shared infrastructure being up.
 
 ## Modifiers = cross-cutting overlays (stackable)
 
@@ -79,7 +79,7 @@ ctl up prod --modifier traefik           # prod stack behind external Traefik
 ctl up --modifier expose_all -y          # everything published (debug), no prompts
 ```
 
-> **Why tier expose.** The exposure posture (edge is the sole entry point; everything else opts in) is owned by `references/2-repo/deployment/proxy-and-exposure.md` § Exposure posture.
+> **Why tier expose.** The exposure posture (edge is the sole entry point; everything else opts in) is owned by `references/2-repo/04-docker/04_proxy-and-exposure.md` § Exposure posture.
 
 ## `ctl up` handles the flags — and is interactive
 
@@ -90,7 +90,7 @@ ctl up                       # interactive: pick config → pick modifiers → s
 ctl up prod --modifier traefik --nqa -y     # fully scripted (CI): no prompts, no confirm
 ```
 
-Bare `ctl up` in a TTY prompts only for the axes you didn't pass, renders a **plan** (the real `docker compose config` merge — services, published ports, networks, volumes — which also validates the combo early), and prints the exact `--nqa` command that reproduces the run. `ctl up --list` tersely enumerates the discovered configs + modifiers. The non-interactive flag path is 100% intact for CI. Full mechanics, the plan screen, and the `--nqa`/`-y` split are in `references/2-repo/runtime/script-usage.md`; the model is in `references/2-repo/runtime/script-overview.md`.
+Bare `ctl up` in a TTY prompts only for the axes you didn't pass, renders a **plan** (the real `docker compose config` merge — services, published ports, networks, volumes — which also validates the combo early), and prints the exact `--nqa` command that reproduces the run. `ctl up --list` tersely enumerates the discovered configs + modifiers. The non-interactive flag path is 100% intact for CI. Full mechanics, the plan screen, and the `--nqa`/`-y` split are in `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md`; the model is in `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`.
 
 ```
 ctl up prod --modifier traefik
@@ -126,24 +126,24 @@ networks:
 
 ## No data core?
 
-If the project has no database (static frontend, pure API gateway, SDK, ML repo), set `DATA_SVCS=()` in `_lib.sh` — every worker degrades gracefully, the apps become the always-on stack, and `expose` tiers shift to the app services. The exact lines to change are in `references/2-repo/runtime/no-data-core.md` (the topology analogue of `references/2-repo/runtime/script-alternatives.md`).
+If the project has no database (static frontend, pure API gateway, SDK, ML repo), set `DATA_SVCS=()` in `_lib.sh` — every worker degrades gracefully, the apps become the always-on stack, and `expose` tiers shift to the app services. The exact lines to change are in `references/2-repo/04-docker/02_no-data-core.md` (the topology analogue of `references/2-repo/05-ctl-scripts-tooling/02_script-alternatives.md`).
 
 ## Anti-patterns
 
-- Reaching for profiles to express "a subset of services" — write a standalone `compose.<name>.yaml` and select it by name. Profiles are the rare multi-group-mesh escalation (`references/2-repo/runtime/complex-setups.md`), not the default.
+- Reaching for profiles to express "a subset of services" — write a standalone `compose.<name>.yaml` and select it by name. Profiles are the rare multi-group-mesh escalation (`references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`), not the default.
 - A modifier without the `.m.` infix (or a config *with* it) — the marker is the only way `ctl` and a reader tell them apart.
 - Host ports in the `compose.yaml` base — base is internal-only; expose with a modifier (`ctl dev` applies `expose_data` for the data core automatically).
 - A single "expose everything" modifier — tier it (`expose` edge / `expose_data` / `expose_all`) so the default doesn't over-publish.
 - Splitting compose by **concern** (`compose.frontend.yaml`) — a config is a whole scenario, not one service; split by scenario / modifier, never by service.
 - Auto-loaded `compose.override.yaml` as a hidden dev variant — the echoed `-f` line is the contract.
-- A `prod` config that only swaps image tags but leaves `--reload` and no limits — see `references/2-repo/deployment/production-readiness.md`.
-- Generic service names (`postgres`, `backend`) on a **shared** cross-stack network, or a literal `proxy_pass` at another stack's service — single-stack habits that break multi-stack; see `references/2-repo/runtime/multi-stack.md`.
+- A `prod` config that only swaps image tags but leaves `--reload` and no limits — see `references/2-repo/04-docker/05_production-readiness.md`.
+- Generic service names (`postgres`, `backend`) on a **shared** cross-stack network, or a literal `proxy_pass` at another stack's service — single-stack habits that break multi-stack; see `references/2-repo/04-docker/03_multi-stack.md`.
 
 ## See also
 
-- `references/2-repo/runtime/script-overview.md` — the `ctl`/`scripts` model (the 2-axis `ctl up`); `references/2-repo/runtime/script-usage.md` — the interactive flow, plan screen, `--list`, dispatch + auto-discovery
-- `references/2-repo/runtime/no-data-core.md` — `DATA_SVCS=()` + apps-as-core: the exact lines to change for a DB-less project
-- `references/2-repo/runtime/docker-details.md` — bind-mounts + the `data/` layout (nested pgdata trick), internal-vs-host ports (`${VAR}` for host ports), YAML anchors
-- `references/2-repo/runtime/complex-setups.md` — profiles as the advanced multi-group escalation; `docker/<mode>/` trees + Go-CLI orchestrator (Layout 05)
-- `references/2-repo/runtime/multi-stack.md` — several repos' stacks on one shared network: owner/joiner declaration, project-prefixed service names, deploy order, cross-stack env wiring, nginx runtime DNS
-- `references/3-app/backend/serving.md` — what the `prod` config carries (per-language worker model)
+- `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` — the `ctl`/`scripts` model (the 2-axis `ctl up`); `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md` — the interactive flow, plan screen, `--list`, dispatch + auto-discovery
+- `references/2-repo/04-docker/02_no-data-core.md` — `DATA_SVCS=()` + apps-as-core: the exact lines to change for a DB-less project
+- `references/2-repo/04-docker/01_docker-details.md` — bind-mounts + the `data/` layout (nested pgdata trick), internal-vs-host ports (`${VAR}` for host ports), YAML anchors
+- `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` — profiles as the advanced multi-group escalation; `docker/<mode>/` trees + Go-CLI orchestrator (Layout 05)
+- `references/2-repo/04-docker/03_multi-stack.md` — several repos' stacks on one shared network: owner/joiner declaration, project-prefixed service names, deploy order, cross-stack env wiring, nginx runtime DNS
+- `references/3-app/10-deployment/00_serving.md` — what the `prod` config carries (per-language worker model)

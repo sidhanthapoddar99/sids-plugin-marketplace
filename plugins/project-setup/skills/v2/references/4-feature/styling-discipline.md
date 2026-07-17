@@ -1,6 +1,6 @@
 # Styling discipline — primitive-first (hard rules)
 
-The enforcement layer on top of `references/3-app/frontend/tokens-setup.md` + `references/3-app/frontend/shared-packages.md`. Those references define the system (tokens.css, the ui package, shadcn wiring); this one defines what feature code **may not do**, in terms mechanical enough that any agent — including weak models doing parallel edits — produces converging output.
+The enforcement layer on top of `references/3-app/05-package/01_tokens-setup.md` + `references/3-app/05-package/00_shared-packages.md`. Those references define the system (tokens.css, the ui package, shadcn wiring); this one defines what feature code **may not do**, in terms mechanical enough that any agent — including weak models doing parallel edits — produces converging output.
 
 **Why this exists:** parallel agents share no visual memory. Each one improvises a locally-reasonable style (`text-[13px]` here, an ad-hoc weight there) and the product drifts into incoherence — invisible per-diff, obvious in the whole. A standard vocabulary under a closed, grep-enforceable usage policy is the substitute for the taste-memory agents don't have.
 
@@ -24,7 +24,7 @@ That block includes the precedence rule:
 
 3. **Tokens only for brand values.** Never write raw values (`#hex`, raw `px`, arbitrary values like `text-[13px]`) in feature code. Brand values come from the semantic utilities backed by `tokens.css` (`text-fg-1/fg-2`, `bg-bg-1/bg-2`, `border-border-1`); sizes and spacing come from Tailwind's **stock** scales (`text-sm`, `p-4`) — never remapped (rule 4). Raw `var(--...)` is allowed **only** inside `.css` files and ui-package internals — never in JSX/utility strings. If a needed brand value has no token, adding the token is the task — not inlining the value.
 
-4. **Typography: standard vocabulary, strict usage policy.** Two layers, and it matters which is which. **Vocabulary:** the project ships Tailwind's stock theme untouched — full type scale, full weight set, stock spacing — never remapped, no custom size utilities (the wiring rule and its why are owned by `references/3-app/frontend/tokens-setup.md` § "Typography and spacing are NOT tokens"). **Policy — where ALL restraint lives:** a small allowlist **declared in the project's CLAUDE.md** says what feature code may use. Default: `text-sm` for ~90% of the UI (all content — tables, controls, labels, descriptions), `text-base` for headings (the only heading size), `text-xs` sparingly (badges, timestamps, fine meta); `font-normal` everywhere, with `font-medium` OR `font-semibold` (one per project) as the single rare emphasis, **only inside ui-package primitives**. Hierarchy comes from **size and foreground color, never weight**. Every other size and weight exists but is **banned in feature code** — banned, not deleted; hero surfaces get them via ui-package primitives created in a design pass (rule 6). **Why policy, not vocabulary:** a policy change is a one-line CLAUDE.md edit plus a grep sweep; a vocabulary change is a migration — restraint must live in the cheap layer. **ANTI-PATTERNS:** (a) remapping standard names (`text-sm` → 13px); (b) custom size vocabularies (`type-md`); (c) size×weight rungs (`xl=28/700, lg=20/600, …` — three-plus effective weights while every line looks compliant).
+4. **Typography: standard vocabulary, strict usage policy.** Two layers, and it matters which is which. **Vocabulary:** the project ships Tailwind's stock theme untouched — full type scale, full weight set, stock spacing — never remapped, no custom size utilities (the wiring rule and its why are owned by `references/3-app/05-package/01_tokens-setup.md` § "Typography and spacing are NOT tokens"). **Policy — where ALL restraint lives:** a small allowlist **declared in the project's CLAUDE.md** says what feature code may use. Default: `text-sm` for ~90% of the UI (all content — tables, controls, labels, descriptions), `text-base` for headings (the only heading size), `text-xs` sparingly (badges, timestamps, fine meta); `font-normal` everywhere, with `font-medium` OR `font-semibold` (one per project) as the single rare emphasis, **only inside ui-package primitives**. Hierarchy comes from **size and foreground color, never weight**. Every other size and weight exists but is **banned in feature code** — banned, not deleted; hero surfaces get them via ui-package primitives created in a design pass (rule 6). **Why policy, not vocabulary:** a policy change is a one-line CLAUDE.md edit plus a grep sweep; a vocabulary change is a migration — restraint must live in the cheap layer. **ANTI-PATTERNS:** (a) remapping standard names (`text-sm` → 13px); (b) custom size vocabularies (`type-md`); (c) size×weight rungs (`xl=28/700, lg=20/600, …` — three-plus effective weights while every line looks compliant).
 
 5. **Repetition folds early for styling (tripwire T8).** If you write the same utility combination **twice**, stop and fold it into a primitive variant before continuing. This is deliberately stricter than the rule of three for logic — a utility string is cheaper to extract than an abstraction, and styling duplication is where agent drift starts. The two-use threshold sits in the rule-of-N family in `references/4-feature/caps-and-extraction.md` (T8); the styling-specific action (fold into a primitive variant) is the part owned here.
 
@@ -49,7 +49,7 @@ Snippet-safety rules (these commands get copied verbatim into hooks and CI, so t
 
 - **grep owns the recursion** (`-r` + `--include`), never a shell glob. `src/features/**/*.tsx` depends on the shell's `globstar`: zsh recurses, but default bash — what lefthook hooks, CI steps, and most agent shells run — degrades `**` to one directory level and the check reports compliant precisely where it isn't looking.
 - **Scope to `.tsx`/`.jsx`** — `var(--…)` and some patterns are *legitimate* in `.css` files and ui-package internals; an unscoped `-r` produces false positives that train agents to ignore the check.
-- **In a hook, invert the exit code** — grep exits 1 when nothing matches (= compliant), so a lefthook/CI line is `! grep -rE --include='*.tsx' … src/features/` (add `|| { echo "styling-discipline violation"; exit 1; }` for a readable failure). Wiring these into lefthook (see `references/2-repo/tooling/lefthook.md`) is a natural follow-up.
+- **In a hook, invert the exit code** — grep exits 1 when nothing matches (= compliant), so a lefthook/CI line is `! grep -rE --include='*.tsx' … src/features/` (add `|| { echo "styling-discipline violation"; exit 1; }` for a readable failure). Wiring these into lefthook (see `references/2-repo/05-ctl-scripts-tooling/04_lefthook.md`) is a natural follow-up.
 
 ## Anti-patterns
 
@@ -57,13 +57,13 @@ Snippet-safety rules (these commands get copied verbatim into hooks and CI, so t
 - Remapping stock scale names to custom values, or inventing custom size vocabularies — restraint belongs in the CLAUDE.md allowlist (cheap to change), never in the vocabulary (a migration to change)
 - A second weight "just for this one heading" — hierarchy is size + color
 - Size×weight rungs (`xl=28/700, lg=20/600`) — three-plus effective weights in disguise; sizes never carry their own weights
-- Adding a token for a one-off value — that's a magic number with a name (see `references/3-app/frontend/tokens-setup.md`)
+- Adding a token for a one-off value — that's a magic number with a name (see `references/3-app/05-package/01_tokens-setup.md`)
 - Relaxing the fence for "just a prototype page" that then ships — prototypes go through rule 6 or they follow the rules
 
 ## See also
 
-- `references/3-app/frontend/tokens-setup.md` — tokens.css content/location, light-dark data-attr, shadcn wiring (the system this discipline enforces)
-- `references/3-app/frontend/shared-packages.md` — ui-package internals: where primitives and variants live
+- `references/3-app/05-package/01_tokens-setup.md` — tokens.css content/location, light-dark data-attr, shadcn wiring (the system this discipline enforces)
+- `references/3-app/05-package/00_shared-packages.md` — ui-package internals: where primitives and variants live
 - `references/4-feature/caps-and-extraction.md` — the rule-of-N family (T8 threshold, T9 rule of three, T5 file caps)
-- `references/2-repo/tooling/lefthook.md` — wiring the greps into pre-commit hooks
+- `references/2-repo/05-ctl-scripts-tooling/04_lefthook.md` — wiring the greps into pre-commit hooks
 - `references/4-feature/00_charter.md` — the CLAUDE.md-block delivery mechanism and mechanical audit greps

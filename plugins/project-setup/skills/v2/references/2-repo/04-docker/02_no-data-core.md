@@ -1,8 +1,8 @@
 # No data core — the topology swap (`DATA_SVCS=()`)
 
-The shipped template is **data-core-shaped**: it assumes a `postgres + redis` core, and several workers + the base compose default to it. A large, common class of projects has **no database** — static frontends, pure API gateways, stateless microservices, published SDKs, ML repos, tooling repos. This doc is the topology analogue of `script-alternatives.md` (which covers *tool* swaps): what to change to express "I have no data layer."
+The shipped template is **data-core-shaped**: it assumes a `postgres + redis` core, and several workers + the base compose default to it. A large, common class of projects has **no database** — static frontends, pure API gateways, stateless microservices, published SDKs, ML repos, tooling repos. This doc is the topology analogue of `references/2-repo/05-ctl-scripts-tooling/02_script-alternatives.md` (which covers *tool* swaps): what to change to express "I have no data layer."
 
-**The single switch is `DATA_SVCS`.** Set it empty in `_lib.sh` and every worker degrades gracefully — but a few files still carry data-core assumptions you edit once. Like `script-alternatives.md`, this is about editing the *generated project's* copy, not the shipped snippet.
+**The single switch is `DATA_SVCS`.** Set it empty in `_lib.sh` and every worker degrades gracefully — but a few files still carry data-core assumptions you edit once. Like `references/2-repo/05-ctl-scripts-tooling/02_script-alternatives.md`, this is about editing the *generated project's* copy, not the shipped snippet.
 
 ## The inversion: apps become the always-on core
 
@@ -35,6 +35,6 @@ A FastAPI + Next.js toolkit with no DB runs the profile-less, no-data-core path 
 
 ## See also
 
-- `script-alternatives.md` — the *tool* swaps (no mise / docker / uv→uvenv / bun); this doc is its *topology* sibling
-- `docker-overview.md` — the standalone-config / `.m.` modifier model the base plugs into
-- `script-overview.md` — the `ctl`/`scripts` model; `DATA_SVCS` is the data-core switch
+- `references/2-repo/05-ctl-scripts-tooling/02_script-alternatives.md` — the *tool* swaps (no mise / docker / uv→uvenv / bun); this doc is its *topology* sibling
+- `00_docker-overview.md` — the standalone-config / `.m.` modifier model the base plugs into
+- `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` — the `ctl`/`scripts` model; `DATA_SVCS` is the data-core switch

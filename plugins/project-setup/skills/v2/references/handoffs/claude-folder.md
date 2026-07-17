@@ -109,5 +109,5 @@ Trade-off: committed settings are shared with everyone. Don't commit anything co
 
 ## See also
 
-- Root README contract — `references/2-repo/readme-three-paths.md`
+- Root README contract — `references/2-repo/02-root-hygiene/01_readme-three-paths.md`
 - Per-installation example registry — `references/handoffs/examples-registry.md`

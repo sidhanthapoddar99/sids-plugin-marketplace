@@ -2,9 +2,9 @@
 
 This file owns the **internals of three `src/` skeleton slots**: `api/` (the single server-communication layer), `pages/` (thin route components), and `features/` (where substance lives, and when it subdivides). It carries the frontend half of tripwire **T3** (feature-folder subdivision) and **T6** (thin `pages/`).
 
-What is *not* here: which folders the skeleton contains, the layer import matrix, `layout/` shells, and workspace-package reconciliation are L3 — owned by `references/3-app/frontend/app-skeleton.md`. What every *type* placed in these folders looks like (zod-inferred API types, feature-internal types, `packages/types`) is owned by `references/4-feature/types-and-contracts.md`. This file states the *mechanisms*; that file states the *placements*.
+What is *not* here: which folders the skeleton contains, the layer import matrix, `layout/` shells, and workspace-package reconciliation are L3 — owned by `references/3-app/03-web-app/00_app-skeleton.md`. What every *type* placed in these folders looks like (zod-inferred API types, feature-internal types, `packages/types`) is owned by `references/4-feature/types-and-contracts.md`. This file states the *mechanisms*; that file states the *placements*.
 
-Applies to every Vite/React app; Next/Astro variants keep the same doctrine with the framework's routing layer in place of `pages/` (`references/3-app/frontend/framework-variants.md`).
+Applies to every Vite/React app; Next/Astro variants keep the same doctrine with the framework's routing layer in place of `pages/` (`references/3-app/03-web-app/01_framework-variants.md`).
 
 ## The api-layer doctrine
 
@@ -17,7 +17,7 @@ Applies to every Vite/React app; Next/Astro variants keep the same doctrine with
 
 `api/` is the single place the backend contract is expressed. When the API changes, the diff is localized to `api/` plus the affected features — nothing else.
 
-**Domain-vocabulary mirroring**: internally, `api/` groups by the backend's domain vocabulary (`api/catalog.ts`, `api/access.ts` — or folders when a domain outgrows one file), so the two contract surfaces mirror each other by name. The backend domain names are owned by `references/3-app/backend/domain-grouping.md`; `api/` follows them, it does not invent a parallel vocabulary.
+**Domain-vocabulary mirroring**: internally, `api/` groups by the backend's domain vocabulary (`api/catalog.ts`, `api/access.ts` — or folders when a domain outgrows one file), so the two contract surfaces mirror each other by name. The backend domain names are owned by `references/3-app/02-backend/01_domain-grouping.md`; `api/` follows them, it does not invent a parallel vocabulary.
 
 Enforcement grep (empty output = compliant):
 
@@ -45,7 +45,7 @@ This is the frontend twin of the backend feature subdivision in `references/4-fe
 - `pages/` files doing substance (well past ~50 lines, or containing fetch/query logic) = finding (T6).
 - Count files per feature folder → **~10+ flat with no recorded deferral = finding (T3)**.
 - `api/` internals not mirroring backend domain names (a parallel ad-hoc vocabulary) = drift finding.
-- Missing skeleton layers in a grown app (routes importing feature internals because `pages/` doesn't exist; fetch logic inside features because `api/` doesn't exist) → structural finding — owned by `references/3-app/frontend/app-skeleton.md`.
+- Missing skeleton layers in a grown app (routes importing feature internals because `pages/` doesn't exist; fetch logic inside features because `api/` doesn't exist) → structural finding — owned by `references/3-app/03-web-app/00_app-skeleton.md`.
 
 ## Anti-patterns
 
@@ -57,9 +57,9 @@ This is the frontend twin of the backend feature subdivision in `references/4-fe
 
 ## See also
 
-- `references/3-app/frontend/app-skeleton.md` — the `src/` skeleton these slots belong to, the layer import matrix, `layout/` shells, workspace reconciliation
+- `references/3-app/03-web-app/00_app-skeleton.md` — the `src/` skeleton these slots belong to, the layer import matrix, `layout/` shells, workspace reconciliation
 - `references/4-feature/types-and-contracts.md` — where API/feature/store/prop types live (both planes)
-- `references/3-app/backend/domain-grouping.md` — the backend domain vocabulary `api/` mirrors
+- `references/3-app/02-backend/01_domain-grouping.md` — the backend domain vocabulary `api/` mirrors
 - `references/4-feature/feature-folders.md` — the backend twin: feature shape, seams, subdivision (T3 backend)
-- `references/3-app/frontend/shared-packages.md` — `packages/services` (the workspace `api/` equivalent) internals and export surface
+- `references/3-app/05-package/00_shared-packages.md` — `packages/services` (the workspace `api/` equivalent) internals and export surface
 - `references/4-feature/00_charter.md` — the feature-level charter this reference serves

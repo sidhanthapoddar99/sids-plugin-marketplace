@@ -2,7 +2,7 @@
 
 Owns the L1 rules for **how separate repos in one product couple**: the ranked code-sharing options, the deploy **aggregator** repo and its contracts, the **`.env.example` sync** contract, the **image registry / semver** contract, and the **no-shared-tables** rule.
 
-*When* to be polyrepo at all (mono-vs-poly, own-repo criteria, deployed-vs-distributed, escalation triggers) is owned by `references/1-ecosystem/repo-boundaries.md`. The aggregator repo's on-disk **shape** is owned by `references/2-repo/layouts/03_polyrepo-aggregator.md`; worked script bodies live in `references/5-examples/05_polyrepo-aggregator.md`. This file owns the *contracts* those shapes enforce.
+*When* to be polyrepo at all (mono-vs-poly, own-repo criteria, deployed-vs-distributed, escalation triggers) is owned by `references/1-ecosystem/repo-boundaries.md`. The aggregator repo's on-disk **shape** is owned by `references/2-repo/01-layouts/03_polyrepo-aggregator.md`; worked script bodies live in `references/5-examples/05_polyrepo-aggregator.md`. This file owns the *contracts* those shapes enforce.
 
 ## Invariants
 
@@ -16,7 +16,7 @@ Prefer the highest option that works; drop down only when forced.
 
 | Rank | Mechanism | Coupling | Use when |
 |---|---|---|---|
-| 1 | **Published package** (versioned, semver) | Loosest — consumers pin a version | Shared code has ≥2 consumers or an external audience. Publishing mechanics: `references/2-repo/layouts/06_embeddable-package.md`. |
+| 1 | **Published package** (versioned, semver) | Loosest — consumers pin a version | Shared code has ≥2 consumers or an external audience. Publishing mechanics: `references/2-repo/01-layouts/06_embeddable-package.md`. |
 | 2 | **Pinned git dependency** (ref / sha) | Medium — pinned to a commit | Not yet worth a registry release, but the code must be reused as-is. |
 | 3 | **Vendored copy with recorded provenance** | Tightest acceptable — a tracked copy | Upstream can't be depended on directly; record source + ref so syncs stay mechanical. |
 
@@ -33,7 +33,7 @@ A polyrepo product gets one `<product>-deploy` aggregator: the **deployment-time
 | **Ecosystem map** | Its README is the product's ops runbook and the full repo/role map. |
 | **Deploy dispatcher** | Its own `ctl up prod` pulls images, runs migrations (one-shot container), restarts services. |
 
-The aggregator never builds; child repos never deploy. Repo tree, `scripts/` layout, and `ctl` role: `references/2-repo/layouts/03_polyrepo-aggregator.md`.
+The aggregator never builds; child repos never deploy. Repo tree, `scripts/` layout, and `ctl` role: `references/2-repo/01-layouts/03_polyrepo-aggregator.md`.
 
 ## `.env.example` sync contract
 
@@ -42,7 +42,7 @@ Each child repo owns the subset of keys it needs; the aggregator owns the union.
 - **Direction 1 (aggregator):** a sync script fetches each child's `.env.example` and asserts the aggregator's committed template equals the merge — else fail and require a review + commit.
 - **Direction 2 (child CI):** each child asserts *its* keys are a **subset** of the aggregator's, catching a service that adds a var the aggregator doesn't yet know about.
 
-The rule is the contract (union at aggregator, subset at each child, both checked mechanically). Worked script bodies (`sync-env-templates.sh`, `check-env-drift.sh`): `references/5-examples/05_polyrepo-aggregator.md`. Env precedence and per-service config within a repo: `references/2-repo/env-and-config/env-precedence.md`.
+The rule is the contract (union at aggregator, subset at each child, both checked mechanically). Worked script bodies (`sync-env-templates.sh`, `check-env-drift.sh`): `references/5-examples/05_polyrepo-aggregator.md`. Env precedence and per-service config within a repo: `references/2-repo/03-env-config/00_env-precedence.md`.
 
 ## Image registry / semver contract
 
@@ -61,7 +61,7 @@ Two repos **never** read or write the same tables directly. Cross-repo data acce
 
 - A schema may be shared **only** through a single-owner schema contract: exactly one repo owns the migrations and the table definitions; others consume via that repo's API.
 - Tight schema coupling between services is a signal the split was wrong — collapse to Layout 02 (single monorepo) instead of forcing a shared DB across repos.
-- Engine choice and `infra/`-vs-`data/` placement: `references/2-repo/databases-provisioning.md`. Per-engine usage conventions: `references/3-app/database-usage/`.
+- Engine choice and `infra/`-vs-`data/` placement: `references/3-app/04-database/00_provisioning.md`. Per-engine usage conventions: `references/3-app/04-database/`.
 
 ## Audit checks
 
@@ -74,7 +74,7 @@ Two repos **never** read or write the same tables directly. Cross-repo data acce
 ## See also
 
 - When to go polyrepo, own-repo criteria, deployed-vs-distributed, escalation triggers: `references/1-ecosystem/repo-boundaries.md`.
-- Aggregator repo shape + script bodies: `references/2-repo/layouts/03_polyrepo-aggregator.md`.
-- Publishing a shared package (rank 1): `references/2-repo/layouts/06_embeddable-package.md`.
+- Aggregator repo shape + script bodies: `references/2-repo/01-layouts/03_polyrepo-aggregator.md`.
+- Publishing a shared package (rank 1): `references/2-repo/01-layouts/06_embeddable-package.md`.
 - Docs across repos (why not to vendor the docs repo): `references/1-ecosystem/docs-placement.md`.
 - L1 decision index and where role/siblings get recorded: `references/1-ecosystem/00_charter.md`.

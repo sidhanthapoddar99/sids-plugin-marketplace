@@ -93,13 +93,13 @@ For private projects with a self-hosted runner, same workflow but `runs-on: self
 
 ## Secrets
 
-CI/prod secret placement (GitHub Actions secrets, self-hosted `.env.ci`, the Vault future state) is owned by `references/2-repo/env-and-config/secrets-matrix.md` — the only CI-local rule: ephemeral test-service creds (`ci/ci` above) may be hardcoded in the workflow.
+CI/prod secret placement (GitHub Actions secrets, self-hosted `.env.ci`, the Vault future state) is owned by `references/2-repo/03-env-config/03_secrets-matrix.md` — the only CI-local rule: ephemeral test-service creds (`ci/ci` above) may be hardcoded in the workflow.
 
 ## When `/ps-setup` runs
 
 For an open-source project, offer to drop the `check.yml` workflow. For a private project, ask whether GitHub Actions or self-hosted, and drop the appropriate template.
 
-For now, the bootstrapper just creates `.github/workflows/` with a `.gitkeep` and prints a hint to read `references/2-repo/tooling/ci-cd-future.md` for templates.
+For now, the bootstrapper just creates `.github/workflows/` with a `.gitkeep` and prints a hint to read `references/2-repo/05-ctl-scripts-tooling/06_ci-cd-future.md` for templates.
 
 ## Anti-patterns
 

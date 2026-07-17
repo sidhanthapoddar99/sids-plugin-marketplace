@@ -1,10 +1,10 @@
 # `ctl` + `scripts/` — the control-plane model
 
-One executable at repo root — `ctl` — is the single entrypoint for the whole stack: local dev processes **and** containers. It's the project's user-facing API. This doc is the **mental model**; the command surface, the dispatcher skeleton, the `scripts/*.sh` map, and the exact commands live in `script-usage.md`.
+One executable at repo root — `ctl` — is the single entrypoint for the whole stack: local dev processes **and** containers. It's the project's user-facing API. This doc is the **mental model**; the command surface, the dispatcher skeleton, the `scripts/*.sh` map, and the exact commands live in `01_script-usage.md`.
 
 > **These code blocks are ILLUSTRATIVE.** The source of truth is the runnable snippet under **`assets/snippets/scripts/<file>`** — copy it verbatim, then adapt. Do not regenerate the scripts from this prose; the prose is intentionally abbreviated and will produce a worse result than the file. **Asset path:** `assets/` is a sibling of `skills/` at the **plugin root** — NOT under `skills/project-setup/`.
 
-> **Name.** `ctl` is a single swappable token (`stack`, `app`, or the project name) — pick one, keep it. With mise's project-scoped PATH you call it bare — `ctl up`, not `./ctl`. See `mise.md`.
+> **Name.** `ctl` is a single swappable token (`stack`, `app`, or the project name) — pick one, keep it. With mise's project-scoped PATH you call it bare — `ctl up`, not `./ctl`. See `references/2-repo/06-runtime-environment/01_mise.md`.
 
 ## One host launcher, one docker launcher
 
@@ -24,11 +24,11 @@ Profile-less. The stack is shaped by exactly two axes:
 - **Config** — *which scenario.* At most one. The base `compose.yaml` (the whole stack) is the default; a named `compose.<name>.yaml` is a **standalone** scenario that **replaces** base (`data` = just the data layer, `prod` = the hardened stack).
 - **Modifiers** — stackable cross-cutting overlays layered on the chosen config (`--modifier expose`, `--modifier expose_data,traefik`).
 
-There is **no profiles axis** — every service in the chosen file runs. (Profiles are a rare advanced escalation for multi-group meshes; see `complex-setups.md`.) The compose-file convention behind these (filenames, the standalone-vs-overlay choice, expose tiers, discovery) is owned by `docker-overview.md`; the exact `ctl up` grammar, the interactive flow, and the assembled `docker compose` line are in `script-usage.md`.
+There is **no profiles axis** — every service in the chosen file runs. (Profiles are a rare advanced escalation for multi-group meshes; see `03_complex-setups.md`.) The compose-file convention behind these (filenames, the standalone-vs-overlay choice, expose tiers, discovery) is owned by `references/2-repo/04-docker/00_docker-overview.md`; the exact `ctl up` grammar, the interactive flow, and the assembled `docker compose` line are in `01_script-usage.md`.
 
 ### `ctl up` is interactive (and still scriptable)
 
-Bare `ctl up` in a terminal is a guided flow — **pick config → pick modifiers → see a plan → confirm (Run / Back / Cancel)** — built on a dependency-free TUI (`scripts/common/_select.sh`, no `fzf`/`gum`). It prompts only for the axes you didn't pass on the CLI, renders the real merged plan (`docker compose config` — services, ports, networks, volumes; this also validates the combo early), and prints the exact `--nqa` command that reproduces the run. CI (no TTY) and `--nqa` keep the deterministic flag path untouched. Mechanics in `script-usage.md`.
+Bare `ctl up` in a terminal is a guided flow — **pick config → pick modifiers → see a plan → confirm (Run / Back / Cancel)** — built on a dependency-free TUI (`scripts/common/_select.sh`, no `fzf`/`gum`). It prompts only for the axes you didn't pass on the CLI, renders the real merged plan (`docker compose config` — services, ports, networks, volumes; this also validates the combo early), and prints the exact `--nqa` command that reproduces the run. CI (no TTY) and `--nqa` keep the deterministic flag path untouched. Mechanics in `01_script-usage.md`.
 
 ## Thin wrapper — delegate, don't hand-roll
 
@@ -75,7 +75,7 @@ scripts/
 
 Layout is **`scripts/<category>/<name>.sh`** (`category ∈ common | dev | container | config`). The folder groups; the `ctl` subcommand stays clean — file `dev/migrate.sh`, command `ctl migrate` (not `ctl dev/migrate`). Trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`exec`) are **not** files — they're one-line forwards inlined in `ctl`, still shown under the Containers group with uniform help.
 
-**Treat the shipped set as a template, not a spec.** It's a sensible default — copy `ctl` + `scripts/`, then add / remove / edit per the project; most repos won't need every command, and `migrate`/`lint`/`shell`/`test` are stack-specific (adapt or drop — a no-DB repo drops `migrate`). How many files is **utility-driven**: a command earns a file once it outgrows a one-liner. **To add a command:** drop `scripts/<category>/<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `common/_lib.sh`) and wire one `run <category>/<name>` line into `ctl`'s `case`. The runnable toolkit lives in `assets/snippets/scripts/`; `script-usage.md` has the architecture + worked bodies.
+**Treat the shipped set as a template, not a spec.** It's a sensible default — copy `ctl` + `scripts/`, then add / remove / edit per the project; most repos won't need every command, and `migrate`/`lint`/`shell`/`test` are stack-specific (adapt or drop — a no-DB repo drops `migrate`). How many files is **utility-driven**: a command earns a file once it outgrows a one-liner. **To add a command:** drop `scripts/<category>/<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `common/_lib.sh`) and wire one `run <category>/<name>` line into `ctl`'s `case`. The runnable toolkit lives in `assets/snippets/scripts/`; `01_script-usage.md` has the architecture + worked bodies.
 
 ## The conformance floor — adapt by deletion, never by collapse
 
@@ -87,7 +87,7 @@ Layout is **`scripts/<category>/<name>.sh`** (`category ∈ common | dev | conta
 4. Every substantive verb the project keeps **routes to a `scripts/<category>/<name>.sh` worker**; only the trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`exec`) are inlined.
 5. Workers keep the standard shape: preamble sourcing `_lib.sh`, `set -euo pipefail`, `-h/--help`, runnable standalone.
 
-A no-DB repo deleting `migrate.sh`, a bun→pnpm swap inside `dev/host.sh` — sanctioned adaptation (`script-alternatives.md`, `no-data-core.md`). A **single-file `ctl` with command bodies inlined and no `scripts/` tree is not an adaptation — it's a different (non-conforming) architecture**, and audits flag it red. The floor is checkable mechanically: `_lib.sh` sourced? `common/` present? each non-passthrough verb `run`-routed?
+A no-DB repo deleting `migrate.sh`, a bun→pnpm swap inside `dev/host.sh` — sanctioned adaptation (`02_script-alternatives.md`, `references/2-repo/04-docker/02_no-data-core.md`). A **single-file `ctl` with command bodies inlined and no `scripts/` tree is not an adaptation — it's a different (non-conforming) architecture**, and audits flag it red. The floor is checkable mechanically: `_lib.sh` sourced? `common/` present? each non-passthrough verb `run`-routed?
 
 ## `setup` + `status` — the two project-custom bodies
 
@@ -117,11 +117,11 @@ Parity is enforced by CI building images and by `ctl up` running them — you do
 2. **Raw `docker compose -f docker/…`** — understand what `ctl` does; debug compose itself; copy for prod.
 3. **No-docker host run** — `cd apps/backend && uv run …; cd apps/frontend && bun dev` — IDE debugger attach, profiling, one service in isolation.
 
-If any of the three is broken or missing, the project has invisible debt. The exact commands + README snippet are in `script-usage.md`; the full README contract + audit checklist is owned by `references/2-repo/readme-three-paths.md`.
+If any of the three is broken or missing, the project has invisible debt. The exact commands + README snippet are in `01_script-usage.md`; the full README contract + audit checklist is owned by `references/2-repo/02-root-hygiene/01_readme-three-paths.md`.
 
 ## One dispatcher per repo
 
-A repo has **one** `ctl`. New need → a standalone config, a `compose.m.<mod>.yaml`, or a subcommand — not a second wrapper. The one exception is Layout 03 (polyrepo + aggregator): each child repo has its own `ctl`, and the aggregator has its own whose `ctl up prod` deploys the merged stack. When `ctl` itself outgrows shell (structured state across runs, multi-node promotion), escalate it to a binary — see `complex-setups.md`.
+A repo has **one** `ctl`. New need → a standalone config, a `compose.m.<mod>.yaml`, or a subcommand — not a second wrapper. The one exception is Layout 03 (polyrepo + aggregator): each child repo has its own `ctl`, and the aggregator has its own whose `ctl up prod` deploys the merged stack. When `ctl` itself outgrows shell (structured state across runs, multi-node promotion), escalate it to a binary — see `03_complex-setups.md`.
 
 ## Anti-patterns
 
@@ -129,7 +129,7 @@ A repo has **one** `ctl`. New need → a standalone config, a `compose.m.<mod>.y
 - A 500-line bash wrapper reimplementing a process manager — delegate to `process-compose`/`docker compose`.
 - A single-file `ctl` with command bodies inlined "for now" — below the conformance floor; it never grows the `scripts/` tree later, it just grows.
 - A `ctl prod` verb separate from `ctl up` — production is just a config; two verbs for one lifecycle drift apart.
-- Reaching for profiles by default — the simple path is profile-less (config + modifiers); profiles are the rare multi-group escalation (`complex-setups.md`).
+- Reaching for profiles by default — the simple path is profile-less (config + modifiers); profiles are the rare multi-group escalation (`03_complex-setups.md`).
 - `ctl dev` silently editing `.env` on launch — guard and instruct; mutation belongs in `ctl setup`.
 - README "first run `make install`, then `make dev`" — it's `ctl setup` then `ctl dev`.
 - Bind-mounting source into a dev container — slow file events, permission pain; run on host.
@@ -137,10 +137,10 @@ A repo has **one** `ctl`. New need → a standalone config, a `compose.m.<mod>.y
 
 ## See also
 
-- `script-usage.md` — command surface, dispatcher skeleton, the interactive `ctl up` flow + plan screen + `--list`, the `scripts/*.sh` map, setup/status detail, how to add/modify scripts
-- `script-alternatives.md` — adapting the workers off the recommended defaults (no mise / docker / uv→uvenv·venv·poetry / bun→pnpm·npm)
-- `no-data-core.md` — `DATA_SVCS=()` + apps-as-core: the lines to change for a DB-less project
-- `docker-overview.md` — the standalone-config / `.m.` modifier compose convention `ctl up` implements
-- `mise.md` — the project-scoped PATH that makes `ctl` callable bare
-- `complex-setups.md` — profiles as the advanced escalation; when `ctl` outgrows shell (multi-node, Go-CLI orchestrator)
-- `overview.md` — the whole-runtime interaction map (mise → ctl → docker)
+- `01_script-usage.md` — command surface, dispatcher skeleton, the interactive `ctl up` flow + plan screen + `--list`, the `scripts/*.sh` map, setup/status detail, how to add/modify scripts
+- `02_script-alternatives.md` — adapting the workers off the recommended defaults (no mise / docker / uv→uvenv·venv·poetry / bun→pnpm·npm)
+- `references/2-repo/04-docker/02_no-data-core.md` — `DATA_SVCS=()` + apps-as-core: the lines to change for a DB-less project
+- `references/2-repo/04-docker/00_docker-overview.md` — the standalone-config / `.m.` modifier compose convention `ctl up` implements
+- `references/2-repo/06-runtime-environment/01_mise.md` — the project-scoped PATH that makes `ctl` callable bare
+- `03_complex-setups.md` — profiles as the advanced escalation; when `ctl` outgrows shell (multi-node, Go-CLI orchestrator)
+- `references/2-repo/06-runtime-environment/00_runtime-triad.md` — the whole-runtime interaction map (mise → ctl → docker)

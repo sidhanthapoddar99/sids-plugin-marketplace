@@ -104,7 +104,7 @@ def load_with_overrides(base: str, mode: str | None) -> dict:
     return cfg
 ```
 
-(Deep merge: nested keys merge field by field; arrays replace whole.) See `env-precedence.md` for what belongs in `config.local.yaml` vs `.env.local`.
+(Deep merge: nested keys merge field by field; arrays replace whole.) See `00_env-precedence.md` for what belongs in `config.local.yaml` vs `.env.local`.
 
 ## When `${VAR}` is the wrong shape
 
@@ -132,6 +132,6 @@ Some projects keep a committed `config.template.yaml` (literal-with-placeholders
 
 ## See also
 
-- `env-precedence.md` — the three env tiers, root `.env` scope, `config.local.yaml` precedence
-- `frontend-env-isolation.md` — why frontends use their own `.env`, not `config.yaml`/root `.env`
-- `secrets-matrix.md` — where the secret values behind `${VAR}` actually live per environment
+- `00_env-precedence.md` — the three env tiers, root `.env` scope, `config.local.yaml` precedence
+- `02_frontend-env-isolation.md` — why frontends use their own `.env`, not `config.yaml`/root `.env`
+- `03_secrets-matrix.md` — where the secret values behind `${VAR}` actually live per environment

@@ -1,6 +1,6 @@
 # VS Code debugger setup
 
-Optional but useful. The "no-docker host run" startup path (`references/2-repo/runtime/script-usage.md`) becomes much more attractive when the IDE debugger attaches cleanly. This reference outlines the `.vscode/` files that make that work.
+Optional but useful. The "no-docker host run" startup path (`references/2-repo/05-ctl-scripts-tooling/01_script-usage.md`) becomes much more attractive when the IDE debugger attaches cleanly. This reference outlines the `.vscode/` files that make that work.
 
 ## Files
 

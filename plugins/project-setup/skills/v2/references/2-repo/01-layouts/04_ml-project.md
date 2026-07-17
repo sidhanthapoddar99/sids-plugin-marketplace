@@ -53,7 +53,7 @@ Note the shape-defining choices: an `apps/<project>/src/` package (ML wrappers a
 
 ## Python & dependency flow
 
-`requirements.txt` (broad ranges, not `uv.lock`) plus a shared **uvenv** named global env — the reasoning (why ML differs from the app `pyproject.toml` + `uv sync` flow), the `requirements.txt` shape, the `uvenv-name` file, the uvenv commands, and `ctl` activating the env at the start of every subcommand are all owned by `references/3-app/backend/ml-python-flow.md`. Don't restate them here; the tree above shows only where those artifacts sit.
+`requirements.txt` (broad ranges, not `uv.lock`) plus a shared **uvenv** named global env — the reasoning (why ML differs from the app `pyproject.toml` + `uv sync` flow), the `requirements.txt` shape, the `uvenv-name` file, the uvenv commands, and `ctl` activating the env at the start of every subcommand are all owned by `references/3-app/02-backend/03_ml-python-flow.md`. Don't restate them here; the tree above shows only where those artifacts sit.
 
 ## `ctl` subcommands
 
@@ -78,7 +78,7 @@ ctl help
 
 ## Cloud-aware repo additions
 
-Layout 04 defines the **repo shape**; *how* training, sweeps, inference, and remote dev actually run on cloud GPUs is owned by `references/2-repo/ml-orchestration/` (start at `custom-orchestrator.md`). If the user opts into cloud GPUs, add:
+Layout 04 defines the **repo shape**; *how* training, sweeps, inference, and remote dev actually run on cloud GPUs is owned by the `references/2-repo/07-ml-orchestration/` set (start at `references/2-repo/07-ml-orchestration/00_custom-orchestrator.md`). If the user opts into cloud GPUs, add:
 
 ```
 my-ml/
@@ -98,11 +98,11 @@ When `/ps-setup` runs for an ML project, after the standard Layout 04 questions 
 
 ## Escalation
 
-- Need exact reproducibility or shipping a model server → migrate inference to a separate app project (Layout 02) with `pyproject.toml` + `uv.lock`, importing model artifacts from this repo. The graduation criteria are owned by `references/3-app/backend/ml-python-flow.md`.
+- Need exact reproducibility or shipping a model server → migrate inference to a separate app project (Layout 02) with `pyproject.toml` + `uv.lock`, importing model artifacts from this repo. The graduation criteria are owned by `references/3-app/02-backend/03_ml-python-flow.md`.
 
 ## See also
 
-- `references/3-app/backend/ml-python-flow.md` — requirements.txt vs pyproject, uvenv, `uvenv-name`, graduation criteria
-- `references/2-repo/ml-orchestration/` — cloud GPU orchestration (`scripts/cloud/` wrappers, spot + checkpoints, remote dev, inference autoscaling, ML CI/CD)
+- `references/3-app/02-backend/03_ml-python-flow.md` — requirements.txt vs pyproject, uvenv, `uvenv-name`, graduation criteria
+- `references/2-repo/07-ml-orchestration/` — cloud GPU orchestration (`scripts/cloud/` wrappers, spot + checkpoints, remote dev, inference autoscaling, ML CI/CD)
 - `references/5-examples/04_ml-training-project.md` — worked example: uvenv, configs/, scripts/cloud/, checkpoints
-- `references/2-repo/layouts/02_multi-app-monorepo.md` — the app repo you graduate an inference service into
+- `references/2-repo/01-layouts/02_multi-app-monorepo.md` — the app repo you graduate an inference service into

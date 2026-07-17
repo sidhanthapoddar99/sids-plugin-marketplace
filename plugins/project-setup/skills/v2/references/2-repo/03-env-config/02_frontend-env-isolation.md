@@ -98,7 +98,7 @@ For a pure SPA (Vite + React), **everything in `.env` is build-time** — built 
 | Dev proxy to backend | Vite dev server proxies `/api/*` (target from env) | `next.config` `rewrites()` — server-side proxy, can read server-only env |
 | Backend URL exposure | necessarily public if the browser needs it | can stay **server-side** via `rewrites()` |
 
-The sharp point: **with Vite, anything the browser touches is necessarily public**; **with Next, a backend URL used only in `rewrites()` need not be `NEXT_PUBLIC_*`** and can stay hidden. Either way, secrets never go in a client-exposed var. See `references/2-repo/deployment/proxy-and-exposure.md` and `references/3-app/frontend/framework-variants.md`.
+The sharp point: **with Vite, anything the browser touches is necessarily public**; **with Next, a backend URL used only in `rewrites()` need not be `NEXT_PUBLIC_*`** and can stay hidden. Either way, secrets never go in a client-exposed var. See `references/2-repo/04-docker/04_proxy-and-exposure.md` and `references/3-app/03-web-app/01_framework-variants.md`.
 
 ## `turbo.json` `globalEnv` (multi-frontend builds)
 
@@ -108,7 +108,7 @@ In a turborepo monorepo, list every build-time env var so Turbo's cache key incl
 { "globalEnv": ["NODE_ENV", "VITE_API_BASE_URL", "VITE_WEB_BASE_URL", "VITE_ADMIN_BASE_URL", "VITE_SENTRY_DSN"] }
 ```
 
-The `globalEnv` config body (alongside the rest of the turbo/pnpm/bun config) is owned by `references/3-app/frontend/workspaces-mechanics.md`; the point that matters *here* is that every build-time var must be registered or the cache goes stale.
+The `globalEnv` config body (alongside the rest of the turbo/pnpm/bun config) is owned by `references/3-app/01-structure-and-stack/02_workspaces-mechanics.md`; the point that matters *here* is that every build-time var must be registered or the cache goes stale.
 
 ## Confirmation step in `/ps-setup`
 
@@ -133,7 +133,7 @@ Catching this once is worth annoying the user.
 
 ## See also
 
-- `env-precedence.md` — the three env tiers; why frontends don't read root `.env`
-- `per-service-config.md` — backend `config.yaml` + `${VAR}` (the runtime-config counterpart)
-- `secrets-matrix.md` — where secrets live across dev / CI / prod
-- `references/2-repo/deployment/proxy-and-exposure.md`, `references/3-app/frontend/framework-variants.md` — proxy config detail
+- `00_env-precedence.md` — the three env tiers; why frontends don't read root `.env`
+- `01_per-service-config.md` — backend `config.yaml` + `${VAR}` (the runtime-config counterpart)
+- `03_secrets-matrix.md` — where secrets live across dev / CI / prod
+- `references/2-repo/04-docker/04_proxy-and-exposure.md`, `references/3-app/03-web-app/01_framework-variants.md` — proxy config detail

@@ -24,9 +24,9 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
    #   openssl rand -base64 16        # for shorter tokens
    ```
 
-3. **Every `.env*` (except `.env.example`) and `*.local.yaml` MUST be gitignored** — the pattern is owned by `references/2-repo/root-and-hygiene.md` § `.gitignore` doctrine.
+3. **Every `.env*` (except `.env.example`) and `*.local.yaml` MUST be gitignored** — the pattern is owned by `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` § `.gitignore` doctrine.
 
-4. **`ctl` refuses to start if `.env` has unfilled required keys.** See `references/2-repo/runtime/script-usage.md` for the `require_env` helper.
+4. **`ctl` refuses to start if `.env` has unfilled required keys.** See `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md` for the `require_env` helper.
 
 ## CI rules
 
@@ -44,7 +44,7 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
 └── ctl                       # `ctl up prod` runs the deploy
 ```
 
-The secrets-relevant part: the `prod` config switches the compose `--env-file` to `.env.production` (it also pins image tags + resource limits). The exact assembled `docker compose` line is the dispatcher's to own — see `references/2-repo/runtime/script-usage.md`.
+The secrets-relevant part: the `prod` config switches the compose `--env-file` to `.env.production` (it also pins image tags + resource limits). The exact assembled `docker compose` line is the dispatcher's to own — see `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md`.
 
 Or, with `env_file:` declared inside each service in the compose:
 
@@ -84,7 +84,7 @@ For each secret, document:
 | `STRIPE_SECRET_KEY` | On suspicion only | Rotate in Stripe dashboard → update `.env.production` |
 | `ENCRYPTION_KEY_*` | Never (rotating breaks encrypted-at-rest data; key-roll requires re-encryption migration) | Document the re-encrypt procedure |
 
-This goes in `docs/data/secrets-matrix.md` or equivalent — the skill recommends creating it.
+This goes in `docs/data/03_secrets-matrix.md` or equivalent — the skill recommends creating it.
 
 ## What to ASK the user during `/ps-setup`
 
@@ -104,7 +104,7 @@ Without these answers, default to local + GitHub Actions + compose-on-VM and doc
 
 ## See also
 
-- `env-precedence.md` — the three env tiers; `.env` / `.env.example` / `.env.production` roles
-- `per-service-config.md` — `config.yaml` + `${VAR}` (where secret values get referenced, not stored)
-- `frontend-env-isolation.md` — keeping secrets out of the client bundle
-- `references/2-repo/runtime/script-usage.md` — `ctl setup` / `ctl status` (`require_env` guard)
+- `00_env-precedence.md` — the three env tiers; `.env` / `.env.example` / `.env.production` roles
+- `01_per-service-config.md` — `config.yaml` + `${VAR}` (where secret values get referenced, not stored)
+- `02_frontend-env-isolation.md` — keeping secrets out of the client bundle
+- `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md` — `ctl setup` / `ctl status` (`require_env` guard)

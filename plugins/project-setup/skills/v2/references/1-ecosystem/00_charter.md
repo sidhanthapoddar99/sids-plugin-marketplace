@@ -32,7 +32,7 @@ L1 has no single config file — it's recorded redundantly where agents will act
 
 ## Hands down to L2
 
-Each repo enters its L2 bootstrap (`references/2-repo/00_charter.md`) knowing: its role (product / service / aggregator / docs / published package), which siblings it must coordinate with and via which contract, and whether it's deployed or distributed. An L2 bootstrap that starts without these answers asks them first.
+Each repo enters its L2 bootstrap (`references/2-repo/00_index.md`) knowing: its role (product / service / aggregator / docs / published package), which siblings it must coordinate with and via which contract, and whether it's deployed or distributed. An L2 bootstrap that starts without these answers asks them first.
 
 ## Audit at this level
 

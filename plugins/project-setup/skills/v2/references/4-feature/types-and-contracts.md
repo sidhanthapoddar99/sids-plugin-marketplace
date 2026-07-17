@@ -2,7 +2,7 @@
 
 Where every kind of type and DTO lives — backend and frontend. Untyped-boundary drift starts exactly where placement is left implicit, so this file states it for both planes and owns the invariants that keep contract types honest: no cross-domain DTO imports, no shared models package across backends, no global dumping ground, no hand-written twins of inferred types.
 
-This file owns *placement*. The mechanisms that produce these types are owned elsewhere and linked: the zod parse-at-boundary and the api layer by `references/4-feature/api-and-pages.md`; the `{router,service,repository,models}.py` feature shape by `references/4-feature/feature-folders.md`; the domain / `core/` altitude by `references/3-app/backend/domain-grouping.md`; the DB-schema-as-contract by `references/3-app/backend/migrations.md`.
+This file owns *placement*. The mechanisms that produce these types are owned elsewhere and linked: the zod parse-at-boundary and the api layer by `references/4-feature/api-and-pages.md`; the `{router,service,repository,models}.py` feature shape by `references/4-feature/feature-folders.md`; the domain / `core/` altitude by `references/3-app/02-backend/01_domain-grouping.md`; the DB-schema-as-contract by `references/3-app/04-database/01_migrations.md`.
 
 ## Backend (Python / FastAPI)
 
@@ -14,8 +14,8 @@ This file owns *placement*. The mechanisms that produce these types are owned el
 
 - **Placement follows consumers** — a type shared by several features of one domain lives at the domain root, not in global `core/`; `core/` is reserved for types shared *across* domains. (Principle 3, instantiated for types.)
 - **Never import DTOs across domains to "reuse a shape" — duplicate the shape instead.** Cross-domain imports of contract models create hidden coupling that outlives the convenience.
-- **Two backends never share a models package.** Each owns its contract; the database schema is the only shared contract between them — see `references/3-app/backend/two-plane-split.md`.
-- In a **raw-SQL project**, `models.py` never means ORM models — there are none; the database schema is the contract, owned by migrations (`references/3-app/backend/migrations.md`).
+- **Two backends never share a models package.** Each owns its contract; the database schema is the only shared contract between them — see `references/3-app/02-backend/02_two-plane-split.md`.
+- In a **raw-SQL project**, `models.py` never means ORM models — there are none; the database schema is the contract, owned by migrations (`references/3-app/04-database/01_migrations.md`).
 
 ## Frontend (Vite / React)
 
@@ -28,7 +28,7 @@ This file owns *placement*. The mechanisms that produce these types are owned el
 | Component prop types | in the component file | |
 
 - API types are **inferred, not authored** — the zod schema is the source of truth; the parse boundary that produces it is owned by `references/4-feature/api-and-pages.md`. A hand-written response type beside a schema is a twin that will drift.
-- Cross-app entity types are **owned once** in `packages/types`; an app re-exports, never redefines. Package internals and export surface: `references/3-app/frontend/shared-packages.md`.
+- Cross-app entity types are **owned once** in `packages/types`; an app re-exports, never redefines. Package internals and export surface: `references/3-app/05-package/00_shared-packages.md`.
 - `packages/types` (and `packages/services`) mirror the owning backend's domain names where a mapping exists — the contract vocabulary stays findable end to end.
 
 ## The shared invariant — every type has an owner
@@ -56,8 +56,8 @@ This file owns *placement*. The mechanisms that produce these types are owned el
 
 - `references/4-feature/api-and-pages.md` — the zod parse boundary and api layer that produce the inferred frontend types
 - `references/4-feature/feature-folders.md` — the `{router,service,repository,models}.py` feature shape `models.py` DTOs sit in
-- `references/3-app/backend/domain-grouping.md` — the domain / `core/` altitude backend types are placed against
-- `references/3-app/backend/two-plane-split.md` — why two backends share a DB schema, never a models package
-- `references/3-app/backend/migrations.md` — the DB schema as the raw-SQL project's contract
-- `references/3-app/frontend/shared-packages.md` — `packages/types` internals and export surface
+- `references/3-app/02-backend/01_domain-grouping.md` — the domain / `core/` altitude backend types are placed against
+- `references/3-app/02-backend/02_two-plane-split.md` — why two backends share a DB schema, never a models package
+- `references/3-app/04-database/01_migrations.md` — the DB schema as the raw-SQL project's contract
+- `references/3-app/05-package/00_shared-packages.md` — `packages/types` internals and export surface
 - `references/4-feature/00_charter.md` — the feature-level charter this reference serves

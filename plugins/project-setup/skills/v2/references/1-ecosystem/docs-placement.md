@@ -73,7 +73,7 @@ When `/ps-setup` reaches the docs step:
    ```
 
 3. **Do not invoke `/agent-ks-init` directly** — chaining slash commands is brittle and it is interactive.
-4. **Add a Documentation section to the project README** pointing at `docs/` and how to run the site locally (README contract owned by `references/2-repo/readme-three-paths.md`).
+4. **Add a Documentation section to the project README** pointing at `docs/` and how to run the site locally (README contract owned by `references/2-repo/02-root-hygiene/01_readme-three-paths.md`).
 5. **Add a Tooling note to CLAUDE.md** telling future agents to defer to `agent-ks` for all docs work, and where the tracker lives (default `data/todo/`; pass an explicit tracker path if it differs). CLAUDE.md template guidance is owned by `references/handoffs/claude-folder.md`.
 
 ## How to describe docs to the user
@@ -90,7 +90,7 @@ When `/ps-setup` reaches the docs step:
 Encourage putting in `docs/`:
 
 - **Architecture decisions** — one page per major decision under the docs section.
-- **Design-tokens spec** — link from the docs to the app's `tokens.css` (tokens owned by `references/3-app/frontend/tokens-setup.md`); don't duplicate token values into docs.
+- **Design-tokens spec** — link from the docs to the app's `tokens.css` (tokens owned by `references/3-app/05-package/01_tokens-setup.md`); don't duplicate token values into docs.
 - **Issue-tracker entries** for each meaningful feature / bug.
 - **Contributor setup guides** — README is for getting started, docs are for going deep.
 - **Per-decision rationale notes** — under an issue's `notes/` folder.
@@ -107,7 +107,7 @@ Encourage putting in `docs/`:
 
 ## Polyrepo case (Layout 03)
 
-A dedicated `<product>-docs` repo, initialised separately with `/agent-ks-init`. Each service repo's README links to the docs-repo URL; the aggregator repo's README links there too. **Do not vendor the docs repo into each service** — the dedup isn't worth the sync overhead. Aggregator / repo-shape details: `references/2-repo/layouts/03_polyrepo-aggregator.md`.
+A dedicated `<product>-docs` repo, initialised separately with `/agent-ks-init`. Each service repo's README links to the docs-repo URL; the aggregator repo's README links there too. **Do not vendor the docs repo into each service** — the dedup isn't worth the sync overhead. Aggregator / repo-shape details: `references/2-repo/01-layouts/03_polyrepo-aggregator.md`.
 
 ## Audit checks
 
@@ -127,4 +127,4 @@ A dedicated `<product>-docs` repo, initialised separately with `/agent-ks-init`.
 
 - L1 decision index and invariants: `references/1-ecosystem/00_charter.md`.
 - Sharing / vendoring ranking (why not to vendor the docs repo): `references/1-ecosystem/cross-repo-contracts.md`.
-- README contract: `references/2-repo/readme-three-paths.md`. CLAUDE.md template: `references/handoffs/claude-folder.md`.
+- README contract: `references/2-repo/02-root-hygiene/01_readme-three-paths.md`. CLAUDE.md template: `references/handoffs/claude-folder.md`.

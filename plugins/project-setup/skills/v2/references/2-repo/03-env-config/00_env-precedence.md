@@ -18,7 +18,7 @@ apps/api/.env        (tier 2 — per-service secrets + overrides)
 root/.env            (tier 1 — shared non-secret defaults)
 ```
 
-Backends typically have one per-service `.env`; frontends have their own (`VITE_*` / `NEXT_PUBLIC_*`) — see `frontend-env-isolation.md`.
+Backends typically have one per-service `.env`; frontends have their own (`VITE_*` / `NEXT_PUBLIC_*`) — see `02_frontend-env-isolation.md`.
 
 **The principle:** the same code reads `os.environ["DB_PASSWORD"]` in both dev (from a file) and prod (from a real env var) with no branching. In production the orchestrator (compose `environment:`, a secret store, CI) sets tier-3 env vars, and those always beat anything a file says.
 
@@ -70,7 +70,7 @@ JWT_SIGNING_KEY=                 # REQUIRED — openssl rand -hex 32
 # ─── Service ports (host-side, for dev) ───
 PYTHON_PORT=8000
 # ─── Compose ───
-DATA_DIR=../data                 # bind-mount root — relative to docker/ (see runtime/docker-overview.md path discipline)
+DATA_DIR=../data                 # bind-mount root — relative to docker/ (see 04-docker/00_docker-overview.md path discipline)
 DOMAIN=localhost
 TZ=Asia/Kolkata
 ```
@@ -87,9 +87,9 @@ TZ=Asia/Kolkata
 ### How `.env` is consumed
 
 1. **docker compose** auto-loads root `.env` for `${VAR}` interpolation in compose files.
-2. **per-service `config.yaml`** interpolates `${VAR}` from root `.env` — see `per-service-config.md`.
-3. **`ctl`** loads `.env` at the top via `require_env` — skip-if-set, so a real exported env var is never overwritten (see Loader semantics above); `ctl setup` fills it and `ctl status` diffs it against `.env.example` — see `references/2-repo/runtime/script-usage.md`.
-4. **Frontends do not read root `.env`** — see `frontend-env-isolation.md`.
+2. **per-service `config.yaml`** interpolates `${VAR}` from root `.env` — see `01_per-service-config.md`.
+3. **`ctl`** loads `.env` at the top via `require_env` — skip-if-set, so a real exported env var is never overwritten (see Loader semantics above); `ctl setup` fills it and `ctl status` diffs it against `.env.example` — see `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md`.
+4. **Frontends do not read root `.env`** — see `02_frontend-env-isolation.md`.
 
 ## `config.local.yaml` — local-only overrides
 
@@ -118,7 +118,7 @@ What goes in it: things that vary **per-developer** (log levels, local DB on a n
 ## Two parallel override stacks meet at interpolation
 
 - **Env files** (this doc) resolve a final set of env vars.
-- Those vars interpolate into `config.yaml` via `${VAR}` — see `per-service-config.md`.
+- Those vars interpolate into `config.yaml` via `${VAR}` — see `01_per-service-config.md`.
 - **Config files** override separately: `config.local.yaml` over `config.yaml`.
 
 Env precedence decides *what `${VAR}` resolves to*; config precedence decides *which YAML layer wins*. Orthogonal, meeting only at the `${VAR}` substitution point.
@@ -135,7 +135,7 @@ Env precedence decides *what `${VAR}` resolves to*; config precedence decides *w
 
 ## See also
 
-- `per-service-config.md` — `config.yaml` + `${VAR}` interpolation
-- `frontend-env-isolation.md` — build-time vs runtime + keeping secrets out of the client bundle
-- `secrets-matrix.md` — where secrets live across dev / CI / prod / vault
-- `references/2-repo/runtime/script-usage.md` — `ctl setup` / `ctl status` (the `require_env` guard, the schema diff)
+- `01_per-service-config.md` — `config.yaml` + `${VAR}` interpolation
+- `02_frontend-env-isolation.md` — build-time vs runtime + keeping secrets out of the client bundle
+- `03_secrets-matrix.md` — where secrets live across dev / CI / prod / vault
+- `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md` — `ctl setup` / `ctl status` (the `require_env` guard, the schema diff)

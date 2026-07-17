@@ -2,7 +2,7 @@
 
 Everything else in these docs assumes **one repo = one compose stack = one private network**. This page covers the exception: several repos (each with its own `docker/` + `ctl`), whose stacks cooperate at runtime over **one shared docker network** — e.g. a chain repo + a backend repo + a frontend repo, where the frontend's nginx proxies to the backend's container by DNS name.
 
-Each repo keeps its own compose tree, `ctl`, and `.env` exactly as `docker-overview.md` describes. What changes is the network, the naming, and the wiring between stacks.
+Each repo keeps its own compose tree, `ctl`, and `.env` exactly as `00_docker-overview.md` describes. What changes is the network, the naming, and the wiring between stacks.
 
 ## One owner, many joiners
 
@@ -46,7 +46,7 @@ Tear-down runs in reverse; the owner's `down` removes the network only after all
 
 ## Cross-stack env wiring
 
-- **Service-to-service URLs** (docker DNS paths like `http://myapp-backend:8000`) travel as env vars set in compose `environment:` — that's tier 3, wins over any `.env` file (see `references/2-repo/env-and-config/env-precedence.md`).
+- **Service-to-service URLs** (docker DNS paths like `http://myapp-backend:8000`) travel as env vars set in compose `environment:` — that's tier 3, wins over any `.env` file (see `references/2-repo/03-env-config/00_env-precedence.md`).
 - **Credentials / secrets** are never set in compose `environment:` — always from each repo's root `.env` via `${VAR}` interpolation, identical mechanism dev and prod.
 
 ## Dev must not depend on the shared network
@@ -97,7 +97,7 @@ ENV NGINX_ENVSUBST_FILTER=BACKEND_UPSTREAM
 
 ## See also
 
-- `docker-overview.md` — the single-stack 2-axis model this page extends; the `traefik` modifier (the same `external: true` join, edge-only)
-- `complex-setups.md` — escalations *within* one repo (profiles, `docker/<mode>/` trees); this page is the *across-repos* analogue
-- `references/2-repo/env-and-config/env-precedence.md` — why compose `environment:` (tier 3) carries URLs and `.env` carries secrets
-- `references/2-repo/deployment/proxy-and-exposure.md` — the in-stack nginx baseline this page's resolver pattern extends
+- `00_docker-overview.md` — the single-stack 2-axis model this page extends; the `traefik` modifier (the same `external: true` join, edge-only)
+- `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` — escalations *within* one repo (profiles, `docker/<mode>/` trees); this page is the *across-repos* analogue
+- `references/2-repo/03-env-config/00_env-precedence.md` — why compose `environment:` (tier 3) carries URLs and `.env` carries secrets
+- `references/2-repo/04-docker/04_proxy-and-exposure.md` — the in-stack nginx baseline this page's resolver pattern extends

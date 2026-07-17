@@ -5,7 +5,7 @@ Owns the **repo shape**, **publishing mechanics**, and **single-artifact deliver
 Scope boundaries (owned elsewhere — link, don't restate):
 
 - **When** a repo is distributed-not-deployed (the deployed-vs-distributed decision that routes here): owned by `references/1-ecosystem/repo-boundaries.md`.
-- **Embedding seams** — the IoC config/props API, injection rules, per-instance mount model: owned by `references/3-app/frontend/embeddable-seams.md`.
+- **Embedding seams** — the IoC config/props API, injection rules, per-instance mount model: owned by `references/3-app/05-package/02_embeddable-seams.md`.
 
 This layout is orthogonal to backend/frontend count: a Layout 06 repo can internally have a BFF, a reference frontend, and shared packages, but its *reason to exist* is the published artifact. If the repo instead *runs* the product (`ctl up prod` and that's the live thing), it's Layout 01–05, not 06.
 
@@ -14,7 +14,7 @@ This layout is orthogonal to backend/frontend count: a Layout 06 repo can intern
 - **Reference host** (`apps/web`, in this repo): a dev harness. Wires the package up with throwaway/local services so you can see it work, write stories, run e2e. Ships to nobody as "the product".
 - **Real host** (an external repo, *not* here): the consumer's app. It installs the package, owns the React instance, and fills the embedding seams with *its* implementations.
 
-Treating the reference host as "the app" is the mistake that makes an independent package read as a headless service. It isn't headless — it's **embeddable**. How the two hosts fill the seams is owned by `references/3-app/frontend/embeddable-seams.md`.
+Treating the reference host as "the app" is the mistake that makes an independent package read as a headless service. It isn't headless — it's **embeddable**. How the two hosts fill the seams is owned by `references/3-app/05-package/02_embeddable-seams.md`.
 
 ## Tree
 
@@ -31,7 +31,7 @@ my-editor/                              # the product is the package below
 │   │   ├── src/
 │   │   │   ├── index.ts                # public entry — the package's API surface
 │   │   │   ├── Editor.tsx              # the embeddable component
-│   │   │   ├── config.ts               # the seam contract → embeddable-seams.md
+│   │   │   ├── config.ts               # the seam contract → references/3-app/05-package/02_embeddable-seams.md
 │   │   │   ├── core/                   # headless engine (react-less; see split below)
 │   │   │   └── ui/                     # React UI layer
 │   │   ├── tests/
@@ -102,7 +102,7 @@ ctl help
 - `apps/web` is a **reference host**, not the deliverable.
 - The framework runtime is a **peerDependency**; the package never owns the React instance.
 - Versioning + publishing exist; deployment (of the package) does not.
-- Config arrives by **injection at mount** (owned by `references/3-app/frontend/embeddable-seams.md`), not from a root `.env` the package reads.
+- Config arrives by **injection at mount** (owned by `references/3-app/05-package/02_embeddable-seams.md`), not from a root `.env` the package reads.
 
 ## Audit checks
 
@@ -118,12 +118,12 @@ ctl help
 - Publishing four packages when one bundled artifact (`noExternal`) is what consumers want.
 - Skipping the headless/UI split — without a react-less `core`, UI leaks into the engine and the boundary rots.
 
-(Seam-specific anti-patterns — baked-in service URLs/secrets, module-level singletons that assume one host — are owned by `references/3-app/frontend/embeddable-seams.md`.)
+(Seam-specific anti-patterns — baked-in service URLs/secrets, module-level singletons that assume one host — are owned by `references/3-app/05-package/02_embeddable-seams.md`.)
 
 ## See also
 
 - `references/1-ecosystem/repo-boundaries.md` — the deployed-vs-distributed decision that routes here.
-- `references/3-app/frontend/embeddable-seams.md` — embedding seams, IoC config API, per-instance mount model.
+- `references/3-app/05-package/02_embeddable-seams.md` — embedding seams, IoC config API, per-instance mount model.
 - `references/02_decision-tree.md` § "`apps/` vs `packages/` — three categories" — where this fits in the placement model.
-- `references/3-app/frontend/workspaces-mechanics.md` — the pnpm/turbo workspace mechanics the package + reference-host split reuses.
+- `references/3-app/01-structure-and-stack/02_workspaces-mechanics.md` — the pnpm/turbo workspace mechanics the package + reference-host split reuses.
 - `references/handoffs/examples-registry.md` — cite a registered Layout 06 repo if one exists; otherwise propose the pattern on its own merits and flag the absence.
