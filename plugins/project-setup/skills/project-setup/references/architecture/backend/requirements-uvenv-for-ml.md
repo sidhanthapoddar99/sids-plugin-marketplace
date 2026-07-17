@@ -16,7 +16,7 @@ ML envs accumulate. You install torch once for `ml-recommender`, then reuse it f
 
 ## uvenv — named global Python envs
 
-[`uvenv`](https://github.com/sidhanthapoddar99/uvenv) (~/projects/02_OpenSource/02_dev_tools/uvenv) is a thin shell wrapper around mise (Python versions) + uv (venvs + packages). Provides conda-style `activate ml` ergonomics.
+[`uvenv`](https://github.com/sidhanthapoddar99/uvenv) is a thin shell wrapper around mise (Python versions) + uv (venvs + packages). Provides conda-style `activate ml` ergonomics.
 
 ```bash
 # create a named global env

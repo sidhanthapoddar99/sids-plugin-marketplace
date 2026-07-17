@@ -8,7 +8,7 @@ Layout 04 (`04_ml-project.md`) defines the **repo shape** for an ML project. Thi
 |---|---|---|
 | **dstack** | ✅ already a sibling plugin in this marketplace | Spot-friendly GPU runs across clouds + Kubernetes + on-prem fleets, declarative `*.dstack.yml`, dev environments / tasks / services / fleets / volumes / gateways |
 | **SkyPilot** | external — referenced, not bundled | Mature multi-cloud spot scheduling, fleet management, lighter declarative format |
-| **Sid's own (future)** | placeholder | Niche use cases the above don't cover; pattern: thin orchestrator on top of cloud SDKs, similar to chimere's Go CLI for compose |
+| **Bespoke (future)** | placeholder | Niche use cases the above don't cover; pattern: thin orchestrator on top of cloud SDKs, similar to a Layout 05 Go CLI |
 
 **Defer to dstack first** for new projects — the dstack plugin's skill already covers its CLI surface. This plugin's references *point* at the dstack skill, they don't duplicate it.
 
@@ -18,7 +18,7 @@ Layout 04 (`04_ml-project.md`) defines the **repo shape** for an ML project. Thi
 |---|---|
 | `dstack.md` | When to reach for dstack + how to compose with the dstack plugin's skill |
 | `skypilot.md` | When SkyPilot fits better; basic config shape |
-| `custom-orchestrator.md` | Placeholder for Sid's own future orchestrator |
+| `custom-orchestrator.md` | Placeholder for a future bespoke orchestrator |
 | `spot-instances-and-checkpoints.md` | Checkpoint-safe training patterns; surviving spot preemption |
 | `inference-autoscaling.md` | Long-running inference with auto-redeploy on preemption + scale up/down |
 | `remote-dev-ssh-vscode.md` | SSH into a remote box, VS Code Remote, Claude Code running inside the remote |

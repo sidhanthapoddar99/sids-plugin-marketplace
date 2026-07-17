@@ -50,6 +50,34 @@ my-product/
 
 > **`packages/` here = internal shared code** consumed in-repo by the sibling apps. If instead the repo's *deliverable* is a `packages/<pkg>` that an **external** host installs (the package *is* the product, `apps/web` is just a reference host), that's a different layout — see `references/repo-setup/layouts/06_embeddable-package-and-reference-host.md` (peerDeps, `exports`, publishing, embedding seams).
 
+## Workspace rooting + package scope
+
+The tree above roots the workspace at the **repo root** — correct **only for a JS-only repo**, and even then the root `package.json` stays orchestration-only (no runtime deps, no source — `references/repo-setup/root-and-hygiene.md`).
+
+In a **polyglot repo** (Python/Rust backends + JS frontends), the workspace roots at the **frontend group folder** instead, and the repo root stays manifest-free:
+
+```
+apps/client/                     # ← workspace root (plane-grouped topology)
+├── package.json                 # orchestration-only
+├── pnpm-workspace.yaml
+├── turbo.json
+├── platform/  admin/            # the apps
+└── packages/
+    ├── ui/  styles/  types/  …  # frontend-only shared packages live INSIDE the group
+```
+
+```yaml
+# apps/client/pnpm-workspace.yaml — globs are relative to the workspace root
+packages:
+  - "platform"
+  - "admin"
+  - "packages/*"
+```
+
+`ctl` bridges from the repo root: `ctl dev <app>` / `ctl build` `cd` into the workspace root and delegate to turbo, so commands are location-independent.
+
+**Package scope follows consumers** — a package lives at the lowest level that contains all of them. Frontend-only packages (`ui`, `styles`, `tailwind-config`) belong inside the client group; a package consumed across planes (e.g. `types` shared with a TS backend) forces the hybrid topology — `packages/` at the repo root. The topology decision table is in `references/repo-setup/layouts/02_multi-app-monorepo.md` § "Grouping topology".
+
 ## Root `package.json`
 
 ```json
@@ -204,7 +232,7 @@ The wrapper delegates to turbo; turbo handles filter/cache/parallelism.
 
 ## Real-world reference
 
-- `plane` — `~/projects/03_Self_Hosted_Apps/plane` — 6 apps + 15 packages, pnpm + turbo. Study `pnpm-workspace.yaml`, `turbo.json`, `apps/web/`, `packages/ui/`, `packages/editor/`.
+- A large OSS workspace (e.g. Plane: 6 apps + 15 packages, pnpm + turbo) demonstrates this shape at scale — study its `pnpm-workspace.yaml`, `turbo.json`, `apps/web/`, `packages/ui/`.
 
 ## Anti-patterns
 
@@ -213,3 +241,5 @@ The wrapper delegates to turbo; turbo handles filter/cache/parallelism.
 - Putting business logic in `packages/utils` — keep packages reusable and stateless
 - One mega `packages/ui` that knows about every app's data — UI primitives only
 - Mixing pnpm and bun lockfiles in the same repo
+- Rooting the workspace at the repo root of a polyglot repo — `node_modules/` + lockfile clutter a root that other ecosystems share; root at the frontend group folder
+- A frontend-only package at root `packages/` (overstates its blast radius), or a cross-plane package buried inside the client group (hides its consumers)

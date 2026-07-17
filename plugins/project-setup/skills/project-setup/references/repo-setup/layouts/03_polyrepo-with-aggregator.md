@@ -90,7 +90,7 @@ A dedicated `my-product-docs/` repo — documentation-template. The aggregator's
 
 ## Real-world reference
 
-None of Sid's current repos is full Layout 03. The pattern is documented from industry practice; the skill should ask carefully before recommending.
+No registered example demonstrates full Layout 03 yet. The pattern is documented from industry practice; ask carefully before recommending.
 
 ## Common mistakes to avoid
 

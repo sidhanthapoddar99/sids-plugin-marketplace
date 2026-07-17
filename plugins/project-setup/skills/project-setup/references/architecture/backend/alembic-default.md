@@ -108,6 +108,8 @@ This is the **simple default** — correct for single-replica deployments, dev, 
 
 **The multi-replica caveat:** if you run **N replicas of the backend**, having every replica race to `alembic upgrade head` on boot is a problem (concurrent migrations, lock contention). At that scale, switch to a **separate one-shot migrate service that runs before the app replicas start** — see `references/architecture/production/production-readiness.md` § "Migrations on deploy". Rule of thumb: **entrypoint-migrates for single-replica; one-shot migrate service for multi-replica.** Same `alembic upgrade head`, different orchestration.
 
+**The two-backend caveat:** when **two backends share one database**, neither of them owns the migrations — DDL moves to a standalone, neutral `apps/db` migrations app that imports no backend code, run only via `ctl migrate` (never on boot). See `references/architecture/backend/two-plane-split.md`. Entrypoint-migrates remains the single-backend default.
+
 ## Autogenerate vs hand-write
 
 ```bash

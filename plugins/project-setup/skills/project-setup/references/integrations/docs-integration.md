@@ -55,10 +55,11 @@ Sections are configured in `site.yaml`. Adding a new section is `/docs-add-secti
 
 When `/ps-setup` reaches the docs step:
 
-1. Decide whether docs are in scope:
-   - In-repo `docs/` (recommended for Layout 02, 04, 05)
-   - Separate `<product>-docs` repo (Layout 03 polyrepo)
+1. Decide whether docs are in scope — this is an **L1 (ecosystem) decision** (`references/levels/01_ecosystem.md`): one product = one docs home.
+   - In-repo `docs/` (default for a single-repo product — Layouts 01, 02, 04, 05)
+   - Separate `<product>-docs` repo (the product spans multiple repos — Layout 03 — or docs release/get contributed to independently)
    - None (private tool, no docs needed yet)
+   - Never both, and never per-repo doc fragments for one product.
 
 2. For in-repo: create `docs/.gitkeep`, then **print** the next step:
 
@@ -136,7 +137,7 @@ Don't `git-subdir`-vendor the docs repo into each service — the deduplication 
 
 ## What lives in the docs site
 
-Encourage Sid (and any user) to put in `docs/`:
+Encourage the user to put in `docs/`:
 
 - **Architecture decisions** — `data/<docs-section>/architecture/` with each major decision as a page
 - **Design tokens spec** — link from the docs to `apps/<frontend>/src/styles/tokens.css`

@@ -74,7 +74,7 @@ volumes:
 mkdir -p data/postgres/pgdata data/redis/data data/seaweed/{master,volume,filer}
 ```
 
-This is the **canonical pattern** (atheneum uses exactly it: commit `.gitkeep` in `data/postgres/`, let `ctl` create `pgdata/`, mount the nested path so initdb sees an empty dir). It applies to any service that initialises state on first boot — **Postgres** (initdb), **Redis** (AOF), **Meilisearch**.
+This is the **canonical pattern**: commit `.gitkeep` in `data/postgres/`, let `ctl` create `pgdata/`, mount the nested path so initdb sees an empty dir. It applies to any service that initialises state on first boot — **Postgres** (initdb), **Redis** (AOF), **Meilisearch**.
 
 **SELinux:** if the container can't write the bind-mount, append `:Z` (`…/pgdata:/var/lib/postgresql/data:Z`) — orthogonal to the empty-dir issue.
 

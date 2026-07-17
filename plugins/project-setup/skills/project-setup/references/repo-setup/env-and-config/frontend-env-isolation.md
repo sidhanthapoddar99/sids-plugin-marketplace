@@ -123,7 +123,6 @@ Catching this once is worth annoying the user.
 ## Real-world reference
 
 - `plane`'s `turbo.json` `globalEnv` lists every `VITE_*` — confirms the per-frontend pattern.
-- atheneum's frontend is single with its own `apps/frontend/.env` scope (predates this convention; may have root `VITE_*` keys to clean up).
 
 ## Anti-patterns
 

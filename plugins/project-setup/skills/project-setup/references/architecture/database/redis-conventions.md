@@ -63,7 +63,7 @@ Use Redis's `db` parameter for soft separation:
 
 Each consumer specifies the db in its URL: `redis://default:pwd@redis:6379/2`.
 
-## Redis Streams (atheneum pattern)
+## Redis Streams (cross-service events)
 
 When using Streams for event-driven flows:
 

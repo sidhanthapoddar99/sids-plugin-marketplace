@@ -90,4 +90,4 @@ Independent per-platform version (semver). Both reference the same backend API v
 
 - `references/repo-setup/env-and-config/frontend-env-isolation.md` — build-time vs runtime (mobile is heavily build-time)
 - `references/repo-setup/tooling/ci-cd-future.md` — adapt for mobile-specific runners
-- `references/integrations/examples-index.md` — Sid doesn't have a published mobile example yet
+- `references/integrations/examples-index.md` — no registered mobile example yet

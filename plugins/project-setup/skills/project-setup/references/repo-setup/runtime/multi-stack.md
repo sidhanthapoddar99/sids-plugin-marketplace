@@ -9,15 +9,15 @@ Each repo keeps its own compose tree, `ctl`, and `.env` exactly as `docker-overv
 Exactly **one** stack declares and creates the shared network; every other stack joins it as `external`:
 
 ```yaml
-# owner stack (e.g. the chain repo) — creates the network
+# owner stack (the one at the bottom of the dependency chain) — creates the network
 networks:
-  chimere-net: { driver: bridge, name: chimere-net }
+  myapp-net: { driver: bridge, name: myapp-net }
 ```
 
 ```yaml
 # every joining stack — same name, external
 networks:
-  chimere-net: { external: true, name: chimere-net }
+  myapp-net: { external: true, name: myapp-net }
 ```
 
 Two stacks both "owning" the network is an error — you get a name fight or duplicate networks depending on creation order. Pick the owner deliberately (usually the stack at the bottom of the dependency chain) and record it in each repo's README. (Same mechanism as the `traefik` modifier's `traefik-proxy: { external: true }` — here applied to the whole inter-stack fabric, not just the edge.)
@@ -26,13 +26,13 @@ Two stacks both "owning" the network is an error — you get a name fight or dup
 
 On a shared network, **service names are shared DNS**. The single-stack advice ("call the service `postgres`, it resolves inside the private network") is correct *only single-stack*: if two joined stacks each have a `postgres`, cross-stack DNS resolution becomes a lottery — which container answers depends on startup order.
 
-Joining stacks use **project-unique service names**: `chimere-postgres`, `chimere-backend`, not `postgres`, `backend`.
+Joining stacks use **project-unique service names**: `myapp-postgres`, `myapp-backend`, not `postgres`, `backend`.
 
 This renames ripple through everything that references service names — rename them together:
 
-- `DATA_SVCS` in `_lib.sh` (`DATA_SVCS="chimere-postgres redis"` → health checks, `ctl dev` bring-up)
+- `DATA_SVCS` in `_lib.sh` (`DATA_SVCS="myapp-postgres redis"` → health checks, `ctl dev` bring-up)
 - modifier files (`compose.m.expose_data.yaml` publishes by service name)
-- `container/shell.sh` smart targets — consider accepting short aliases so muscle memory survives: `postgres|chimere-postgres)` in its case statement
+- `container/shell.sh` smart targets — consider accepting short aliases so muscle memory survives: `postgres|myapp-postgres)` in its case statement
 
 ## Deploy order is a documented contract
 
@@ -46,7 +46,7 @@ Tear-down runs in reverse; the owner's `down` removes the network only after all
 
 ## Cross-stack env wiring
 
-- **Service-to-service URLs** (docker DNS paths like `http://chimere-backend:8000`) travel as env vars set in compose `environment:` — that's tier 3, wins over any `.env` file (see `env-and-config/env-precedence.md`).
+- **Service-to-service URLs** (docker DNS paths like `http://myapp-backend:8000`) travel as env vars set in compose `environment:` — that's tier 3, wins over any `.env` file (see `env-and-config/env-precedence.md`).
 - **Credentials / secrets** are never set in compose `environment:` — always from each repo's root `.env` via `${VAR}` interpolation, identical mechanism dev and prod.
 
 ## Dev must not depend on the shared network
@@ -84,7 +84,7 @@ Two gotchas to know going in:
 ENV NGINX_ENVSUBST_FILTER=BACKEND_UPSTREAM
 ```
 
-`BACKEND_UPSTREAM` (e.g. `http://chimere-backend:8000`) is a service-to-service URL — set it in compose `environment:`, per the wiring rules above.
+`BACKEND_UPSTREAM` (e.g. `http://myapp-backend:8000`) is a service-to-service URL — set it in compose `environment:`, per the wiring rules above.
 
 ## Anti-patterns
 

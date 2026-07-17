@@ -53,4 +53,4 @@ The extract should be **named for what it means**, not for what it does mechanic
 
 ## Real-world reference
 
-- atheneum's CLAUDE.md: *"Three usages of similar code is the trigger for shared helpers; one or two is fine to inline."*
+- The one-line form for a project CLAUDE.md: *"Three usages of similar code is the trigger for shared helpers; one or two is fine to inline."*

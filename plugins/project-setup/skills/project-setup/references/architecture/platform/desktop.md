@@ -114,4 +114,4 @@ CI on tag pushes builds + signs + uploads to GitHub Releases.
 
 - `references/repo-setup/layouts/02_multi-app-monorepo.md` — shared packages story
 - `references/architecture/frontend/design-tokens.md` — `tokens.css` lives in `packages/styles` when shared
-- Sid's repos don't currently include a desktop example
+- No registered desktop example yet — propose the pattern on its own merits

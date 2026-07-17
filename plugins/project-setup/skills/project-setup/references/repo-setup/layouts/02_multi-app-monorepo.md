@@ -103,7 +103,48 @@ packages/
 ├── hooks/  services/  utils/
 ```
 
-If frontends don't actually share code, don't introduce workspaces — just use the canonical layout twice. Once you cross into needing them, **delegate the detail** to `references/architecture/frontend/multi-frontend-workspaces.md` (pnpm/turbo setup, `turbo.json` `globalEnv`, per-app env isolation) and `references/architecture/frontend/shared-ui-package.md` (the `packages/ui` + `packages/styles` tokens contract). Those refs are the source of truth; this section only tells you when to reach for them.
+If frontends don't actually share code, don't introduce workspaces — just use the canonical layout twice. Once you cross into needing them, **delegate the detail** to `references/architecture/frontend/multi-frontend-workspaces.md` (pnpm/turbo setup, `turbo.json` `globalEnv`, per-app env isolation) and `references/architecture/frontend/shared-ui-package.md` (the `packages/ui` + `packages/styles` tokens contract). Those refs are the source of truth; this section only tells you when to reach for them. Where the workspace and its packages *sit* is the grouping-topology decision below.
+
+## Grouping topology — how `apps/` is arranged
+
+The tree above shows apps listed **flat** under `apps/`. That is one of three named topologies — pick one explicitly, ask the user when both fit, and record the choice in the project CLAUDE.md:
+
+| Topology | Shape | When it's right |
+|---|---|---|
+| **flat** (default) | `apps/{web,admin,api}` + root `packages/` | few apps; shared packages are consumed across planes (or there's only one plane); the workspace-standard shape |
+| **plane-grouped** | `apps/server/{api-platform,api-admin}` + `apps/client/{platform,admin}`, frontend-only packages *inside* the client group | 2+ frontends AND (2+ backends OR frontend-only shared packages) — planes exist and the flat listing no longer shows them |
+| **hybrid** | plane-grouped apps, `packages/` stays at repo root | grouped planes, but some package crosses them (e.g. `types` consumed by a TS backend) |
+
+```
+# plane-grouped
+apps/
+├── server/
+│   ├── api-platform/        # app/ inside, per the backend rules
+│   └── api-admin/
+└── client/
+    ├── package.json         # ← the JS workspace roots HERE in a polyglot repo
+    ├── pnpm-workspace.yaml  #    (see root-and-hygiene.md — repo root stays manifest-free)
+    ├── platform/  admin/    # the frontends
+    └── packages/
+        ├── ui/  styles/  types/  services/
+```
+
+Two rules drive the pick:
+
+- **Flat until the listing stops communicating.** A grouping layer is the same tripwire reflex as everywhere else — introduce it when planes exist that the flat `apps/` list hides, not before. (Group names are free: `server`/`backend`/`api`, `client`/`frontend`/`web`.)
+- **Packages live at the lowest level that contains all their consumers.** Frontend-only `ui`/`styles`/`tailwind-config` → inside the client group. Anything consumed across planes → root `packages/`. A frontend-only package parked at the repo root overstates its blast radius; a cross-plane package buried in the client group hides its consumers.
+
+The plane-grouped topology pairs naturally with the admin/user **two-plane split** (`references/architecture/backend/two-plane-split.md`) and with polyglot **workspace rooting** (`references/repo-setup/root-and-hygiene.md`).
+
+## Frontend ↔ backend relationship — core backend vs BFF
+
+Orthogonal to counts and topology, name which way the contract gravity points — it changes naming and where API design starts, so ask it at bootstrap:
+
+- **Core backend** (default): the backend is the product's engine; the frontend is one consumer among possible others (CLI, integrations, public API). APIs are designed domain-first; the frontend's `api/` layer adapts to them. Name it `api`/`backend`.
+- **BFF (backend-for-frontend)**: the backend exists to serve this frontend — aggregation, session, proxying to external/upstream services. The contract is designed screen-first; the backend mirrors frontend needs. Name it `bff` (or keep `api` and record the role). A reference host's optional backend in Layout 06 is typically a BFF.
+- **No backend here**: the frontend talks to an external/hosted API — then this repo may actually be Layout 01 (lone frontend) with the external contract documented in `src/api/`.
+
+Either way the routing contract is unchanged — everything under `/api/*` behind the same proxy pair (`references/architecture/frontend/api-prefix-routing.md`).
 
 ## Scaling: many services / mesh
 
@@ -138,5 +179,8 @@ These are shared across every variant above; don't restate them, follow the refs
 - `references/repo-setup/layouts/01_single-app.md` — one runnable app (step down)
 - `references/repo-setup/layouts/03_polyrepo-with-aggregator.md` — independent release cadences (step up)
 - `references/repo-setup/layouts/04_ml-project.md`, `.../layouts/05_infra-orchestrator.md`, `.../layouts/06_embeddable-package-and-reference-host.md`
+- `references/repo-setup/root-and-hygiene.md` — root contract, workspace rooting, gitignore
+- `references/architecture/backend/two-plane-split.md` — separate admin/user backends + the `apps/db` migrations owner
 - `references/architecture/frontend/multi-frontend-workspaces.md`, `references/architecture/frontend/shared-ui-package.md`
+- `references/architecture/frontend/intra-app-structure.md`, `references/architecture/modularity/domain-grouping-tripwire.md` — what's *inside* each app
 - `references/repo-setup/env-and-config/`, `references/repo-setup/runtime/` (start at `overview.md`), `references/architecture/production/`

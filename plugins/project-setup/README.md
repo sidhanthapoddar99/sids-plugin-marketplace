@@ -1,6 +1,6 @@
 # project-setup
 
-Personal project bootstrapping plugin. Encodes Sid's conventions for laying out, configuring, and running projects — so Claude follows them automatically when initialising or working in a repo, rather than inventing fresh patterns each time.
+Opinionated project bootstrapping plugin. Encodes one coherent set of conventions for laying out, configuring, and running projects — so Claude follows them automatically when initialising or working in a repo, rather than inventing fresh patterns each time. Structural decisions are organised in a four-level altitude model (ecosystem → repo → app → feature), with named variants, checkable tripwires, and every chosen variant recorded in the project's CLAUDE.md.
 
 > [!warning]
 > **Work in progress.** The skill, command, and references library are landing in successive passes. Treat this as the spec, not a finished release.
@@ -56,8 +56,10 @@ See `skills/project-setup/references/architecture/ml-orchestration/`.
 ## Key conventions encoded
 
 - **Root `.env`** carries shared / common vars only. **Per-service `config.yaml`** in each backend reads those via `${VAR}` interpolation. Frontend has its **own** env scope (`VITE_*` / `NEXT_PUBLIC_*`) so backend secrets don't leak to clients.
-- **Compose lives in `docker/`**, split on three axes: **profiles** (which services run — data core has no profile and is always up; apps opt in via `profiles: [app]`/`[edge]`), at most one **`--config=prod`** (a full alternate deployment config, `compose.prod.yaml`), and stackable **`.m.` modifiers** (`compose.m.<modifier_name>.yaml`, e.g. `--expose`/`--traefik`). Base is port-less; profiles do ~90% of the work because dev runs on the host.
-- **One control dispatcher at repo root** — `ctl` — is the single entrypoint: `ctl dev` (local host loop, hot reload, auto-starts the data core) / `ctl up [profile…] [--config=prod] [--<modifier>…]` (containers — profiles select services, one config + `.m.` modifiers overlay how they run; production is `ctl up app edge --config=prod`, no separate `prod` verb) / `down`·`ps`·`logs` / `status`·`setup`·`migrate`. It is a thin wrapper delegating to `docker compose`, a process runner (`process-compose`/`mprocs`), and `scripts/*.sh`; callable bare via mise PATH.
+- **Compose lives in `docker/`, profile-less, on two axes**: an optional standalone **config** (`compose.<name>.yaml` that *replaces* base — `data`, `prod`; at most one per run) plus stackable **`.m.` modifiers** (`compose.m.<name>.yaml`, applied as `--modifier expose,traefik`; expose is tiered `expose` / `expose_data` / `expose_all`). Base declares the whole stack: no profiles, port-less, bind-mounts only.
+- **One control dispatcher at repo root** — `ctl` — is the single entrypoint: `ctl dev` (local host loop, hot reload, auto-starts the data core) / `ctl up [config] [--modifier "a,b"]` (containers; bare `ctl up` is interactive — pick → plan → confirm; production is `ctl up prod`, no separate verb) / `down`·`ps`·`logs` / `status`·`setup`·`migrate`. A thin router delegating to `docker compose`, a process runner, and `scripts/<category>/*.sh` — installed by copying the snippet toolkit verbatim, adapted by deletion (the conformance floor), callable bare via mise PATH.
+- **Root is an index, not a runtime** — no loose code at root; a root manifest (when required) is orchestration-only; in polyglot repos the JS workspace roots at the frontend group folder, not the repo root; `.gitignore` is curated per-ecosystem.
+- **Structure has numbers** — ~8–10 feature folders → a backend domain layer; ~10 files → a feature subdivides; 500/300 line caps; frontends keep a hard `src/` skeleton (`layout/ features/ pages/ api/ …`) with all server calls through `api/`. Every chosen variant + tripwire lands in the project CLAUDE.md's structure contract, and audits compare against those recorded choices.
 - **Clean root, ecosystem-typed code layout.** No loose code at root. Where code lives follows the stack — Python service → `app/`, frontend → `src/`, distributable package → `src/<pkg>/` — and nesting follows service count (one → top-level `./<name>/`, several → `apps/<name>/`).
 - **README documents three startup paths**: wrapper script, raw docker compose, no-docker host run.
 - **Modern Python for apps** (`pyproject.toml` + `uv.lock` + `uv sync`); **classic Python for ML** (`requirements.txt` + uvenv global env).
@@ -74,14 +76,9 @@ Full spec: distributed across [`skills/project-setup/references/`](skills/projec
 /plugin install project-setup@sids-plugin-marketplace
 ```
 
-## Examples referenced
+## Examples registry
 
-- `atheneum` (multi-backend Python + Rust monorepo) — `~/projects/02_OpenSource/04_knowledge_management/atheneum`
-- `NeuraSutra/neurasutra-api-management` (canonical 1be + 1fe) — `~/projects/06_04_NeuraSutra/neurasutra-api-management`
-- `chimere-chain-2025` (infra orchestrator with Go CLI) — `~/projects/06_01_Chimere/Own-blockchain/chimere-chain-2025`
-- `plane` (multi-frontend workspaces) — `~/projects/03_Self_Hosted_Apps/plane`
-
-These are not perfect — they evolved at different times with different constraints. The skill cites them as evidence, not as gospel.
+The skill never invents file paths — when it cites real-world evidence, it cites repos from `skills/project-setup/references/integrations/examples-index.md`, a per-installation registry the user populates with their own reference repos (with honest drift notes). The registry ships empty; each installation grows its own.
 
 ## License
 

@@ -2,6 +2,8 @@
 
 Maps the question-flow answers (`01_question-flow.md`) onto a layout and the major cross-cutting decisions. Consult this AFTER the questions are answered, not before.
 
+**Altitude note:** this file is the **L2 layout picker** inside the four-level altitude model (`references/levels/00_altitude-model.md` — classify a decision's level first; the charters route everything that isn't layout selection). Step 1 below is the L1 deployed-vs-distributed question; everything after it is L2.
+
 ## Layout selection
 
 The **first cut** is *deployed vs distributed* — does the repo run the product, or publish a package an external host runs? Most repos are deployed (Layouts 01–05). If the deliverable is a package a separate host consumes, it's Layout 06 regardless of how many backends/frontends it has internally.
@@ -23,8 +25,9 @@ STEP 2 — (deployed only) pick the deployed layout:
 
 **The number of backends/frontends is a parameter of Layout 02, not a separate layout.** Inside the multi-app monorepo:
 
-- multiple backends → coordinate via Postgres / Redis Streams / HTTP (see the layout's *more-than-one-backend* section)
+- multiple backends → coordinate via Postgres / Redis Streams / HTTP (see the layout's *more-than-one-backend* section); if the second backend exists for a separate **identity/security plane** (operator vs end-user), apply `references/architecture/backend/two-plane-split.md` (incl. the neutral `apps/db` migrations owner)
 - multiple frontends sharing UI/types/styles → `packages/` workspaces (pnpm + turborepo)
+- **how `apps/` is arranged is its own decision** — flat / plane-grouped / hybrid, plus where the workspace roots and packages scope: `02_multi-app-monorepo.md` § grouping topology and `references/repo-setup/root-and-hygiene.md`
 - many small services each with their own boundary/deploy cadence → the mesh end of the spectrum (the signal you may be approaching Layout 03 or 05)
 
 See `references/repo-setup/layouts/02_multi-app-monorepo.md`.

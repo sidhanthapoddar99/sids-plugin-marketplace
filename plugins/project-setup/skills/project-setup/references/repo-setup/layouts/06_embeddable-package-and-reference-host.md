@@ -162,4 +162,4 @@ ctl help
 
 ## Real-world reference
 
-No repo in Sid's current portfolio is a canonical Layout 06 yet. When one lands (an embeddable editor / SDK whose consumer is an external host), add it here as the canonical example. Until then, propose the pattern on its own merits and flag the absence.
+No registered example is a canonical Layout 06 yet. When one lands (an embeddable editor / SDK whose consumer is an external host), register it in the examples registry. Until then, propose the pattern on its own merits and flag the absence.

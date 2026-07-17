@@ -50,7 +50,7 @@ assets/snippets/
 
 | File | What it is | Drops at |
 |---|---|---|
-| `alembic-shim.py` | Three-file revision pattern shim (atheneum-style) | `apps/backend/alembic/versions/<rev>.py` (per migration) |
+| `alembic-shim.py` | Three-file revision pattern shim | `apps/backend/alembic/versions/<rev>.py` (per migration) |
 | `alembic_helpers.py` | `run_sql` helper imported by the shim | `apps/backend/alembic_helpers.py` |
 
 ### `env/`

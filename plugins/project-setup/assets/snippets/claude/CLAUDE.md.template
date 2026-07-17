@@ -28,6 +28,36 @@ GitHub: <url>
 └── README.md / CLAUDE.md
 ```
 
+## Structure contract (NON-NEGOTIABLE until re-decided)
+
+(Resolve every `<placeholder>` for THIS project at bootstrap. This block is the always-loaded summary; the `project-setup` skill is the authority behind it. Keep it matching reality — update it whenever a choice is re-decided.)
+
+**Recorded choices** — these are chosen variants, not drift; audits compare the repo against this table:
+
+| Axis | Choice |
+|---|---|
+| Layout | `<01 single-app / 02 multi-app monorepo / …>` |
+| Grouping topology | `<flat apps/ · plane-grouped (apps/server/ + apps/client/) · hybrid>` |
+| Workspace rooting | `<repo root (JS-only repo) · apps/client/ (polyglot repo)>` |
+| Backend role | `<core backend · BFF>` |
+| Identity planes | `<single · two-plane split — apps/db owns all migrations>` |
+| Migration style | `<Alembic autogenerate · raw-SQL three-file pattern>` |
+| Sanctioned exceptions | `<none · root-manifest: <reason>>` |
+
+**Skeletons** (top level is firm; names resolved to this repo):
+
+- Backend `<apps/backend>/app/`: `core/` + `<flat feature folders · domains: <list them>>`; each feature keeps `{router,service,repository,models}.py`; `models.py` = API-contract DTOs`<; raw-SQL project: never ORM models>`. Domain-shared code at the domain root; cross-domain shape reuse = duplicate, never import.
+- Frontend `<apps/frontend>/src/`: `layout/ components/ features/ pages/ hooks/ api/ lib/ stores/` — ALL server communication through `api/` (zod at the boundary, types via `z.infer`); `pages/` thin (~50 lines), mirroring the URL tree; `<ui/styles/services come from packages/ — never local twins · local components/ui + styles/>`.
+- Types: cross-app entities in `<packages/types>`; feature-internal types co-locate; no global `types.ts`.
+
+**Tripwires** — crossing one obligates the restructure or a one-line recorded deferral here:
+
+~8–10 feature folders per app → introduce a domain layer · ~10 files in a feature folder → subdivide · 500 hard / 300 soft lines per file · `pages/` files ≤ ~50 lines · root manifest: 0 runtime dependencies
+
+**Evolution:** when the product's domain model / IA settles or changes, reconcile the code structure within the same milestone; batch folder moves into consolidation windows (refactors, pre-release resets); run `/ps-setup audit` at roadmap-stage boundaries.
+
+**Escalation:** for any structural decision this summary doesn't cover — or if a standard here seems wrong — load the `project-setup` skill and follow its guidance. Do NOT improvise a new pattern inline.
+
 ## Hard rules
 
 (Replace with the 3–7 rules that override defaults for this project.)
@@ -37,6 +67,7 @@ GitHub: <url>
 - **Frontend env is scoped** — `apps/frontend/.env` holds `VITE_*` only; backend secrets stay in root `.env`.
 - **Clean root** — no loose code; `ctl` is the only executable at root. Code lives by ecosystem: Python service → `app/`, frontend → `src/`, distributable package → `src/<pkg>/`.
 - **`ctl` is the only entrypoint** — `ctl dev` (local host loop) / `ctl up [config] [--modifier "a,b"]` (docker, interactive; prod is `ctl up prod`); migrations via `ctl migrate`; config via `ctl setup` / `ctl status`.
+- **`ctl` stays a thin router** — command bodies live in `scripts/<category>/<name>.sh` sourcing `scripts/common/_lib.sh`. To add a command: add a worker file + one route line in `ctl`. Never inline logic into `ctl`.
 - **File size cap: 500 hard / 300 soft.** Split before committing.
 - **Folders by feature, not by kind.** `auth/`, `workspaces/`, `blocks/` each own routes + models + service.
 

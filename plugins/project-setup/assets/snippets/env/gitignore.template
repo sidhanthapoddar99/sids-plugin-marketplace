@@ -1,0 +1,42 @@
+# .gitignore — curated per-ecosystem. Keep ONLY the sections this repo needs;
+# add a section when a new ecosystem joins. Doctrine: references/repo-setup/root-and-hygiene.md
+# NOT ignored on purpose: .vscode/ (launch configs are selectively committed), .claude/ (committed agent config)
+
+# ── secrets & local config ──────────────────────────────────
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+config.local.yaml
+**/config.local.yaml
+
+# ── runtime state (bind mounts) ─────────────────────────────
+data/**
+!data/**/
+!data/**/.gitkeep
+
+# ── python ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# ── javascript / typescript ─────────────────────────────────
+node_modules/
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+coverage/
+
+# ── rust ────────────────────────────────────────────────────
+target/
+
+# ── logs & OS junk ──────────────────────────────────────────
+*.log
+logs/
+.DS_Store

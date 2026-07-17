@@ -30,7 +30,7 @@ Operational notes for SQLite-in-production:
 
 ### Rule of thumb
 
-**Start SQLite for a single service with modest data; move to Postgres when you need concurrent writers or cross-service sharing.** Don't reach for Postgres reflexively — a 20-row admins + API-keys table does not need a Postgres container. (Real example: `neurasutra-sam-image-segmentation`'s admin + API-key store is ~20 rows — SQLite is the correct floor.) Equally, don't cling to SQLite once two services need to write the same data — that's the migration signal.
+**Start SQLite for a single service with modest data; move to Postgres when you need concurrent writers or cross-service sharing.** Don't reach for Postgres reflexively — a 20-row admins + API-keys table does not need a Postgres container. (Real shape: an admin + API-key store of ~20 rows — SQLite is the correct floor.) Equally, don't cling to SQLite once two services need to write the same data — that's the migration signal.
 
 ### Migration path
 
@@ -47,7 +47,7 @@ SQLite → Postgres is a real (if modest) migration: swap the driver, point `DAT
 
 Pattern: a plain dict or an `lru_cache`, rebuilt on boot from the source of truth.
 
-(Real example: `neurasutra-sam-image-segmentation`'s API-key lookup is a dict in the single gunicorn worker, rebuilt on boot from the DB. No Redis needed — there's one process, the data is tiny, and a cold rebuild on restart is fine.)
+(Real shape: an API-key lookup held as a dict in the single gunicorn worker, rebuilt on boot from the DB. No Redis needed — there's one process, the data is tiny, and a cold rebuild on restart is fine.)
 
 ### Redis when
 

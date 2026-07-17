@@ -1,6 +1,6 @@
 # lefthook — pre-commit hooks
 
-Pre-commit hook manager. Fast, language-agnostic, single-binary install. atheneum uses it; recommended for any project that wants format-on-commit + lint-on-commit + cheap-tests-on-commit without the Python overhead of `pre-commit` (the tool).
+Pre-commit hook manager. Fast, language-agnostic, single-binary install. Recommended for any project that wants format-on-commit + lint-on-commit + cheap-tests-on-commit without the Python overhead of `pre-commit` (the tool).
 
 ## Why lefthook
 
@@ -100,7 +100,7 @@ Default to lefthook for new projects unless the team has a strong reason otherwi
 
 ## Real-world reference
 
-- atheneum has `lefthook.yml` at repo root — see for a real multi-language config.
+- See `references/integrations/examples-index.md` — cite a registered repo's `lefthook.yml` if one exists.
 
 ## Anti-patterns
 

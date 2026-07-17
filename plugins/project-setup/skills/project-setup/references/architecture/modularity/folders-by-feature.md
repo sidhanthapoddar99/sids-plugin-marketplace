@@ -105,8 +105,8 @@ Where the language supports it, tests live next to code:
 
 ## Real-world reference
 
-- atheneum's `backend-rust/crates/` — each crate is a feature (api/data/auth/sync/search/indexer/common). Pure feature-folders at the workspace level.
-- atheneum's CLAUDE.md "Code structure — modular by default" — codifies this rule.
+- The rule scales up: a Rust workspace's `crates/` can be pure feature-folders at the workspace level (api/data/auth/sync/search — each crate one feature).
+- See `references/integrations/examples-index.md` — cite a registered repo demonstrating this if one exists.
 
 ## Anti-patterns
 
@@ -114,3 +114,7 @@ Where the language supports it, tests live next to code:
 - Per-feature folders with a single 1500-line `index.ts` inside — the size cap still applies
 - Per-kind folders with deep per-feature nesting (`routes/auth/`, `models/auth/`) — pick one organising axis
 - Naming `services/` when you mean "business logic" — `service.py` per feature is fine; a global `services/` folder is not
+
+## This rule has a ceiling
+
+Feature folders are the organising unit **up to ~8–10 of them**. Past that — or once the product's domain model settles — the flat list itself stops communicating the product, and a **domain layer** goes above it: `app/<domain>/<feature>/`. That threshold, the domain naming rules, feature-seam boundaries, and the adapter-modules pattern are owned by `references/architecture/modularity/domain-grouping-tripwire.md`. Feature folders also subdivide *internally* past ~10 files (frontend twin: `references/architecture/frontend/intra-app-structure.md`).

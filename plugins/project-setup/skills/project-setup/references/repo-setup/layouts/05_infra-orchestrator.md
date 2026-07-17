@@ -1,6 +1,6 @@
 # Layout 05 — infra orchestrator
 
-A docker compose tree driven by a Go (or Rust/Python) CLI binary. Example: `chimere-chain-2025` (blockchain multinode testing — 1 singlenode, N multinode, prod).
+A docker compose tree driven by a Go (or Rust/Python) CLI binary. Example shape: a blockchain-style multinode test harness (1 singlenode, N multinode, prod).
 
 > This is the layout entry. For the **escalation triggers** (when a `ctl` shell wrapper should become a binary), the binary anatomy, state management, and the multi-node `docker/<mode>/` tree, see `references/repo-setup/runtime/complex-setups.md`.
 
@@ -78,7 +78,7 @@ The binary owns the state (node count, ports, peer addresses) and calls `docker 
 
 ## Real-world reference
 
-- `chimere-chain-2025` — `~/projects/06_01_Chimere/Own-blockchain/chimere-chain-2025` — the canonical example. See `cchain/main.go`, `cchain/cmd/`, and the `docker/` tree.
+- See `references/integrations/examples-index.md` — cite a registered Layout 05 repo if one exists; otherwise propose the pattern on its own merits.
 
 ## Common mistakes
 

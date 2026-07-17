@@ -221,7 +221,6 @@ Enforcement greps live in `styling-discipline.md`; the per-project allowlist liv
 
 ## Real-world reference
 
-- atheneum's `frontend/src/styles/tokens.css` — close to this template for colors/surfaces/glass (its custom font sizes predate the stock-scale policy; don't copy those)
 - plane's `packages/ui/styles/` — multi-frontend variant
 
 ## Anti-patterns

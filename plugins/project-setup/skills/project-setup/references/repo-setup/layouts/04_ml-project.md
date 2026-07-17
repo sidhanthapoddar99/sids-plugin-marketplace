@@ -110,7 +110,7 @@ The `dstack` plugin in this marketplace covers the rest.
 
 ## Real-world reference
 
-No canonical Sid ML repo right now; the conventions are derived from the Notes + uvenv design.
+No registered ML example yet — propose the conventions on their own merits.
 
 ## Escalation
 
@@ -124,7 +124,7 @@ Layout 04 defines the **repo shape**. For **how training, inference, sweeps, and
 - `overview.md` — when to reach for cloud orchestration; tools recognised (dstack / SkyPilot / custom)
 - `dstack.md` — default; composes with the dstack sibling plugin's skill
 - `skypilot.md` — alternative; multi-cloud + k8s strengths
-- `custom-orchestrator.md` — placeholder for Sid's own future tool
+- `custom-orchestrator.md` — placeholder for a future bespoke tool
 - `spot-instances-and-checkpoints.md` — surviving spot preemption
 - `inference-autoscaling.md` — long-running inference, scale up/down, auto-redeploy
 - `remote-dev-ssh-vscode.md` — one-command remote GPU box with SSH + VS Code Remote

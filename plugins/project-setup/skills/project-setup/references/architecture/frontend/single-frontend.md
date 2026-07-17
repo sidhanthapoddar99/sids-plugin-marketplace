@@ -18,21 +18,21 @@ apps/frontend/
 ├── public/                      # static assets served as-is
 ├── src/
 │   ├── main.tsx                 # entry — mounts <App /> on #root
-│   ├── App.tsx                  # top-level component
+│   ├── App.tsx                  # top-level component + router config (imports pages only)
 │   ├── styles/
 │   │   ├── tokens.css           # design tokens
 │   │   ├── globals.css          # body, root, base resets
 │   │   └── elements.css         # base element overrides
+│   ├── layout/                  # app shells (sidebar+topbar frame, auth frame)
 │   ├── components/
 │   │   ├── ui/                  # shadcn primitives + project wrappers
-│   │   └── layout/              # navigation, page chrome
-│   ├── lib/
-│   │   ├── api.ts               # fetch wrapper
-│   │   ├── utils.ts
-│   │   └── ...
-│   ├── hooks/                   # reusable hooks
-│   ├── pages/ (or routes/)      # top-level routes
-│   └── context/                 # React context providers
+│   │   └── …                    # common composed components (page header, empty state)
+│   ├── features/                # per-feature substance — subdivided past ~10 files
+│   ├── pages/                   # thin route components mirroring the URL tree
+│   ├── hooks/                   # shared hooks
+│   ├── api/                     # THE api access layer — endpoints, zod parsing, query keys
+│   ├── lib/                     # pure utilities (no React, no IO)
+│   └── stores/                  # client state (zustand or equivalent)
 ├── Dockerfile
 └── nginx/                       # optional — bundle nginx config for prod stage
     └── nginx.conf
@@ -40,16 +40,22 @@ apps/frontend/
 
 ## What's in each subfolder
 
+The skeleton below `src/` — layer rules, the api-layer doctrine, type placement, and the feature-subdivision tripwire — is owned by `references/architecture/frontend/intra-app-structure.md`. Summary:
+
 | Folder | Contents |
 |---|---|
 | `src/styles/` | All CSS. `tokens.css` is the only place hex/px live; everything else uses `var(--token)`. |
-| `src/components/ui/` | shadcn-generated primitives. Edit freely (shadcn is copy-not-import). |
-| `src/components/layout/` | App shell — navbar, sidebar, page wrapper. |
-| `src/components/<feature>/` | Feature-grouped components. Folders by feature, not by kind. |
-| `src/lib/` | Cross-cutting helpers — API client, utils, formatters. |
-| `src/hooks/` | Reusable hooks. |
-| `src/pages/` (or `routes/`) | Per-route components. Routing config typically in `App.tsx` or `routes.tsx`. |
-| `src/context/` | React Context providers (Auth, Theme, etc.). |
+| `src/layout/` | App shells — sidebar+topbar frame, auth frame. Each shell subdivides into its own folder once it outgrows one file. |
+| `src/components/ui/` | shadcn-generated primitives + wrappers. Edit freely (shadcn is copy-not-import). Graduates to `packages/ui` in a workspace. |
+| `src/components/` | Common composed components — page header, empty states, confirm dialog. |
+| `src/features/` | Per-feature substance. Folders by feature; subdivide past ~10 files. |
+| `src/pages/` | Thin route components (~50 lines) mirroring the URL tree; compose from `features/`. Router imports pages only. |
+| `src/api/` | The only place server communication lives — endpoint paths, zod parsing at the boundary, error normalization, query keys. |
+| `src/hooks/` | Shared hooks (feature-specific hooks live in their feature). |
+| `src/lib/` | Pure utilities — formatters, parsers. No React, no IO. |
+| `src/stores/` | Client state (zustand or equivalent). Server state belongs to the query layer in `api/`. |
+
+Context providers co-locate with what they provide (theme → `layout/` or the ui package; session → `api/`); no `context/` catch-all folder.
 
 ## `index.html` template
 

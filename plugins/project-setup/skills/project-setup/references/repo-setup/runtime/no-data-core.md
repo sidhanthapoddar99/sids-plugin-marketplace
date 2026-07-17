@@ -31,7 +31,7 @@ With a data core, the data layer is the always-on base and `ctl dev` brings it u
 
 ## Worked example
 
-NeuraSutra (FastAPI + Next.js image toolkit, no DB) runs the profile-less, no-data-core path end to end: `DATA_SVCS=()`, apps as the base, `expose`=nginx / `expose_all`=all three, a `compose.backend.yaml` standalone slice, soft env guards, and `migrate`/`test`/`lint` dropped (no DB, no test flow *yet* — re-add them when earned). It's the reference instantiation of this doc.
+A FastAPI + Next.js toolkit with no DB runs the profile-less, no-data-core path end to end: `DATA_SVCS=()`, apps as the base, `expose`=nginx / `expose_all`=all three, a `compose.backend.yaml` standalone slice, soft env guards, and `migrate`/`test`/`lint` dropped (no DB, no test flow *yet* — re-add them when earned). It's the reference instantiation of this doc.
 
 ## See also
 

@@ -1,6 +1,6 @@
 # Alembic with raw SQL + 3-line shim — for multi-language schema consumers
 
-When Rust, Go, or another non-Python service queries the same Postgres schema, the **DDL becomes a contract**, not a Python implementation detail. Atheneum's pattern: schema authored in raw `.sql` files, Alembic runs them via a 3-line Python shim per migration.
+When Rust, Go, or another non-Python service queries the same Postgres schema, the **DDL becomes a contract**, not a Python implementation detail. The pattern: schema authored in raw `.sql` files, Alembic runs them via a 3-line Python shim per migration.
 
 ## Why
 
@@ -148,6 +148,7 @@ migrate up → sqlx prepare --check → cargo build
 - Complex DDL (partitioning, custom types, extensions)
 - DBAs in the loop
 - Strong reviewability of schema changes
+- Two backends over one database — then the shim + `.sql` files live in a **neutral `apps/db` migrations app** that imports no backend code (see `references/architecture/backend/two-plane-split.md`)
 
 When to NOT use:
 
@@ -164,4 +165,4 @@ When to NOT use:
 
 ## Real-world reference
 
-- atheneum — the canonical example. See `apps/backend-python/alembic/versions/`, atheneum CLAUDE.md "Migrations" section.
+- See `references/integrations/examples-index.md` — cite a registered repo using this pattern if one exists.

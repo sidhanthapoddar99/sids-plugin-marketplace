@@ -6,7 +6,7 @@ The standard runtime (one `docker/` with a profile-less `compose.yaml` + standal
 1. **Multi-mode compose** — you need structurally *different* stacks (single-node vs a multi-node cluster vs prod), not just overlays on one base. → `docker/<mode>/` directories.
 2. **Binary orchestrator** — the shell `ctl` outgrows its job (structured state across runs, mode promotion). → a Go (or Rust/Python) CLI replaces the shell wrapper.
 
-They travel together: the kind of project that needs `docker/<mode>/` (e.g. a blockchain test harness with 1/N/prod node topologies) is usually the kind that needs a binary to manage it. This is **Layout 05**; the canonical example is `chimere-chain-2025`.
+They travel together: the kind of project that needs `docker/<mode>/` (e.g. a blockchain test harness with 1/N/prod node topologies) is usually the kind that needs a binary to manage it. This is **Layout 05**.
 
 > The simple runtime is documented in `runtime/docker-overview.md` (compose) and `runtime/script-overview.md` (ctl). This doc only covers the deltas for complex setups. Don't reach for any of it preemptively.
 
@@ -135,7 +135,7 @@ A Layout 05 README documents **four** startup paths:
 
 ## Real-world reference
 
-- `chimere-chain-2025` — the canonical Layout 05: `docker/{singlenode,multinode,prod}/`, a Go `cchain/` orchestrator, `cch` binary at root. See `cchain/main.go`, `cchain/cmd/`, and the README's docker section.
+- The canonical Layout 05 shape: `docker/{singlenode,multinode,prod}/`, a Go orchestrator package, its binary at root. Cite a registered example from `references/integrations/examples-index.md` if one exists.
 
 ## Anti-patterns
 

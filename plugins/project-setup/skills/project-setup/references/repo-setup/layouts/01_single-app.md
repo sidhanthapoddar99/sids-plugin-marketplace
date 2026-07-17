@@ -76,7 +76,7 @@ Pick by what the thing *is*, not by habit. See `references/architecture/backend/
 
 ## Real-world reference
 
-- `uvenv` — `~/projects/02_OpenSource/02_dev_tools/uvenv` — a shell tool (its code is `src/` + `lib/` at root, which is normal for a shell project, not the Python layout above). Cited as a single-tool example; the Python `app/` vs `src/` distinction applies to Python services, not shell scripts.
+- See `references/integrations/examples-index.md` — cite a registered single-app repo if one exists. Note: a pure shell tool keeping `src/` + `lib/` at root is normal for shell projects; the Python `app/` vs `src/` distinction applies to Python services, not shell scripts.
 
 ## Escalation triggers
 
@@ -88,7 +88,7 @@ Move to Layout 02 when:
 
 ## Common mistakes to avoid
 
-- Putting loose code (`main.py`, `app/`, `src/`) directly in the repo root "because it's just one app." Don't — keep the root clean; the code goes in a top-level service folder (`./<name>/`).
+- Putting loose code (`main.py`, `app/`, `src/`) directly in the repo root "because it's just one app." Don't — keep the root clean; the code goes in a top-level service folder (`./<name>/`). Running `npm init` / `uv init` at the repo root has the same effect: the manifest, `node_modules/`, and run scripts take over the root. The only sanctioned root-manifest cases (editor extensions, a pure OSS package repo) are a *recorded* exception — see `references/repo-setup/root-and-hygiene.md`.
 - Nesting a single service under `apps/<name>/`. `apps/` is for 2+ services; for one, use top-level `./<name>/`.
 - Using `src/` for a run-service backend. Flat `app/` — `src/` is for distributable packages and frontends.
 - Adding `docker/`, `infra/`, `data/`, `scripts/` proactively. Add when needed.

@@ -167,11 +167,11 @@ Then `Ctrl+Shift+P → Tasks: Run Task` surfaces them.
 
 ## Real-world reference
 
-None of Sid's example repos currently ship full `.vscode/` configs — the snippet here is the recommendation, not an extant pattern.
+The snippet here is the recommendation — apply it as the pattern even where no registered example ships full `.vscode/` configs.
 
 ## Anti-patterns
 
-- Per-user paths committed (`/Users/sid/...`) — break for everyone else
+- Per-user paths committed (`/Users/<name>/...`) — break for everyone else
 - Skipping `envFile` — debugger doesn't see `.env` values
 - `justMyCode: true` for everything — sometimes you need to step into a dep
 - VS Code-only conventions where the project should still work without — keep `ctl` as the canonical entrypoint

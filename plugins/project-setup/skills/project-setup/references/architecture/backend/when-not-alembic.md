@@ -58,9 +58,9 @@ Is the project Python-only with a relational DB?
     └── Multiple, no obvious owner → raw SQL files + simple runner script
 ```
 
-## Hand-rolled migrations (the atheneum-style alternative, not recommended without reason)
+## Hand-rolled migrations (not recommended without reason)
 
-Atheneum **briefly** considered hand-rolled migrations before switching to Alembic + raw SQL. Hand-rolled means:
+Hand-rolled means:
 
 - A `migrations/` folder with sequentially numbered SQL files
 - A `schema_migrations` table tracking applied versions

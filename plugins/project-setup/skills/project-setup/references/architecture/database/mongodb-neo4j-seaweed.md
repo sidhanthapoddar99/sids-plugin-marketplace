@@ -144,7 +144,7 @@ services:
       - internal
 ```
 
-Use when: fuzzy / full-text search with typo tolerance. Atheneum uses it alongside pgvector (semantic) and pg_trgm (regex).
+Use when: fuzzy / full-text search with typo tolerance. Pairs well alongside pgvector (semantic) and pg_trgm (regex) on Postgres.
 
 ## General rules
 
