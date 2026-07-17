@@ -1,6 +1,6 @@
 {
   "name": "project-setup",
-  "version": "0.3.0",
+  "version": "0.2.2",
   "description": "Architectural decision-maker for repos — new and existing. Structural decisions organised in a four-level altitude model (L1 ecosystem / L2 repo / L3 app / L4 feature) with single-owner reference files, named variants, and checkable tripwires. Triggers when the user makes any layout, structural, or convention decision: where a file or folder belongs, monorepo vs polyrepo, adding or splitting services, apps/ grouping topology, admin/user identity planes, per-app stack choice, picking a database and migration style, docker / compose layout and the ctl dispatcher, env-config split, secrets, root hygiene / gitignore, design tokens, intra-app structure, modularity, AI / LLM integration (MCP servers, agent SDKs, key safety), security hardening (captcha, rate limits, telemetry), per-app Docker packaging, mobile / desktop / PWA targets, ML cloud orchestration. Not only bootstrap — equally for restructuring established repos. One slash command (/ps-setup) with init | audit | suggest modes. Composes with the sibling `agent-ks` plugin for docs, and declares the sibling `uvenv` skill as a dependency (auto-installed) for the ML / named-global Python path.",
   "author": {
     "name": "Sid",
