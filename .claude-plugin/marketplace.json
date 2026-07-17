@@ -18,7 +18,7 @@
     {
       "name": "project-setup",
       "source": "./plugins/project-setup",
-      "description": "Architectural decision-maker for repos — new and existing. Triggers on any layout / structural / convention decision: where a file or folder belongs, monorepo vs polyrepo, adding or splitting services, picking a database or ML orchestrator, docker / compose layout, env-config split, secrets, design tokens, modularity, mobile / desktop targets. Bootstrap AND restructure. One slash command (/ps-setup) with init | audit | suggest modes. Composes with sibling dstack and agent-ks skills (work in progress).",
+      "description": "Architectural decision-maker for repos — new and existing. Triggers on any layout / structural / convention decision: where a file or folder belongs, monorepo vs polyrepo, adding or splitting services, per-app stack choice, picking a database, docker / compose layout, env-config split, secrets, design tokens, modularity, AI / LLM integration, security hardening, mobile / desktop / PWA targets, ML cloud orchestration. Bootstrap AND restructure. One slash command (/ps-setup) with init | audit | suggest modes. Composes with the sibling agent-ks plugin.",
       "license": "PolyForm-Noncommercial-1.0.0"
     },
     {

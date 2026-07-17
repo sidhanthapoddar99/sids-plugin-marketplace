@@ -28,7 +28,7 @@ assets/snippets/
 
 ### `docker/`
 
-**Profile-less, two axes.** `compose.yaml` is the base (the whole stack, no profiles, no host ports); a `compose.<name>.yaml` is a **standalone config** that *replaces* base (`data`, `prod`); `compose.m.<name>.yaml` files are stackable `.m.` modifiers. `ctl up [config] [--modifier "a,b"]` assembles them (bare `ctl up` is interactive). Full convention: `references/repo-setup/runtime/docker-overview.md`.
+**Profile-less, two axes.** `compose.yaml` is the base (the whole stack, no profiles, no host ports); a `compose.<name>.yaml` is a **standalone config** that *replaces* base (`data`, `prod`); `compose.m.<name>.yaml` files are stackable `.m.` modifiers. `ctl up [config] [--modifier "a,b"]` assembles them (bare `ctl up` is interactive). Full convention: `references/2-repo/04-docker/00_docker-overview.md`.
 
 | File | What it is | Drops at |
 |---|---|---|
@@ -66,7 +66,7 @@ assets/snippets/
 
 `ctl` is a thin router; `scripts/common/_lib.sh` is the shared foundation (colors + indent-aware logging, `row()` aligned help, uniform `--help`, `dc()` + discovery, `or_none`, guards, container-resolved health) every worker sources; `scripts/common/_select.sh` is a dependency-free TUI picker (no fzf/gum) sourced by `_lib.sh` and used by the interactive `ctl up`. Each command with a real body is a worker at **`scripts/<category>/<name>.sh`** (category ∈ `dev` | `container` | `config`; `common/` holds the shared libs — the `ctl` verb stays clean: `ctl migrate`, file `dev/migrate.sh`). Trivial `docker compose` forwards (`down`/`restart`/`logs`/`exec`) stay inline in `ctl`. Colors auto-disable when piped or `NO_COLOR` is set; every command takes `-h`/`--help`.
 
-**To add a command:** drop `scripts/<category>/<name>.sh` (use the worker preamble in `common/_lib.sh`) and wire one `run <category>/<name>` line into `ctl`'s `case`. See `references/repo-setup/runtime/script-overview.md` (model + map) and `.../script-usage.md` (commands).
+**To add a command:** drop `scripts/<category>/<name>.sh` (use the worker preamble in `common/_lib.sh`) and wire one `run <category>/<name>` line into `ctl`'s `case`. See `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` (model + map) and `.../01_script-usage.md` (commands).
 
 | File | What it is | Drops at |
 |---|---|---|
@@ -97,16 +97,16 @@ assets/snippets/
 - File names mirror their **drop name** where possible (`compose.m.expose.yaml`, not `compose-expose.yaml`).
 - Templates use `<PROJECT>` / `<placeholder>` markers the slash command substitutes.
 - All snippets are **illustrative defaults** — adapt per project. The category structure is the contract; the specific values are not.
-- Image tags and runtime versions are illustrative — see the `references/architecture/database/` and `references/repo-setup/runtime/mise.md` notes about checking latest and asking the user.
+- Image tags and runtime versions are illustrative — see the `references/3-app/04-database/` and `references/2-repo/06-runtime-environment/01_mise.md` notes about checking latest and asking the user.
 
 ## What's NOT here
 
 This folder is intentionally small. Things deliberately not snippeted:
 
-- **A full project tree** — see `references/repo-setup/layouts/` instead
-- **ML training scripts** — too project-specific; see `references/architecture/ml-orchestration/`
-- **Backend `pyproject.toml`** — see `references/architecture/backend/pyproject-uv-sync-for-apps.md` for the shape
+- **A full project tree** — see `references/2-repo/01-layouts/` instead
+- **ML training scripts** — too project-specific; see `references/2-repo/07-ml-orchestration/`
+- **Backend `pyproject.toml`** — see `references/3-app/02-backend/00_app-skeleton.md` for the shape
 - **`Dockerfile`s for backend/frontend** — too stack-specific; the references cover the patterns
-- **Cloud orchestrator configs** (`*.dstack.yml`, `sky/*.yaml`) — examples live in `references/architecture/ml-orchestration/`
+- **Cloud orchestrator configs** — cloud GPU work uses thin `scripts/cloud/` wrappers over the provider CLI; see `references/2-repo/07-ml-orchestration/`
 
 If you find yourself wanting a snippet that isn't here, ask: does it have a small focused job and apply to most projects of its layout? If yes, add it. If no, leave it as a reference example.

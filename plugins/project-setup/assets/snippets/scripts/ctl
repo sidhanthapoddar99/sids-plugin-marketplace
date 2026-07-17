@@ -18,7 +18,7 @@
 # compose.<name>.yaml that REPLACES base — e.g. `data` = just the data layer) plus stackable
 # `--modifier "a,b"` overlays (compose.m.<name>.yaml). Bare `ctl up` is interactive
 # (config → modifiers → plan → confirm). No `ctl prod` verb — prod is `ctl up prod`. Profiles
-# are a rare advanced escalation (see runtime/complex-setups.md), not part of this default.
+# are a rare advanced escalation (see references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md), not part of this default.
 # Run `ctl <command> --help` for any command.
 
 set -euo pipefail

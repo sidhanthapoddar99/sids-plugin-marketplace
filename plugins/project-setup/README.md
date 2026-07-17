@@ -41,7 +41,7 @@ The same machinery powers initialising a new project, auditing an existing one f
 
 ## ML cloud orchestration
 
-For Layout 04 (ML projects), the skill also covers cloud GPU orchestration. Default is **dstack** — a sibling plugin in this marketplace. The `project-setup` skill defers to the `dstack` skill for CLI mechanics, focuses on the **structural** side (repo layout, `tasks/*.dstack.yml`, `scripts/cloud/`). Same support for **SkyPilot** as an alternative.
+For Layout 04 (ML projects), the skill also covers cloud GPU orchestration — **tool-agnostic**: thin `scripts/cloud/` wrappers over the cloud provider's own CLI, escalating to a small custom CLI only when the wrappers accumulate cross-run state. No third-party orchestrator layer.
 
 Subtopics:
 
@@ -51,7 +51,7 @@ Subtopics:
 - Agent SSH access (running an agent against a remote GPU)
 - ML CI/CD tiers (cheap / medium / expensive)
 
-See `skills/project-setup/references/architecture/ml-orchestration/`.
+See `skills/project-setup/references/2-repo/07-ml-orchestration/`.
 
 ## Key conventions encoded
 
@@ -78,7 +78,7 @@ Full spec: distributed across [`skills/project-setup/references/`](skills/projec
 
 ## Examples registry
 
-The skill never invents file paths — when it cites real-world evidence, it cites repos from `skills/project-setup/references/integrations/examples-index.md`, a per-installation registry the user populates with their own reference repos (with honest drift notes). The registry ships empty; each installation grows its own.
+The skill never invents file paths — when it cites real-world evidence, it cites repos from `skills/project-setup/references/handoffs/examples-registry.md`, a per-installation registry the user populates with their own reference repos (with honest drift notes). The registry ships empty; each installation grows its own. Six anonymized annotated project trees live in `skills/project-setup/references/5-examples/`.
 
 ## License
 

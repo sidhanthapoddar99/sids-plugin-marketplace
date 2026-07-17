@@ -1,5 +1,5 @@
 # .gitignore — curated per-ecosystem. Keep ONLY the sections this repo needs;
-# add a section when a new ecosystem joins. Doctrine: references/repo-setup/root-and-hygiene.md
+# add a section when a new ecosystem joins. Doctrine: references/2-repo/02-root-hygiene/00_root-and-hygiene.md
 # NOT ignored on purpose: .vscode/ (launch configs are selectively committed), .claude/ (committed agent config)
 
 # ── secrets & local config ──────────────────────────────────
