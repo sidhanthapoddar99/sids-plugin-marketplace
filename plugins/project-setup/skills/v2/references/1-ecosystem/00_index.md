@@ -1,6 +1,6 @@
-# L1 — Ecosystem charter
+# L1 — Ecosystem: across repos
 
-The level above any single repo: how many repos exist, where the boundaries sit, what each repo is *for*, and how they share. Binds rarely — at product inception and at repo-split moments — but every L2 bootstrap inherits its answers, so settle (or explicitly note) them first. This charter is an **index only**: each decision names its owner file; the normative rule, its variants, and its audit check live there.
+The level above any single repo: how many repos exist, where the boundaries sit, what each repo is *for*, and how they share. Binds rarely — at product inception and at repo-split moments — but every L2 bootstrap inherits its answers, so settle (or explicitly note) them first. This is the **index of L1 decisions**: each decision names its owner file; the normative rule, its variants, and its audit check live there.
 
 ## Decisions owned here
 

@@ -80,7 +80,7 @@ Boundaries are re-openable. These L2→L1 triggers say a repo has outgrown its c
 
 ## See also
 
-- `references/1-ecosystem/00_charter.md` — the L1 decision index
+- `references/1-ecosystem/00_index.md` — the L1 decision index
 - `references/1-ecosystem/cross-repo-contracts.md` — sharing ranking, aggregator, image/schema contracts
 - `references/1-ecosystem/docs-placement.md` — the docs own-repo case + handoff
 - `references/2-repo/01-layouts/03_polyrepo-aggregator.md` — the aggregator repo shape (WHEN lives here)

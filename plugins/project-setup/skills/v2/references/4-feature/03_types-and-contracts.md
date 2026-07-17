@@ -60,4 +60,4 @@ This file owns *placement*. The mechanisms that produce these types are owned el
 - `references/3-app/02-backend/02_two-plane-split.md` — why two backends share a DB schema, never a models package
 - `references/3-app/04-database/01_migrations.md` — the DB schema as the raw-SQL project's contract
 - `references/3-app/05-package/00_shared-packages.md` — `packages/types` internals and export surface
-- `references/4-feature/00_charter.md` — the feature-level charter this reference serves
+- `references/4-feature/00_index.md` — the feature-level charter this reference serves

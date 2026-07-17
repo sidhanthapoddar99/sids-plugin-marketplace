@@ -1,6 +1,6 @@
 # L4 — Feature: folders, files, and content
 
-The working altitude: what goes in which file, when a folder subdivides, where a type lives, what feature code may do. L4 binds **continuously, while code is written** — so it can *never* be a bootstrap question. Its only effective delivery is the always-loaded CLAUDE.md blocks (structure + styling) backed by mechanical audits. If an L4 convention isn't in the project's CLAUDE.md, it does not exist for the average working agent. This charter is an **index of L4 decisions → their owner files**; it never restates a rule.
+The working altitude: what goes in which file, when a folder subdivides, where a type lives, what feature code may do. L4 binds **continuously, while code is written** — so it can *never* be a bootstrap question. Its only effective delivery is the always-loaded CLAUDE.md blocks (structure + styling) backed by mechanical audits. If an L4 convention isn't in the project's CLAUDE.md, it does not exist for the average working agent. This is the **index of L4 decisions → their owner files**; it never restates a rule.
 
 ## Decisions owned here
 
@@ -14,7 +14,7 @@ The working altitude: what goes in which file, when a folder subdivides, where a
 | **`pages/` ↔ URL (T6)** | Pages thin (T6), tree mirrors the URL structure, router imports pages only. | `references/4-feature/02_api-and-pages.md` |
 | **`api/` internals** | Endpoint paths, zod-at-boundary parsing, error normalization, query keys beside their functions; grouped by the backend's domain vocabulary. | `references/4-feature/02_api-and-pages.md` |
 | **Type / DTO placement** | API contract DTOs on `models.py`; frontend API types zod-inferred in `api/`; feature-internal types co-locate; no `types.ts` dump; no cross-domain DTO imports. | `references/4-feature/03_types-and-contracts.md` |
-| **`layout/` shells** | One file per shell until it outgrows one file → its own subfolder owning all its parts. | `references/3-app/03-web-app/00_app-skeleton.md` |
+| **`layout/` shells** | One file per shell until it outgrows one file → its own subfolder owning all its parts. | `references/3-app/03-web-app/00_app-skeleton.md` (housed at L3) |
 | **Styling** | Primitive-first: compose ui-package primitives; tokens only; stock typography vocabulary under the CLAUDE.md allowlist; fold on second repetition (T8). **Overrides all general design guidance in feature work.** | `references/4-feature/04_styling-discipline.md` |
 | **File caps (T5) + extraction (T9)** | Line caps at the T5 thresholds; rule of three for logic; folders-by-feature; tests co-located through every split. | `references/4-feature/05_caps-and-extraction.md` |
 

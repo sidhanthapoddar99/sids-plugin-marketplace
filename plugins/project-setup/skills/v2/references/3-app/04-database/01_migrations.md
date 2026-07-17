@@ -114,6 +114,8 @@ Rules of thumb:
 - Reaching for the raw-SQL shim on a Python-only project → plain Alembic is simpler.
 - Letting Rust/Go autogenerate the schema from queries when it's a shared contract → the schema becomes implicit and the DB loses its single owner.
 - Migrating away from Alembic with no clear successor in place.
+
+Out of scope: event-sourced / append-only schemas — a different migration model entirely; if a project adopts one, record it as a variant and this file's defaults don't apply.
 - Every backend racing `upgrade head` on boot at N replicas, or two backends racing it over one DB.
 
 ## See also

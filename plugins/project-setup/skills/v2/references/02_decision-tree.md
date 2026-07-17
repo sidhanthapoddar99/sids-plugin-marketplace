@@ -2,7 +2,7 @@
 
 Maps the question-flow answers (`references/01_question-flow.md`) onto a layout and the major cross-cutting decisions. Consult this AFTER the questions are answered, not before.
 
-**Altitude note:** this file is the **L2 layout picker** inside the four-level altitude model (`references/00_altitude-model.md` — classify a decision's level first; the charters route everything that isn't layout selection). Step 1 below is the L1 deployed-vs-distributed question; everything after it is L2.
+**Altitude note:** this file is the **L2 layout picker** inside the four-level altitude model (`references/00_altitude-model.md` — classify a decision's level first; the charters route everything that isn't layout selection). Step 1 below is the L1 deployed-vs-distributed question; everything after it is L2, plus routing pointers into L3 owners (tokens, platform targets, `app/` vs `src/`).
 
 ## Layout selection
 
@@ -70,6 +70,7 @@ The third category is the one the two-category model erases. When the deliverabl
 | 03 | inside each repo, next to its service |
 | 04 (ML) | `configs/<experiment>.yaml` (per-experiment) |
 | 05 | per-service inside `apps/`; orchestrator config in its own folder |
+| 06 | n/a — no deployed service; an optional reference-host BFF follows Layout 02's rule |
 
 **Never `config.yaml` at repo root.** Root has only `.env` / `.env.example`. Full rule: `references/2-repo/03-env-config/01_per-service-config.md`.
 
@@ -98,6 +99,7 @@ Two axes (profile-less) — at most one standalone **`config`** (a `compose.<nam
 | 03 | per-repo, modern flow |
 | 04 (ML) | `requirements.txt` + uvenv global env (different on purpose) |
 | 05 | `pyproject.toml` + `uv.lock` per Python service |
+| 06 | n/a — JS package repo; an optional reference-host BFF follows Layout 02's rule |
 
 ### Frontend tooling per layout
 

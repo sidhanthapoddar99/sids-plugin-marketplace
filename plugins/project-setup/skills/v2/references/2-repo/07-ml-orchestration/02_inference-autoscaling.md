@@ -58,7 +58,7 @@ The controller is itself **on-demand** (no preemption). It watches the spot repl
 | **Scheduled** — N replicas during business hours | Predictable daily traffic |
 | **None** — fixed N replicas always | Steady state; simpler |
 
-`scale_down_after` matters more than scale-up policy for cost. Aggressive scale-down (1–5 min idle) is the lever.
+`scale_down_after` matters more than scale-up policy for cost. Aggressive scale-down (1–5 min idle) is the lever. Sane starting point regardless of tooling: 1–4 replicas, target ~10 req/s per replica, scale down after ~5 min idle.
 
 ## Health checks
 

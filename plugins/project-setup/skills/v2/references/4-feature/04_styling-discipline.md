@@ -8,7 +8,7 @@ The concrete names below (`@my/ui`, `src/features/**`, token names) are **placeh
 
 ## ⚠️ Write this into the project's CLAUDE.md
 
-When bootstrapping or auditing a repo that has (or gains) a `tokens.css` + a ui package, **add the "Styling discipline" block from `assets/snippets/claude/CLAUDE.md.template` to the project's CLAUDE.md** (with names resolved to the project's real packages/paths). CLAUDE.md is always in context; skills are not. The project memory file is what makes the discipline hold for every future agent, including ones that never load this skill. (The general mechanism for delivering L4 doctrine as CLAUDE.md blocks is owned by `references/4-feature/00_charter.md`; this is the styling-specific block.)
+When bootstrapping or auditing a repo that has (or gains) a `tokens.css` + a ui package, **add the "Styling discipline" block from `assets/snippets/claude/CLAUDE.md.template` to the project's CLAUDE.md** (with names resolved to the project's real packages/paths). CLAUDE.md is always in context; skills are not. The project memory file is what makes the discipline hold for every future agent, including ones that never load this skill. (The general mechanism for delivering L4 doctrine as CLAUDE.md blocks is owned by `references/4-feature/00_index.md`; this is the styling-specific block.)
 
 That block includes the precedence rule:
 
@@ -66,4 +66,4 @@ Snippet-safety rules (these commands get copied verbatim into hooks and CI, so t
 - `references/3-app/05-package/00_shared-packages.md` — ui-package internals: where primitives and variants live
 - `references/4-feature/05_caps-and-extraction.md` — the rule-of-N family (T8 threshold, T9 rule of three, T5 file caps)
 - `references/2-repo/05-ctl-scripts-tooling/04_lefthook.md` — wiring the greps into pre-commit hooks
-- `references/4-feature/00_charter.md` — the CLAUDE.md-block delivery mechanism and mechanical audit greps
+- `references/4-feature/00_index.md` — the CLAUDE.md-block delivery mechanism and mechanical audit greps

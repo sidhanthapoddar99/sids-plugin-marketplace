@@ -62,4 +62,4 @@ This is the frontend twin of the backend feature subdivision in `references/4-fe
 - `references/3-app/02-backend/01_domain-grouping.md` — the backend domain vocabulary `api/` mirrors
 - `references/4-feature/01_feature-folders.md` — the backend twin: feature shape, seams, subdivision (T3 backend)
 - `references/3-app/05-package/00_shared-packages.md` — `packages/services` (the workspace `api/` equivalent) internals and export surface
-- `references/4-feature/00_charter.md` — the feature-level charter this reference serves
+- `references/4-feature/00_index.md` — the feature-level charter this reference serves

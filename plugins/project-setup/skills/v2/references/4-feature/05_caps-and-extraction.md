@@ -38,7 +38,7 @@ Split **vertically by feature** (below), not horizontally by kind.
 
 ### Enforcement
 
-Lines-per-file has no stock lint rule in most ecosystems, so the discipline is mostly cultural — caught in review. A simple repo-level CI check:
+Lines-per-file has no stock lint rule in most ecosystems, so the discipline is mostly cultural — caught in review. Optional TS-side lint gate: biome's `noExcessiveCognitiveComplexity` (`maxAllowedComplexity: 15`) catches the function-level analogue. A simple repo-level CI check:
 
 ```bash
 # .github/workflows/checks.yml

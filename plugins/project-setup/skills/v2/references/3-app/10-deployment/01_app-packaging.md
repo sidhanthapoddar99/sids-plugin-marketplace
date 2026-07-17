@@ -19,7 +19,7 @@ Each app owns its `Dockerfile` (every-app contract, `references/3-app/01-structu
 
 ## Healthcheck endpoint contract
 
-The app exposes a health endpoint (e.g. `/api/health`) that its serving layer implements and compose/orchestrator probes — a two-way contract:
+The app exposes a health endpoint (`/health` liveness + `/ready` readiness — the path contract is owned by `references/2-repo/04-docker/05_production-readiness.md`) that its serving layer implements and compose/orchestrator probes — a two-way contract:
 
 - The app **implements** liveness/readiness (`references/3-app/10-deployment/00_serving.md`); readiness reflects real dependencies (DB reachable, migrations applied).
 - Compose/orchestrator **probes** it (`HEALTHCHECK` / compose `healthcheck`, wired at L2 — `references/2-repo/04-docker/05_production-readiness.md`).

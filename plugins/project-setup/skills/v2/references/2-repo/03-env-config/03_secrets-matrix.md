@@ -33,6 +33,7 @@ Where secrets live across the lifecycle. Pick consciously for each layer.
 - **Open source GitHub Actions**: secrets stored in repo settings → Actions → Secrets, referenced as `${{ secrets.POSTGRES_PASSWORD }}`. Never echo to logs.
 - **Self-hosted**: runner machine has `.env.ci` (root-readable only); workflow sources it.
 - **PR builds**: do NOT receive secrets by default — be explicit about which secrets are required and use `pull_request_target` carefully.
+- **Forward-looking**: prefer CI fetching secrets via a short-lived OIDC-issued token (cloud federation) over long-lived secrets stored in CI config.
 
 ## Prod rules (compose-on-VM, current default)
 

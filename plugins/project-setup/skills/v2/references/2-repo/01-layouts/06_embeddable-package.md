@@ -69,7 +69,7 @@ A published package is built and versioned differently from a deployed app:
   }
   ```
 - **Framework runtime as a `peerDependency`, not a dependency.** The *host* owns the single React instance — bundling your own React causes the "invalid hook call / two Reacts" class of bugs. Same for any runtime the host provides.
-- **Library build tooling** (`tsup`, `rollup`, `vite build --lib`) — emits ESM + types for consumption, not an app bundle. This is *not* the same as building the reference host (normal Vite app bundling).
+- **Library build tooling** (`tsup`, `rollup`, `vite build --lib`) — emits ESM + types for consumption, not an app bundle. This is *not* the same as building the reference host (normal Vite app bundling). Config shape: `external: ["react", "react-dom"]` (peers stay the host's) and `noExternal` for internal engine packages bundled into the artifact; the framework sits in `devDependencies` for build/dev only — never a runtime `dependency`.
 - **Versioning + publishing** — semver, a changelog (changesets work well in a workspace), `npm publish` (or PyPI for a Python engine). `ctl publish` wraps it. The reference host is never published.
 
 ## Single-artifact delivery (named convention)

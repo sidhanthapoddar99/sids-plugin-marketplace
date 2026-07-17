@@ -22,7 +22,7 @@ docker/
 └── compose.m.traefik.yaml        # MODIFIER (--modifier traefik):     join external traefik-proxy net + labels
 ```
 
-Configs are `compose.<name>.yaml`; modifiers carry the **`.m.`** infix so you can tell them apart from configs without opening them. A single app (Layout 01) often needs only `compose.yaml`. ML (Layout 04) usually needs none. For multi-mode `docker/<mode>/` trees driven by a binary, see `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` (Layout 05).
+Configs are `compose.<name>.yaml`; modifiers carry the **`.m.`** infix so you can tell them apart from configs without opening them. Per-layout footprint: Layout 01 often needs only `compose.yaml`; Layout 02 carries the full set (base + `data`/`prod` configs + modifiers); Layout 03 = per-repo compose + an image-based aggregator; Layout 04 (ML) usually none; Layout 06 = demo-only base for the reference host. `compose.m.expose` exists only where host ports are actually published. For multi-mode `docker/<mode>/` trees driven by a binary, see `references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md` (Layout 05).
 
 ### Path discipline
 

@@ -445,6 +445,7 @@ All tokens consumed via Tailwind classes → CSS vars → flips with `data-theme
 - Hex / px in component CSS, or hex values in `className` strings (`bg-[#fafafa]`) — defeats the token system.
 - Bypassing the token alias (Tailwind `colors` as literals) — same.
 - Remapping stock scales in `tokens.css` or `theme.extend` (`fontSize: { sm: "13px" }`, custom `spacing`) — every agent-generated line becomes wrong-by-assumption; the restraint belongs in the CLAUDE.md allowlist, not the vocabulary.
+- Hard-coding `prefers-color-scheme` checks in components — theme switching is the `[data-theme]` attribute's job; components just consume tokens.
 - Per-component "design tokens" files — collapses into many sources of truth.
 - Renaming tokens frequently — every consumer breaks.
 - Adding a token for one-off use — that's a magic number with a name; inline it.

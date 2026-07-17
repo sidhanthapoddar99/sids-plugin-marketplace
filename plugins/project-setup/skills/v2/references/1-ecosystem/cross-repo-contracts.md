@@ -77,4 +77,4 @@ Two repos **never** read or write the same tables directly. Cross-repo data acce
 - Aggregator repo shape + script bodies: `references/2-repo/01-layouts/03_polyrepo-aggregator.md`.
 - Publishing a shared package (rank 1): `references/2-repo/01-layouts/06_embeddable-package.md`.
 - Docs across repos (why not to vendor the docs repo): `references/1-ecosystem/docs-placement.md`.
-- L1 decision index and where role/siblings get recorded: `references/1-ecosystem/00_charter.md`.
+- L1 decision index and where role/siblings get recorded: `references/1-ecosystem/00_index.md`.

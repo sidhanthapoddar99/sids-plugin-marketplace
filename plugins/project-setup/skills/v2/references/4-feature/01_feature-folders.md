@@ -78,4 +78,4 @@ Crossing T3 obligates either the subdivision or a recorded deferral (one line in
 - `references/4-feature/03_types-and-contracts.md` — what lives in `models.py`; no cross-domain DTO imports; no shared models package
 - `references/4-feature/02_api-and-pages.md` — the frontend twin: feature subdivision (T3), `api/` internals, thin pages (T6)
 - `references/4-feature/05_caps-and-extraction.md` — file caps (T5), rule of three (T9), folders-by-feature, test co-location
-- `references/4-feature/00_charter.md` — the L4 charter this reference serves
+- `references/4-feature/00_index.md` — the L4 charter this reference serves

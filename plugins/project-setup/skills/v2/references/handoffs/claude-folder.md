@@ -27,7 +27,7 @@ Everything plugin-provided still works without these — `.claude/` is the **pro
 
 ## `CLAUDE.md` template
 
-Place next to `.claude/`, at repo root. This is the **root** brief — the outline below. Bootstrap generates it from `assets/snippets/claude/CLAUDE.md.template` with the structure block (recorded variants + tripwire numbers + escalation pointer) and the styling block resolved to the project's real names; that delivery mechanism is owned by `references/4-feature/00_charter.md`.
+Place next to `.claude/`, at repo root. This is the **root** brief — the outline below. Bootstrap generates it from `assets/snippets/claude/CLAUDE.md.template` with the structure block (recorded variants + tripwire numbers + escalation pointer) and the styling block resolved to the project's real names; that delivery mechanism is owned by `references/4-feature/00_index.md`.
 
 ```markdown
 # <project-name>
@@ -105,7 +105,6 @@ Trade-off: committed settings are shared with everyone. Don't commit anything co
 - Pre-creating `.claude/agents/`, `.claude/commands/`, `.claude/skills/` with empty placeholders — clutter
 - Putting plugin behaviour in `.claude/` when it should be a plugin — generalise, ship via the marketplace
 - Sharing personal `settings.local.json` choices via commits — gitignore the file if it's personal
-- Forgetting to gitignore `.claude/projects/`, `.claude/cache/` — Claude Code's runtime state directories, never commit
 
 ## See also
 

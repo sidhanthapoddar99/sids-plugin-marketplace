@@ -1,8 +1,8 @@
 # Question flow
 
-Run this in order before proposing any layout. The order is **level-ordered** (see `references/00_altitude-model.md`): L1 ecosystem → L2 repo → L3 per-app. **L4 is never asked** — feature-level conventions are installed via the CLAUDE.md blocks, not decided in an interview.
+Run this in order before proposing any layout. The order is **level-ordered** (see `references/00_altitude-model.md`): L1 ecosystem → L2 repo → L3 per-app, with two conditional L2 batches (6: polyrepo aggregator, 9: ML orchestration) deferred to the end because most projects skip them. **L4 is never asked** — feature-level conventions are installed via the CLAUDE.md blocks, not decided in an interview.
 
-**Skip what you already know**, but if any answer is ambiguous, stop and confirm. Ask in batches of 3–4 with reasonable defaults flagged — long flat question lists lose users. Every named variant the user picks (topology, rooting, BFF/core, migration owner, exceptions) gets **recorded in the project CLAUDE.md** at the end.
+**Skip what you already know**, but if any answer is ambiguous, stop and confirm. Ask in small batches with reasonable defaults flagged — long flat question lists lose users. Every named variant the user picks (topology, rooting, BFF/core, migration owner, exceptions) gets **recorded in the project CLAUDE.md** at the end.
 
 ## L1 — Batch 1: ecosystem
 
@@ -34,10 +34,10 @@ Run this in order before proposing any layout. The order is **level-ordered** (s
     - For Python: **app or ML?** (never inferred from extensions — ML → Layout 04, uvenv + `requirements.txt`)
     - For Rust + Python: confirm the coordination mechanism.
 
-## L2 — Batch 3: frontend shape (skip if no frontend)
+## L2 — Batch 3: frontend shape (skip if no frontend — **except Q16, always ask**)
 
-11. **Framework per frontend?** Vite + React (default) / Next.js (SSR/SEO) / Astro (content-heavy static).
-12. **Package manager?** Bun (default single frontend) / pnpm (default for workspaces; turborepo needs it) / npm-yarn (only if a framework requires).
+11. **Framework per frontend?** Vite + React (default) / Next.js (SSR/SEO) / Astro (content-heavy static) — criteria: `references/3-app/01-structure-and-stack/01_stack-decision.md`.
+12. **Package manager?** Bun (default single frontend) / pnpm (default for workspaces; turborepo needs it) / npm-yarn (only if a framework requires) — same owner as Q11.
 13. **If workspace: which shared packages, at which scope, rooted where?**
     - Packages: `ui`, `styles`, `tailwind-config`, `typescript-config`, `services`, `types`, …
     - **Scope**: frontend-only packages live inside the client group; cross-plane packages force root `packages/` (consumer rule — `references/2-repo/01-layouts/00_grouping-topology.md`).
@@ -89,7 +89,7 @@ The skeletons themselves are **defaults, not questions** (backend `app/` + featu
 39. **Does the product touch LLMs?** Only then does the AI surface apply: MCP server placement (`references/3-app/08-ai/00_mcp-servers.md`), agent/LLM code as an adapter-per-provider boundary (`references/3-app/08-ai/01_agent-sdks.md`), and keys backend-only via a proxy route (`references/3-app/08-ai/02_ai-keys-and-safety.md`). If no LLM, skip `08-ai/` entirely.
 40. **Security-hardening tier, per public app**: none / captcha (Turnstile) / full WAF for the edge (`references/3-app/09-security-hardening/00_edge-protection.md`); app-owned per-user/per-key rate limits (`references/3-app/09-security-hardening/01_rate-limiting.md`); telemetry + audit (`references/3-app/09-security-hardening/02_telemetry-and-audit.md`). Tier is exposure-driven, not a default.
 
-## Batch 9 — ML orchestration (only for Layout 04 ML projects)
+## L2 — Batch 9: ML orchestration (only for Layout 04 ML projects)
 
 41. **Cloud GPUs**: none (local / bare-metal only) / cloud — via `scripts/cloud/` wrappers over the provider CLI, escalating to a thin custom CLI only past the script ceiling (`references/2-repo/07-ml-orchestration/00_custom-orchestrator.md`).
 42. **Spot or on-demand?** Spot for training/sweeps; on-demand for inference SLAs / final runs.
@@ -108,6 +108,8 @@ The skeletons themselves are **defaults, not questions** (backend `app/` + featu
 | **Identity planes (admin vs user)** | Drives backend count, migrations owner, exposure — a count question can't surface it. |
 | **ML vs app** | `.py` files exist in both; affects every Python decision. |
 | **Grouping topology** (when 2+ apps and both shapes fit) | Both are legitimate; the pick must be recorded, not implied. |
+| **External services present** (Traefik / self-hosted Postgres / cloud DB) | Changes the proxy posture and provisioning defaults; cannot be inferred from the repo. |
+| **Open source vs private** | Sets CI/secrets defaults (`references/2-repo/03-env-config/03_secrets-matrix.md`). |
 | **Frontend exposure** | A leaked secret via `VITE_*` is catastrophic. |
 | **Deployment targets** | Generating Traefik config for a repo with no Traefik is waste. |
 | **Theming** | Both modes default; marketing pages opt out. |

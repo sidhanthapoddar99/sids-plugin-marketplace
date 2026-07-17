@@ -29,7 +29,7 @@ Build spec for the v2 references library, staged in `skills/v2/`. The live skill
 
 | v2 path | Owns | Sources |
 |---|---|---|
-| `00_charter.md` | L1 decision index, invariants, interfaces, audit list — pointers only | `levels/01_ecosystem.md` |
+| `00_index.md` | L1 decision index, invariants, interfaces, audit list — pointers only (renamed from `00_charter.md`) | `levels/01_ecosystem.md` |
 | `repo-boundaries.md` | mono vs poly; own-repo criteria; deployed-vs-distributed; escalation triggers between them | `levels/01_ecosystem.md`, decision-tree step 1, layout 03 (the WHEN half), layout 06 (the WHEN half) |
 | `docs-placement.md` | in-repo `docs/` vs separate docs repo + the handoff protocol to the docs plugin | `integrations/docs-integration.md` (whole file moves here; placement decision + mechanics) |
 | `cross-repo-contracts.md` | aggregator repo, env.example sync, sharing ranking (publish > pin > vendor), image registry/semver contracts, no-shared-tables rule | `levels/01_ecosystem.md`, layout 03 (contract parts) |
@@ -99,7 +99,7 @@ The former `07-platform/` also held DB-provisioning, mobile, desktop, and PWA �
 
 | v2 path | Owns | Sources |
 |---|---|---|
-| `00_charter.md` | L4 index, the delivery mechanism (CLAUDE.md blocks), mechanical audit greps, hands-back-up rule | `levels/04_feature.md` |
+| `00_index.md` | L4 index, the delivery mechanism (CLAUDE.md blocks), mechanical audit greps, hands-back-up rule (renamed from `00_charter.md`) | `levels/04_feature.md` |
 | `01_feature-folders.md` | `{router,service,repository,models}.py` shape, feature seams (lifecycle boundaries, merge rule), adapter-modules pattern, T3 subdivision (backend) | `domain-grouping-tripwire.md` (L4 half) |
 | `02_api-and-pages.md` | `api/` internals (endpoints, zod, error norm, query keys, domain mirroring, T6 thin pages, URL mirroring, fetch grep) + frontend feature subdivision | `intra-app-structure.md` (L4 half) |
 | `03_types-and-contracts.md` | ALL type/DTO placement, both planes: models.py DTOs, no cross-domain imports, no shared models pkg, zod-inferred types, packages/types re-export, no types.ts dump | `domain-grouping-tripwire.md` § DTO + `intra-app-structure.md` § types |

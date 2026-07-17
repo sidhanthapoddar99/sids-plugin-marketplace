@@ -125,6 +125,6 @@ A dedicated `<product>-docs` repo, initialised separately with `/agent-ks-init`.
 
 ## See also
 
-- L1 decision index and invariants: `references/1-ecosystem/00_charter.md`.
+- L1 decision index and invariants: `references/1-ecosystem/00_index.md`.
 - Sharing / vendoring ranking (why not to vendor the docs repo): `references/1-ecosystem/cross-repo-contracts.md`.
 - README contract: `references/2-repo/02-root-hygiene/01_readme-three-paths.md`. CLAUDE.md template: `references/handoffs/claude-folder.md`.

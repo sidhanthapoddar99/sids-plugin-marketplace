@@ -4,12 +4,14 @@ Everything that decides what a repo looks like from its root: layout, how apps g
 
 ## Decisions owned here
 
+Rows follow **decision order** (what gets decided first), not folder numbering.
+
 | Decision | Rule / default | Owner |
 |---|---|---|
 | **Layout** | Pick from the six via the decision tree (deployed-vs-distributed first, then count/kind). | `references/02_decision-tree.md`, `references/2-repo/01-layouts/` (layouts 01–06) |
 | **Grouping topology** | flat `apps/` (default) / plane-grouped (`apps/server/` + `apps/client/`) / hybrid; where the JS workspace roots; where packages sit. Tripwire T1; ask when both fit; record the pick. | `references/2-repo/01-layouts/00_grouping-topology.md` |
 | **Frontend↔backend relationship** | core backend (default) vs BFF vs no-backend — names the contract gravity; ask at bootstrap. | `references/2-repo/01-layouts/02_multi-app-monorepo.md` § core vs BFF |
-| **Two-plane split** | Separate admin/user backends only on security-posture grounds (identity namespace, exposure, cadence); then migrations move to a neutral `apps/db`. | `references/3-app/02-backend/02_two-plane-split.md` |
+| **Two-plane split** | Separate admin/user backends only on security-posture grounds (identity namespace, exposure, cadence); then migrations move to a neutral `apps/db`. Asked at bootstrap, **owned at L3**. | `references/3-app/02-backend/02_two-plane-split.md` |
 | **Root contract** | Root = index, not runtime: no loose code, orchestration-only root manifest, single-package containment + recorded exceptions. Workspace rooting is owned by grouping-topology. | `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` |
 | **Runtime triad** | mise (version contract) + one `ctl` (single entrypoint, conformance floor) + profile-less compose in `docker/` (base + standalone configs + `.m.` modifiers). | `references/2-repo/06-runtime-environment/00_runtime-triad.md` ★, `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`, `references/2-repo/04-docker/00_docker-overview.md` |
 | **Env + config flow** | Root `.env` (shared) → per-service `config.yaml` via `${VAR}`; frontend env isolated (`VITE_*`); secrets matrix per environment. | `references/2-repo/03-env-config/` (all four) |
@@ -57,4 +59,4 @@ Each app receives: its slot and name (`apps/<group?>/<name>/`), its ecosystem la
 - `references/00_altitude-model.md` — the 4+1 levels, master tripwire table, ownership table
 - `references/02_decision-tree.md` — the L2 layout picker
 - `references/2-repo/01-layouts/00_grouping-topology.md` — topology, workspace rooting, package scope
-- `references/1-ecosystem/00_charter.md` (step up) · `references/3-app/00_index.md` (step down)
+- `references/1-ecosystem/00_index.md` (step up) · `references/3-app/00_index.md` (step down)

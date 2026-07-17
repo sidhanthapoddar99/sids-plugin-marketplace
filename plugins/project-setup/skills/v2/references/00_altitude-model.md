@@ -1,15 +1,15 @@
 # The altitude model — four levels of structural decisions
 
-Every structural decision has an **altitude**. Classify it first; then open that level's charter; the charter routes to the 1–3 topical references that resolve it. This file defines the levels, the principles they share, the master tripwire table, **the ownership map (decision axis → owner file)**, and the evolution machinery that keeps structure alive after bootstrap. It is the spine: everything else cites it, and it restates nothing that a topical file owns.
+Every structural decision has an **altitude**. Classify it first; then open that level's index; the index routes to the 1–3 topical references that resolve it. This file defines the levels, the principles they share, the master tripwire table, **the ownership map (decision axis → owner file)**, and the evolution machinery that keeps structure alive after bootstrap. It is the spine: everything else cites it, and it restates nothing that a topical file owns.
 
 ## The four levels
 
 | Level | Scope | Decides | Binds when | Delivered via |
 |---|---|---|---|---|
-| **L1 Ecosystem** (`references/1-ecosystem/00_charter.md`) | across repos | repo cardinality + boundaries, sibling roles, docs placement, cross-repo contracts | rarely — product inception, repo-split moments | questions → each repo's CLAUDE.md records its role + siblings |
+| **L1 Ecosystem** (`references/1-ecosystem/00_index.md`) | across repos | repo cardinality + boundaries, sibling roles, docs placement, cross-repo contracts | rarely — product inception, repo-split moments | questions → each repo's CLAUDE.md records its role + siblings |
 | **L2 Repo** (`references/2-repo/00_index.md`) | one repo | layout, app count + grouping topology, runtime triad (`ctl`/docker/mise), env + config flow, root contract, deployment, DB engines | at bootstrap | questions → the tree itself + the CLAUDE.md repo block |
-| **L3 App** (`references/3-app/00_index.md`) | one app or package | internal skeleton (backend domains, frontend `src/`, package exports), shared-lib placement, migration style + owner, per-app DB usage | when each app is created | derived from L2 + few questions → the CLAUDE.md structure block |
-| **L4 Feature** (`references/4-feature/00_charter.md`) | folders, files, content | feature-folder shape, subdivision, type/DTO placement, api-layer internals, pages ↔ URLs, styling, file caps | **continuously, during development** | never asked — doctrine + tripwires installed in CLAUDE.md, enforced by audit |
+| **L3 App** (`references/3-app/00_index.md`) | one app or package | internal skeleton (backend domains, frontend `src/`, package exports), stack choice, shared-lib placement, migration style + owner, per-app DB usage, AI surface, security tier, app packaging | when each app is created | derived from L2 + few questions → the CLAUDE.md structure block |
+| **L4 Feature** (`references/4-feature/00_index.md`) | folders, files, content | feature-folder shape, subdivision, type/DTO placement, api-layer internals, pages ↔ URLs, styling, file caps | **continuously, during development** | never asked — doctrine + tripwires installed in CLAUDE.md, enforced by audit |
 
 The binding-time column is the load-bearing one. L1/L2 can be asked at bootstrap; L3 binds per-app; **L4 can never be a bootstrap question** — it only holds if it's installed as always-loaded doctrine (CLAUDE.md blocks) and re-checked (audits). A convention delivered at the wrong time doesn't hold, no matter how good it is.
 
@@ -19,7 +19,7 @@ The binding-time column is the load-bearing one. L1/L2 can be asked at bootstrap
 |---|---|
 | "should the docs / this component get its own repo", "how do these repos share X" | L1 |
 | "monorepo or polyrepo", "add a second backend", "where does compose live", "which database engine", "how is this deployed", "root is cluttered" | L2 |
-| "what goes inside this app", "where do shared libs live", "how do migrations work here", "does this app get `pages/`" | L3 |
+| "what goes inside this app", "where do shared libs live", "how do migrations work here", "does this app get `pages/`", "which framework/stack for this app", "this app calls LLMs — where does that code go", "where do rate limits live" | L3 |
 | "where does this file/type go", "this folder is getting big", "can I call fetch here", "which text size" | L4 |
 
 Ties go **up**: when a decision spans two levels, the higher level owns it, because decisions bind downward. Boundary assignments:
@@ -33,6 +33,8 @@ Ties go **up**: when a decision spans two levels, the higher level owns it, beca
 | package **internals** (export surface, skeleton) | L3 | `references/3-app/05-package/00_shared-packages.md` |
 | DB **engine** choice + provisioning | L2 | infra is repo-level (`references/3-app/04-database/00_provisioning.md`) |
 | DB **usage** conventions per app | L3 | `references/3-app/04-database/` |
+| deployment **stack** (compose, proxy, expose tiers, readiness checklist) | L2 | `references/2-repo/04-docker/` |
+| deployment **per app** (worker model, Dockerfile packaging, healthcheck endpoint) | L3 | `references/3-app/10-deployment/` |
 | migration style + DDL owner | L3 | escalates to L2 when two backends share one DB (`references/3-app/02-backend/02_two-plane-split.md`) |
 
 ## The five principles — stated once, instantiated per level
@@ -70,7 +72,7 @@ One decision, one owner file. The normative rule (variants, tripwire, audit chec
 
 | Decision axis | Owner file | Tripwire |
 |---|---|---|
-| L1 decision index, invariants, interfaces, audit list | `00_charter.md` | — |
+| L1 decision index, invariants, interfaces, audit list | `00_index.md` | — |
 | mono vs poly repo; own-repo criteria; deployed-vs-distributed; escalation between them | `repo-boundaries.md` | — |
 | in-repo `docs/` vs separate docs repo + handoff to the docs plugin | `docs-placement.md` | — |
 | aggregator repo, env.example sync, sharing ranking (publish > pin > vendor), image registry/semver contracts, no-shared-tables | `cross-repo-contracts.md` | — |
@@ -109,7 +111,7 @@ One decision, one owner file. The normative rule (variants, tripwire, audit chec
 | `.mise.toml` version contract + bare-name PATH | `06-runtime-environment/01_mise.md` | — |
 | ML cloud orchestration (6 files: custom-orchestrator, spot-instances-and-checkpoints, inference-autoscaling, remote-dev-ssh-vscode, agent-ssh-access, cicd-for-ml) | `07-ml-orchestration/` | — |
 
-(DB engines, mobile, desktop, PWA moved down to the L3 map below — they are app-kind decisions housed at L3.)
+(Mobile, desktop, PWA are app-kind decisions housed at L3 — see the L3 map below. DB engine choice remains an **L2 decision** (boundary table above) that is *housed* under `3-app/04-database/` next to its usage conventions.)
 
 ### L3 App (`references/3-app/`)
 
@@ -117,7 +119,7 @@ One decision, one owner file. The normative rule (variants, tripwire, audit chec
 |---|---|---|
 | L3 decision index, per-app questions, invariants, audit list | `00_index.md` | — |
 | the every-app contract: self-contained, no cross-app imports, app-vs-package test, must/never-contain | `01-structure-and-stack/00_app-anatomy.md` | — |
-| which stack an app uses (backend lang, web framework, mobile/desktop, JS runtime, data engine) | `01-structure-and-stack/01_stack-decision.md` | — |
+| which stack an app uses (backend lang, web framework, mobile/desktop, JS runtime; data engine routes to `04-database/00_provisioning.md`) | `01-structure-and-stack/01_stack-decision.md` | — |
 | pnpm/turbo/bun config bodies, catalog, globalEnv, ctl shape | `01-structure-and-stack/02_workspaces-mechanics.md` | — |
 | flat `app/` rule (run-service vs src-layout), pyproject+uv flow, top-level skeleton | `02-backend/00_app-skeleton.md` | — |
 | the domain layer: naming, aggregator routers, domain-shared placement, reconcile | `02-backend/01_domain-grouping.md` | T2 |
@@ -149,7 +151,7 @@ One decision, one owner file. The normative rule (variants, tripwire, audit chec
 
 | Decision axis | Owner file | Tripwire |
 |---|---|---|
-| L4 index, delivery via CLAUDE.md blocks, mechanical audit greps, hands-back-up rule | `00_charter.md` | — |
+| L4 index, delivery via CLAUDE.md blocks, mechanical audit greps, hands-back-up rule | `00_index.md` | — |
 | `{router,service,repository,models}.py` shape, feature seams, adapter-modules, backend subdivision | `01_feature-folders.md` | T3 (backend) |
 | `api/` internals (endpoints, zod, error norm, query keys, domain mirroring), thin pages, URL mirroring, fetch grep, frontend subdivision | `02_api-and-pages.md` | T3 (frontend), T6 |
 | all type/DTO placement, both planes | `03_types-and-contracts.md` | — |
@@ -178,7 +180,7 @@ If a structural decision falls outside the recorded standard, or the standard it
 
 ## See also
 
-- `references/1-ecosystem/00_charter.md` · `references/2-repo/00_index.md` · `references/3-app/00_index.md` · `references/4-feature/00_charter.md` — the per-level charters
+- `references/1-ecosystem/00_index.md` · `references/2-repo/00_index.md` · `references/3-app/00_index.md` · `references/4-feature/00_index.md` — the per-level indexes
 - `references/02_decision-tree.md` — the L2 layout picker
 - `references/01_question-flow.md` — the level-ordered question flow
 - `references/5-examples/00_index.md` — annotated whole-project trees mapping example ↔ layout ↔ variants

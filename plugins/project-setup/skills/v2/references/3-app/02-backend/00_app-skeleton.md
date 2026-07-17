@@ -160,6 +160,8 @@ COPY alembic/ ./alembic/
 COPY alembic.ini ./
 COPY config.yaml ./
 ENV PATH="/srv/.venv/bin:$PATH"
+RUN useradd --system --no-create-home appuser
+USER appuser                 # non-root runtime — image conventions owned by references/3-app/10-deployment/01_app-packaging.md
 # dev uses `uvicorn --reload`; prod uses gunicorn — worker model owned by references/3-app/10-deployment/00_serving.md
 CMD ["gunicorn", "app.main:app", "-c", "gunicorn.conf.py"]
 ```
