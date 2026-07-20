@@ -3,15 +3,16 @@
 #
 # TEMPLATE, not a fixed spec. This is a sensible default toolkit — copy `ctl` + `scripts/`, then
 # add / remove / edit commands to fit the project (most repos won't need every command here).
-# To add a command: drop `scripts/<category>/<name>.sh` (category ∈ dev|container|config, see
+# To add a command: drop `scripts/<category>/<name>.sh` (category ∈ dev|test|container|config, see
 # common/_lib.sh for the worker preamble) and wire one `run <category>/<name>` line into the case below.
 #
 # A THIN ROUTER. It sources scripts/common/_lib.sh, dispatches each subcommand to its worker
 # (scripts/<category>/<name>.sh), and inlines only the trivial `docker compose` passthroughs.
 # Every command supports -h / --help; colors auto-disable when piped or NO_COLOR is set.
 #
-#   Development    dev · migrate · test · lint
-#   Containers     up · down · restart · logs · ps · exec · build · clean · health · shell
+#   Development    dev · migrate · lint · ps
+#   Test           test · build save|start|clean (frozen test builds)
+#   Containers     up · down · restart · logs · exec · build · clean · health · shell
 #   Configuration  setup · status
 #
 # PROFILE-LESS 2-axis model. `ctl up` takes an optional standalone `config` (a
@@ -32,16 +33,18 @@ run() { local s="$CTL_ROOT/scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s
 ctl_help() {
   printf '%s%s%s — control plane. One entrypoint for dev + containers.\n\n' "$C_B$C_CYN" "ctl" "$C_RESET"
   printf '%sDevelopment%s (host loop)\n' "$C_B" "$C_RESET"
-  row "dev [target]"                     "apps on host, hot reload (auto-starts data core)"
+  row "dev [target] [--detach]"          "apps on host, hot reload (auto-starts data core)"
   row 'migrate {up|down|new|status}'     "database migrations (Alembic)"
-  row "test [backend|frontend]"          "run test suites"
   row "lint [backend|frontend]"          "lint backend + frontend"
+  row "ps [--list | kill [port…]]"       "browse everything running — attach · kill · port map"
+  printf '\n%sTest%s\n' "$C_B" "$C_RESET"
+  row "test [backend|frontend]"          "run test suites"
+  row "build save|start|clean"           "frozen test builds — snapshot · serve · prune  (ctl build save -h)"
   printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"
   row "up [config] [--modifier …]"       "assemble + start the stack — interactive  (ctl up --help)"
   row "down [svc]"                       "stop the stack (or one service)"
   row "restart [svc]"                    "restart the stack (or one service)"
   row "logs [svc] [-f]"                  "tail container logs"
-  row "ps"                               "list running containers + host procs"
   row "exec <svc> [cmd]"                 "run a command in a container (default: shell)"
   row "shell <svc>"                      "open a client/shell in a container (psql, redis-cli, …)"
   row "build"                            "build the service images"
@@ -59,15 +62,20 @@ case "$cmd" in
   # ── development ──────────────────────────────────────────
   dev)      run dev/host    "$@" ;;
   migrate)  run dev/migrate "$@" ;;
-  test)     run dev/test    "$@" ;;
+  test)     run test/run    "$@" ;;
   lint)     run dev/lint    "$@" ;;
+  ps)       run dev/ps      "$@" ;;       # dev·build·docker port map + interactive free
   # ── containers: substantive workers ──────────────────────
   up)       run container/up     "$@" ;;
-  build)    run container/build  "$@" ;;
+  # `build` splits on the subverb: save|start|clean = frozen test builds (test/build.sh);
+  # anything else (incl. bare `ctl build`) = the container image build below.
+  build)    case "${1:-}" in
+              save|start|clean) run test/build      "$@" ;;
+              *)                run container/build "$@" ;;
+            esac ;;
   clean)    run container/clean  "$@" ;;
   health)   run container/health "$@" ;;
   shell)    run container/shell  "$@" ;;
-  ps)       run container/ps     "$@" ;;       # containers + host dev processes
   # ── containers: thin docker compose passthroughs (uniform help + native hint) ──
   # require_env before every dc call: compose interpolates ${VAR} for ALL subcommands
   # (down included), so a `${X:?}` in a compose file would make an env-less `ctl down`

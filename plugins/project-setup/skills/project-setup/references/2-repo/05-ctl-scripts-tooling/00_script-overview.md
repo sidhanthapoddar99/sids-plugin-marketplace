@@ -49,17 +49,19 @@ scripts/
 │   ├── _lib.sh         # colors, indent-aware logging, row()/print_help, dc()+discovery, guards, health
 │   └── _select.sh      # dependency-free TUI (tui_select) — single/multi/horizontal; sourced by _lib.sh
 ├── dev/                # host-loop / development workflow
-│   ├── host.sh         # ctl dev      — ensure data core (if any), run apps on host (process-compose|bash)
+│   ├── host.sh         # ctl dev      — ensure data core (if any), run apps on host (process-compose|bash); --detach backgrounds them
 │   ├── migrate.sh      # ctl migrate  — alembic up/down/new/status
-│   ├── test.sh         # ctl test     — pytest + bun test
-│   └── lint.sh         # ctl lint     — ruff + biome (check; stack-specific)
+│   ├── lint.sh         # ctl lint     — ruff + biome (check; stack-specific)
+│   └── ps.sh           # ctl ps       — browse everything running (dev·build·docker): attach · kill · port map
+├── test/               # test workflow
+│   ├── run.sh          # ctl test     — pytest + bun test
+│   └── build.sh        # ctl build save|start|clean — frozen test builds (snapshot · serve · prune)
 ├── container/          # container & compose lifecycle
 │   ├── up.sh           # ctl up       — interactive 2-axis assembly: config (replaces base) + .m. modifiers (+ plan/--list)
 │   ├── build.sh        # ctl build    — service images
 │   ├── clean.sh        # ctl clean    — teardown + wipe volumes/caches (asks; -y to skip)
 │   ├── health.sh       # ctl health   — one-shot health table
-│   ├── shell.sh        # ctl shell    — psql / redis-cli / shell in a container
-│   └── ps.sh           # ctl ps       — containers + host dev processes (by dev port → PID)
+│   └── shell.sh        # ctl shell    — psql / redis-cli / shell in a container
 └── config/             # config management
     ├── setup.sh        # ctl setup    — .env wizard + secrets + data dirs + deps (project-custom)
     ├── status.sh       # ctl status   — doctor: env·runtimes·docker·deps·health·stack (project-custom)
@@ -69,11 +71,12 @@ scripts/
 | Folder | Holds | Backing `ctl` verbs |
 |---|---|---|
 | `common/` | shared libs, sourced not routed | `_lib.sh`, `_select.sh` |
-| `dev/` | host-loop / development workflow | `dev`, `migrate`, `test`, `lint` |
+| `dev/` | host-loop / development workflow | `dev`, `migrate`, `lint`, `ps` |
+| `test/` | test workflow | `test`, `build save\|start\|clean` (frozen test builds) |
 | `container/` | container & compose lifecycle | `up`, `build`, `clean`, `health`, `shell`, `ps` |
 | `config/` | config management | `setup`, `status` (+ `check-env` helper) |
 
-Layout is **`scripts/<category>/<name>.sh`** (`category ∈ common | dev | container | config`, plus `admin` when the repo has an operator plane — below). The folder groups; the `ctl` subcommand stays clean — file `dev/migrate.sh`, command `ctl migrate` (not `ctl dev/migrate`). Trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`exec`) are **not** files — they're one-line forwards inlined in `ctl`, still shown under the Containers group with uniform help.
+Layout is **`scripts/<category>/<name>.sh`** (`category ∈ common | dev | test | container | config`, plus `admin` when the repo has an operator plane — below). Test scripts get their own `test/` category — a repo accumulates them (suites, e2e, GPU/conformance runs, frozen test builds) and leaving them scrambled into `dev/` buries the test workflow. The folder groups; the `ctl` subcommand stays clean — file `dev/migrate.sh`, command `ctl migrate` (not `ctl dev/migrate`). Trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`exec`) are **not** files — they're one-line forwards inlined in `ctl`, still shown under the Containers group with uniform help.
 
 ### Optional category — `admin/` (operator management)
 

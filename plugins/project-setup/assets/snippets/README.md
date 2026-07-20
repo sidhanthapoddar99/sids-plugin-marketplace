@@ -72,16 +72,17 @@ assets/snippets/
 |---|---|---|
 | `ctl` | dispatcher — routes every subcommand, inlines trivial compose forwards, executable | `ctl` at repo root (chmod +x) |
 | `common/_lib.sh` | **shared foundation** sourced by `ctl` + all workers (colors + `LOG_INDENT` logging, `row()`/`print_help`, `dc()`+discovery+`or_none`, guards, container-resolved health, `split_csv`, `confirm`); sources `_select.sh` | `scripts/common/_lib.sh` |
-| `common/_select.sh` | **dependency-free TUI picker** (`tui_select`: single/multi/horizontal, arrow+jk nav, `[x]`, numbered fallback) — copy verbatim; used by interactive `ctl up` | `scripts/common/_select.sh` |
-| `dev/host.sh` | `ctl dev` — ensure data core (if any) + run apps on host (`process-compose` or bash fallback) | `scripts/dev/host.sh` |
+| `common/_select.sh` | **dependency-free TUI picker** (`tui_select`: single/multi/horizontal, arrow+jk nav, `[x]`, numbered fallback) — copy verbatim; used by every interactive flow (`ctl up`, `ctl build start`, `ctl ps`); `--keys` gives per-item action shortcuts | `scripts/common/_select.sh` |
+| `dev/host.sh` | `ctl dev [--detach]` — ensure data core (if any) + run apps on host (`process-compose` or bash fallback); `--detach` backgrounds them (logs `data/logs/`, pidfiles `data/run/`) | `scripts/dev/host.sh` |
 | `dev/migrate.sh` | `ctl migrate {up\|down\|new\|status}` — Alembic | `scripts/dev/migrate.sh` |
-| `dev/test.sh` | `ctl test [backend\|frontend]` — pytest + bun test | `scripts/dev/test.sh` |
 | `dev/lint.sh` | `ctl lint [backend\|frontend]` — ruff + biome (stack-specific; adapt or drop) | `scripts/dev/lint.sh` |
+| `dev/ps.sh` | `ctl ps [--list\|kill]` — interactive browser over everything running (dev·build·docker): Enter menu · `a` attach · `k` kill; plane-aware freeing | `scripts/dev/ps.sh` |
+| `test/run.sh` | `ctl test [backend\|frontend]` — pytest + bun test | `scripts/test/run.sh` |
+| `test/build.sh` | `ctl build save\|start\|clean` — frozen test builds: snapshot + provenance → `test_build/`, `ctl up`-style guided serve, prune | `scripts/test/build.sh` |
 | `container/up.sh` | `ctl up` — interactive 2-axis: standalone config (replaces base) + `.m.` modifiers; plan + `--list` + `--attach` + `--nqa`/`-y` | `scripts/container/up.sh` |
 | `container/build.sh` / `container/clean.sh` | `ctl build` / `ctl clean [-y]` | `scripts/container/{build,clean}.sh` |
 | `container/health.sh` | `ctl health [svc…]` — one-shot health table | `scripts/container/health.sh` |
 | `container/shell.sh` | `ctl shell <svc>` — psql / redis-cli / shell in a container | `scripts/container/shell.sh` |
-| `container/ps.sh` | `ctl ps` — containers, then host dev processes (resolved by dev port → PID) | `scripts/container/ps.sh` |
 | `config/setup.sh` | `ctl setup` — `.env` wizard (generates `*_PASSWORD/_SECRET/_KEY`), data dirs, installs deps | `scripts/config/setup.sh` |
 | `config/status.sh` | `ctl status` — doctor: env · runtimes (mise+pins, uv/bun/uvenv) · docker · deps · health · stack | `scripts/config/status.sh` |
 | `config/check-env.sh` | `.env` vs `.env.example` schema diff (helper; used by status) | `scripts/config/check-env.sh` |

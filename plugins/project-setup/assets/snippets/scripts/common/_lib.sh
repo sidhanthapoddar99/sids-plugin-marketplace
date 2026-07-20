@@ -6,7 +6,7 @@
 # what lets each worker stay ~25 lines and look identical.
 #
 # TEMPLATE — adapt per project. Workers live at `scripts/<category>/<name>.sh`, category ∈
-# common | dev | container | config (the `ctl` subcommand stays clean — `ctl migrate`, file
+# common | dev | test | container | config (the `ctl` subcommand stays clean — `ctl migrate`, file
 # `dev/migrate.sh`). The shared files (this one + `_select.sh`) live in `common/`.
 # Add a worker with the preamble below, then wire one `run <category>/<name>` line into `ctl`.
 #
@@ -183,6 +183,9 @@ wait_healthy() {  # wait_healthy <svc…> [timeout-seconds] — used by ctl dev'
 }
 
 # ── host processes ──
+# [ADAPT] project port presets — offered by `ctl build start`'s port picker and scanned by
+# `ctl ps` as the build plane. Space-separated; overridable via env like DATA_SVCS.
+read -r -a PORT_PRESETS <<< "${PORT_PRESETS:-5380 5381 5382 4173}" || true
 # port_pid <port> — PID listening on TCP <port> (ss, then lsof); empty if none. Used by `ctl ps`.
 port_pid() {
   local p="$1" pid=""

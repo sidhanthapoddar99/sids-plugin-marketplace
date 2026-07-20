@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev/test.sh — `ctl test`. Run backend + frontend suites.
+# test/run.sh — `ctl test`. Run backend + frontend suites.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 

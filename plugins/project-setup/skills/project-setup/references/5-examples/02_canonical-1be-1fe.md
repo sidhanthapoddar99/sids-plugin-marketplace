@@ -150,17 +150,19 @@ scripts/
 │   ├── _lib.sh                     #   colors, indent-aware logging, dc()+discovery, health, env/tool guards
 │   └── _select.sh                  #   dependency-free TUI (no fzf/gum) — sourced by _lib.sh
 ├── dev/                            # host-loop / development workflow
-│   ├── host.sh                     #   ctl dev     — ensure data core (pg+redis) up, then run apps on host
+│   ├── host.sh                     #   ctl dev     — ensure data core (pg+redis) up, then run apps on host (--detach to background)
 │   ├── migrate.sh                  #   ctl migrate — alembic up/down/new/status (explicit, never silent)
-│   ├── test.sh                     #   ctl test    — pytest + bun test
-│   └── lint.sh                     #   ctl lint    — ruff + biome
+│   ├── lint.sh                     #   ctl lint    — ruff + biome
+│   └── ps.sh                       #   ctl ps      — browse everything running: attach · kill · port map
+├── test/                           # test workflow
+│   ├── run.sh                      #   ctl test    — pytest + bun test
+│   └── build.sh                    #   ctl build save|start|clean — frozen test builds (test_build/)
 ├── container/                      # container & compose lifecycle
 │   ├── up.sh                       #   ctl up      — interactive 2-axis assembly: config (replaces base) + .m. modifiers
 │   ├── build.sh                    #   ctl build   — service images
 │   ├── clean.sh                    #   ctl clean   — teardown + wipe volumes (asks; -y skips)
 │   ├── health.sh                   #   ctl health  — one-shot health table
-│   ├── shell.sh                    #   ctl shell   — psql / redis-cli / shell in a container
-│   └── ps.sh                       #   ctl ps      — containers + host dev processes
+│   └── shell.sh                    #   ctl shell   — psql / redis-cli / shell in a container
 └── config/                         # config management
     ├── setup.sh                    #   ctl setup   — .env wizard + secrets + data dirs + deps (project-custom)
     ├── status.sh                   #   ctl status  — read-only doctor: env·runtimes·docker·deps·health (project-custom)

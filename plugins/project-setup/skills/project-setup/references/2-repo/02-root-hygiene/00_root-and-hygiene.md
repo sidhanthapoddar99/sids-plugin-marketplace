@@ -6,7 +6,7 @@ Workspace rooting — where the JS workspace physically sits, and the tooling fr
 
 ## What may exist at root
 
-Config + README + folders + the dispatcher. Concretely: `ctl`, `.mise.toml`, `.env` / `.env.example`, `.gitignore`, `CLAUDE.md`, `README.md`, `LICENSE`, and directories (`apps/`, `docker/`, `scripts/`, `infra/`, `data/`, `docs/`, `.claude/`). **No loose code, no runnable entry file, no app manifest that owns dependencies.** (The one exception: project types whose own tooling demands a root entry — see the exception list below.)
+Config + README + folders + the dispatcher. Concretely: `ctl`, `.mise.toml`, `.env` / `.env.example`, `.gitignore`, `CLAUDE.md`, `README.md`, `LICENSE`, and directories (`apps/`, `docker/`, `scripts/`, `infra/`, `data/`, `docs/`, `.claude/`, plus `test_build/` once `ctl build save` has run — frozen test-build snapshots, self-gitignored, below). **No loose code, no runnable entry file, no app manifest that owns dependencies.** (The one exception: project types whose own tooling demands a root entry — see the exception list below.)
 
 ## The root manifest rule — orchestration only
 
@@ -48,6 +48,15 @@ data/**
 !data/**/.gitkeep
 ```
 
+**The one self-gitignored folder: `test_build/`.** Frozen test-build snapshots (`ctl build save` — `references/2-repo/05-ctl-scripts-tooling/01_script-usage.md`) deliberately do NOT get a root-`.gitignore` entry. The folder carries its own committed `test_build/.gitignore` containing exactly:
+
+```gitignore
+**
+!.gitignore
+```
+
+`ctl build save` seeds it on first run; commit that one file. Why self-ignoring beats a root entry: snapshots can never enter history even if the root file is later rewritten, and the convention travels with the folder (copy `test_build/` anywhere and it stays ignored). Don't add `test_build/` to the root `.gitignore` as well — two owners for one rule is how one silently drifts.
+
 ## Residue & staleness — restructures must finish
 
 A restructure isn't done when the tree moves; it's done when everything that *describes or duplicates* the tree moves with it. The residue classes, all audit findings:
@@ -65,6 +74,7 @@ A restructure isn't done when the tree moves; it's done when everything that *de
 - Graveyard dirs (`old/`, `backup/`, `*-v1/`), retired duplicate systems, committed data archives, or loose worktrees/scratch checkouts = finding each (§ residue above).
 - Root `package.json` with runtime `dependencies` = red finding — tripwire T10 crossed (root became a runtime).
 - `.env` (any level) not ignored, or `data/` tracked = red finding.
+- `test_build/` snapshot contents tracked in git (its `.gitignore` missing or edited away) = red finding; only `test_build/.gitignore` itself is committed.
 - No `.gitignore`, or one missing an ecosystem that's present in the repo = finding.
 
 (Workspace-rooting audit — polyglot repo rooted at the repo root — is owned by `references/2-repo/01-layouts/00_grouping-topology.md`.)

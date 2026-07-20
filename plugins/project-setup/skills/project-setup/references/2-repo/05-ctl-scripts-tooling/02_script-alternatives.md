@@ -8,8 +8,8 @@ The `ctl` + `scripts/` toolkit is a **template, not a fixed spec** (see `00_scri
 |---|---|---|---|
 | **mise** | version pinning (`.mise.toml`) + project-scoped PATH (bare `ctl`) | `dev/host.sh` guard, `config/status.sh` runtimes | reproducible toolchains; one entrypoint callable bare |
 | **docker** | the whole container stack + `ctl dev`'s data core | every `docker-*`, `ctl up`/`dev` | prod-like parity; one-command data layer |
-| **uv** (`uv sync`) | in-tree `.venv` from `pyproject.toml` + `uv.lock` | `config/setup.sh`, `dev/host.sh`, `dev/migrate.sh`, `dev/test.sh` | fast, lockfile-reproducible app deps |
-| **bun** | node deps + dev server + build | `config/setup.sh`, `dev/host.sh`, `container/build.sh`, `dev/test.sh` | fast, single-tool node workflow |
+| **uv** (`uv sync`) | in-tree `.venv` from `pyproject.toml` + `uv.lock` | `config/setup.sh`, `dev/host.sh`, `dev/migrate.sh`, `test/run.sh` | fast, lockfile-reproducible app deps |
+| **bun** | node deps + dev server + build | `config/setup.sh`, `dev/host.sh`, `container/build.sh`, `test/run.sh` | fast, single-tool node workflow |
 
 ### The wider toolchain — recommended, never required
 
@@ -54,7 +54,7 @@ The default is **in-tree `uv sync`** (`.venv` from `pyproject.toml` + `uv.lock`)
 # config/setup.sh — replace `uv sync`:
 uvenv create --python=3.13 -y -l ./.venv          # in-tree, OR  -n <project>  for a named global env
 uvenv exec ./.venv -- uv pip install -r requirements.txt
-# dev/host.sh / dev/migrate.sh / dev/test.sh — replace each `uv run <cmd>` with run-without-activating:
+# dev/host.sh / dev/migrate.sh / test/run.sh — replace each `uv run <cmd>` with run-without-activating:
 uvenv exec ./.venv -- uvicorn app.main:app --reload --port "${PYTHON_PORT:-8000}"
 ```
 
@@ -62,7 +62,7 @@ uvenv exec ./.venv -- uvicorn app.main:app --reload --port "${PYTHON_PORT:-8000}
 **poetry / pdm** — `poetry install`; replace `uv run <cmd>` with `poetry run <cmd>`.
 **conda** — `conda env create -f environment.yml`; replace `uv run <cmd>` with `conda run -n <env> <cmd>`.
 
-Lines to edit in all cases: the `uv sync` in `config/setup.sh`, and every `uv run …` in `dev/host.sh`, `dev/migrate.sh`, `dev/test.sh`.
+Lines to edit in all cases: the `uv sync` in `config/setup.sh`, and every `uv run …` in `dev/host.sh`, `dev/migrate.sh`, `test/run.sh`.
 
 ## Node env — bun (default) vs pnpm / npm / yarn
 
@@ -71,7 +71,7 @@ Lines to edit in all cases: the `uv sync` in `config/setup.sh`, and every `uv ru
 | `bun install` | `pnpm install` | `npm ci` | `config/setup.sh` |
 | `bun dev` | `pnpm dev` | `npm run dev` | `dev/host.sh` |
 | `bun run build` | `pnpm build` | `npm run build` | `container/build.sh` |
-| `bun test` | `pnpm test` | `npm test` | `dev/test.sh` |
+| `bun test` | `pnpm test` | `npm test` | `test/run.sh` |
 
 ## Local-env setup (recap)
 

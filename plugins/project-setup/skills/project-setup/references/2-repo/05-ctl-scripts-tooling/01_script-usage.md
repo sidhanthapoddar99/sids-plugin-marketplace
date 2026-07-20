@@ -71,20 +71,36 @@ Grouped by category (the prefix on the backing script file; the `ctl` verb stays
 
 ```
 Development (host loop)
-  ctl dev [target] [--dry-run]     apps on host, hot reload; auto-ups + waits for the data core   (dev/host.sh)
-                                   --help shows each target's exact host command; --dry-run prints them
+  ctl dev [target] [--detach] [--dry-run]   apps on host, hot reload; auto-ups + waits for the
+                                   data core. --detach backgrounds them: logs →
+                                   data/logs/dev-<target>.log, pidfiles → data/run/; re-attach
+                                   via ctl ps (a), stop via ctl ps (k / kill)                      (dev/host.sh)
   ctl migrate {up|down|new|status} alembic — backend owns DDL                                      (dev/migrate.sh)
-  ctl test [backend|frontend]      run test suites                                                 (dev/test.sh)
   ctl lint [backend|frontend]      lint backend + frontend (ruff + biome; stack-specific)          (dev/lint.sh)
+  ctl ps [--list|kill [port…]]     interactive browser over everything running, port-first
+                                   (dev · build · docker). Hover a process: Enter action menu ·
+                                   a attach · k kill · q quit (arrows move; j/k vim-nav off on
+                                   this screen since k = kill). --list prints the map (also the
+                                   no-TTY behaviour); 'kill' is the scriptable free — host pids
+                                   TERM→KILL, docker ports 'compose stop <svc>' (killing
+                                   docker-proxy strands the container). Attach follows output
+                                   (Ctrl-C detaches): docker → compose logs -f; a
+                                   'ctl dev --detach' process → tail -f its data/logs/ file      (dev/ps.sh)
+
+Test
+  ctl test [backend|frontend]      run test suites                                                 (test/run.sh)
+  ctl build save [target] [name]   build a target, freeze artifact + provenance → test_build/      (test/build.sh)
+  ctl build start [name] [port]    serve a frozen build — guided (build → port → plan → confirm)   (test/build.sh)
+  ctl build clean [--keep N]       prune old snapshots (keep the newest N, default 5)              (test/build.sh)
 
 Containers (docker compose)
   ctl up [config] [--modifier "a,b"] [-a] [--nqa] [-y] [--dry-run] [--list]   assemble + start     (container/up.sh)
   ctl down [svc] / restart [svc]   stop / restart                                       (inline → docker compose)
   ctl logs [svc] [-f]              tail container logs                                  (inline → docker compose)
   ctl exec <svc> [cmd]             run a command in a container (default: shell)        (inline → docker compose)
-  ctl ps                           containers + host dev processes (by dev port → PID)              (container/ps.sh)
   ctl shell <svc>                  psql / redis-cli / shell in a container                          (container/shell.sh)
-  ctl build                        build the service images                                         (container/build.sh)
+  ctl build                        build the service images (bare only — save|start|clean split
+                                   to the frozen-test-build worker, test/build.sh)                   (container/build.sh)
   ctl clean [-y]                   tear down + wipe volumes/caches (asks first)                     (container/clean.sh)
   ctl health [svc…]                one-shot health table                                            (container/health.sh)
 
@@ -96,7 +112,11 @@ Configuration
 
 `ctl up --list` (terse) and `ctl status` (full doctor) both surface the auto-discovered configs / modifiers, so "what can I run here" is always one command away.
 
-`ctl dev backend` (backend on the **host**, reloading) and `ctl up` (backend in a **container**) differ by *where it runs* — `dev` = host, `up` = docker. The trivial `down`/`restart`/`logs`/`exec` forwards live inline in `ctl`; everything with a real body — including `ps` (containers + host procs) — is a `scripts/<category>/<name>.sh` worker.
+`ctl dev backend` (backend on the **host**, reloading) and `ctl up` (backend in a **container**) differ by *where it runs* — `dev` = host, `up` = docker. The trivial `down`/`restart`/`logs`/`exec` forwards live inline in `ctl`; everything with a real body — including `ps` — is a `scripts/<category>/<name>.sh` worker.
+
+`ctl ps` is the project's **runtime authority**: one view of everything the project is running, across the three planes it can occupy — **dev** (host processes on `PYTHON_PORT`/`FRONTEND_PORT`), **build** (frozen test builds serving on the shared `PORT_PRESETS` list; a preset occupied by a process whose cwd is inside `test_build/` is labeled with its snapshot name, anything else is marked `(not a build)`), and **docker** (published ports of the compose containers, discovered live). Bare `ctl ps` in a terminal is an **interactive browser** built on the same `_select.sh` panel as `ctl up`: hover a process, **Enter** opens its action menu (Attach / Free port / Back), **`a`** attaches directly, **`k`** kills directly, **`q`** quits — the picker's j/k vim-nav is disabled on this one screen (arrows still move) precisely because `k` means kill. `--list` prints the formatted map and exits (also the no-TTY behaviour); `ctl ps kill <port…> -y` is the scriptable form every interactive free prints.
+
+Two planes-aware verbs make it stronger than `kill $(lsof -t -i:PORT)`: **freeing** — the PID on a docker-published port is `docker-proxy`, so the docker plane frees via `docker compose stop <service>` while host planes get TERM with a grace period, then KILL; **attaching** — follow the process's output without owning it (Ctrl-C detaches, it keeps running): docker → `docker compose logs -f <svc>`, a `ctl dev --detach` process → `tail -f` of its `data/logs/` file, and a process with no log (foreground-started elsewhere) says so instead of pretending. `ctl status` stays the *config* doctor ("can this run?"); `ctl ps` answers "what *is* running — watch it or stop it".
 
 ## Architecture — `ctl` + `_lib.sh` + `_select.sh` + workers
 
@@ -194,6 +214,10 @@ Report per area, green/yellow/red, with the fix for each red. `check_env_schema`
 
 `ctl dev` (1) brings up its data-container deps (`postgres`, `redis`, **with ports** via the `expose_data` modifier — guarded so a no-data-core project skips it entirely) and waits for healthchecks (`wait_healthy`); (2) starts each app as a host process with hot reload; (3) multiplexes output into per-service panes; (4) stops everything cleanly on Ctrl-C. Steps 2–4 are delegated to a process runner — don't hand-roll PID juggling.
 
+**`--detach` (`-d`)** backgrounds the host processes instead of holding the terminal: each target runs under `nohup` with its output in `data/logs/dev-<target>.log` and its PID in `data/run/dev-<target>.pid` (with process-compose it's one detached `process-compose up -t=false` and a single `dev.log`); the data core is still ensured first. Both live under gitignored `data/` — runtime state per the root-hygiene doctrine. The pidfiles are what make re-attach work: `ctl ps` matches a listening PID against `data/run/*.pid` — by *ancestry*, not equality, because the pidfile records the wrapper (`bash -c`, `uv run`, `bun run`) while the listener is its child — and `a` (attach) tails the corresponding log; `k` (or `ctl ps kill <port> -y`) stops it. Foreground stays the default — detach is for "keep it running while I do something else in this terminal".
+
+When adapting the detach lines, two details are load-bearing (violating either makes any pipe or CI harness that invoked `ctl` hang forever waiting for EOF): the `&` must bind to the `nohup` command *alone* — backgrounding a compound like `cd X && nohup … &` forks a shell wrapper that keeps the caller's stdout/stderr open for the daemon's whole lifetime — and the daemon needs `</dev/null` so it doesn't inherit the caller's stdin.
+
 ### Preferred: `process-compose.yaml`
 
 ```yaml
@@ -223,6 +247,31 @@ wait
 **Stays in containers** (via `ctl up`): postgres + any stateful service, redis, Seaweed/Meilisearch/Neo4j, optionally an nginx for routing tests. **Runs on host** (via `ctl dev`): Python/Rust backends with `--reload`/`cargo-watch`, the frontend dev server, test runners.
 
 **Reverse proxy in dev:** default is the **Vite proxy** (`vite.config.ts` proxies `/api/*` to the backend host port — CORS-free, no extra container); or `ctl up --modifier expose` for a local nginx if you need prod-like routing. In prod (`ctl up prod`), nginx/traefik routes the same `/api/*` over the compose network — only the proxy changes.
+
+## Frozen test builds — `ctl build save` / `start` / `clean`
+
+A dev working tree changes constantly (agents editing, branch switches, hot reload). When a human sits down to *test* a state, they need a production build that is **immutable, labeled with its provenance, and served independently of the working tree** — otherwise "which build am I actually testing?" has no reliable answer, and a stale dev build produces phantom bugs that burn a debugging cycle. That's what frozen test builds guarantee: what the tester tests is exactly what was built, with provenance.
+
+```
+ctl build save [target] [name]                                    build <target>, freeze the artifact
+ctl build start [name|target] [port] [--nqa] [-y] [--dry-run] [--list]   serve a frozen build (guided)
+ctl build clean [--keep N] [-y] [--dry-run]                       prune (keeps the newest 5 by default)
+```
+
+Bare `ctl build` stays the container image build — the router in `ctl` splits on the first arg (`save|start|clean` → `test/build.sh`, everything else → `container/build.sh`).
+
+- **`save`** runs the target's production build, snapshots the artifact into `test_build/build-<YYYYMMDD-HHMMSS>-<target>-<name>/` (name defaults to the git short sha, sanitized to `[a-z0-9._-]`), and writes a **`.build-meta`** file — `name`, `target`, `serve` (+ `serve_cmd`), ISO `date`, `branch`, full `commit`. That tiny file is what makes the feature work: every later surface (`--list`, picker labels, the plan screen) reads provenance from it, and `start` reads the serve strategy from it, so any snapshot is runnable without consulting the current config.
+- **Targets** are declared in the worker's `[ADAPT]` block (`BUILD_TARGETS`) — one record per buildable root: build command, artifact path, and **serve strategy**:
+
+| serve | meaning | `start` behaviour |
+|---|---|---|
+| `static` | built SPA / site | `bunx serve -s . -l <port>` from inside the snapshot (SPA fallback) |
+| `process` | artifact runs as a process | runs the record's serve command inside the snapshot; `{port}` substitutes the chosen port — the port goes to the process, not a static server |
+| `none` | save-only deliverable (wheel, tarball, library) | refuses politely and points at the folder |
+
+- **`start` is the `ctl up` interaction contract applied to two axes** — *build* (which snapshot; newest-first picker with `(branch @ shortsha · date)` labels) and *port* (the `PORT_PRESETS` list with live `(in use)` markers via `port_pid`, plus `custom…`). Plan screen (name / target / branch / commit / saved / size / serve command / URL) → horizontal **Run / Back / Cancel**; a busy port renders as an *invalid plan* offering **Back** only — never a broken serve. `--nqa` (defaults = newest build + first preset port) / `-y` / `--dry-run` / `--list` semantics are identical to `ctl up`, no-TTY without enough info refuses with guidance, and every interactive run prints its `--nqa` reproduction. Tools are checked per strategy via `require_tools` (`bunx` for static; the serve command's binary for process).
+- **`test_build/` is self-gitignored** — `save` seeds `test_build/.gitignore` containing exactly `**` + `!.gitignore`, so snapshots can never enter history and the convention travels with the folder (no root-`.gitignore` entry; commit the seeded `.gitignore` once).
+- **`clean`** prunes to the newest N (default 5) with the standard confirm-unless-`-y` contract — snapshots grow by megabytes per save, so prune before it compounds.
 
 ## Three startup paths — the commands
 

@@ -10,7 +10,7 @@ backend_cmd()  { printf 'cd apps/backend && uv run uvicorn %s:app --reload --hos
 frontend_cmd() { printf 'cd apps/frontend && bun dev'; }
 
 usage() { print_help "dev" "Run apps on the host with hot reload; auto-starts the data core." \
-  'dev [all|backend|frontend] [--dry-run] [-h]' \
+  'dev [all|backend|frontend] [--detach] [--dry-run] [-h]' \
 "Arguments
   all (default)   backend + frontend together — Ctrl-C stops both
   backend         backend API server only (hot reload)
@@ -21,6 +21,9 @@ Direct  (the host command each runs — what --dry-run prints; copy to run witho
   frontend        ${C_GRN}$(frontend_cmd)${C_RESET}
 
 Options
+  -d, --detach    run in the BACKGROUND: logs → data/logs/dev-<target>.log, pidfiles →
+                  data/run/. Re-attach (follow the log) with 'ctl ps' → a on the process;
+                  stop with 'ctl ps' → k (or ctl ps kill <port>). Default is foreground.
   --dry-run, -n   print the data-core bring-up + the host commands, don't run them
   -h, --help      show this help
 
@@ -29,10 +32,11 @@ expose_data modifier) and waits for health, then runs the host processes. If pro
 exists it hands off to process-compose instead of the bash fallback."; }
 
 # parse: one positional target + flags
-target=all dry=0
+target=all dry=0 detach=0
 while (( $# )); do case "$1" in
   -h|--help)            usage; exit 0 ;;
   --dry-run|-n)         dry=1; shift ;;
+  -d|--detach)          detach=1; shift ;;
   all|backend|frontend) target="$1"; shift ;;
   *)                    die "target ∈ all|backend|frontend (got '$1'); see ctl dev --help" ;;
 esac; done
@@ -56,6 +60,28 @@ if (( ${#DATA_SVCS[@]} )); then
   step "ensuring data core (with ports)…"
   dc -f "$DOCKER_DIR/compose.m.expose_data.yaml" up -d "${DATA_SVCS[@]}"
   wait_healthy "${DATA_SVCS[@]}" 60 || warn "health poll failed — continuing anyway."
+fi
+
+# ── detached mode: background the host processes, logs + pidfiles under data/ ──
+# (data/ is gitignored runtime state.) Attach = follow the log: `ctl ps` → a on the
+# process (or tail -f data/logs/dev-<target>.log). Stop: `ctl ps` → k, or ctl ps kill.
+# Detach gotchas (both load-bearing — a daemon that violates them hangs any pipe/CI
+# harness that invoked ctl, because the pipe never sees EOF):
+#   • `&` must bind to the nohup command ALONE — backgrounding a compound (`cd && nohup … &`)
+#     forks a bash wrapper that keeps the caller's stdout/stderr open and waits on the daemon.
+#   • `</dev/null` — without it the daemon inherits the caller's stdin.
+if (( detach )); then
+  mkdir -p data/logs data/run
+  if command -v process-compose >/dev/null 2>&1 && [[ -f process-compose.yaml ]]; then
+    pc_args=(up -t=false); [[ $target != all ]] && pc_args+=("$target")
+    nohup process-compose "${pc_args[@]}" < /dev/null >> data/logs/dev.log 2>&1 & echo $! > data/run/dev.pid; disown
+    ok "detached (process-compose, pid $(cat data/run/dev.pid)) — log: data/logs/dev.log"
+  else
+    [[ $target == all || $target == backend  ]] && { nohup bash -c "$(backend_cmd)"  < /dev/null >> data/logs/dev-backend.log  2>&1 & echo $! > data/run/dev-backend.pid;  disown; ok "backend detached  (pid $(cat data/run/dev-backend.pid)) — log: data/logs/dev-backend.log"; }
+    [[ $target == all || $target == frontend ]] && { nohup bash -c "$(frontend_cmd)" < /dev/null >> data/logs/dev-frontend.log 2>&1 & echo $! > data/run/dev-frontend.pid; disown; ok "frontend detached (pid $(cat data/run/dev-frontend.pid)) — log: data/logs/dev-frontend.log"; }
+  fi
+  say "attach: ${C_B}ctl ps${C_RESET} → ${C_B}a${C_RESET} on the process   ·   stop: ${C_B}ctl ps${C_RESET} → ${C_B}k${C_RESET}  (or ctl ps kill <port> -y)"
+  exit 0
 fi
 
 if command -v process-compose >/dev/null 2>&1 && [[ -f process-compose.yaml ]]; then

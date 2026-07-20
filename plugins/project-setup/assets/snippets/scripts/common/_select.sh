@@ -6,7 +6,8 @@
 # fallback when there's no usable TTY (CI / pipes). It carries ZERO project knowledge —
 # copy this file verbatim into any bash control plane.
 #
-#   tui_select --into VAR [--multi|--horizontal] --header "T" [--hint "T"] [--preselect "a,b"] -- opt…
+#   tui_select --into VAR [--multi|--horizontal] --header "T" [--hint "T"] [--preselect "a,b"]
+#              [--keys "a k …"] -- opt…
 #
 #   Fills the caller array VAR with the selection (nameref). Returns:
 #     0 = confirmed   ·   1 = cancelled (Esc/q/EOF)   ·   2 = misuse
@@ -16,6 +17,13 @@
 #          multi:      ↑/↓ move · Tab or Space toggle · Enter confirm (may be empty) · Esc cancel
 #          horizontal: ←/→ (or h/l) move · Enter select · Esc cancel
 #
+#   --keys "a k" (single-select only): per-item ACTION keys. Pressing one confirms the
+#   hovered item immediately and records the key in TUI_SELECT_KEY (empty = plain Enter),
+#   so a caller can offer shortcuts like a=attach / k=kill on a process list. Action keys
+#   take precedence over the j/k/h/l vim-nav for those letters — a screen that binds them
+#   navigates with the arrow keys only (say so in --hint). No effect in the numbered
+#   no-TTY fallback (TUI_SELECT_KEY comes back empty there).
+#
 # Requires bash 4.3+ (namerefs). macOS system bash is 3.2 — use mise's bash (mise pins it).
 # All arithmetic uses x=$((x+1)) form, never ((x++)), so it's safe under `set -euo pipefail`.
 
@@ -24,7 +32,8 @@
 : "${C_GRN:=$'\033[32m'}"; : "${C_CYN:=$'\033[36m'}"
 
 tui_select() {
-  local multi=0 horizontal=0 header="" hint="" preselect="" varname=""
+  local multi=0 horizontal=0 header="" hint="" preselect="" varname="" action_keys=""
+  TUI_SELECT_KEY=""
   while [[ $# -gt 0 ]]; do case "$1" in
     --multi)      multi=1; shift ;;
     --horizontal) horizontal=1; shift ;;
@@ -32,6 +41,7 @@ tui_select() {
     --header)     header="$2"; shift 2 ;;
     --hint)       hint="$2"; shift 2 ;;
     --preselect)  preselect="$2"; shift 2 ;;
+    --keys)       action_keys=" ${2//,/ } "; shift 2 ;;
     --)           shift; break ;;
     *)            break ;;
   esac; done
@@ -112,6 +122,8 @@ tui_select() {
         '[D') (( horizontal )) && { if (( cur>0 )); then cur=$((cur-1)); else cur=$((n-1)); fi; } ;;  # left
         '')   rc=1; break ;;                                                                          # bare Esc
       esac
+    elif [[ -n $action_keys && $multi -eq 0 && $horizontal -eq 0 && $action_keys == *" ${key,,} "* ]]; then
+      __out=("${opts[cur]}"); TUI_SELECT_KEY="${key,,}"; rc=0; break   # action key: confirm hovered item
     else
       case "$key" in
         k|K) (( horizontal )) || { if (( cur>0 )); then cur=$((cur-1)); else cur=$((n-1)); fi; } ;;
