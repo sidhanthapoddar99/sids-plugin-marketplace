@@ -1,13 +1,16 @@
 # .mise.toml — runtime version contract
 #
 # `mise install` from a clean clone should produce a working toolchain.
+#
+# Runtimes carry a <version> placeholder. Resolve each to a current stable release
+# (`mise ls-remote python | tail`) before running `mise install`.
 
 [tools]
-python = "3.14"
-node   = "22"
+python = "<version>"
+node   = "<version>"
 bun    = "latest"
-# rust   = "1.83"            # if using rust; or pin via rust-toolchain.toml inside the rust folder
-# go     = "1.23"
+# rust   = "<version>"            # if using rust; or pin via rust-toolchain.toml inside the rust folder
+# go     = "<version>"
 
 [env]
 # Optional — project-scoped env vars applied when entering the directory.

@@ -52,7 +52,7 @@ The default is **in-tree `uv sync`** (`.venv` from `pyproject.toml` + `uv.lock`)
 
 ```bash
 # config/setup.sh — replace `uv sync`:
-uvenv create --python=3.13 -y -l ./.venv          # in-tree, OR  -n <project>  for a named global env
+uvenv create --python=<version> -y -l ./.venv          # in-tree, OR  -n <project>  for a named global env
 uvenv exec ./.venv -- uv pip install -r requirements.txt
 # dev/host.sh / dev/migrate.sh / test/run.sh — replace each `uv run <cmd>` with run-without-activating:
 uvenv exec ./.venv -- uvicorn app.main:app --reload --port "${PYTHON_PORT:-8000}"

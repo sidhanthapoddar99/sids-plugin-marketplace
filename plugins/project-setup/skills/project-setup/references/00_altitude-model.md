@@ -172,7 +172,7 @@ Bootstrap-time layout is a starting point, never a contract. Four rules keep it 
 1. **Every choice is recorded.** The CLAUDE.md carries the chosen variants (topology, rooting, BFF/core, migration owner, any sanctioned exception) and the tripwire numbers. **Audits compare the repo against its *recorded* choices** — an unusual shape with a recorded choice is a variant; a missing record is the finding.
 2. **Reconcile when the model settles.** When the product's domain model / IA is decided or meaningfully revised, code structure reconciles **within the same milestone** — not deferred indefinitely.
 3. **Restructures ride consolidation windows.** Folder moves and renames batch into windows where churn already happens (schema consolidation, major refactor, pre-release reset) — import churn is paid once, not per-PR.
-4. **Audits get triggers.** Run `/ps-setup audit` at roadmap-stage boundaries and whenever a tripwire is crossed — not "someday".
+4. **Audits get triggers.** Run an audit at roadmap-stage boundaries and whenever a tripwire is crossed — not "someday".
 
 ## Escalation — when the standard runs out
 

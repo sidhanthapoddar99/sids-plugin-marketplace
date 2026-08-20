@@ -1,6 +1,6 @@
 # Snippets
 
-Fragments the `project-setup` skill cites and `/ps-setup` can drop into a new or existing project. **Not** a full project template — focused pieces grouped by domain.
+Fragments the `project-setup` skill cites and drops into a new or existing project. **Not** a full project template — focused pieces grouped by domain.
 
 ## Layout
 

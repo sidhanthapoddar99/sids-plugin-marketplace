@@ -61,7 +61,7 @@ The vendored framework folder is set up by `/agent-ks-init`; treat it as read-on
 
 ## Bootstrapper handoff
 
-When `/ps-setup` reaches the docs step:
+When a bootstrap run reaches the docs step:
 
 1. **Decide scope** using the table above — one product, one docs home. This decision is owned here.
 2. **For in-repo:** create `docs/.gitkeep`, then **print** the next step (do not chain into the interactive scaffold):

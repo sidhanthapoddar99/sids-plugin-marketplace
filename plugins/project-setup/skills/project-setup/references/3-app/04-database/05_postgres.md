@@ -2,26 +2,28 @@
 
 How to run Postgres well once it's the chosen engine: image, compose service block, init scripts, connection, healthcheck, backup, extensions. **Whether** to pick Postgres (vs SQLite) is a choice owned by `references/3-app/04-database/00_provisioning.md`.
 
-> **Versions in this file are illustrative, not prescriptive.** `postgres:16-alpine`, `pgvector/pgvector:pg16` reflect what was current at write-time. When `/ps-setup` runs, **check the latest stable version** and **ask the user** which to pin to. Major-version upgrades have migration implications — the user should choose deliberately, not inherit a stale default from this file.
+> **This file pins no versions.** Every image tag and runtime below carries a `<version>` placeholder. Resolve each one at the time you write it: check the current stable release, then **ask the user** which to pin to. Never invent a number from memory — that is how a stale default leaks into a fresh repo.
+
+> Postgres major-version upgrades have migration implications. Make the user choose deliberately.
 
 ## Image
 
 ```yaml
 services:
   postgres:
-    image: postgres:16-alpine          # plain
+    image: postgres:<version>-alpine          # plain
     # OR for pgvector:
-    # image: pgvector/pgvector:pg16
+    # image: pgvector/pgvector:pg<version>
 ```
 
-Defaults: `pgvector/pgvector:pg16` if the project might want vector search (cheap insurance — extension stays unused until you `CREATE EXTENSION`).
+Defaults: `pgvector/pgvector:pg<version>` if the project might want vector search (cheap insurance — extension stays unused until you `CREATE EXTENSION`).
 
 ## Compose service block
 
 ```yaml
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg<version>
     container_name: ${COMPOSE_PROJECT_NAME:-my-app}-postgres
     restart: unless-stopped
     environment:

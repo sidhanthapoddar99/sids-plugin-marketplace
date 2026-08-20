@@ -9,12 +9,15 @@
 # it's here as the worked example of a standalone config.)
 #
 # Self-contained: it re-declares the network. Run from the repo root so ../ resolves.
+#
+# Image tags carry a <version> placeholder. Resolve every one to a current stable
+# release before the first run — this file ships no version numbers.
 
 name: ${COMPOSE_PROJECT_NAME:-myapp}
 
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg<version>
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -34,7 +37,7 @@ services:
       - internal
 
   redis:
-    image: redis:7-alpine
+    image: redis:<version>-alpine
     restart: unless-stopped
     command: >
       redis-server

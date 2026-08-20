@@ -142,7 +142,7 @@ Putting `nginx.conf` and postgres data in the same `postgres/` folder makes revi
 ```yaml
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg<version>
     volumes:
       # data (mutable)
       - ${DATA_DIR:-../data}/postgres/pgdata:/var/lib/postgresql/data
@@ -150,7 +150,7 @@ services:
       - ../infra/postgres/init:/docker-entrypoint-initdb.d:ro
 
   nginx:
-    image: nginx:1.27-alpine
+    image: nginx:<version>-alpine
     volumes:
       - ../infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 ```

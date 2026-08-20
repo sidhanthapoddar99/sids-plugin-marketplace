@@ -7,7 +7,7 @@ Owns how a **single** app packages itself into a container image: its Dockerfile
 Each app owns its `Dockerfile` (every-app contract, `references/3-app/01-structure-and-stack/00_app-anatomy.md`). Standard shape:
 
 - **Multi-stage build** — a deps/build stage, a slim runtime stage that copies only the built artifact + resolved deps (the Python multi-stage-with-uv Dockerfile is in `references/3-app/02-backend/00_app-skeleton.md`; the frontend build→nginx Dockerfile in `references/2-repo/04-docker/04_proxy-and-exposure.md`).
-- **Pinned base image** — `python:3.12-slim`, `oven/bun:1`, etc., pinned to a real tag, never `latest`. Versions are illustrative — check current stable and let the user pick.
+- **Pinned base image** — `python:<version>-slim`, `oven/bun:<version>`, and the like, pinned to a real tag, never `latest`. This skill writes no version numbers: resolve each `<version>` by checking current stable and letting the user pick.
 - **Non-root user** — create and `USER` a non-root account in the runtime stage; a container running as root is an unnecessary blast radius.
 - **Small final image** — slim/alpine base, no build toolchain in the runtime stage, no dev dependencies, `--no-cache` on package installs.
 

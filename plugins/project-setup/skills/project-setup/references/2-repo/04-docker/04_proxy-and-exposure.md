@@ -155,12 +155,12 @@ The frontend bundle is built into `/usr/share/nginx/html` by the frontend's Dock
 
 ```dockerfile
 # apps/frontend/Dockerfile
-FROM oven/bun:1 AS deps
+FROM oven/bun:<version> AS deps
 WORKDIR /app
 COPY package.json bun.lockb ./
 RUN bun install --frozen-lockfile
 
-FROM oven/bun:1 AS build
+FROM oven/bun:<version> AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -168,7 +168,7 @@ ARG VITE_API_BASE_URL=/api
 ARG VITE_APP_ENV=production
 RUN bun run build
 
-FROM nginx:1.27-alpine
+FROM nginx:<version>-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY ../../infra/nginx/nginx.conf /etc/nginx/nginx.conf
 EXPOSE 80

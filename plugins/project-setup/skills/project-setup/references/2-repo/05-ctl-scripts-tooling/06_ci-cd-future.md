@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: pgvector/pgvector:pg<version>
         env:
           POSTGRES_USER: ci
           POSTGRES_PASSWORD: ci
@@ -29,7 +29,7 @@ jobs:
         ports: ["5432:5432"]
         options: --health-cmd pg_isready --health-interval 5s --health-timeout 3s --health-retries 5
       redis:
-        image: redis:7-alpine
+        image: redis:<version>-alpine
         ports: ["6379:6379"]
     steps:
       - uses: actions/checkout@v4
@@ -95,7 +95,7 @@ For private projects with a self-hosted runner, same workflow but `runs-on: self
 
 CI/prod secret placement (GitHub Actions secrets, self-hosted `.env.ci`, the Vault future state) is owned by `references/2-repo/03-env-config/03_secrets-matrix.md` — the only CI-local rule: ephemeral test-service creds (`ci/ci` above) may be hardcoded in the workflow.
 
-## When `/ps-setup` runs
+## When a bootstrap run reaches CI/CD
 
 For an open-source project, offer to drop the `check.yml` workflow. For a private project, ask whether GitHub Actions or self-hosted, and drop the appropriate template.
 

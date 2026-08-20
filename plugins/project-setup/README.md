@@ -21,12 +21,12 @@ The same machinery powers initialising a new project, auditing an existing one f
 ## What gets shipped
 
 - **One skill** — `project-setup` — the umbrella triage skill. It owns the question flow and the references library.
-- **One slash command** — `/ps-setup` — with three modes:
-  - `/ps-setup` — interactive init for a new project
-  - `/ps-setup audit` — scan the current repo, report drift from conventions
-  - `/ps-setup suggest` — propose an ideal structure for the current repo given what's there
+- **Three wholesale modes**, reached from plain language — no slash command:
+  - **init** ("bootstrap this repo") — interactive setup for a new project
+  - **audit** ("audit this repo") — scan the current repo, report drift from conventions
+  - **suggest** ("propose a structure") — propose an ideal structure for the current repo given what's there
 - **References library** — `skills/project-setup/references/` — layouts, env/config rules, docker patterns, scripts, language flows, frontend, databases, modularity, the `.claude/` folder, design tokens, README contract.
-- **Snippets** — `assets/snippets/` — focused fragments (tokens.css, alembic shim, vite proxy, compose overlays, the `ctl` dispatcher, `.mise.toml`) the skill cites and the slash command can drop in. **Not** a full project template.
+- **Snippets** — `assets/snippets/` — focused fragments (tokens.css, alembic shim, vite proxy, compose overlays, the `ctl` dispatcher, `.mise.toml`) the skill cites and drops in. **Not** a full project template.
 
 ## Layouts recognised
 

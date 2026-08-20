@@ -32,7 +32,7 @@
     {
       "name": "project-setup",
       "source": "./plugins/project-setup",
-      "description": "Architectural decision-maker for repos, new and existing \u2014 repo layout, service boundaries, per-app stack and database choice, docker / compose, env and secrets, frontend structure, deployment. Ships 1 skill and the /ps-setup command (init | audit | suggest). Composes with the sibling agent-ks and uvenv plugins.",
+      "description": "Architectural decision-maker for repos, new and existing — repo layout, service boundaries, per-app stack and database choice, docker / compose, env and secrets, frontend structure, deployment. Ships 1 skill with three modes reached from plain language: init, audit, suggest. Composes with the sibling agent-ks and uvenv plugins.",
       "license": "PolyForm-Noncommercial-1.0.0",
       "category": "project-architecture",
       "tags": [
@@ -46,8 +46,7 @@
         "project-setup",
         "repo-structure",
         "monorepo",
-        "compose",
-        "ps-setup"
+        "compose"
       ]
     },
     {
@@ -57,7 +56,7 @@
         "url": "https://github.com/sidhanthapoddar99/agent-knowledge-system.git",
         "path": "plugins/agent-ks"
       },
-      "description": "Operating manual for the agent-knowledge-system framework \u2014 markdown docs, blog posts, site configuration, themes, the folder-per-issue tracker, and self-contained HTML artifacts. Ships 3 skills, 3 slash commands, and the cross-platform `agent-ks` CLI dispatcher.",
+      "description": "Operating manual for the agent-knowledge-system framework — markdown docs, blog posts, site configuration, themes, the folder-per-issue tracker, and self-contained HTML artifacts. Ships 3 skills, 3 slash commands, and the cross-platform `agent-ks` CLI dispatcher.",
       "homepage": "https://github.com/sidhanthapoddar99/agent-knowledge-system",
       "repository": "https://github.com/sidhanthapoddar99/agent-knowledge-system",
       "author": {
@@ -88,7 +87,7 @@
         "url": "https://github.com/sidhanthapoddar99/uvenv.git",
         "path": "plugin"
       },
-      "description": "Operating manual for uvenv \u2014 a bash/zsh wrapper around mise + uv that adds conda-style named global Python venvs you can activate from any directory. Covers the command grammar, the four environment kinds, migrating off conda, and doctor-first diagnostics.",
+      "description": "Operating manual for uvenv — a bash/zsh wrapper around mise + uv that adds conda-style named global Python venvs you can activate from any directory. Covers the command grammar, the four environment kinds, migrating off conda, and doctor-first diagnostics.",
       "homepage": "https://github.com/sidhanthapoddar99/uvenv",
       "repository": "https://github.com/sidhanthapoddar99/uvenv",
       "author": {

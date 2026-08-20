@@ -20,7 +20,7 @@ ML envs accumulate. You install torch once for one recommender experiment, then 
 
 ```bash
 # create a named global env
-uvenv create --python=3.13 -n ml-recommender
+uvenv create --python=<version> -n ml-recommender
 
 # activate it
 uvenv activate ml-recommender

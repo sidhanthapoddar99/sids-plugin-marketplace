@@ -100,15 +100,15 @@ services:
     image: ${REGISTRY}/storefront-web:${IMAGE_TAG}
     depends_on: [api]
   nginx:
-    image: nginx:1.27
+    image: nginx:<version>
     volumes: ["../infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
     ports: ["80:80", "443:443"]                         # the aggregator IS the edge in prod
     depends_on: [web, api]
   postgres:
-    image: postgres:16
+    image: postgres:<version>
     volumes: ["${DATA_DIR:-./data}/postgres:/var/lib/postgresql/data"]
   redis:
-    image: redis:7-alpine
+    image: redis:<version>-alpine
 ```
 
 ### The env-sync script

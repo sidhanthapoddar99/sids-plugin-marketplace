@@ -212,7 +212,7 @@ The root README's "no-docker host run" section can then be brief and **point at 
 
 ## Audit checks for the README
 
-`/ps-setup audit` should check:
+An audit run should check:
 
 - [ ] Project elevator pitch in first paragraph
 - [ ] Tech stack table

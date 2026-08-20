@@ -11,7 +11,7 @@ You are inside the `project-setup` plugin. Your job is to **own every architectu
 
 This applies to **two situations equally**:
 
-1. **Bootstrapping a new repo** — `/ps-setup` init
+1. **Bootstrapping a new repo** — the user asks for a full setup ("bootstrap this repo", "set up a new project")
 2. **Modifying an existing repo** — any time the user asks "should I add X", "where does Y belong", "is this the right place for Z", "split this", "introduce a package", "move compose into `docker/`", "switch to a multi-frontend workspace", "add a second backend", "pick a database", "set up remote GPU dev"
 
 Don't wait to be asked for a wholesale bootstrap. Engage when **any** decision in the architectural surface area is being considered.
@@ -53,9 +53,17 @@ Each service/app folder owns its `README.md`, dependency manifest (`requirements
 
 ## Two workflows
 
-### A — wholesale bootstrap / audit / suggest (user invokes `/ps-setup`)
+### A — wholesale bootstrap / audit / suggest
 
-Walk the full flow: decision tree → question flow → layout → cross-cutting conventions → propose → apply.
+Three modes, all entered from plain language — there is no slash command:
+
+| Mode | The user says | What you do |
+|---|---|---|
+| **init** | "bootstrap this repo", "set up a new project", "scaffold this" | Walk the full flow, then write files after one confirmation. |
+| **audit** | "audit this repo", "how far off are we", "check for drift" | Report drift. **Read-only — never edit.** |
+| **suggest** | "propose a structure", "how should this be restructured" | Audit internally, then produce a remediation plan. Edit only what the user opts into. |
+
+If the request is ambiguous between the three, ask which one before starting. Then walk the full flow: decision tree → question flow → layout → cross-cutting conventions → propose → apply.
 
 ### B — single architectural decision (the majority case — user is mid-work)
 
@@ -108,13 +116,30 @@ For every layout, the same cross-cutting conventions apply (layout-specific adju
 - `references/3-app/08-ai/` — only when the product touches LLMs; keys are backend-only via a proxy route (`references/3-app/08-ai/02_ai-keys-and-safety.md`). `references/3-app/09-security-hardening/` — edge/captcha, app-owned rate limits, telemetry+audit (edge infra itself stays L2).
 - Any new app: start at `references/3-app/01-structure-and-stack/00_app-anatomy.md` (the every-app contract) → its kind skeleton; the app's image + serving live in `references/3-app/10-deployment/`.
 - Docs are a handoff, not our work — see `references/1-ecosystem/docs-placement.md` (the docs plugin is now `agent-ks`, scaffolded via `/agent-ks-init`).
-- Versions in all references are illustrative — check latest stable and let the user pick.
+- **No reference in this skill pins a version.** Image tags and runtimes appear as `<version>` placeholders. Resolve every one by checking current stable and asking the user — never fill one in from memory.
 
 ### Step 5 — propose, then act
 
-- For `/ps-setup` (init): present the proposed tree as text, list every file you'll create, then ask once before writing. Drop snippets from `assets/snippets/` where they fit. **Install the runtime layer by copying, never authoring**: `cp -r "${CLAUDE_PLUGIN_ROOT}/assets/snippets/scripts" ./scripts && mv ./scripts/ctl ./ctl && chmod +x ./ctl`, then adapt by deletion (conformance floor: `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`); generate `.gitignore` from `assets/snippets/env/gitignore.template`, keeping only the ecosystems present. **Always create the project `CLAUDE.md` from `assets/snippets/claude/CLAUDE.md.template`** — resolve the hard rules AND the structure-contract block (recorded variant choices, skeletons with this project's real names, tripwire numbers, escalation pointer), and include the styling-discipline block whenever the repo has a frontend. A bootstrap that skips any of its blocks has not delivered the conventions at all.
-- For `/ps-setup audit`: produce a drift report. Read-only. Do not change files.
-- For `/ps-setup suggest`: produce a proposal for the current repo. Don't change files; if the user wants to apply, they can re-run with init flow on top.
+- For **init**: present the proposed tree as text, list every file you'll create, then ask once before writing. Drop snippets from `assets/snippets/` where they fit. **Install the runtime layer by copying, never authoring**: `cp -r "${CLAUDE_PLUGIN_ROOT}/assets/snippets/scripts" ./scripts && mv ./scripts/ctl ./ctl && chmod +x ./ctl`, then adapt by deletion (conformance floor: `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`). **The one thing you resolve rather than delete is `<version>`** — the compose and mise snippets ship placeholders, not numbers; fill each from current stable with the user's pick before the repo is handed over. Generate `.gitignore` from `assets/snippets/env/gitignore.template`, keeping only the ecosystems present. **Always create the project `CLAUDE.md` from `assets/snippets/claude/CLAUDE.md.template`** — resolve the hard rules AND the structure-contract block (recorded variant choices, skeletons with this project's real names, tripwire numbers, escalation pointer), and include the styling-discipline block whenever the repo has a frontend. A bootstrap that skips any of its blocks has not delivered the conventions at all.
+- For **audit**: produce a drift report. Read-only. Do not change files.
+- For **suggest**: produce a proposal for the current repo. Don't change files until the user opts in.
+
+### Step 6 — post-init handoff
+
+After an init run writes the files, point the user at the four things that make the repo runnable:
+
+1. `mise install` — installs the runtime contract.
+2. `cp .env.example .env` (or `ctl setup`) — starts the secrets contract.
+3. `/agent-ks-init` — scaffolds `docs/` via the docs plugin (`references/1-ecosystem/docs-placement.md`).
+4. `ctl dev` — runs the host dev loop, once the secrets are filled.
+
+### Style for Workflow A
+
+- Be concise. Long question flows lose users; ask in batches of 3–4 with reasonable defaults flagged.
+- Cite the reference files inline so the user can read why a convention exists (`see references/2-repo/03-env-config/02_frontend-env-isolation.md`).
+- When dropping a snippet, name the source (e.g. `from assets/snippets/scripts/ctl`). Copy the `scripts/` + `docker/` snippets verbatim; don't hand-rewrite them.
+- Never invent file paths — consult `references/handoffs/examples-registry.md`.
+- Never read `.env` files. `.env.example` is the contract.
 
 ## Audit / suggest mode
 
@@ -131,8 +156,15 @@ When the mode is `audit` or `suggest`:
    - **Matches** (green) — what's already aligned
    - **Drift** (yellow) — minor deviations
    - **Missing** (red) — conventions not present
-5. For `audit`, stop there.
-6. For `suggest`, follow with a proposed remediation plan — what to add, what to rename, what to split — and batch the moves into a consolidation window (`references/00_altitude-model.md` § evolution machinery) rather than dribbling renames across PRs.
+5. For `audit`, stop at the findings. Tell the user that suggest mode turns them into a remediation plan.
+6. For `suggest`, follow with a proposed remediation plan under five headings:
+   - **Rename** — `backend/` → `apps/backend/`, `frontend/` → `apps/frontend/`, and the like.
+   - **Move** — compose files into `docker/`, init scripts into `infra/<service>/`, bind-mount dirs under `data/`, a polyglot repo's JS workspace to its group folder.
+   - **Add** — the missing pieces: `ctl` dispatcher (plus `scripts/` up to the conformance floor), `tokens.css`, `.mise.toml`, `.env.example`, `.gitignore`, `CLAUDE.md` with all blocks resolved.
+   - **Restructure** — tripwire crossings: a domain layer past ~8–10 feature folders, feature subdivision past ~10 files, the missing `pages/` / `api/` layers in a grown frontend.
+   - **Split** — files over the 500-line cap.
+
+   Show the proposed end-state tree. Batch the moves into a consolidation window (`references/00_altitude-model.md` § evolution machinery) — one PR or milestone where churn is already happening — rather than dribbling renames across PRs. Ask which pieces the user wants; they can opt into a subset. Apply only those, one batch at a time, confirming between batches.
 
 Never edit files in `audit` mode. In `suggest` mode, only edit after explicit confirmation.
 
@@ -152,7 +184,7 @@ Never edit files in `audit` mode. In `suggest` mode, only edit after explicit co
 | Deployment targets (WSL / bare server / cloud / Traefik present) | Ask before generating prod compose. |
 | Build-time vs runtime for each env var | Walk through each `.env.example` line with the user. |
 | Existing `.env` content (when auditing) | Do not read `.env` files — they contain secrets. Read `.env.example` only. |
-| Image / runtime versions (postgres:?, redis:?, python:?) | Always — versions in this skill's references are illustrative. Check latest stable, surface options, let the user pick. |
+| Image / runtime versions (postgres, redis, python, node) | Always — the references carry `<version>` placeholders, never numbers. Check latest stable, surface options, let the user pick. |
 | ML cloud GPUs (none / `scripts/cloud/` wrappers / thin custom CLI) | Always ask for ML projects. |
 | Remote dev / agent SSH access for ML projects | Always ask — different layout surface (`apps/cloud/`, `tasks/`, `scripts/cloud/`). |
 | Does the product touch LLMs? | Ask before assuming the `08-ai/` surface applies. If yes: AI keys are backend-only, reached via a proxy route — never in a frontend/mobile bundle (`references/3-app/08-ai/02_ai-keys-and-safety.md`). |
@@ -171,7 +203,7 @@ Never edit files in `audit` mode. In `suggest` mode, only edit after explicit co
 
 ## File map — everything in this skill, annotated
 
-Read the file whose comment matches the decision in front of you. Paths are relative to this skill folder; snippet/command paths are relative to the plugin root. The tree IS the altitude model: folders are levels, each level opens with a `00_index.md` routing to its topical owners.
+Read the file whose comment matches the decision in front of you. Paths are relative to this skill folder; snippet paths are relative to the plugin root. The tree IS the altitude model: folders are levels, each level opens with a `00_index.md` routing to its topical owners.
 
 ```
 references/
@@ -220,7 +252,7 @@ references/
 │   │   └── 06_ci-cd-future.md         # GitHub Actions templates; Vault-later notes (general app CI)
 │   ├── 06-runtime-environment/    # the execution-triad map + version contract
 │   │   ├── 00_runtime-triad.md        # ★ START HERE: how mise + ctl + docker + env interact (the ONE map); docker/ctl files link here
-│   │   └── 01_mise.md                 # .mise.toml version contract + bare-name PATH (versions illustrative)
+│   │   └── 01_mise.md                 # .mise.toml version contract + bare-name PATH (<version> placeholders)
 │   └── 07-ml-orchestration/       # cloud GPU training/inference (Layout 04) — DB engines + non-web surfaces moved DOWN to 3-app
 │       ├── 00_custom-orchestrator.md  # START HERE for ML cloud; scripts/cloud/ wrappers → thin CLI escalation
 │       ├── 01_spot-instances-and-checkpoints.md  # surviving spot preemption; checkpoint-resumable training
@@ -250,8 +282,8 @@ references/
 │   │   ├── 02_alembic-recipe.md    # mechanics: init recipe, ini/env.py, daily flow, docker entrypoint
 │   │   ├── 03_raw-sql-recipe.md    # mechanics: 3-file pattern, shim, helpers, sqlx drift check
 │   │   ├── 04_sqlite.md            # WAL + busy_timeout + single-writer model; the right floor
-│   │   ├── 05_postgres.md          # compose block, init scripts, extensions (versions illustrative)
-│   │   ├── 06_redis.md             # AOF, requirepass, db numbers, Streams (versions illustrative)
+│   │   ├── 05_postgres.md          # compose block, init scripts, extensions (<version> placeholders)
+│   │   ├── 06_redis.md             # AOF, requirepass, db numbers, Streams (<version> placeholders)
 │   │   └── 07_other-engines.md     # Mongo/Neo4j/Kuzu/Seaweed/Meili usage ("which to pick" table → 00_provisioning.md)
 │   ├── 05-package/                 # workspace package internals + tokens + embeddable seams
 │   │   ├── 00_shared-packages.md   # package internals: ui/styles/services/types, export surface, component-family grouping (T4), tailwind-config wiring
@@ -304,12 +336,10 @@ assets/snippets/                    # fragments to drop into a target repo (NOT 
 ├── claude/CLAUDE.md.template       # hard rules + structure-contract block + NON-NEGOTIABLE styling-discipline block — ALWAYS instantiated on bootstrap
 └── README.md                       # snippet index: what each fragment is + where it drops
 
-commands/ps-setup.md                # the /ps-setup slash command (init | audit | suggest)
 ```
 
 ## See also
 
 - Spine: `references/00_altitude-model.md` (levels, principles, tripwires, ownership map).
 - Snippets: `assets/snippets/` for fragments to drop in (see the snippet README for the index).
-- Slash command: `commands/ps-setup.md` (the user-facing entrypoint).
 - Examples cited: `references/handoffs/examples-registry.md`; annotated trees: `references/5-examples/`.

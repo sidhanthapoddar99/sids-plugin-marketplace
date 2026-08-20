@@ -107,8 +107,8 @@ ctl up prod --modifier traefik
 # docker/compose.data.yaml — CONFIG: the data layer alone (replaces base)
 name: ${COMPOSE_PROJECT_NAME:-myapp}
 services:
-  postgres: { image: pgvector/pgvector:pg16, ... }
-  redis:    { image: redis:7-alpine, ... }
+  postgres: { image: pgvector/pgvector:pg<version>, ... }
+  redis:    { image: redis:<version>-alpine, ... }
 networks:
   internal: { driver: bridge }
 ```

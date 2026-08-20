@@ -54,7 +54,7 @@ GitHub: <url>
 
 ~8–10 feature folders per app → introduce a domain layer · ~10 files in a feature folder → subdivide · 500 hard / 300 soft lines per file · `pages/` files ≤ ~50 lines · root manifest: 0 runtime dependencies
 
-**Evolution:** when the product's domain model / IA settles or changes, reconcile the code structure within the same milestone; batch folder moves into consolidation windows (refactors, pre-release resets); run `/ps-setup audit` at roadmap-stage boundaries.
+**Evolution:** when the product's domain model / IA settles or changes, reconcile the code structure within the same milestone; batch folder moves into consolidation windows (refactors, pre-release resets); ask the `project-setup` skill for an audit at roadmap-stage boundaries.
 
 **Escalation:** for any structural decision this summary doesn't cover — or if a standard here seems wrong — load the `project-setup` skill and follow its guidance. Do NOT improvise a new pattern inline.
 

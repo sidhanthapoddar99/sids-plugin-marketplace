@@ -27,7 +27,7 @@ Drifts (where it predates or deviates from current conventions):
 
 ## How the skill cites these
 
-When `/ps-setup` (or a single-decision lookup) wants a real-world example:
+When a bootstrap run (or a single-decision lookup) wants a real-world example:
 
 1. Identify the closest layout / convention area (layouts live under `references/2-repo/01-layouts/`; worked trees under `references/5-examples/`).
 2. Cite the **most relevant registered example** and, where possible, a specific file in it.

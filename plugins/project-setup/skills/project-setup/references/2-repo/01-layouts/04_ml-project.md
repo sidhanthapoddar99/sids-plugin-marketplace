@@ -94,7 +94,7 @@ my-ml/
         └── wait-for-run.sh
 ```
 
-When `/ps-setup` runs for an ML project, after the standard Layout 04 questions also run the cloud-orchestration batch in `references/01_question-flow.md`.
+When a bootstrap run targets an ML project, after the standard Layout 04 questions also run the cloud-orchestration batch in `references/01_question-flow.md`.
 
 ## Escalation
 

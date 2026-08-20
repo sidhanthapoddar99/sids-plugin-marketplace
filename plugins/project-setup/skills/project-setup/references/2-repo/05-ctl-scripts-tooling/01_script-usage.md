@@ -304,7 +304,7 @@ cd apps/frontend && bun install && bun dev                                      
 
 The no-docker path is what `ctl dev` automates; documenting it raw lets a developer attach a debugger to one service. **Prod** is `ctl up prod` — keep development (`ctl dev`) distinct from deployment in the README's Deploy section.
 
-`/ps-setup audit` checks the README shows all three paths (full checklist: `references/2-repo/02-root-hygiene/01_readme-three-paths.md`). Drift to flag: only `ctl dev` (can't debug compose), only `docker compose` (no fast-iteration story), only raw host run (everyone reinvents the flow).
+An audit run checks the README shows all three paths (full checklist: `references/2-repo/02-root-hygiene/01_readme-three-paths.md`). Drift to flag: only `ctl dev` (can't debug compose), only `docker compose` (no fast-iteration story), only raw host run (everyone reinvents the flow).
 
 ## Anti-patterns
 

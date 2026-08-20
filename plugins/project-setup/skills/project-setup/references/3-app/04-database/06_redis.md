@@ -2,14 +2,16 @@
 
 How to run Redis well for sessions, caching, pub/sub, and Redis Streams: compose block, auth, AOF durability, db-number separation, Streams tuning, backup. **Whether** to reach for Redis at all (vs an in-process dict) is a choice owned by `references/3-app/04-database/00_provisioning.md`.
 
-> **Versions in this file are illustrative, not prescriptive.** `redis:7-alpine` reflects what was current at write-time. When `/ps-setup` runs, **check the latest stable version** (`docker pull redis:latest && docker inspect redis:latest --format '{{.RepoTags}}'`, or the official Docker Hub page) and **ask the user** which to pin to. Same applies to every image referenced below.
+> **This file pins no versions.** Every image tag and runtime below carries a `<version>` placeholder. Resolve each one at the time you write it: check the current stable release, then **ask the user** which to pin to. Never invent a number from memory — that is how a stale default leaks into a fresh repo.
+
+> To read the current Redis tag: `docker pull redis:latest && docker inspect redis:latest --format '{{.RepoTags}}'`, or the official Docker Hub page.
 
 ## Compose service block
 
 ```yaml
 services:
   redis:
-    image: redis:7-alpine
+    image: redis:<version>-alpine
     container_name: ${COMPOSE_PROJECT_NAME:-my-app}-redis
     restart: unless-stopped
     command: >
@@ -113,7 +115,7 @@ redis:
 
 - No `--requirepass` "because dev" — vulnerability becomes a habit
 - Default eviction policy with Streams — silently loses events
-- `latest` tag — pin major version (`redis:7-alpine`)
+- `latest` tag — pin the major version instead (`redis:<version>-alpine`, resolved at write time)
 - One redis per service when one shared redis with different DBs would do — extra moving parts
 - Storing large blobs in redis — use SeaweedFS / S3 (see `references/3-app/04-database/07_other-engines.md`)
 - No persistence (no AOF, no RDB) — restarts wipe state

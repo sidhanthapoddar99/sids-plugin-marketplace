@@ -2,18 +2,20 @@
 
 `.mise.toml` at repo root pins every runtime the project needs. `mise install` from a clean clone must produce a working toolchain.
 
-> **Versions in this file are illustrative, not prescriptive.** `python = "3.14"`, `node = "22"`, `rust = "1.83"`, `go = "1.23"` reflect what was current at write-time. When `/ps-setup` runs, **check the latest stable** for each runtime the project actually uses (`mise ls-remote python | tail`, `mise ls-remote node | tail`, etc.) and **ask the user** which to pin to. Different projects have different upgrade tolerance; never inherit a stale default from this file.
+> **This file pins no versions.** Every image tag and runtime below carries a `<version>` placeholder. Resolve each one at the time you write it: check the current stable release, then **ask the user** which to pin to. Never invent a number from memory — that is how a stale default leaks into a fresh repo.
+
+> Read the current stable release per runtime with `mise ls-remote python | tail`, `mise ls-remote node | tail`, and so on. Upgrade tolerance differs per project, so the user picks.
 
 ## `.mise.toml` shape
 
 ```toml
 # .mise.toml
 [tools]
-python = "3.14"
-node   = "22"
+python = "<version>"
+node   = "<version>"
 bun    = "latest"
-rust   = "1.83"            # or use rust-toolchain.toml inside backend-rust/
-go     = "1.23"
+rust   = "<version>"            # or use rust-toolchain.toml inside backend-rust/
+go     = "<version>"
 
 [env]
 # Optional — env vars to apply when entering the project dir
@@ -30,12 +32,12 @@ Pin major versions. Avoid `latest` for production runtimes (Bun is a pragmatic e
   ```toml
   # apps/backend-rust/rust-toolchain.toml
   [toolchain]
-  channel = "1.83"
+  channel = "<version>"
   components = ["rustfmt", "clippy", "rust-analyzer"]
   ```
 
 - **Node / Bun**: mise covers it; no `.nvmrc` needed.
-- **Go**: mise covers it; `go.mod`'s `go 1.23` directive is also enforced by `go build`.
+- **Go**: mise covers it; `go.mod`'s `go <version>` directive is also enforced by `go build`.
 
 ## Why mise (not asdf / pyenv / nvm / volta)
 

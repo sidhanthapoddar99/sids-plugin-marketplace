@@ -71,7 +71,7 @@ Run this in order before proposing any layout. The order is **level-ordered** (s
 ## L2 — Batch 7: supporting infra + hygiene
 
 28. **Databases — pick the right floor** (`references/3-app/04-database/00_provisioning.md`): SQLite vs Postgres (concurrent writers, sharing, extensions); in-process memory vs Redis (coupled to worker count, Q22); Mongo/Neo4j/Kuzu/Seaweed per requirement.
-29. **Image + runtime versions**: **never inherit defaults silently** — check current latest stable (`mise ls-remote …`, registry tags) and let the user pick. Versions in this skill's references are illustrative.
+29. **Image + runtime versions**: **never inherit defaults silently** — check current latest stable (`mise ls-remote …`, registry tags) and let the user pick. This skill's references pin no versions; they carry `<version>` placeholders you must resolve.
 30. **Hygiene** (not a question — state it): `.gitignore` generated from `assets/snippets/env/gitignore.template`, keeping only the sections for ecosystems present; `data/**` + `.gitkeep` negation; `.vscode/`/`.claude/` selectively committed.
 31. **Docs handoff**: for in-repo docs, create the `docs/` slot and point at the docs plugin's init command (`references/1-ecosystem/docs-placement.md`).
 32. **`.claude/` + CLAUDE.md**: `.claude/` stays empty initially; CLAUDE.md is generated from the template **with the repo + structure + styling blocks resolved** — this is where every variant chosen above gets recorded.

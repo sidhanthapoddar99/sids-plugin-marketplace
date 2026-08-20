@@ -55,7 +55,7 @@ uv run <entry-point>
 name = "my-app-backend"
 version = "0.1.0"
 description = "API for my-app"
-requires-python = ">=3.12"
+requires-python = ">=<version>"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.32",
@@ -144,7 +144,7 @@ No `src/`. The service runs from its own root, so `app.main:app` resolves with n
 ## Dockerfile (multi-stage with uv) — run-service
 
 ```dockerfile
-FROM python:3.12-slim AS base
+FROM python:<version>-slim AS base
 RUN pip install --no-cache-dir uv
 
 FROM base AS deps

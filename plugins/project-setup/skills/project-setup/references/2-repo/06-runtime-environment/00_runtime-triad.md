@@ -40,7 +40,7 @@ Every README documents three ways to start, each for a different need:
 2. **Raw `docker compose`** — understand/debug what `ctl` assembles.
 3. **No-docker host run** — `cd apps/<svc> && <run>` for IDE-debugger attach.
 
-If any path is broken, the repo has invisible debt — `/ps-setup audit` checks for all three (full README contract: `references/2-repo/02-root-hygiene/01_readme-three-paths.md`). Complex (Layout 05) setups add a fourth: building the orchestrator binary (`references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`).
+If any path is broken, the repo has invisible debt — An audit run checks for all three (full README contract: `references/2-repo/02-root-hygiene/01_readme-three-paths.md`). Complex (Layout 05) setups add a fourth: building the orchestrator binary (`references/2-repo/05-ctl-scripts-tooling/03_complex-setups.md`).
 
 ## When this isn't enough
 

@@ -58,7 +58,7 @@ State that survives runs:
 
 Conventions for the binary: CLI command structure mirrors the wrapper verbs (`dev / train / sweep / eval / serve / status / teardown`); metrics + logs surface to the repo's `outputs/` dir plus a status file; the `scripts/cloud/` wrappers become one-line shims over it so CI and CLAUDE.md instructions don't change.
 
-## What to ask the user during `/ps-setup`
+## What to ask the user during a bootstrap run
 
 1. **Cloud GPUs at all?** — no → skip this folder entirely; local/bare-metal only.
 2. **Which provider(s)?** — determines the CLI the wrappers call.

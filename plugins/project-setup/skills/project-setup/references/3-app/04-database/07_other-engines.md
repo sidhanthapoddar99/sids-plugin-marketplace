@@ -2,14 +2,16 @@
 
 How to run the less-common engines once chosen: MongoDB, Neo4j, Kuzu, SeaweedFS, Meilisearch — compose blocks, config snippets, and per-engine fit notes. **Which** engine to pick (the cross-engine selection table + right-floor rule) is a choice owned by `references/3-app/04-database/00_provisioning.md`.
 
-> **Versions in this file are illustrative, not prescriptive.** `mongo:7`, `neo4j:5-community`, `getmeili/meilisearch:v1.10`, `chrislusf/seaweedfs:latest` reflect what was current at write-time. When `/ps-setup` runs, **check the latest stable** and **ask the user** which to pin to. The `latest` tag is fine for trying things; never pin `latest` in production compose files — always resolve to a specific version.
+> **This file pins no versions.** Every image tag and runtime below carries a `<version>` placeholder. Resolve each one at the time you write it: check the current stable release, then **ask the user** which to pin to. Never invent a number from memory — that is how a stale default leaks into a fresh repo.
+
+> The `latest` tag is fine for trying things. Never ship `latest` in a production compose file — always resolve it to a specific version.
 
 ## MongoDB
 
 ```yaml
 services:
   mongodb:
-    image: mongo:7
+    image: mongo:<version>
     container_name: ${COMPOSE_PROJECT_NAME:-my-app}-mongo
     restart: unless-stopped
     environment:
@@ -40,7 +42,7 @@ Fit: document model fits naturally (nested, schemaless variants). Avoid as a gen
 ```yaml
 services:
   neo4j:
-    image: neo4j:5-community
+    image: neo4j:<version>-community
     container_name: ${COMPOSE_PROJECT_NAME:-my-app}-neo4j
     restart: unless-stopped
     environment:
@@ -78,7 +80,7 @@ Mount `${DATA_DIR}/kuzu` into the backend container.
 ```yaml
 services:
   seaweed-master:
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:<version>
     container_name: ${COMPOSE_PROJECT_NAME:-my-app}-seaweed-master
     command: master -ip=seaweed-master
     volumes:
@@ -87,7 +89,7 @@ services:
       - internal
 
   seaweed-volume:
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:<version>
     container_name: ${COMPOSE_PROJECT_NAME:-my-app}-seaweed-volume
     command: volume -mserver=seaweed-master:9333 -ip.bind=0.0.0.0
     volumes:
@@ -98,7 +100,7 @@ services:
       - internal
 
   seaweed-filer:
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:<version>
     container_name: ${COMPOSE_PROJECT_NAME:-my-app}-seaweed-filer
     command: filer -master=seaweed-master:9333
     volumes:
@@ -111,7 +113,7 @@ services:
       - internal
 
   seaweed-s3:
-    image: chrislusf/seaweedfs:latest
+    image: chrislusf/seaweedfs:<version>
     container_name: ${COMPOSE_PROJECT_NAME:-my-app}-seaweed-s3
     command: s3 -filer=seaweed-filer:8888
     depends_on:
@@ -129,7 +131,7 @@ Fit: image/file uploads, document storage, anywhere you'd reach for S3 but want 
 ```yaml
 services:
   meilisearch:
-    image: getmeili/meilisearch:v1.10
+    image: getmeili/meilisearch:v<version>
     container_name: ${COMPOSE_PROJECT_NAME:-my-app}-meili
     restart: unless-stopped
     environment:

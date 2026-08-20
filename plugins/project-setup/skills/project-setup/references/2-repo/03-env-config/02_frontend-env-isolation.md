@@ -110,7 +110,7 @@ In a turborepo monorepo, list every build-time env var so Turbo's cache key incl
 
 The `globalEnv` config body (alongside the rest of the turbo/pnpm/bun config) is owned by `references/3-app/01-structure-and-stack/02_workspaces-mechanics.md`; the point that matters *here* is that every build-time var must be registered or the cache goes stale.
 
-## Confirmation step in `/ps-setup`
+## Confirmation step during a bootstrap run
 
 For each variable, classify and (for client vars) confirm exposure — read each line aloud:
 

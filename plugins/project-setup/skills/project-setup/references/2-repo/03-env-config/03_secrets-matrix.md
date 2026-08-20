@@ -87,7 +87,7 @@ For each secret, document:
 
 This goes in `docs/data/03_secrets-matrix.md` or equivalent — the skill recommends creating it.
 
-## What to ASK the user during `/ps-setup`
+## What to ASK the user during a bootstrap run
 
 - Open source or private? (affects CI defaults)
 - Single prod machine, multiple, or cloud-managed?
