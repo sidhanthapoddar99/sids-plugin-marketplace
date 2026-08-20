@@ -8,7 +8,7 @@ The concrete names below (`@my/ui`, `src/features/**`, token names) are **placeh
 
 ## ⚠️ Write this into the project's CLAUDE.md
 
-When bootstrapping or auditing a repo that has (or gains) a `tokens.css` + a ui package, **add the "Styling discipline" block from `assets/snippets/claude/CLAUDE.md.template` to the project's CLAUDE.md** (with names resolved to the project's real packages/paths). CLAUDE.md is always in context; skills are not. The project memory file is what makes the discipline hold for every future agent, including ones that never load this skill. (The general mechanism for delivering L4 doctrine as CLAUDE.md blocks is owned by `references/4-feature/00_index.md`; this is the styling-specific block.)
+When bootstrapping or auditing a repo that has (or gains) a `tokens.css` + a ui package, **add the "Styling discipline" block from `snippets/claude/CLAUDE.md.template` to the project's CLAUDE.md** (with names resolved to the project's real packages/paths). CLAUDE.md is always in context; skills are not. The project memory file is what makes the discipline hold for every future agent, including ones that never load this skill. (The general mechanism for delivering L4 doctrine as CLAUDE.md blocks is owned by `references/4-feature/00_index.md`; this is the styling-specific block.)
 
 That block includes the precedence rule:
 

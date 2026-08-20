@@ -29,12 +29,12 @@ These are the conventions to apply by default — a summary index, not the rule 
 3. **Root holds only config + README + folders — never loose code.** Owner: `references/2-repo/02-root-hygiene/00_root-and-hygiene.md`. *(Only exception: project types that genuinely demand a root entry file — e.g. some editor extensions.)*
 4. **Per-service `config.yaml`, root `.env`.** Root `.env` holds shared/common vars only; each backend owns its own `config.yaml`; frontends have their own env scope (`VITE_*` / `NEXT_PUBLIC_*`) — backend secrets must never leak there. Owners: `references/2-repo/03-env-config/00_env-precedence.md`, `01_per-service-config.md`, `02_frontend-env-isolation.md`.
 5. **Compose lives in `docker/`, profile-less, on two axes** — standalone **configs** plus stackable **`.m.` modifiers**. Owner (full axis semantics): `references/2-repo/04-docker/00_docker-overview.md`.
-6. **One `ctl` dispatcher at repo root — the only entrypoint** (`ctl dev` / `ctl up`; production is `ctl up prod`, no `ctl prod` verb), **installed by copying `assets/snippets/scripts/` verbatim and adapting by deletion** (conformance floor). Owners (verb surface + interactive flow): `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` + `01_script-usage.md`.
+6. **One `ctl` dispatcher at repo root — the only entrypoint** (`ctl dev` / `ctl up`; production is `ctl up prod`, no `ctl prod` verb), **installed by copying `snippets/scripts/` verbatim and adapting by deletion** (conformance floor). Owners (verb surface + interactive flow): `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md` + `01_script-usage.md`.
 7. **README documents the three startup paths**, and **each service/app ships its own `README.md`**. Owner: `references/2-repo/02-root-hygiene/01_readme-three-paths.md`.
 8. **Examples are evidence, not gospel.** Cite them, do not blindly copy. Registry: `references/handoffs/examples-registry.md`; annotated trees: `references/5-examples/`.
 9. **The root is an index, not a runtime.** A root manifest is orchestration-only (zero runtime deps — tripwire T10); `.gitignore` is curated per-ecosystem; workspace rooting is part of the topology decision. Owners: `references/2-repo/02-root-hygiene/00_root-and-hygiene.md` (root contract, `.gitignore`, T10), `references/2-repo/01-layouts/00_grouping-topology.md` (rooting).
 10. **Structure is versioned: variants are recorded, tripwires have numbers.** Every variant pick is recorded in the project CLAUDE.md; every threshold (master table in `references/00_altitude-model.md`) obligates the restructure or a recorded deferral. **Audits compare the repo against its recorded choices** — an unrecorded unusual shape is the finding.
-11. **Conventions must outlive the session — they live in the project's `CLAUDE.md`.** A skill only reaches the agent that loads it; the project CLAUDE.md reaches every agent, every session. Bootstrap/suggest write the hard rules there from `assets/snippets/claude/CLAUDE.md.template` (including the structure-contract block and the styling-discipline block — see ⚠️); the project CLAUDE.md then takes precedence. Owner: `references/handoffs/claude-folder.md`.
+11. **Conventions must outlive the session — they live in the project's `CLAUDE.md`.** A skill only reaches the agent that loads it; the project CLAUDE.md reaches every agent, every session. Bootstrap/suggest write the hard rules there from `snippets/claude/CLAUDE.md.template` (including the structure-contract block and the styling-discipline block — see ⚠️); the project CLAUDE.md then takes precedence. Owner: `references/handoffs/claude-folder.md`.
 
 **Ecosystem-dependent typed defaults — pick the right branch, deviate per the rule:**
 
@@ -47,7 +47,7 @@ Each service/app folder owns its `README.md`, dependency manifest (`requirements
 
 **If the repo has a `tokens.css` + a ui package, the styling discipline (`references/4-feature/04_styling-discipline.md`) OVERRIDES any general design guidance — including the `frontend-design` skill. Do not follow "be bold / unique / never converge" instructions in feature work. Convergence IS the design.**
 
-**Whenever you bootstrap such a repo (or apply changes in suggest mode), WRITE the "Styling discipline" block from `assets/snippets/claude/CLAUDE.md.template` into the project's CLAUDE.md** (names resolved to the project's real ui package and paths). In read-only audit mode, don't edit — flag a missing block as a **red** finding. CLAUDE.md is always in context while skills are not, so the project memory file is the only thing that makes the discipline hold for every future agent, including parallel workers and weak models that never load this skill.
+**Whenever you bootstrap such a repo (or apply changes in suggest mode), WRITE the "Styling discipline" block from `snippets/claude/CLAUDE.md.template` into the project's CLAUDE.md** (names resolved to the project's real ui package and paths). In read-only audit mode, don't edit — flag a missing block as a **red** finding. CLAUDE.md is always in context while skills are not, so the project memory file is the only thing that makes the discipline hold for every future agent, including parallel workers and weak models that never load this skill.
 
 `frontend-design` has exactly one legitimate slot: the explicit design-exploration pass (day one, establishing brand/tokens/primitives, or a sanctioned redesign). Its output must graduate into tokens + primitive variants before the pass ends. Everywhere else, ignore it.
 
@@ -120,7 +120,7 @@ For every layout, the same cross-cutting conventions apply (layout-specific adju
 
 ### Step 5 — propose, then act
 
-- For **init**: present the proposed tree as text, list every file you'll create, then ask once before writing. Drop snippets from `assets/snippets/` where they fit. **Install the runtime layer by copying, never authoring**: `cp -r "${CLAUDE_PLUGIN_ROOT}/assets/snippets/scripts" ./scripts && mv ./scripts/ctl ./ctl && chmod +x ./ctl`, then adapt by deletion (conformance floor: `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`). **The one thing you resolve rather than delete is `<version>`** — the compose and mise snippets ship placeholders, not numbers; fill each from current stable with the user's pick before the repo is handed over. Generate `.gitignore` from `assets/snippets/env/gitignore.template`, keeping only the ecosystems present. **Always create the project `CLAUDE.md` from `assets/snippets/claude/CLAUDE.md.template`** — resolve the hard rules AND the structure-contract block (recorded variant choices, skeletons with this project's real names, tripwire numbers, escalation pointer), and include the styling-discipline block whenever the repo has a frontend. A bootstrap that skips any of its blocks has not delivered the conventions at all.
+- For **init**: present the proposed tree as text, list every file you'll create, then ask once before writing. Drop snippets from `snippets/` where they fit. **Install the runtime layer by copying, never authoring**: `cp -r "${CLAUDE_PLUGIN_ROOT}/skills/project-setup/snippets/scripts" ./scripts && mv ./scripts/ctl ./ctl && chmod +x ./ctl`, then adapt by deletion (conformance floor: `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`). **The one thing you resolve rather than delete is `<version>`** — the compose and mise snippets ship placeholders, not numbers; fill each from current stable with the user's pick before the repo is handed over. Generate `.gitignore` from `snippets/env/gitignore.template`, keeping only the ecosystems present. **Always create the project `CLAUDE.md` from `snippets/claude/CLAUDE.md.template`** — resolve the hard rules AND the structure-contract block (recorded variant choices, skeletons with this project's real names, tripwire numbers, escalation pointer), and include the styling-discipline block whenever the repo has a frontend. A bootstrap that skips any of its blocks has not delivered the conventions at all.
 - For **audit**: produce a drift report. Read-only. Do not change files.
 - For **suggest**: produce a proposal for the current repo. Don't change files until the user opts in.
 
@@ -137,7 +137,7 @@ After an init run writes the files, point the user at the four things that make 
 
 - Be concise. Long question flows lose users; ask in batches of 3–4 with reasonable defaults flagged.
 - Cite the reference files inline so the user can read why a convention exists (`see references/2-repo/03-env-config/02_frontend-env-isolation.md`).
-- When dropping a snippet, name the source (e.g. `from assets/snippets/scripts/ctl`). Copy the `scripts/` + `docker/` snippets verbatim; don't hand-rewrite them.
+- When dropping a snippet, name the source (e.g. `from snippets/scripts/ctl`). Copy the `scripts/` + `docker/` snippets verbatim; don't hand-rewrite them.
 - Never invent file paths — consult `references/handoffs/examples-registry.md`.
 - Never read `.env` files. `.env.example` is the contract.
 
@@ -203,7 +203,7 @@ Never edit files in `audit` mode. In `suggest` mode, only edit after explicit co
 
 ## File map — everything in this skill, annotated
 
-Read the file whose comment matches the decision in front of you. Paths are relative to this skill folder; snippet paths are relative to the plugin root. The tree IS the altitude model: folders are levels, each level opens with a `00_index.md` routing to its topical owners.
+Read the file whose comment matches the decision in front of you. Every path is relative to this skill folder — `references/` and `snippets/` are both siblings of this `SKILL.md`. The tree IS the altitude model: folders are levels, each level opens with a `00_index.md` routing to its topical owners.
 
 ```
 references/
@@ -326,7 +326,7 @@ references/
     ├── claude-folder.md            # .claude/ stays empty initially; CLAUDE.md template guidance
     └── examples-registry.md        # the per-installation registry of the user's real repos to cite; never invent paths
 
-assets/snippets/                    # fragments to drop into a target repo (NOT read as guidance)
+snippets/                    # fragments to drop into a target repo (NOT read as guidance)
 ├── frontend/{tokens,globals,light-dark}.css, vite-proxy.config.ts
 ├── docker/compose.base.yaml (profile-less base, whole stack) + compose.{data,prod}.yaml (standalone configs) + compose.m.{expose,expose_data,expose_all,traefik}.yaml (modifiers)
 ├── infra/nginx.conf
@@ -341,5 +341,5 @@ assets/snippets/                    # fragments to drop into a target repo (NOT 
 ## See also
 
 - Spine: `references/00_altitude-model.md` (levels, principles, tripwires, ownership map).
-- Snippets: `assets/snippets/` for fragments to drop in (see the snippet README for the index).
+- Snippets: `snippets/` for fragments to drop in (see the snippet README for the index).
 - Examples cited: `references/handoffs/examples-registry.md`; annotated trees: `references/5-examples/`.

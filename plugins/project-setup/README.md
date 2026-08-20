@@ -26,7 +26,7 @@ The same machinery powers initialising a new project, auditing an existing one f
   - **audit** ("audit this repo") — scan the current repo, report drift from conventions
   - **suggest** ("propose a structure") — propose an ideal structure for the current repo given what's there
 - **References library** — `skills/project-setup/references/` — layouts, env/config rules, docker patterns, scripts, language flows, frontend, databases, modularity, the `.claude/` folder, design tokens, README contract.
-- **Snippets** — `assets/snippets/` — focused fragments (tokens.css, alembic shim, vite proxy, compose overlays, the `ctl` dispatcher, `.mise.toml`) the skill cites and drops in. **Not** a full project template.
+- **Snippets** — `skills/project-setup/snippets/` — focused fragments (tokens.css, alembic shim, vite proxy, compose overlays, the `ctl` dispatcher, `.mise.toml`) the skill cites and drops in. **Not** a full project template.
 
 ## Layouts recognised
 

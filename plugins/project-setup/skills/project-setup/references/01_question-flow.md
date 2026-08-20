@@ -52,7 +52,7 @@ Run this in order before proposing any layout. The order is **level-ordered** (s
 18. **Hot reload**: confirm the host-side runners (bun dev / uvicorn --reload / cargo-watch).
 19. **`ctl` subcommands**: which day-to-day flows need shortcuts?
     - Defaults: `dev`, `up [config] [--modifier "a,b"]` (interactive bare; prod = `ctl up prod`), `down`, `migrate`, `test`, `clean`, `help`; add language-specific (`sqlx-prepare`, `train`).
-    - Install is **copy-verbatim from `assets/snippets/scripts/`**, then adapt by deletion — the conformance floor in `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`.
+    - Install is **copy-verbatim from `snippets/scripts/`**, then adapt by deletion — the conformance floor in `references/2-repo/05-ctl-scripts-tooling/00_script-overview.md`.
 
 ## L2 — Batch 5: deployment + secrets
 
@@ -72,7 +72,7 @@ Run this in order before proposing any layout. The order is **level-ordered** (s
 
 28. **Databases — pick the right floor** (`references/3-app/04-database/00_provisioning.md`): SQLite vs Postgres (concurrent writers, sharing, extensions); in-process memory vs Redis (coupled to worker count, Q22); Mongo/Neo4j/Kuzu/Seaweed per requirement.
 29. **Image + runtime versions**: **never inherit defaults silently** — check current latest stable (`mise ls-remote …`, registry tags) and let the user pick. This skill's references pin no versions; they carry `<version>` placeholders you must resolve.
-30. **Hygiene** (not a question — state it): `.gitignore` generated from `assets/snippets/env/gitignore.template`, keeping only the sections for ecosystems present; `data/**` + `.gitkeep` negation; `.vscode/`/`.claude/` selectively committed.
+30. **Hygiene** (not a question — state it): `.gitignore` generated from `snippets/env/gitignore.template`, keeping only the sections for ecosystems present; `data/**` + `.gitkeep` negation; `.vscode/`/`.claude/` selectively committed.
 31. **Docs handoff**: for in-repo docs, create the `docs/` slot and point at the docs plugin's init command (`references/1-ecosystem/docs-placement.md`).
 32. **`.claude/` + CLAUDE.md**: `.claude/` stays empty initially; CLAUDE.md is generated from the template **with the repo + structure + styling blocks resolved** — this is where every variant chosen above gets recorded.
 33. **Pre-commit hooks (lefthook)?** Default yes for Layout 02; ask for 01/04.

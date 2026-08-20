@@ -5,7 +5,7 @@ Fragments the `project-setup` skill cites and drops into a new or existing proje
 ## Layout
 
 ```
-assets/snippets/
+snippets/
 ├── frontend/          # CSS tokens, theme wiring, vite config
 ├── docker/            # profile-less compose base + standalone configs + .m. modifiers
 ├── infra/             # config baked into containers (nginx)

@@ -2,7 +2,7 @@
 
 The command surface, the dispatcher skeleton, the interactive `ctl up` flow, the `scripts/*.sh` map, the host dev loop, and the three startup-path commands. For the model (why `dev` vs `up`, the thin-wrapper principle, the two custom bodies, why-host) start at `00_script-overview.md`.
 
-> **These code blocks are ILLUSTRATIVE.** The source of truth is the runnable snippet under **`assets/snippets/scripts/<file>`** (`assets/` is a sibling of `skills/` at the plugin root). Copy verbatim, then adapt — don't regenerate from this prose.
+> **These code blocks are ILLUSTRATIVE.** The source of truth is the runnable snippet under **`snippets/scripts/<file>`** (`snippets/` sits inside the skill folder, beside `SKILL.md`). Copy verbatim, then adapt — don't regenerate from this prose.
 
 ## `ctl up` — one standalone config, stacked modifiers (profile-less)
 
@@ -120,7 +120,7 @@ Two planes-aware verbs make it stronger than `kill $(lsof -t -i:PORT)`: **freein
 
 ## Architecture — `ctl` + `_lib.sh` + `_select.sh` + workers
 
-The runnable toolkit ships in `assets/snippets/scripts/` — copy `ctl` (to repo root) + `scripts/` and it works. The layers:
+The runnable toolkit ships in `snippets/scripts/` — copy `ctl` (to repo root) + `scripts/` and it works. The layers:
 
 **`_lib.sh` (sourced by everything)** — the shared foundation that keeps every worker tiny and identical: a TTY/`NO_COLOR`-aware color palette + indent-aware `say/step/ok/warn/err/die` (an opt-in `${LOG_INDENT}` nests result lines under a `step()` header — `ctl status` uses it), the `row()` aligned-help helper (pads by display width, UTF-8-safe), the uniform `print_help`/`passthrough_help` renderer, `dc()` + `list_configs/list_modifiers` discovery + `or_none`, `require_env/require_tools`, `wait_healthy/health_table` (which resolves the real container via `dc ps -aq` and reads its health), `check_env_schema`, `split_csv`, `confirm`. It **sources `_select.sh`** after the colors so the picker reuses them. Colors auto-disable when stdout isn't a terminal or `NO_COLOR` is set.
 
@@ -331,5 +331,5 @@ To **add** a command, drop `scripts/<category>/<name>.sh` (worker preamble + `us
 - `references/2-repo/04-docker/02_no-data-core.md` — `DATA_SVCS=()` + apps-as-core: the exact lines to change for a DB-less project
 - `references/2-repo/04-docker/00_docker-overview.md` — standalone config / `.m.` modifiers / expose tiers; `docker/` layout + path discipline
 - `references/2-repo/06-runtime-environment/01_mise.md` — project-scoped PATH; `ctl` callable bare
-- `assets/snippets/scripts/ctl` (+ `scripts/*.sh`, `_lib.sh`, `_select.sh`) — the runnable dispatcher, workers, and picker
+- `snippets/scripts/ctl` (+ `scripts/*.sh`, `_lib.sh`, `_select.sh`) — the runnable dispatcher, workers, and picker
 - `references/2-repo/04-docker/04_proxy-and-exposure.md` — dev proxy → prod nginx

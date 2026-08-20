@@ -31,7 +31,7 @@ Taking an exception is a **recorded choice**: one line in the project CLAUDE.md 
 
 ## `.gitignore` doctrine
 
-One committed `.gitignore` at the repo root, **curated per-ecosystem at bootstrap** — the sections the repo actually needs, not a 500-line kitchen-sink template. Snippet: `assets/snippets/env/gitignore.template`. The categories:
+One committed `.gitignore` at the repo root, **curated per-ecosystem at bootstrap** — the sections the repo actually needs, not a 500-line kitchen-sink template. Snippet: `snippets/env/gitignore.template`. The categories:
 
 1. **Secrets & local config** — all `.env*` except `.env.example` (root *and* per-app: frontends carry their own pair), `config.local.yaml`. A tracked `.env` is a red audit finding.
 2. **Runtime state** — `data/**` with the `.gitkeep` negation pattern (below).

@@ -2,7 +2,7 @@
 
 One executable at repo root — `ctl` — is the single entrypoint for the whole stack: local dev processes **and** containers. It's the project's user-facing API. This doc is the **mental model**; the command surface, the dispatcher skeleton, the `scripts/*.sh` map, and the exact commands live in `01_script-usage.md`.
 
-> **These code blocks are ILLUSTRATIVE.** The source of truth is the runnable snippet under **`assets/snippets/scripts/<file>`** — copy it verbatim, then adapt. Do not regenerate the scripts from this prose; the prose is intentionally abbreviated and will produce a worse result than the file. **Asset path:** `assets/` is a sibling of `skills/` at the **plugin root** — NOT under `skills/project-setup/`.
+> **These code blocks are ILLUSTRATIVE.** The source of truth is the runnable snippet under **`snippets/scripts/<file>`** — copy it verbatim, then adapt. Do not regenerate the scripts from this prose; the prose is intentionally abbreviated and will produce a worse result than the file. **Snippet path:** `snippets/` sits inside the skill folder, beside `SKILL.md` and `references/` — the absolute path is `${CLAUDE_PLUGIN_ROOT}/skills/project-setup/snippets/`.
 
 > **Name.** `ctl` is a single swappable token (`stack`, `app`, or the project name) — pick one, keep it. With mise's project-scoped PATH you call it bare — `ctl up`, not `./ctl`. See `references/2-repo/06-runtime-environment/01_mise.md`.
 
@@ -88,13 +88,13 @@ A repo with an operator/admin plane (`references/3-app/02-backend/02_two-plane-s
 
 Not shipped in the snippet toolkit (it's plane-specific); add it as a normal worker when the two-plane split is chosen.
 
-**Treat the shipped set as a template, not a spec.** It's a sensible default — copy `ctl` + `scripts/`, then add / remove / edit per the project; most repos won't need every command, and `migrate`/`lint`/`shell`/`test` are stack-specific (adapt or drop — a no-DB repo drops `migrate`). How many files is **utility-driven**: a command earns a file once it outgrows a one-liner. **To add a command:** drop `scripts/<category>/<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `common/_lib.sh`) and wire one `run <category>/<name>` line into `ctl`'s `case`. The runnable toolkit lives in `assets/snippets/scripts/`; `01_script-usage.md` has the architecture + worked bodies.
+**Treat the shipped set as a template, not a spec.** It's a sensible default — copy `ctl` + `scripts/`, then add / remove / edit per the project; most repos won't need every command, and `migrate`/`lint`/`shell`/`test` are stack-specific (adapt or drop — a no-DB repo drops `migrate`). How many files is **utility-driven**: a command earns a file once it outgrows a one-liner. **To add a command:** drop `scripts/<category>/<name>.sh` (worker preamble + `usage()` + `is_help` guard, sourcing `common/_lib.sh`) and wire one `run <category>/<name>` line into `ctl`'s `case`. The runnable toolkit lives in `snippets/scripts/`; `01_script-usage.md` has the architecture + worked bodies.
 
 ## The conformance floor — adapt by deletion, never by collapse
 
 "Template, not spec" licenses **subtraction and substitution — never architectural collapse**. A conforming installation, at minimum:
 
-1. **Install = copy, then adapt.** The runtime layer is installed by copying `assets/snippets/scripts/` wholesale (`cp -r`), then deleting/editing per the project — never by authoring a dispatcher from memory of this prose.
+1. **Install = copy, then adapt.** The runtime layer is installed by copying `snippets/scripts/` wholesale (`cp -r`), then deleting/editing per the project — never by authoring a dispatcher from memory of this prose.
 2. `ctl` at the repo root **sources `scripts/common/_lib.sh`** and stays a thin router.
 3. `scripts/common/_lib.sh` **and `_select.sh`** are present (they're what keep every worker ~25 lines and uniform).
 4. Every substantive verb the project keeps **routes to a `scripts/<category>/<name>.sh` worker**; only the trivial `docker compose` passthroughs (`down`/`restart`/`logs`/`exec`) are inlined.
@@ -146,7 +146,7 @@ A repo has **one** `ctl`. New need → a standalone config, a `compose.m.<mod>.y
 - `ctl dev` silently editing `.env` on launch — guard and instruct; mutation belongs in `ctl setup`.
 - README "first run `make install`, then `make dev`" — it's `ctl setup` then `ctl dev`.
 - Bind-mounting source into a dev container — slow file events, permission pain; run on host.
-- Regenerating the snippets from this prose instead of copying `assets/snippets/scripts/` — the file is the source of truth.
+- Regenerating the snippets from this prose instead of copying `snippets/scripts/` — the file is the source of truth.
 
 ## See also
 
