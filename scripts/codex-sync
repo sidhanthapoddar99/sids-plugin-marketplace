@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+# codex-sync — generate the Codex plugin layer from the Claude plugin layer.
+#
+# This marketplace ships to two hosts. Claude Code reads
+# .claude-plugin/marketplace.json plus each plugin's .claude-plugin/plugin.json.
+# Codex CLI reads .agents/plugins/marketplace.json plus each plugin's
+# .codex-plugin/plugin.json. The skill content itself is shared verbatim —
+# SKILL.md frontmatter (name + description) is identical in both hosts.
+#
+# The Claude layer is the single source of truth. This script derives the Codex
+# layer from it, so the two never drift. Do NOT hand-edit any generated file;
+# edit the Claude manifests and re-run this script.
+#
+# Codex needs a few fields that have no Claude equivalent: a display name, a
+# one-line subtitle, a display category bucket, and an install policy. Those
+# live in the OVERLAY table below — the only place Codex-specific data is
+# written by hand. Adding a plugin means adding one OVERLAY entry.
+#
+# Usage:
+#   scripts/codex-sync            write the generated files
+#   scripts/codex-sync --check    verify the files on disk are current (exit 1 on drift)
+#
+# Requires: python3 only.
+
+import json
+import os
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Marketplace-level presentation, Codex side.
+MARKETPLACE_DISPLAY_NAME = "Sid's Plugins"
+
+# Codex-only fields, per plugin. Only plugins listed here are exported to Codex.
+#
+# Codex marketplace entries accept ONLY "local" sources — a git or github source
+# is silently dropped from `codex plugin list`, with no error. So a plugin whose
+# Claude source lives in another repo cannot be listed here. Leave it out; it
+# stays Claude-only until its own repo grows a .agents/plugins/marketplace.json.
+#
+# category must be one of Codex's display buckets: Business & Operations,
+# Communication, Creativity, Data & Analytics, Developer Tools,
+# Education & Research, Finance, Other, Productivity, Security, Travel.
+OVERLAY = {
+    "ai-toolkit-dev": {
+        "displayName": "AI Toolkit Dev",
+        "shortDescription": "Author plugins, marketplaces, and skills",
+        "category": "Developer Tools",
+    },
+    "project-setup": {
+        "displayName": "Project Setup",
+        "shortDescription": "Architectural conventions for any repo",
+        "category": "Developer Tools",
+    },
+}
+
+# Codex defaults for a new marketplace entry.
+POLICY = {"installation": "AVAILABLE", "authentication": "ON_INSTALL"}
+
+
+def read_json(path):
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def dump(obj):
+    return json.dumps(obj, indent=2, ensure_ascii=False) + "\n"
+
+
+def build():
+    """Return {relative path: file text} for every generated file."""
+    claude_mp = read_json(os.path.join(ROOT, ".claude-plugin", "marketplace.json"))
+    entries = {p["name"]: p for p in claude_mp["plugins"]}
+
+    out = {}
+    listed = []
+
+    for name, extra in OVERLAY.items():
+        if name not in entries:
+            sys.exit("error: OVERLAY lists '%s' but .claude-plugin/marketplace.json does not" % name)
+        entry = entries[name]
+
+        source = entry["source"]
+        if not isinstance(source, str):
+            sys.exit(
+                "error: plugin '%s' has a non-local source; Codex marketplace entries "
+                "accept only local paths. Remove it from OVERLAY." % name
+            )
+        plugin_dir = source.lstrip("./")
+
+        manifest = read_json(os.path.join(ROOT, plugin_dir, ".claude-plugin", "plugin.json"))
+        version = manifest.get("version")
+        if not version:
+            sys.exit(
+                "error: plugin '%s' has no version in its Claude plugin.json; Codex "
+                "requires strict semver. Add one." % name
+            )
+
+        author = manifest.get("author") or entry.get("author") or {}
+        blurb = entry["description"]
+
+        codex_manifest = {
+            "name": name,
+            "version": version,
+            "description": extra["shortDescription"],
+            "author": author,
+            "skills": "./skills/",
+            "interface": {
+                "displayName": extra["displayName"],
+                "shortDescription": extra["shortDescription"],
+                "longDescription": blurb,
+                "developerName": author.get("name", "Sid"),
+                "category": extra["category"],
+            },
+        }
+        # Optional passthroughs — only when the Claude layer actually has them.
+        for key in ("license", "homepage", "repository"):
+            value = manifest.get(key) or entry.get(key)
+            if value:
+                codex_manifest[key] = value
+        if entry.get("keywords"):
+            codex_manifest["keywords"] = entry["keywords"]
+
+        out[os.path.join(plugin_dir, ".codex-plugin", "plugin.json")] = dump(codex_manifest)
+        listed.append(
+            {
+                "name": name,
+                "source": {"source": "local", "path": "./" + plugin_dir},
+                "policy": dict(POLICY),
+                "category": extra["category"],
+            }
+        )
+
+    codex_mp = {
+        "name": claude_mp["name"],
+        "interface": {"displayName": MARKETPLACE_DISPLAY_NAME},
+        "plugins": listed,
+    }
+    out[os.path.join(".agents", "plugins", "marketplace.json")] = dump(codex_mp)
+    return out
+
+
+def main():
+    check = "--check" in sys.argv[1:]
+    files = build()
+    drift = []
+
+    for rel, text in sorted(files.items()):
+        path = os.path.join(ROOT, rel)
+        current = None
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as fh:
+                current = fh.read()
+        if current == text:
+            if not check:
+                print("unchanged  %s" % rel)
+            continue
+        drift.append(rel)
+        if check:
+            continue
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        print("%-10s %s" % ("wrote" if current is None else "updated", rel))
+
+    if check:
+        if drift:
+            print("codex layer is STALE. Re-run scripts/codex-sync:")
+            for rel in drift:
+                print("  %s" % rel)
+            return 1
+        print("codex layer is current (%d files)" % len(files))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

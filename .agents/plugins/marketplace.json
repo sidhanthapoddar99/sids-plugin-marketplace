@@ -1,0 +1,32 @@
+{
+  "name": "sids-plugin-marketplace",
+  "interface": {
+    "displayName": "Sid's Plugins"
+  },
+  "plugins": [
+    {
+      "name": "ai-toolkit-dev",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ai-toolkit-dev"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "project-setup",
+      "source": {
+        "source": "local",
+        "path": "./plugins/project-setup"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

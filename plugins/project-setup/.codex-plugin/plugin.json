@@ -1,0 +1,24 @@
+{
+  "name": "project-setup",
+  "version": "0.3.0",
+  "description": "Architectural conventions for any repo",
+  "author": {
+    "name": "Sid",
+    "email": "developer@neuralabs.org"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Project Setup",
+    "shortDescription": "Architectural conventions for any repo",
+    "longDescription": "Architectural decision-maker for repos, new and existing — repo layout, service boundaries, per-app stack and database choice, docker / compose, env and secrets, frontend structure, deployment. Ships 1 skill with three modes reached from plain language: init, audit, suggest. Composes with the sibling agent-ks and uvenv plugins.",
+    "developerName": "Sid",
+    "category": "Developer Tools"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "keywords": [
+    "project-setup",
+    "repo-structure",
+    "monorepo",
+    "compose"
+  ]
+}

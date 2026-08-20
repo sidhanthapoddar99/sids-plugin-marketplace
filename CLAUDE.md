@@ -20,6 +20,37 @@ If the script reports no manifest, the soft-fork hasn't been performed yet — p
 
 Drift checks are **per-plugin scoped**. If another plugin grows soft-fork tracking later, it gets its own `scripts/<plugin>-check-upstream`; do not retrofit one global script.
 
+## The Codex layer is generated — never hand-edit it
+
+This marketplace ships to two hosts. The **Claude layer is the source of truth**:
+`.claude-plugin/marketplace.json` plus each plugin's `.claude-plugin/plugin.json`.
+The **Codex layer is generated** from it by `./scripts/codex-sync`:
+
+- `.agents/plugins/marketplace.json` — the path Codex discovers
+- `plugins/<name>/.codex-plugin/plugin.json` — one per exported plugin
+
+If you change a plugin's name, version, description, author, license, or keywords,
+re-run `./scripts/codex-sync`. Run `./scripts/codex-sync --check` to verify the
+generated files are current; it exits non-zero on drift.
+
+Codex-only presentation data (display name, subtitle, category) lives in the
+`OVERLAY` table inside the script. That is the one place to hand-write it. Adding
+a plugin to Codex means adding one `OVERLAY` entry.
+
+Two Codex constraints that shape what can ship:
+
+- Codex marketplace entries accept **only `local` sources**. A `git` or `github`
+  source is silently dropped from `codex plugin list` with no error, so plugins
+  sourced from other repos (`agent-ks`, `uvenv`) cannot be exported. They stay
+  Claude Code only.
+- Codex plugin manifests support no `commands`, no `dependencies`, and reject
+  `hooks`. Keep those out of any plugin meant to ship to both hosts.
+
+Skill content is shared verbatim — `SKILL.md` frontmatter (`name`, `description`)
+and `references/` progressive disclosure work identically on both hosts. Anything
+a skill needs at runtime must live **inside** its skill folder, because Codex
+packages only what `"skills": "./skills/"` points at.
+
 ## Doc reference
 
 The structural reference for the plugin ecosystem lives in `Documentation/ClaudePlugin/` (16 chapters: overview, mental model, storage, marketplaces, anatomy, capabilities, lifecycle, composition, versioning, trust, testing, CLI, distribution, uninstall, examples, reference appendix). The companion `Documentation/ClaudeSettings/` covers settings-side keys. The soft-fork pattern is documented in `Documentation/ClaudePlugin/08_composition-patterns/03_soft-fork.md`.

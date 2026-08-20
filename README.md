@@ -14,6 +14,10 @@ A marketplace is a catalogue of plugins that Claude Code users can install with 
 
 ## Installing
 
+This marketplace ships to two hosts: **Claude Code** and **Codex CLI**.
+
+### Claude Code
+
 Inside a Claude Code session, register the marketplace once:
 
 ```
@@ -34,6 +38,24 @@ To pin to a specific marketplace ref:
 ```
 /plugin marketplace add sidhanthapoddar99/sids-plugin-marketplace#v1.0
 ```
+
+### Codex CLI
+
+Register the marketplace, then install what you want:
+
+```
+codex plugin marketplace add sidhanthapoddar99/sids-plugin-marketplace
+codex plugin add project-setup@sids-plugin-marketplace
+codex plugin add ai-toolkit-dev@sids-plugin-marketplace
+```
+
+Start a new thread after installing — that is when Codex picks up new skills.
+
+Only `ai-toolkit-dev` and `project-setup` are available on Codex. Codex marketplace
+entries accept local paths only, so the plugins sourced from other repos
+(`agent-ks`, `uvenv`) cannot be listed here; they stay Claude Code only.
+
+Requires Codex CLI 0.147 or later. Check with `codex --version`.
 
 ---
 
@@ -148,7 +170,8 @@ For task-oriented authoring (the *how-to* rather than the *what exists*), the `a
 
 ```
 .
-├── .claude-plugin/marketplace.json   # the marketplace manifest
+├── .claude-plugin/marketplace.json   # the marketplace manifest — Claude Code, source of truth
+├── .agents/plugins/marketplace.json  # the marketplace manifest — Codex (GENERATED)
 ├── CLAUDE.md                         # agent guidance for working in this repo
 ├── Documentation/
 │   ├── ClaudePlugin/                 # 16-chapter reference on the plugin ecosystem
@@ -156,7 +179,9 @@ For task-oriented authoring (the *how-to* rather than the *what exists*), the `a
 ├── plugins/
 │   ├── ai-toolkit-dev/               # plugin authoring toolkit
 │   └── project-setup/                # personal project / monorepo conventions
-├── scripts/                          # marketplace-level maintainer tooling
+├── scripts/
+│   ├── codex-sync                    # generates the Codex layer from the Claude layer
+│   └── ai-toolkit-dev-check-upstream # soft-fork drift report
 └── LICENSE                           # MIT
 ```
 

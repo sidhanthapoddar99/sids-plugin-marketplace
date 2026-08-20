@@ -1,0 +1,23 @@
+{
+  "name": "ai-toolkit-dev",
+  "version": "0.1.0",
+  "description": "Author plugins, marketplaces, and skills",
+  "author": {
+    "name": "Sid",
+    "email": "developer@neuralabs.org"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AI Toolkit Dev",
+    "shortDescription": "Author plugins, marketplaces, and skills",
+    "longDescription": "Toolkit for authoring Claude Code plugins, marketplaces, and skills. Ships 3 skills covering the plugin manifest, marketplace schema, and skill creation. Work in progress.",
+    "developerName": "Sid",
+    "category": "Developer Tools"
+  },
+  "keywords": [
+    "plugin-dev",
+    "skill-creator",
+    "plugin-json",
+    "marketplace-json"
+  ]
+}

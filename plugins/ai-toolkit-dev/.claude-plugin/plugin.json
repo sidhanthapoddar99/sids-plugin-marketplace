@@ -1,5 +1,6 @@
 {
   "name": "ai-toolkit-dev",
+  "version": "0.1.0",
   "description": "Toolkit for authoring Claude Code plugins, marketplaces, and skills",
   "author": {
     "name": "Sid",

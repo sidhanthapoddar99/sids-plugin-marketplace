@@ -2,7 +2,7 @@
 
 One executable at repo root — `ctl` — is the single entrypoint for the whole stack: local dev processes **and** containers. It's the project's user-facing API. This doc is the **mental model**; the command surface, the dispatcher skeleton, the `scripts/*.sh` map, and the exact commands live in `01_script-usage.md`.
 
-> **These code blocks are ILLUSTRATIVE.** The source of truth is the runnable snippet under **`snippets/scripts/<file>`** — copy it verbatim, then adapt. Do not regenerate the scripts from this prose; the prose is intentionally abbreviated and will produce a worse result than the file. **Snippet path:** `snippets/` sits inside the skill folder, beside `SKILL.md` and `references/` — the absolute path is `${CLAUDE_PLUGIN_ROOT}/skills/project-setup/snippets/`.
+> **These code blocks are ILLUSTRATIVE.** The source of truth is the runnable snippet under **`snippets/scripts/<file>`** — copy it verbatim, then adapt. Do not regenerate the scripts from this prose; the prose is intentionally abbreviated and will produce a worse result than the file. **Snippet path:** `snippets/` sits inside the skill folder, beside `SKILL.md` and `references/`. Resolve it from the directory holding `SKILL.md` — under Claude Code that is `${CLAUDE_PLUGIN_ROOT}/skills/project-setup/snippets/`.
 
 > **Name.** `ctl` is a single swappable token (`stack`, `app`, or the project name) — pick one, keep it. With mise's project-scoped PATH you call it bare — `ctl up`, not `./ctl`. See `references/2-repo/06-runtime-environment/01_mise.md`.
 
