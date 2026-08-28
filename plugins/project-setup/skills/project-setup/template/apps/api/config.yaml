@@ -1,0 +1,17 @@
+# All settings of this service. ${VAR} comes from .env and must be set. Literals are defaults.
+database:
+  url: ${DATABASE_URL}
+  pool_size: 20
+redis:
+  url: ${REDIS_URL}
+  session_ttl_seconds: 86400
+server:
+  host: ${API_HOST}
+  port: ${API_PORT}
+  prefix: ${API_PREFIX}
+auth:
+  jwt_signing_key: ${JWT_SIGNING_KEY}
+  encryption_key: ${ENCRYPTION_KEY_PYTHON}
+  token_ttl_minutes: 60
+limits:
+  rate_per_minute: 120

@@ -1,0 +1,2 @@
+/* Design tokens as CSS variables: colour, radius, shadow. Tailwind reads these; components never hard-code values.
+   Spacing and type use Tailwind's standard scale. No arbitrary values (no `p-[13px]`). */

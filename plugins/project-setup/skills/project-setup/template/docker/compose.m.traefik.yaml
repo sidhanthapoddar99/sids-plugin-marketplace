@@ -1,0 +1,13 @@
+# Modifier. Traefik as the edge instead of exposing nginx. Labels route by path.
+# Use with `ctl up +traefik`, never together with +expose_nginx.
+services:
+  traefik:
+    image: traefik:<version>
+    command: ["--providers.docker=true", "--providers.file.filename=/dynamic.yaml"]
+    ports: ["${HTTP_PORT}:80", "${HTTPS_PORT}:443"]
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "../apps/infra/traefik/dynamic.yaml:/dynamic.yaml:ro"
+  nginx:
+    labels:
+      traefik.http.routers.app.rule: "Host(`${PUBLIC_HOST}`)"

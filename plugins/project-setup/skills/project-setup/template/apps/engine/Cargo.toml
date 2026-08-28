@@ -1,0 +1,6 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "<version>"
+[dependencies]
+# axum, tokio, serde, serde_yaml, dotenvy, sqlx (postgres), neo4rs, jsonwebtoken, tracing

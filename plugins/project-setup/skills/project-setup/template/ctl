@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# ctl — the single entrypoint. A thin router: parse the verb, source scripts/common/lib.sh,
+# exec the worker in scripts/<group>/<verb>.sh. No logic lives here.
+#
+# verbs:
+#   setup                       copy .env.example → .env, fill secrets, mkdir data/*
+#   check                       conformance: layout, env contract, compose validity
+#   dev [app...]                db in docker, listed apps on host (default: all)
+#   up [+expose|+expose_nginx|+env_override|+traefik]...
+#                               db + base + modifiers. default modifier: +expose_nginx
+#   down | logs [svc] | ps
+#   build [app|cli] | build save <name>
+#   migrate | migrate new "<msg>" | migrate status
+#   db shell|backup|restore <file>
+#   test [app|e2e] | lint [--staged]
+#
+# resolution: verb → scripts/<group>/<verb>.sh, groups searched in order:
+#   config dev container db test
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$ROOT/scripts/common/lib.sh"
+route "$@"

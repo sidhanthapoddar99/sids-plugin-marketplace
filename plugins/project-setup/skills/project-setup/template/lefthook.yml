@@ -1,0 +1,9 @@
+# Git hooks. Format and lint on commit, tests on push. Each hook calls ctl, never a tool directly.
+pre-commit:
+  commands:
+    lint:
+      run: ctl lint --staged
+pre-push:
+  commands:
+    test:
+      run: ctl test

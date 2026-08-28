@@ -1,0 +1,13 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build", "test": "vitest", "lint": "oxlint src" },
+  "dependencies": {
+    "react": "<version>",
+    "react-dom": "<version>",
+    "@scope/ui": "link:../packages/ui",
+    "@scope/types": "link:../packages/types"
+  },
+  "devDependencies": { "vite": "<version>", "typescript": "<version>", "tailwindcss": "<version>", "vitest": "<version>" }
+}

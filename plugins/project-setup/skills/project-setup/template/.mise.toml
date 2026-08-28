@@ -1,0 +1,11 @@
+# Tool version contract. `mise install` sets up a clone. Never fill a version from memory.
+[tools]
+python = "<version>"
+rust = "stable"
+go = "<version>"
+bun = "latest"
+uv = "latest"
+lefthook = "latest"
+
+[env]
+_.path = ["{{ config_root }}"]   # ctl runs bare

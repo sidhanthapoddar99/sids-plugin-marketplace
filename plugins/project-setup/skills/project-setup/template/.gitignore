@@ -1,0 +1,33 @@
+# Curated for the ecosystems present. Runtime state is handled by data/.gitignore.
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+.venv/
+*.egg-info/
+
+# rust
+target/
+
+# go
+apps/cli/bin/
+
+# js
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+# tooling — commit project config, ignore personal
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
+.claude/settings.local.json
+
+# logs and OS
+*.log
+.DS_Store

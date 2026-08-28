@@ -1,0 +1,7 @@
+[project]
+name = "api"
+version = "0.1.0"
+requires-python = ">=<version>"
+dependencies = ["fastapi", "uvicorn", "pydantic-settings", "sqlalchemy", "asyncpg", "redis", "pyyaml", "python-dotenv"]
+[dependency-groups]
+dev = ["pytest", "pytest-asyncio", "ruff", "httpx"]

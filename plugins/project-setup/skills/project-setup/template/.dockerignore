@@ -1,0 +1,14 @@
+# Applies to every build context. Keeps secrets and state out of every image.
+.git
+.env
+.env.*
+!.env.example
+data/
+node_modules/
+.venv/
+target/
+dist/
+.next/
+**/__pycache__/
+docs/
+memory/

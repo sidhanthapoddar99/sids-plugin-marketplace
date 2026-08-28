@@ -1,0 +1,41 @@
+# The stack. This IS production. No ports here — modifiers add exposure.
+# Service-name literals in `environment:` beat `env_file:`, so the same .env serves dev and prod.
+# Every app has image: (pull) and build: (ctl build). Passwords and keys still come from .env.
+services:
+  api:
+    image: ${REGISTRY}/api:${TAG}
+    build: { context: ../apps/api }
+    env_file: ../.env
+    environment:                                # compose decides these, not the operator
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      API_HOST: 0.0.0.0
+    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_started } }
+
+  engine:
+    image: ${REGISTRY}/engine:${TAG}
+    build: { context: ../apps/engine }
+    env_file: ../.env
+    environment:
+      POSTGRES_HOST: postgres
+      NEO4J_HOST: neo4j
+      ENGINE_HOST: 0.0.0.0
+    depends_on: [postgres, neo4j]
+
+  web:
+    image: ${REGISTRY}/web:${TAG}
+    build: { context: ../apps/web }             # VITE_* baked at build via build.args from apps/web/.env
+    # static bundle served by nginx inside the image. No env at runtime.
+
+  site:
+    image: ${REGISTRY}/site:${TAG}
+    build: { context: ../apps/site }
+    env_file: ../apps/site/.env                 # NEXT_PUBLIC_* only
+    environment:
+      API_HOST: api                             # server-side fetches use the service name
+
+  nginx:
+    image: nginx:<version>
+    volumes: ["../apps/infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    depends_on: [api, engine, web, site]
+    # ports come from compose.m.expose_nginx.yaml

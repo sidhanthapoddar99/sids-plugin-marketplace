@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# ctl test [app] — run each app's own test command from its folder:
+#   api uv run pytest · engine cargo test · web/site bun test · cli go test ./...

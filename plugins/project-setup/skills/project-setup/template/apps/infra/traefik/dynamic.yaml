@@ -1,0 +1,1 @@
+# File provider config for compose.m.traefik.yaml: TLS certs, middlewares (rate limit, headers). Routing is by labels.
