@@ -20,8 +20,8 @@ Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletio
 | | `db backup`, `db restore <dir>` | Dump to `logs/backups/<timestamp>/`; load back. Restore refuses while apps run. |
 | Administration | `manage ops <list\|create\|disable\|enable\|reset-password\|lockout>` | Operator accounts, without the web auth flow. Below. |
 | | `manage settings <list\|get\|set>` | Platform settings, value parsed as JSON. |
-| Test | `test [app\|e2e]` | Each app's own suite. `e2e`: a throwaway stack. See `06_testing.md`. |
-| | `build save\|start\|clean` | Frozen test builds under `logs/test_build/`. |
+| Test | `test [app\|e2e]` | Each app's own suite. `e2e`: a throwaway stack. See `10_testing.md`. |
+| | `build save\|start\|clean` | Frozen test builds under `logs/test_build/`. `09_production.md`. |
 | Gates | `gate [all] [-q] [--memory SIZE]` | The ladder: lint → typecheck → dead → audit → test → check → build → e2e. Stops at the first red, names every rung not reached. One run at a time, under a memory lid. |
 | | `gate <rung> [-q]` | One rung. `gate lint [app] [--staged]` and `gate typecheck [app]` take a target; the others take none. |
 | | `gate clones\|fuzz\|perf` | By name. Never in the ladder. |
@@ -74,22 +74,6 @@ Runs as a gate rung. Fails on the first of:
 - `docker compose config` failing for the db file, base, base + each modifier, or the dev file
 - `CLAUDE.md` not exactly `@AGENTS.md`
 
-## Production readiness
-
-`compose.base.yaml` is prod, so it carries prod settings. Checklist for an audit:
-
-- [ ] `restart: unless-stopped` on every long-running service
-- [ ] `healthcheck` on every app with `start_period` covering boot
-- [ ] `/health` and `/ready` on every backend; compose `depends_on` uses `service_healthy`
-- [ ] `stop_grace_period` ≥ the app server's graceful timeout; lifespan hooks close pools
-- [ ] `deploy.resources.limits` on every service, memory above all
-- [ ] logs to stdout, JSON, level from `config.yaml`; no secret logged
-- [ ] migrations run once by `ctl up` before the apps, never on app boot
-- [ ] TLS at the host reverse proxy in front of the stack; `client_max_body_size` and proxy timeouts set in `nginx.conf.template`
-- [ ] non-root user in every image; no `COPY .env*`
-- [ ] `data/` and `logs/` folders exist on the host with the right owner (`ctl setup`)
-- [ ] a rollback: the previous `TAG`, or `ctl build save` snapshot
-
 ## `ctl manage` — the break-glass console
 
 The one path to operator identity that does not go through the web. It seeds the first SuperAdmin, resets a password when the admin UI is down, flips a platform setting. Model: `neura-cloud-vault/scripts/admin/manage.sh` → `apps/api-admin/manager.py`. Template: `template/scripts/admin/manage.sh`, `template/apps/example-api-python/manager.py`.
@@ -101,30 +85,24 @@ The one path to operator identity that does not go through the web. It seeds the
 | It runs without the web auth flow. Access to the host is the boundary. | Nothing else can be: it exists for when auth is broken. So it runs on the host or over SSH, never in a container with a published port. |
 | Every mutating action writes to `operator_audit` (actor `console`, action, target, outcome). | An unaudited break-glass is a backdoor. |
 | Operators are disabled, never deleted. | The audit history must keep its subject. |
-| Operator identity is never reachable through public signup or OAuth. The first admin comes from `ctl manage ops create --super`. | The identity plane is separate (`03_setup.md`, case 7). |
+| Operator identity is never reachable through public signup or OAuth. The first admin comes from `ctl manage ops create --super`. | The identity plane is separate (`03_routing.md`, case 7). |
 | A generated password (`--auto-password`) is printed once, alone on its line, and never logged. | It is a secret in transit. |
 | Needs the data core up: `ctl dev`, or `ctl up --services=postgres,redis`. | It talks to the tables directly. |
 
 Products without an operator plane delete `scripts/admin/` and `manager.py`.
 
-## Frozen builds
-
-`ctl build save <target> <name>` builds a target and freezes it under `logs/test_build/build-<date>-<target>-<name>/` with branch, commit and date. `ctl build start` serves one on a port. A human testing a state tests a build that cannot change under them.
-
-## Multi-stack: several repos on one docker network
-
-Rare. When two repos' stacks must reach each other by DNS:
-
-- exactly one stack declares the network; every other joins it `external: true`
-- service names are project-prefixed (`myapp-api`), because DNS is shared
-- bring-up order is written in each README; `depends_on` cannot cross stacks
-- nginx uses `resolver 127.0.0.11` and a variable in `proxy_pass`, so a down neighbour is a 502, not a crash loop
-- dev configs never join the shared network; `ctl dev` must work with every other stack down
-
 ## Without a data core
 
-`DATA_SVCS=()` in `_lib.sh`. `dev`, `up`, `setup`, `status`, `health` skip the engines. `compose.base.yaml` drops the include and the `depends_on`. `migrate` and `db` are deleted.
+`DATA_SVCS=()` in `_lib.sh`. `dev`, `up`, `setup`, `status`, `health` skip the engines. `compose.base.yaml` drops the include and the `depends_on`. `migrate` and `db` are deleted. `require_env` stays strict only if the apps still read secrets; `status` and `health` point at the app services and their healthchecks instead.
 
 ## Without ctl
 
-Every app's README shows how to run it from its own folder. The root README shows the manual path. `ctl` is the sanctioned way, not the only way.
+Every app's README shows how to run it from its own folder. The root README shows the manual path. `ctl` is the sanctioned way, not the only way: raw `docker compose --project-directory . --env-file … -f docker/compose.base.yaml` must keep working beside it, which is why `ctl` never carries state compose does not see.
+
+## When ctl is not enough
+
+`ctl` stays a bash router. Escalate to a compiled orchestrator (Go) only when a verb needs structured state across runs: a plan file, a lock that outlives a shell, a fleet of hosts. Line count alone is not the trigger. The state file is documented and versioned, and the plain compose invariant above still holds.
+
+## The ctl shape, as a check
+
+`ctl check` can prove the router is a router: `ctl` sources `_lib.sh`; every substantive verb is `run`-routed to `scripts/<group>/<name>.sh`; every worker starts with the preamble (`set -euo pipefail`, sources `_lib.sh`) and answers `--help`. A single-file `ctl` with logic inside is a red finding.

@@ -70,7 +70,7 @@ No root `tests/` folder. Each app owns its suite and its `test` script (`bun tes
 
 ## Conformance
 
-A conformance check is a unit test whose subject is the file tree, not a function. It proves the rules in `07_conventions.md` and `01_layout.md` mechanically: a service never imports a router, `os.environ` appears only in `config.py`, no hex value in a component, no file over the cap, a thing with two consumers lives in `packages/`. Lint judges syntax, types judge shapes, unit tests judge behaviour. Nothing else judges architecture, and architecture is what drifts across rounds under a green gate.
+A conformance check is a unit test whose subject is the file tree, not a function. It proves the rules in `11_conventions.md` and `01_layout.md` mechanically: a service never imports a router, `os.environ` appears only in `config.py`, no hex value in a component, no file over the cap, a thing with two consumers lives in `packages/`. Lint judges syntax, types judge shapes, unit tests judge behaviour. Nothing else judges architecture, and architecture is what drifts across rounds under a green gate.
 
 Model: `neurasutra-editor/apps/packages/editor/conformance/`. One sentence covers its layout: **`structure/` reads the tree, `suites/` run the code, `fixtures/` are what suites borrow.** Inside `structure/`:
 
@@ -123,6 +123,6 @@ Earned, not scaffolded: add the first check when the first drift appears or the 
 | `ctl test [app\|e2e]` | the test worker directly |
 | `ctl gate lint [app] [--staged]` | the lint worker directly |
 | `ctl check` | the conformance worker directly |
-| `ctl build save` | a frozen build for a manual or exploratory pass; see `05_ctl.md` |
+| `ctl build save` | a frozen build for a manual or exploratory pass; see `08_ctl.md` |
 
 Template: `template/scripts/gate/` (`all.sh` = the ladder, one file per rung, `_gate.sh` = the rung contract and `--quiet`, `_lock.sh` = one heavy run at a time under a memory lid), `template/scripts/test/`, `template/lefthook.yml`.

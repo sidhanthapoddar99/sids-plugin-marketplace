@@ -64,7 +64,7 @@ The API location is never a frontend value. Same origin, `fetch("/api/…")`. A 
 
 `compose.base.yaml` has no `env_file`. Each service lists exactly the keys it reads: `${VAR}` when the operator decides the value, a literal when compose decides it (service names: `api`, `postgres`). Read the file and you know everything a container gets.
 
-Under docker, `<PIECE>_HOST` in `.env.proxy` is not consulted: compose sets the service name as a literal. `ctl up +env_override` reverses that for a piece running outside this compose. See `03_setup.md`.
+Under docker, `<PIECE>_HOST` in `.env.proxy` is not consulted: compose sets the service name as a literal. `ctl up +env_override` reverses that for a piece running outside this compose. See `03_routing.md`.
 
 ## Secret classes
 

@@ -96,7 +96,7 @@ Template: `apps/example-api-python` (Python, identity, writes) and `apps/example
 |---|---|
 | Shared secret | One key in `.env.secrets`. Both read `JWT_SIGNING_KEY`. Keys not shared are separate: `ENCRYPTION_KEY_PYTHON`, `ENCRYPTION_KEY_RUST`. |
 | One backend calls another | The caller's `config.yaml` has `engine: { url: ${ENGINE_URL} }`. Dev: `.env.proxy` says `http://localhost:8080`. Docker: compose sets `ENGINE_URL: http://engine:8080`. The callee never knows. |
-| Shared database | One owner of the schema: `apps/database/`. Migrations are hand-written there (see `04_stack.md`). Both backends read; one writes. No table belongs to two services. |
+| Shared database | One owner of the schema: `apps/database/`. Migrations are hand-written there (see `06_backend.md`). Both backends read; one writes. No table belongs to two services. |
 | Routing | Each backend has its own prefix and `location`. The edge does not know which language is behind it. |
 | Identity planes | Admin and user APIs are two backends when their auth differs (`api-admin`, `api-platform`), one when it does not. |
 

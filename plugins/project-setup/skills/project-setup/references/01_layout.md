@@ -91,7 +91,7 @@ The root holds config, the brief, and folders. Never loose code.
 | `<server-frontend>/` | A frontend that is a server (Next.js SSR) | Its own app, own `Dockerfile`, own compose service. Never inside the group. |
 | `<desktop>/`, `<mobile>/`, `<cli>/` | A native surface | Only if the product ships one. Desktop shares `packages/`; mobile shares only the API contract; a Go CLI is `cmd/` + `internal/`, built by `ctl build cli` into `bin/`, gitignored. A PWA is the web frontend plus a manifest, not an app. |
 | `packages/<name>/` | Shared code | Manifest and lock live inside the package. An app never imports from another app. It imports from a package by a `link:` dependency (`"@scope/name": "link:../packages/name"`, `../../` from inside a group), not by a workspace. The `../` ban in `02_env.md` is about compose and env files, not manifests. Published package code in `src/<pkg>/`. |
-| `database/<engine>/` | Committed DB config per engine: migrations, init scripts, server config | One owner, even when two backends share the DB. Hand-written migrations live here; see `04_stack.md`. |
+| `database/<engine>/` | Committed DB config per engine: migrations, init scripts, server config | One owner, even when two backends share the DB. Hand-written migrations live here; see `06_backend.md`. |
 | `notebooks/` | Exploration notebooks | Never imported by an app. Code an app needs moves into a package. |
 
 ## One repo or two

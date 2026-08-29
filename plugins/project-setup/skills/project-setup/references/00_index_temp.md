@@ -14,15 +14,19 @@ Legend: `[x]` done · `[ ]` open · `[-]` dropped on purpose.
 
 | # | File | Owns | Status |
 |---|---|---|---|
-| 1 | `01_layout.md` | The one tree. Placement rules. One repo or two. Ignore files. README levels. Naming. Exceptions. | reviewed against template, real projects, old skill |
-| 2 | `02_env.md` | Three env files + templates, `config.yaml`, `config.local.yaml`. Rules. Loader steps incl. nested override. Docker consumption. Secret classes. | reviewed |
-| 3 | `03_setup.md` | Rules that hold in every case. The dev/prod pair. Cases 1–7 incl. a second origin for an identity plane. nginx rules that bite. | reviewed |
-| 4 | `04_stack.md` | Dev tools. Frontend kinds, theme, published package, PWA. Backend languages, layout by size, security floor. ML. Desktop, mobile. Data, migrations. | reviewed |
-| 5 | `05_ctl.md` | Verb table. Compose model + merge rules. `ctl check` rules. Prod-readiness checklist. Frozen builds. Multi-stack. No data core. | written |
-| 6 | `06_testing.md` | Placement. Verbs. Rules. Linters. | written |
-| 7 | `07_conventions.md` | Agent brief. Inside an app. Naming. Residue. Tripwires. Audit order. | written |
+| 01 | `01_layout.md` | The one tree. Placement rules. One repo or two. Ignore files. README levels. Naming. Exceptions. | reviewed |
+| 02 | `02_env.md` | Three env files + templates, `config.yaml`, `config.local.yaml`. Rules. Loader steps. Docker consumption. Secret classes. | reviewed |
+| 03 | `03_routing.md` | Single origin. The dev/prod pair. Cases 1–7. nginx rules that bite. | reviewed (renamed) |
+| 04 | `04_stack.md` | The choice only: dev tools, frontend kinds + language rules, backend languages, data engines, ML, desktop/mobile. | split 2026-08-30 |
+| 05 | `05_frontend.md` | Theme + switching, typography policy, `frontend-design` precedence, folder shape + import matrix, api layer, feature rules + greps, PWA, published package. | new |
+| 06 | `06_backend.md` | Every backend has, layout by size, domain slices + naming, serving per language, migrations (+ native tool, raw-SQL trio, sqlx order), engine gotchas, manager.py pointer. | new |
+| 07 | `07_security.md` | The floor table (edge, tiers, captcha, rate-limit contract, tokens, operator identity, audit, telemetry, secrets, deps), AI keys, prompt injection, tripwires. | new |
+| 08 | `08_ctl.md` | Verbs. Compose model. `ctl check`. `ctl manage`. Without data core / without ctl / escalation / ctl-shape check. | trimmed (renamed) |
+| 09 | `09_production.md` | Base settings (x-defaults, restart, healthcheck, grace, limits, logging), health two questions, the deploy + migration run model, host rules (chmod 600, UID, TLS), sick-stack tells, frozen builds, observability, multi-stack, checklist. | new |
+| 10 | `10_testing.md` | Kinds, ladder, rung contract, placement, conformance, rules, linters, verbs. | reviewed (renamed) |
+| 11 | `11_conventions.md` | The brief contract (sections), scope and decoupling, caps + rule of three/two, naming, residue, tripwires, audit order. | rewritten |
 
-Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02_environment`, `03_stack`, `04_testing`, `06_frontend`, `07_backend`, `08_conventions`, `09_questions`.
+Questions to ask before scaffolding, the always-ask list and the 5–10 bullet confirmation go into `SKILL.md`, not a page. Deleted: `02_environment`, `03_stack`, `04_testing`, `06_frontend`, `07_backend`, `08_conventions`, `09_questions`.
 
 ## Template checklist
 
@@ -34,6 +38,7 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 - [x] `data/.gitignore` (`*` / `!.gitignore`)
 - [x] `memory/00_rules.md`
 - [ ] `README.md` layout block matches the final tree
+- [x] `AGENTS.md` rebuilt as the brief contract (recorded choices, skeletons, tripwires, styling, exceptions, stack, commands, escalation); `memory/README.md` index; `memory/rules.md`
 
 ### docker/
 - [x] `compose.db.yaml` — engines, loopback ports, bind mounts
@@ -139,7 +144,9 @@ Where each old area lands. Unlisted old files are dropped.
 | `5-examples/*` | — | the template is the example |
 | `handoffs/*` | — | obsolete |
 
-## Gap check — old references vs the new pages (2026-08-30). For Sid to decide; nothing applied.
+## Gap check — old references vs the new pages (2026-08-30). Applied in the 11-page split except where marked open.
+
+Still open in the TEMPLATE (pages now describe them): `compose.base.yaml` prod settings + redis/neo4j healthchecks; `gunicorn.conf.py` + Dockerfile CMD in `example-api-python`; `index.html` + `lib/theme.ts` + status tokens in the SPA and `packages/ui`; `alembic_helpers.py` + one `.up.sql/.down.sql` pair in `apps/database/postgres`; `lefthook install` in `setup.sh`; `.gitignore` tool caches; a ctl-shape rule in `check.sh`; `ctl manage` row in the vault-style `manager.py` is done.
 
 Method: every file under `references_old/` and `snippets_old/` walked; each item grepped against `references/01–07` and `template/` before listing. Skipped: items already covered, and the dropped-by-decision topics (Traefik, process-compose, `infra/`, per-frontend `.env`, single root `.env`, `config.jsonc`, compose profiles, ML orchestration, vscode debugger, CI/CD, `handoffs/`, `5-examples`).
 

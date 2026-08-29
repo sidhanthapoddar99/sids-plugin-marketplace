@@ -10,13 +10,13 @@ This is the Python shape of the model in neurasutra-editor
              with no red fixture is not proved to bite: on a clean tree, a check that
              returns nothing looks the same as a check that works.
 
-Three properties make it a test and not a scan (06_testing.md, "Conformance"):
+Three properties make it a test and not a scan (10_testing.md, "Conformance"):
   1. the rule is a hand-written list (LAYER_ORDER, ENV_READERS), never derived from disk
   2. every check has a red fixture (``test_detection_*``)
   3. exemptions expire — a LEDGER row for a file that no longer violates is itself red
 
 Runs under ``uv run pytest`` like any other test, so ``ctl test api`` and ``ctl gate test``
-both run it. Add a check when a rule in 07_conventions.md is broken a second time.
+both run it. Add a check when a rule in 11_conventions.md is broken a second time.
 """
 
 from __future__ import annotations

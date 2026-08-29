@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/gate/_gate.sh — shared foundation for the `ctl gate` family. SOURCE this after _lib.sh.
 #
-# THE RUNG CONTRACT (06_testing.md). Every rung keeps four promises:
+# THE RUNG CONTRACT (10_testing.md). Every rung keeps four promises:
 #   1. exit 0 only when the rule was proved — a rung that cannot find its target dies by name
 #   2. name the file and the line when it fails
 #   3. one implementation, two callers — a rung calls the same worker `ctl <verb>` calls
