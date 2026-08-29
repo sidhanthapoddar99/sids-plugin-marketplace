@@ -1,4 +1,5 @@
-// The one Vite config for a single-frontend product. Served at `/`, so no `base`.
+// The one Vite config for a single-frontend product. base: process.env.VITE_BASE_PATH ?? "/" (WEB_APP_PREFIX
+// from .env.proxy, a build arg under `ctl build`). A display name is a literal here (`define`), never env.
 //
 // Dev proxy — the reason no nginx is needed in dev. It mirrors nginx.conf.template in this folder
 // location for location, so the browser sees one origin in both modes and the code calls `/api/…`:
@@ -21,7 +22,8 @@
 //     },
 //   });
 //
-// API_PORT / ENGINE_PORT / *_PREFIX come from the process env, which `ctl dev` filled from the root .env.
-// They are never VITE_* and never reach the bundle. Bare `bun dev` needs them exported first.
-// A backend on another server (03_setup.md case 2): set API_HOST in the root .env and use
+// API_PORT / ENGINE_PORT / *_PREFIX come from the process env, which `ctl dev` filled from .env.proxy.
+// They are never VITE_* and never reach the bundle. Bare `bun dev` needs the three env files exported
+// first — use `ctl dev single`.
+// A backend on another server (03_setup.md case 2): set API_HOST in .env.proxy and use
 //   `https://${API_HOST}:${API_PORT}` as the target — still no change in the code.

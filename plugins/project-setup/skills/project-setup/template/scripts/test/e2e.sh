@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test/e2e.sh — `ctl test e2e`. Bring up the whole stack with every port published, against a
-# THROWAWAY data dir, run the browser suite in apps/example-multi-web-app/app/e2e, tear it all down. Never touches data/.
+# THROWAWAY data dir, run the browser suite in the first frontend that has e2e/, tear it all down. Never touches data/.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
@@ -19,6 +19,7 @@ require_env; require_docker; require_tools bun
 E2E_DIR=""; for d in apps/example-single-web-app-vite apps/example-multi-web-app/app; do [[ -d $d/e2e ]] && { E2E_DIR=$d; break; }; done
 [[ -n $E2E_DIR ]] || die "no e2e/ folder in any frontend — nothing to run"
 
+# Exported DATA_DIR beats the value in .env.data: compose precedence is shell env > --env-file > compose file.
 export DATA_DIR; DATA_DIR="$(mktemp -d -t e2e-data-XXXXXX)"
 for s in "${DATA_SVCS[@]}"; do mkdir -p "$DATA_DIR/$s"; done
 teardown() { (( keep )) && { warn "--keep: stack left up, data in $DATA_DIR"; return 0; }

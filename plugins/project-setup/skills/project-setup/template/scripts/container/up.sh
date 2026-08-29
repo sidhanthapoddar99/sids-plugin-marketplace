@@ -8,7 +8,7 @@
 # Bare `ctl up` in a terminal is interactive (dependency-free TUI from _select.sh):
 #   pick modifiers (multi, default preselected) → see a plan → confirm (Run/Back/Cancel).
 # Modifiers given on the CLI are used as-is. None given + no TTY (or --nqa) = the default
-# (+${DEFAULT_MODIFIERS[*]}). A modifier whose .env keys are blank is refused (MODIFIER_REQUIRES).
+# (+${DEFAULT_MODIFIERS[*]}). A modifier whose env keys are blank is refused (MODIFIER_REQUIRES).
 #   --nqa  no prompts   ·   -y  skip the confirm   ·   --dry-run  plan only   ·   -a  foreground
 #
 # The plan is the real `docker compose config` merge — it validates the combination before
@@ -33,7 +33,7 @@ Base is docker/compose.base.yaml (the whole stack, includes the data engines). M
 exposure or re-point services; base itself publishes no ports." \
 "Example:  ctl up                        # interactive
           ctl up +expose_web -y         # prod default, no prompts
-          ctl up +expose +env_override  # debug ports, services re-pointed from .env
+          ctl up +expose +env_override  # debug ports, services re-pointed from .env.proxy / .env.secrets
           ctl up --attach               # foreground; watch logs, Ctrl-C to stop"; }
 
 is_help "${1:-}" && { usage; exit 0; }

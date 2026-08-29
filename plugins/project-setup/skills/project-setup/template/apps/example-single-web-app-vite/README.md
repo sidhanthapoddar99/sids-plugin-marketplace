@@ -3,12 +3,12 @@
 The shape for a product with ONE static frontend. Compare `example-multi-web-app/`, the shape for several.
 
 - Served at `/`. Static bundle, no server. Calls `/api` and `/engine` on its own origin.
-- Owns its `Dockerfile`: build the bundle, end in nginx with `nginx.conf.template`, proxy the backends.
+- Owns its `Dockerfile`: build the bundle, end in nginx with `nginx/nginx.conf.template`, proxy the backends.
   This image is the `web` service and the edge — the same role `example-multi-web-app/Dockerfile` plays.
 - Owns `vite.config.ts` with the dev proxy, so `ctl dev` needs no nginx dev proxy: one frontend, one origin already.
 
-Run from here: `bun install && bun dev` (export the root `.env` first, or use `ctl dev single`).
-Env: `.env`, public `VITE_*` only. Test: `bun test`, e2e in `e2e/`.
+Run from here: `ctl dev single` (exports `.env.secrets`, `.env.data`, `.env.proxy`, then `bun dev`).
+No `.env` here: the prefix is `VITE_BASE_PATH` = `WEB_APP_PREFIX` from `.env.proxy`. Test: `bun test`, e2e in `e2e/`.
 
 ## Using this shape instead of the group
 
@@ -20,7 +20,8 @@ Env: `.env`, public `VITE_*` only. Test: `bun test`, e2e in `e2e/`.
     build:
       context: ./apps
       dockerfile: example-single-web-app-vite/Dockerfile
-      args: [VITE_APP_NAME]
+      args:
+        VITE_BASE_PATH: ${WEB_APP_PREFIX}
     environment:
       API_PREFIX: ${API_PREFIX}
       ENGINE_PREFIX: ${ENGINE_PREFIX}
@@ -30,4 +31,4 @@ Env: `.env`, public `VITE_*` only. Test: `bun test`, e2e in `e2e/`.
     depends_on: [api, engine]
 ```
 
-Then delete `example-multi-web-app/`, `apps/infra/nginx-dev/`, `docker/compose.dev.yaml`, and the `WEB_LANDING_*`, `WEB_DOCS_*`, `DASHBOARD_*`, `DEV_PROXY_PORT` keys. Keep `WEB_APP_PORT`; set `WEB_APP_PREFIX=/`.
+Then delete `example-multi-web-app/`, `docker/compose.dev.yaml`, and the `WEB_LANDING_*`, `WEB_DOCS_*`, `DASHBOARD_*`, `DEV_PROXY_PORT` keys in `.env.proxy.template`. Keep `WEB_APP_PORT`; set `WEB_APP_PREFIX=/`.

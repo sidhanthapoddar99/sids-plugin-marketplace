@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # config/status.sh — `ctl status`. Config doctor: env schema, toolchain, docker, deps, data-core
-# health, and the discovered modifiers. Read-only — never dies on a missing .env (diagnosing
+# health, and the discovered modifiers. Read-only — never dies on a missing env file (diagnosing
 # that is the point); reports issues and exits non-zero.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
@@ -12,11 +12,14 @@ usage() { print_help "status" "Config doctor: env, toolchain, docker, deps, data
 "Read-only. Fix installs with \`ctl setup\`; fix rule breaches with \`ctl check\`."; }
 
 is_help "${1:-}" && { usage; exit 0; }
-load_env_file .env    # soft, non-clobbering load — status must never die
+load_env_soft         # soft, non-clobbering load of the three env files — status must never die
 rc=0
 LOG_INDENT="  "       # nest every section's lines under its ▸ header
 
-step "env"
+step "env files"
+for f in "${ENV_FILES[@]}"; do
+  if [[ -f $f ]]; then ok "$f present"; else warn "$f missing (ctl setup copies $f.template)"; rc=1; fi
+done
 check_env_schema || rc=1
 
 step "runtimes"
@@ -39,6 +42,7 @@ else
 fi
 printf '  %s%-9s%s %s\n' "$C_DIM" "project"  "$C_RESET" "${COMPOSE_PROJECT_NAME:-$(basename "$CTL_ROOT")}"
 printf '  %s%-9s%s %s\n' "$C_DIM" "data dir" "$C_RESET" "${DATA_DIR:-./data}"
+printf '  %s%-9s%s %s\n' "$C_DIM" "logs dir" "$C_RESET" "${LOGS_DIR:-./logs}"
 
 step "deps (run \`ctl setup\` if missing)"
 for d in apps/*/ apps/packages/*/ apps/database/postgres/; do

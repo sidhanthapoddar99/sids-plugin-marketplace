@@ -1,5 +1,5 @@
 # Data engines only. Runs alone under `ctl dev`; included by compose.base.yaml under `ctl up`.
-# Passwords come from .env. Ports bind to loopback only, so prod never exposes them to the network.
+# Passwords come from .env.secrets, ${DATA_DIR} from .env.data. Ports bind to loopback only, so prod never exposes them to the network.
 # State: bind mounts under ${DATA_DIR}. Committed config: apps/database/.
 services:
   postgres:

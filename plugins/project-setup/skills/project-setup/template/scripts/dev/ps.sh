@@ -17,11 +17,11 @@
 # docker-published port is owned by docker-proxy — killing that PID strands the container,
 # so the docker plane routes to `docker compose stop <service>` instead.
 # Attaching is plane-aware too: docker → `docker compose logs -f <svc>`; a process started
-# by `ctl dev --detach` → tail -f its data/logs/ file; anything else has no log to follow.
+# by `ctl dev --detach` → tail -f its logs/dev/ file; anything else has no log to follow.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
-BUILDS_DIR="$CTL_ROOT/data/test_build"
+BUILDS_DIR="$CTL_ROOT/logs/test_build"
 
 usage() { print_help "ps" "Everything the project runs (dev · build · docker): browse, attach, free." \
   'ps [--list] [kill [port…]] [-y] [-h]' \
@@ -37,7 +37,7 @@ usage() { print_help "ps" "Everything the project runs (dev · build · docker):
 
 Attach follows the process's output (Ctrl-C detaches, the process keeps running):
 docker → 'docker compose logs -f <svc>'; a 'ctl dev --detach' process → tail -f of its
-data/logs/ file. A process with no log (foreground-started elsewhere) can't be attached.
+logs/dev/ file. A process with no log (foreground-started elsewhere) can't be attached.
 
 Options
   -y, --yes      skip the confirmation before freeing
@@ -51,7 +51,7 @@ pid_cwd()  { readlink "/proc/$1/cwd" 2>/dev/null \
 
 gather() {
   ENTRIES=(); local seen=" " p pid cwd desc spec name id svc line hostport ctrport
-  # dev plane — the host dev ports (from .env, defaults match dev/dev.sh)
+  # dev plane — the host dev ports (from .env.proxy, defaults match dev/dev.sh)
   for spec in "api:${API_PORT:-8000}" "engine:${ENGINE_PORT:-8080}" "landing:${WEB_LANDING_PORT:-3001}" \
               "app:${WEB_APP_PORT:-5173}" "docs:${WEB_DOCS_PORT:-4321}" "dashboard:${DASHBOARD_PORT:-3000}" \
               "dev-proxy:${DEV_PROXY_PORT:-3080}"; do
@@ -59,7 +59,7 @@ gather() {
     pid="$(port_pid "$p")"; [[ -n $pid && $seen != *" $p "* ]] || continue
     seen+="$p "; ENTRIES+=("dev|$p|pid|$pid|$name — $(pid_desc "$pid")")
   done
-  # build plane — frozen builds serving on the preset ports (cwd inside data/test_build/ = a snapshot)
+  # build plane — frozen builds serving on the preset ports (cwd inside logs/test_build/ = a snapshot)
   for p in "${PORT_PRESETS[@]}"; do
     pid="$(port_pid "$p")"; [[ -n $pid && $seen != *" $p "* ]] || continue
     seen+="$p "; cwd="$(pid_cwd "$pid")"
@@ -126,10 +126,10 @@ attach_entry() {  # plane-aware follow (execs — Ctrl-C detaches, the process k
     step "docker compose logs -f $id   (Ctrl-C detaches)"
     exec docker compose --project-directory "$CTL_ROOT" -f "$BASE" logs -f "$id"
   fi
-  for f in data/run/*.pid; do
+  for f in logs/run/*.pid; do
     [[ -f $f ]] || continue
     pid="$(cat "$f" 2>/dev/null)"; [[ -n $pid ]] && pid_is_under "$pid" "$id" || continue
-    log="data/logs/$(basename "$f" .pid).log"; break
+    log="logs/dev/$(basename "$f" .pid).log"; break
   done
   [[ -n $log && -f $log ]] || { err "no log for pid $id — not started by 'ctl dev --detach', nothing to attach to"; return 1; }
   step "tail -f $log   (Ctrl-C detaches, pid $id keeps running)"
@@ -222,7 +222,7 @@ while (( $# )); do case "$1" in
                || die "unknown arg: $1 (try ctl ps --help)" ;;
 esac; done
 
-load_env_file .env     # soft — ps must never die
+load_env_soft          # soft — ps must never die
 
 if [[ $sub == kill ]]; then do_kill "$yes" ${ports[@]+"${ports[@]}"}; exit 0; fi
 

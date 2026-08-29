@@ -4,7 +4,7 @@ One paragraph: what this product is and which apps make it.
 
 ## Prerequisites
 - `mise install` — installs every toolchain pinned in `.mise.toml`
-- `cp .env.example .env` then `ctl setup` — fills secrets, creates `data/*`
+- `ctl setup` — creates `.env.secrets`, `.env.data`, `.env.proxy` from their `.template` files, generates secrets, creates `data/*` and `logs/*`
 
 ## Quick start with ctl
 - `ctl dev` — databases in docker, apps on the host (`--proxy` for one origin across frontends)
@@ -17,10 +17,12 @@ Each app's `README.md` shows how to run it from its own folder.
 ## Layout
 ```
 apps/      example-api-python example-engine-rust example-multi-web-app/{landing,app,docs}
-           example-single-web-app-vite example-dashboard-nextjs example-tui-go packages database infra
+           example-single-web-app-vite example-dashboard-nextjs example-tui-go packages database
 docker/    compose.db compose.base compose.dev compose.m.*
 scripts/   ctl workers
-data/      runtime state, gitignored
+data/      actual data: engine mounts, datasets. gitignored
+logs/      produced state: logs, pids, backups, frozen builds. gitignored
+.env.secrets.template  .env.data.template  .env.proxy.template   the env contract (committed); ctl setup makes the real files
 memory/    agent rules
 ```
 

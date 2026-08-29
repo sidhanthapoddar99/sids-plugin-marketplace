@@ -2,7 +2,7 @@
 # db/migrate.sh — `ctl migrate`. The only path that touches schema. Postgres: Alembic in
 # apps/database/postgres (hand-written revisions: .py shim + .up.sql/.down.sql). Neo4j:
 # apps/database/neo4j/init.cypher, idempotent, applied through the container's cypher-shell.
-# Runs against .env values on the host (ctl dev) or the same values under ctl up.
+# Runs against the .env.secrets values on the host (ctl dev) or the same values under ctl up.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
@@ -30,7 +30,7 @@ neo4j() {
   [[ -f $NEO4J_INIT ]] || { say "${C_DIM}no $NEO4J_INIT — skipped${C_RESET}"; return 0; }
   printf '%s\n' "${DATA_SVCS[@]}" | grep -qx neo4j || return 0
   step "neo4j: cypher-shell < $NEO4J_INIT"
-  dc exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD:?NEO4J_PASSWORD blank in .env}" < "$NEO4J_INIT"
+  dc exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD:?NEO4J_PASSWORD blank in .env.secrets}" < "$NEO4J_INIT"
 }
 
 case "$sub" in

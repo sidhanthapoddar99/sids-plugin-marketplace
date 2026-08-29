@@ -3,11 +3,11 @@
 #
 # Two kinds of variable, both set in docker/compose.base.yaml `environment:` on the `web` service:
 #   prefixes   ${WEB_APP_PREFIX} ${WEB_DOCS_PREFIX} ${DASHBOARD_PREFIX} ${API_PREFIX} ${ENGINE_PREFIX}
-#              → ${VAR} from the root .env. The operator decides them.
+#              → ${VAR} from .env.proxy. The operator decides them.
 #   upstreams  ${API_UPSTREAM} ${ENGINE_UPSTREAM} ${DASHBOARD_UPSTREAM}
 #              → literals in compose.base.yaml (api:8000, engine:8080, dashboard:3000) because compose
 #                decides the service names. `ctl up +env_override` swaps them for ${API_HOST}:${API_PORT}
-#                etc. from .env when a backend runs outside this compose.
+#                etc. from .env.proxy when a backend runs outside this compose.
 # NGINX_ENVSUBST_FILTER (set in compose) limits substitution to these names, so nginx's own
 # $host / $uri / $request_uri survive.
 # Listens on 8080: the image runs as the unprivileged nginx user. TLS terminates at the host reverse proxy in front of this stack.

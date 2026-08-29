@@ -1,6 +1,8 @@
 # The stack. This IS production. No ports here — modifiers add exposure.
 # No env_file. Each service lists exactly the variables it reads under `environment:`.
-#   ${VAR}   — operator decides; interpolated from .env (secrets, ports, prefixes, public URLs)
+#   ${VAR}   — operator decides; interpolated from the three env files ctl passes with --env-file:
+#              .env.secrets (passwords, keys, REGISTRY/TAG) · .env.proxy (ports, prefixes, PUBLIC_URL) ·
+#              .env.data (DATA_DIR, used by the included compose.db.yaml)
 #   literal  — compose decides; service names on the compose network
 # So reading this file tells you everything a container gets. Nothing leaks in by accident.
 # Every app has image: (pull) and build: (ctl build).
@@ -49,15 +51,14 @@ services:
   web:
     image: ${REGISTRY}/web:${TAG}
     build:
-      context: ./apps                           # needs packages/ and infra/ too
+      context: ./apps                           # needs packages/ too
       dockerfile: example-multi-web-app/Dockerfile
-      args:                                     # values come from apps/example-multi-web-app/<name>/.env via `ctl build`.
-        - NEXT_PUBLIC_SITE_NAME                 #   landing. compose never reads those files; ctl forwards them.
-        - VITE_APP_NAME                         #   app
-        - VITE_BASE_PATH
-        - PUBLIC_SITE_NAME                      #   docs
+      args:                                     # build constants = the prefixes, from .env.proxy. No per-frontend .env.
+        NEXT_PUBLIC_BASE_PATH: ${WEB_LANDING_PREFIX}   #   landing
+        VITE_BASE_PATH: ${WEB_APP_PREFIX}              #   app
+        PUBLIC_BASE_PATH: ${WEB_DOCS_PREFIX}           #   docs
     environment:
-      # prefixes: the operator's routing table, from .env
+      # prefixes: the operator's routing table, from .env.proxy
       WEB_APP_PREFIX: ${WEB_APP_PREFIX}
       WEB_DOCS_PREFIX: ${WEB_DOCS_PREFIX}
       DASHBOARD_PREFIX: ${DASHBOARD_PREFIX}
@@ -77,8 +78,8 @@ services:
     image: ${REGISTRY}/dashboard:${TAG}
     build:
       context: ./apps/example-dashboard-nextjs
-      args:                                     # from apps/example-dashboard-nextjs/.env via `ctl build`
-        - NEXT_PUBLIC_APP_NAME
+      args:                                     # the prefix, from .env.proxy
+        NEXT_PUBLIC_BASE_PATH: ${DASHBOARD_PREFIX}
     environment:                                # server side only
       API_HOST: api
       API_PORT: 8000

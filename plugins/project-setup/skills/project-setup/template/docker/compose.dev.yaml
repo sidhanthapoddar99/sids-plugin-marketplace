@@ -8,8 +8,8 @@ services:
     image: nginx:<version>
     network_mode: host
     volumes:
-      - ./apps/infra/nginx-dev/dev.conf.template:/etc/nginx/templates/default.conf.template:ro
-      - ./apps/infra/nginx-dev/dev-proxy-headers.conf:/etc/nginx/dev-proxy-headers.conf:ro
+      - ./apps/example-multi-web-app/nginx/nginx-dev.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./apps/example-multi-web-app/nginx/nginx-dev-headers.conf:/etc/nginx/nginx-dev-headers.conf:ro
     environment:
       DEV_PROXY_PORT: ${DEV_PROXY_PORT}
       WEB_APP_PREFIX: ${WEB_APP_PREFIX}

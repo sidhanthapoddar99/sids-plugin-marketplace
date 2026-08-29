@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test/build.sh — `ctl build save|start|clean`. Frozen test builds: immutable, provenance-stamped
-# production snapshots under data/test_build/, served independently of the working tree.
+# production snapshots under logs/test_build/, served independently of the working tree.
 #
 # Why: a dev tree changes constantly (agents editing, branch switches, hot reload). When a
 # human tests a state, they need a build that is FROZEN and labeled with branch/commit/date —
@@ -8,7 +8,7 @@
 # phantom bugs that burn a debugging cycle; a frozen build is exactly what was built.
 #
 #   ctl build save [target] [name]   build <target>, freeze the artifact into
-#                                    data/test_build/build-<date-time>-<target>-<name>/ (+ .build-meta)
+#                                    logs/test_build/build-<date-time>-<target>-<name>/ (+ .build-meta)
 #   ctl build start [name|target] [port] [--nqa] [-y] [--dry-run] [--list]
 #                                    serve a frozen build — `ctl up`-style guided flow:
 #                                    pick build → pick port → plan → confirm (Run/Back/Cancel)
@@ -17,11 +17,11 @@
 # Bare `ctl build` (no subverb) stays the container image build (container/build.sh) — the
 # router in `ctl` splits on the first arg.
 #
-# data/test_build/ sits under data/, whose .gitignore already keeps everything out of history.
+# logs/test_build/ sits under logs/, whose .gitignore already keeps everything out of history.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
-BUILDS_DIR="$CTL_ROOT/data/test_build"
+BUILDS_DIR="$CTL_ROOT/logs/test_build"
 KEEP_DEFAULT=5
 CUSTOM_LABEL="custom…"
 # PORT_PRESETS (the start picker's port list; first one = the --nqa default) comes from
@@ -52,7 +52,7 @@ build_help() {
   ctl build clean [--keep N] [-y] [--dry-run]" \
 "Subcommands
   save [target] [name]   build a target, then snapshot the artifact →
-                         data/test_build/build-<date-time>-<target>-<name>/  (name defaults
+                         logs/test_build/build-<date-time>-<target>-<name>/  (name defaults
                          to the git short sha; a .build-meta file records target, serve
                          strategy, branch, commit, and date)
   start                  serve a frozen build. Bare 'ctl build start' in a terminal is
@@ -129,7 +129,7 @@ build_save() {
   } > "$dir/.build-meta"
   ok "saved $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
   if [[ $serve == none ]]; then
-    say "save-only target — artifact frozen at ${C_B}data/test_build/$(basename "$dir")${C_RESET}"
+    say "save-only target — artifact frozen at ${C_B}logs/test_build/$(basename "$dir")${C_RESET}"
   else
     say "start it:  ${C_B}ctl build start $name${C_RESET}"
   fi
@@ -166,7 +166,7 @@ build_start() {
   esac; done
 
   if (( list )); then
-    printf '%sfrozen builds%s   %s(newest first — data/test_build/)%s\n' "$C_B" "$C_RESET" "$C_DIM" "$C_RESET"
+    printf '%sfrozen builds%s   %s(newest first — logs/test_build/)%s\n' "$C_B" "$C_RESET" "$C_DIM" "$C_RESET"
     local n any=0
     while IFS= read -r n; do [[ -z $n ]] && continue
       printf '  %s-%s %s\n' "$C_DIM" "$C_RESET" "$(build_label "$n")"; any=1; done < <(list_builds)
@@ -176,7 +176,7 @@ build_start() {
 
   local interactive=0; [[ -t 1 && -r /dev/tty && $nqa -eq 0 ]] && interactive=1
   local BUILDS=(); mapfile -t BUILDS < <(list_builds)
-  (( ${#BUILDS[@]} )) || die "no frozen builds in data/test_build/ — create one: ctl build save [target] [name]"
+  (( ${#BUILDS[@]} )) || die "no frozen builds in logs/test_build/ — create one: ctl build save [target] [name]"
 
   [[ -n $name ]] && { folder="$(resolve_build "$name")" || die "no frozen build matches \"$name\" (ctl build start --list)"; }
   # --nqa = no questions: default the unset axes (newest build, first preset port)
@@ -207,7 +207,7 @@ build_start() {
     if [[ $serve == none ]]; then
       ok "$(build_label "$folder")"
       say "save-only target ($(meta_field "$folder" target)) — nothing to serve."
-      say "artifact:  ${C_B}data/test_build/$folder${C_RESET}   (inspect: ls data/test_build/$folder)"
+      say "artifact:  ${C_B}logs/test_build/$folder${C_RESET}   (inspect: ls logs/test_build/$folder)"
       exit 0
     fi
 
@@ -235,7 +235,7 @@ build_start() {
       static)  serve_disp="bunx serve -s . -l $port" ;;
       process) serve_disp="$(meta_field "$folder" serve_cmd)"; serve_disp="${serve_disp//\{port\}/$port}"
                [[ -n $serve_disp ]] || die "snapshot says serve: process but has no serve_cmd in .build-meta" ;;
-      *)       die "unknown serve strategy '$serve' in data/test_build/$folder/.build-meta" ;;
+      *)       die "unknown serve strategy '$serve' in logs/test_build/$folder/.build-meta" ;;
     esac
     repro="$(meta_field "$folder" name)"; repro="ctl build start ${repro:-$folder} $port"   # save-name form reproduces it
     plan_ok=1; pid="$(port_pid "$port")"
@@ -247,7 +247,7 @@ build_start() {
     printf '  %scommit%s  %s\n'   "$C_DIM" "$C_RESET" "$(meta_field "$folder" commit)"
     printf '  %ssaved%s   %s\n'   "$C_DIM" "$C_RESET" "$(meta_field "$folder" date)"
     printf '  %ssize%s    %s\n'   "$C_DIM" "$C_RESET" "$(du -sh "$BUILDS_DIR/$folder" 2>/dev/null | cut -f1)"
-    printf '  %sserve%s   %s   (cwd: data/test_build/%s)\n' "$C_DIM" "$C_RESET" "$serve_disp" "$folder"
+    printf '  %sserve%s   %s   (cwd: logs/test_build/%s)\n' "$C_DIM" "$C_RESET" "$serve_disp" "$folder"
     printf '  %surl%s     http://localhost:%s\n' "$C_DIM" "$C_RESET" "$port"
     if [[ -n $pid ]]; then
       err "port $port is already in use (pid $pid)"

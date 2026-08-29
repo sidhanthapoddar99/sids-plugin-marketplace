@@ -1,9 +1,9 @@
 # Curated for the ecosystems present. Runtime state is handled by data/.gitignore.
 
-# secrets and local overrides
+# env files and local overrides. Only the *.template files are committed.
 .env
 .env.*
-!.env.example
+!.env.*.template
 config.local.yaml
 
 # python

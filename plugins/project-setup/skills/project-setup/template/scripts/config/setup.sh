@@ -1,58 +1,57 @@
 #!/usr/bin/env bash
-# config/setup.sh — `ctl setup`. First run on a clone: seed .env, sync new keys, generate secrets,
-# create data dirs, install deps. Idempotent — never overwrites a filled value.
+# config/setup.sh — `ctl setup`. First run on a clone: create the three env files from their
+# templates, sync new keys, generate secrets, create data/logs dirs, install deps.
+# Idempotent — never overwrites a filled value.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
-usage() { print_help "setup" "Seed .env, generate secrets, create data dirs, install deps." \
+usage() { print_help "setup" "Create .env.secrets / .env.data / .env.proxy from templates, generate secrets, create dirs, install deps." \
   'setup [-h]' \
 "Options
   -h, --help      show this help
 
 Steps
-  1. cp .env.example .env if .env is missing; append keys .env.example gained since
-  2. fill every blank *_KEY / *_SECRET with openssl rand -hex 32,
+  1. for each of .env.secrets .env.data .env.proxy: cp <file>.template <file> if missing;
+     append keys the template gained since. Never overwrites a value.
+  2. in .env.secrets only: fill every blank *_KEY / *_SECRET with openssl rand -hex 32,
      every blank *_PASSWORD with a 24-char base64 string
-  3. per frontend: cp .env.example → .env in apps/example-multi-web-app/<name>/ and apps/example-dashboard-nextjs/ if missing
-  4. mkdir data/{$(IFS=,; echo "${DATA_SVCS[*]}"),test_build,logs,run}  (data/.gitignore keeps them out of git)
-  5. mise install · uv sync per python app · bun install per js app · cargo fetch · go mod download" \
+  3. mkdir data/{$(IFS=,; echo "${DATA_SVCS[*]}")} and logs/{dev,run,backups,test_build}  (each folder's .gitignore keeps it out of git)
+  4. mise install · uv sync per python app · bun install per js app · cargo fetch · go mod download" \
 "Re-run any time to top up missing keys and secrets."; }
 
 is_help "${1:-}" && { usage; exit 0; }
-[[ -f .env.example ]] || die "no .env.example to template from"
-if [[ ! -f .env ]]; then cp .env.example .env; ok "created .env from .env.example"; fi
+step "env files (template → file)"
+for f in "${ENV_FILES[@]}"; do
+  [[ -f "$f.template" ]] || die "no $f.template to create $f from"
+  if [[ ! -f "$f" ]]; then cp "$f.template" "$f"; ok "created $f from $f.template"; fi
+  # sync: append any key present in the template but missing from the file. Copies the template
+  # line verbatim; never touches a value that already exists.
+  while IFS= read -r line; do
+    case "$line" in ''|\#*) continue ;; esac
+    key=${line%%=*}; [[ "$key" == "$line" ]] && continue
+    grep -q "^${key}=" "$f" || { printf '%s\n' "$line" >> "$f"; ok "$f: added missing key $key"; }
+  done < "$f.template"
+done
 
-# sync: append any key present in .env.example but missing from .env. Copies the template
-# line verbatim; never touches a value that already exists.
-while IFS= read -r line; do
-  case "$line" in ''|\#*) continue ;; esac
-  key=${line%%=*}; [[ "$key" == "$line" ]] && continue
-  grep -q "^${key}=" .env || { printf '%s\n' "$line" >> .env; ok "added missing key $key"; }
-done < .env.example
-
-# generate blank secrets. Keys are matched by suffix; the value must be empty.
+# generate blank secrets — in .env.secrets only. Keys are matched by suffix; the value must be empty.
+step "secrets"
 sed_i() { if sed --version >/dev/null 2>&1; then sed -i "$@"; else sed -i '' "$@"; fi; }   # GNU vs BSD
 while IFS='=' read -r key val; do
   [[ -z "$key" || "$key" == \#* ]] && continue
   val="${val%%[[:space:]]#*}"; val="${val%"${val##*[![:space:]]}"}"
   [[ -z "$val" ]] || continue
   case "$key" in
-    *_PASSWORD)     sed_i "s|^${key}=.*|${key}=$(openssl rand -base64 24 | tr -d '+/=' | head -c 24)|" .env; ok "generated $key" ;;
-    *_KEY|*_SECRET) sed_i "s|^${key}=.*|${key}=$(openssl rand -hex 32)|" .env; ok "generated $key" ;;
+    *_PASSWORD)     sed_i "s|^${key}=.*|${key}=$(openssl rand -base64 24 | tr -d '+/=' | head -c 24)|" .env.secrets; ok "generated $key" ;;
+    *_KEY|*_SECRET) sed_i "s|^${key}=.*|${key}=$(openssl rand -hex 32)|" .env.secrets; ok "generated $key" ;;
   esac
-done < .env
-
-# per-frontend public env — the static group apps/example-multi-web-app/<name>/ plus the SSR app
-for fe in apps/example-multi-web-app/*/ apps/example-dashboard-nextjs/ apps/example-single-web-app-vite/; do
-  [[ -f "$fe.env.example" && ! -f "$fe.env" ]] || continue
-  cp "$fe.env.example" "$fe.env"; ok "created ${fe}.env"
-done
+done < .env.secrets
 
 # data dirs — created here, owned by the current user, so bind mounts never appear root-owned.
 step "ensuring data dirs…"
-dirs=(test_build logs run backups); (( ${#DATA_SVCS[@]} )) && dirs+=("${DATA_SVCS[@]}")
-for d in "${dirs[@]}"; do mkdir -p "data/$d"; done
-ok "data/{$(IFS=,; echo "${dirs[*]}")}"
+# data/ = actual data (engine mounts, datasets). logs/ = everything else that is produced: logs, pids, backups, frozen builds.
+for d in "${DATA_SVCS[@]}"; do mkdir -p "data/$d"; done
+for d in dev run backups test_build; do mkdir -p "logs/$d"; done
+ok "data/{$(IFS=,; echo "${DATA_SVCS[*]}")}  logs/{dev,run,backups,test_build}"
 
 step "installing toolchains + dependencies…"
 if command -v mise >/dev/null 2>&1; then mise install && ok "mise install"; else warn "mise not found — toolchains skipped"; fi
@@ -73,6 +72,8 @@ for d in apps/*/; do
   if command -v go >/dev/null 2>&1; then ( cd "$d" && go mod download ) && ok "$d go mod download"; else warn "go not found — $d skipped"; break; fi
 done
 
-blanks=$(grep -nE '^[A-Z_]+=\s*(#.*)?$' .env || true)
-if [[ -n "$blanks" ]]; then warn "fill these blanks in .env:"; say "$blanks"; else ok "no blanks remaining"; fi
+for f in "${ENV_FILES[@]}"; do
+  blanks=$(grep -nE '^[A-Z_]+=\s*(#.*)?$' "$f" || true)
+  if [[ -n "$blanks" ]]; then warn "fill these blanks in $f:"; say "$blanks"; else ok "$f: no blanks"; fi
+done
 say "next: ${C_B}ctl dev${C_RESET}   ${C_DIM}(then ctl migrate once the data core is up)${C_RESET}"

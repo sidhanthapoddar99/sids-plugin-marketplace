@@ -15,7 +15,7 @@ Options
 
 is_help "${1:-}" && { usage; exit 0; }
 require_docker
-load_env_file .env   # soft — diagnostics never die, but dc needs ${VAR} interpolation
+load_env_soft        # soft — diagnostics never die; dc passes the env files itself
 svcs=("$@")
 (( ${#svcs[@]} )) || svcs=("${DATA_SVCS[@]}")
 (( ${#svcs[@]} )) || mapfile -t svcs < <(dc config --services 2>/dev/null)

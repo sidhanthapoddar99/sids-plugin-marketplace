@@ -1,4 +1,4 @@
-# All settings of this service. ${VAR} comes from the root .env and must be set. Literals are defaults.
+# All settings of this service. ${VAR} comes from .env.secrets (keys, URLs) or .env.proxy (hosts, ports, prefixes) and must be set. Literals are defaults.
 # A developer overrides literals in config.local.yaml (gitignored). Never a secret there: secrets stay ${VAR}.
 database:
   url: ${DATABASE_URL}

@@ -13,14 +13,22 @@
 #   docker/compose.dev.yaml    the nginx dev proxy, host network         → `ctl dev --proxy`
 #   docker/compose.base.yaml   the whole stack; it `include:`s the db file; NO ports
 #   docker/compose.m.<name>.yaml   modifiers, discovered by filename       → `ctl up +<name>`
-# Every compose call passes --project-directory "$CTL_ROOT", so every relative path in
-# .env and in every compose file resolves from the repo root (compose files say ./apps/…,
-# ./data, never ../). Compose loads $CTL_ROOT/.env itself for ${VAR} interpolation.
+# Every compose call passes --project-directory "$CTL_ROOT", so every relative path in the
+# env files and in every compose file resolves from the repo root (compose files say ./apps/…,
+# ./data, never ../).
+#
+# ENV MODEL — three files at the root, each with one role and a committed .template:
+#   .env.secrets   passwords, keys, credentials, DB connection values, REGISTRY/TAG
+#   .env.data      DATA_DIR / LOGS_DIR / BACKUP_DIR — every path, root-relative
+#   .env.proxy     <PIECE>_HOST/_PORT/_PREFIX for every piece, ENGINE_URL, PUBLIC_URL, ports
+# Compose reads none of them by itself: every dc call passes --env-file for each (ENV_FILES,
+# in that order; compose ≥ 2.24). `ctl setup` copies template → file. Frontends have no .env:
+# their build constants are compose build args interpolated from .env.proxy.
 #
 # The [ADAPT] knobs, all inline below:
 #   • DATA_SVCS           — the data core; empty = no data core (dev/up/status/setup skip it)
 #   • app_names/app_port/app_cmd — the host-run apps `ctl dev` knows, in dev/dev.sh
-#   • MODIFIER_REQUIRES   — .env keys a modifier needs non-blank before `ctl up` accepts it
+#   • MODIFIER_REQUIRES   — env keys a modifier needs non-blank before `ctl up` accepts it
 #   • PORT_PRESETS        — ports offered by `ctl build start`, scanned by `ctl ps`
 #
 # Worker preamble (copy verbatim at the top of every scripts/<group>/<name>.sh):
@@ -35,17 +43,19 @@ BASE="$DOCKER_DIR/compose.base.yaml"
 DB_FILE="$DOCKER_DIR/compose.db.yaml"
 DEV_FILE="$DOCKER_DIR/compose.dev.yaml"   # the same-origin dev proxy (nginx on the host network)
 DEFAULT_MODIFIERS=(expose_web)            # what `ctl up` applies when no +modifier is given
+ENV_FILES=(.env.secrets .env.data .env.proxy)   # the three env files, in load order. Templates: <name>.template
 
 # [ADAPT] the data core. Empty = no data core — every consumer degrades gracefully.
 read -r -a DATA_SVCS <<< "${DATA_SVCS:-postgres redis neo4j}" || true
 
-# [ADAPT] .env keys a modifier maps with ${VAR}. `ctl up` refuses the modifier when any is blank —
+# [ADAPT] env keys a modifier maps with ${VAR} (across .env.secrets + .env.proxy). `ctl up` refuses
+# the modifier when any is blank —
 # an unset ${VAR} in compose becomes an empty string and the service breaks silently.
 declare -A MODIFIER_REQUIRES=(
   [env_override]="DATABASE_URL REDIS_URL NEO4J_URL API_HOST API_PORT ENGINE_HOST ENGINE_PORT DASHBOARD_HOST DASHBOARD_PORT"
 )
 
-# Project name: let docker compose decide it from .env's COMPOSE_PROJECT_NAME (or the repo
+# Project name: let docker compose decide it from .env.proxy's COMPOSE_PROJECT_NAME (or the repo
 # directory). Never force a default here — it would override the compose `name:` and make
 # every `dc ps` / health lookup miss.
 [[ -n "${COMPOSE_PROJECT_NAME:-}" ]] && export COMPOSE_PROJECT_NAME || true
@@ -98,11 +108,16 @@ Any extra args forward straight to \`docker compose $1\`." \
 }
 
 # ── docker compose ──
-# Every call is anchored at the repo root. `dc` = the whole stack (base), `dc_db` = engines only,
-# `dc_dev` = the same-origin dev proxy (compose.dev.yaml).
-dc()     { docker compose --project-directory "$CTL_ROOT" -f "$BASE" "$@"; }
-dc_db()  { docker compose --project-directory "$CTL_ROOT" -f "$DB_FILE" "$@"; }
-dc_dev() { docker compose --project-directory "$CTL_ROOT" -f "$DEV_FILE" "$@"; }
+# Every call is anchored at the repo root and gets the three env files (compose reads no .env on
+# its own). `dc` = the whole stack (base), `dc_db` = engines only, `dc_dev` = the dev proxy.
+# env_file_args — one --env-file per ENV_FILES entry that exists; a missing file is simply skipped
+# here (require_env is the guard that dies). Compose precedence: shell env > --env-file, so an
+# exported var (DATA_DIR=… ctl up) still wins over the file.
+env_file_args() { local f; for f in "${ENV_FILES[@]}"; do [[ -f "$CTL_ROOT/$f" ]] && printf -- '--env-file\n%s\n' "$CTL_ROOT/$f"; done; }
+compose_cmd()   { local -a e; mapfile -t e < <(env_file_args); docker compose --project-directory "$CTL_ROOT" "${e[@]}" "$@"; }
+dc()     { compose_cmd -f "$BASE" "$@"; }
+dc_db()  { compose_cmd -f "$DB_FILE" "$@"; }
+dc_dev() { compose_cmd -f "$DEV_FILE" "$@"; }
 # auto-discovery — no hard-coded list. compose.m.<name>.yaml = modifier <name>.
 list_modifiers() { local f b; for f in "$DOCKER_DIR"/compose.m.*.yaml; do [[ -e $f ]] || continue
                      b=${f##*/compose.m.}; printf '%s\n' "${b%.yaml}"; done; }
@@ -112,23 +127,23 @@ or_none() { local raw; raw=$(cat); raw="${raw%"${raw##*[![:space:]]}"}"
             [[ -n $raw ]] && printf '%s' "$raw" || printf '%s(none)%s' "$C_DIM" "$C_RESET"; }
 # compose_files <mod…> — print the -f list for `ctl up`: base first, then one file per modifier.
 compose_files() { printf '%s\n' "$BASE"; local m; for m in "$@"; do printf '%s/compose.m.%s.yaml\n' "$DOCKER_DIR" "$m"; done; }
-# check_modifier_env <mod> — die when a key the modifier maps is blank in .env (see MODIFIER_REQUIRES).
+# check_modifier_env <mod> — die when a key the modifier maps is blank in the loaded env (see MODIFIER_REQUIRES).
 check_modifier_env() {
   local m="$1" k blank=()
   for k in ${MODIFIER_REQUIRES[$m]:-}; do [[ -n "${!k:-}" ]] || blank+=("$k"); done
-  (( ${#blank[@]} )) && die "modifier '+$m' needs these keys set in .env: ${blank[*]}"
+  (( ${#blank[@]} )) && die "modifier '+$m' needs these keys set in .env.secrets / .env.proxy: ${blank[*]}"
   return 0
 }
 
 # ── guards ──
 # load_env_file [file] — export KEY=value pairs from an env file WITHOUT clobbering variables
-# already set in the real environment (skip-if-set). `set -a; source .env` would override
+# already set in the real environment (skip-if-set). `set -a; source .env.secrets` would override
 # inline runs (`API_PORT=8085 ctl dev`), CI-injected secrets, and secret-store injection.
 # Plain KEY=value lines only — no multi-line values, no command substitution; quotes are kept
 # literally, so write values unquoted. Composed values (${A}:${B}) stay literal here; compose
 # expands them itself, and the config loaders expand them in the apps.
 load_env_file() {
-  local f="${1:-.env}" k v
+  local f="$1" k v
   [[ -f $f ]] || return 0
   while IFS='=' read -r k v || [[ -n $k ]]; do      # `|| [[ -n $k ]]`: keep a last line with no newline
     [[ $k =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue  # skip blanks, comments, malformed keys
@@ -138,11 +153,15 @@ load_env_file() {
   done < "$f"
 }
 require_env() {
-  # STRICT (data core ⇒ real secrets): die if .env is missing.
-  # [ADAPT] SOFT (defaulted env, no secrets): replace the `die` line with `return 0`.
-  [[ -f .env ]] || die ".env missing — run \`ctl setup\` (or cp .env.example .env)."
-  load_env_file .env
+  # STRICT (data core ⇒ real secrets): die naming the first missing env file.
+  # [ADAPT] SOFT (defaulted env, no secrets): replace the `die` line with `continue`.
+  local f
+  for f in "${ENV_FILES[@]}"; do
+    [[ -f $f ]] || die "$f missing — run \`ctl setup\` (it copies $f.template)."
+    load_env_file "$f"
+  done
 }
+load_env_soft() { local f; for f in "${ENV_FILES[@]}"; do load_env_file "$f"; done; }   # diagnostics: never die
 require_tools() {  # require_tools mise docker …
   local t missing=()
   for t in "$@"; do command -v "$t" >/dev/null 2>&1 || missing+=("$t"); done
@@ -200,32 +219,36 @@ port_pid() {
   [[ -z $pid ]] && command -v lsof >/dev/null 2>&1 && pid=$(lsof -tiTCP:"$p" -sTCP:LISTEN 2>/dev/null | head -1)
   printf '%s' "$pid"
 }
-# detach_run <name> <dir> <cmd…> — background a host process: output → data/logs/<name>.log,
-# PID → data/run/<name>.pid. The pidfile is what lets `ctl ps` re-attach (a) and stop (k) it.
+# detach_run <name> <dir> <cmd…> — background a host process: output → logs/dev/<name>.log,
+# PID → logs/run/<name>.pid. The pidfile is what lets `ctl ps` re-attach (a) and stop (k) it.
 #   • `&` binds to the nohup command ALONE — backgrounding a compound forks a wrapper that keeps
 #     the caller's stdout open, so any pipe around ctl never sees EOF.
 #   • </dev/null — without it the daemon inherits the caller's stdin.
 detach_run() {
   local name="$1" dir="$2"; shift 2
-  mkdir -p "$CTL_ROOT/data/logs" "$CTL_ROOT/data/run"
+  mkdir -p "$CTL_ROOT/logs/dev" "$CTL_ROOT/logs/run"
   (
     cd "$dir" || exit 1
-    nohup "$@" < /dev/null >> "$CTL_ROOT/data/logs/$name.log" 2>&1 &
-    echo $! > "$CTL_ROOT/data/run/$name.pid"
+    nohup "$@" < /dev/null >> "$CTL_ROOT/logs/dev/$name.log" 2>&1 &
+    echo $! > "$CTL_ROOT/logs/run/$name.pid"
   )
-  ok "$name detached (pid $(cat "$CTL_ROOT/data/run/$name.pid")) — log: data/logs/$name.log"
+  ok "$name detached (pid $(cat "$CTL_ROOT/logs/run/$name.pid")) — log: logs/dev/$name.log"
 }
 
 # ── env schema (used by ctl status and ctl check) ──
 env_keys() { local k; while IFS='=' read -r k _; do [[ -z "$k" || "$k" == \#* ]] || printf '%s\n' "$k"; done < "$1"; }
-check_env_schema() {  # 0 if .env has every key .env.example declares
-  [[ -f .env && -f .env.example ]] || { err "need both .env and .env.example (run ctl setup)"; return 1; }
-  local k; declare -A have=()
-  while IFS= read -r k; do have["$k"]=1; done < <(env_keys .env)
-  local missing=()
-  while IFS= read -r k; do [[ -v have[$k] ]] || missing+=("$k"); done < <(env_keys .env.example)
-  if (( ${#missing[@]} )); then err ".env missing keys: ${missing[*]}"; return 1; fi
-  ok ".env matches .env.example schema"; return 0
+check_env_schema() {  # 0 if every .env.X has every key its .env.X.template declares
+  local f rc=0 k
+  for f in "${ENV_FILES[@]}"; do
+    [[ -f $f.template ]] || { err "$f.template missing"; rc=1; continue; }
+    [[ -f $f ]] || { err "$f missing (run ctl setup)"; rc=1; continue; }
+    declare -A have=(); local missing=()
+    while IFS= read -r k; do have["$k"]=1; done < <(env_keys "$f")
+    while IFS= read -r k; do [[ -v have[$k] ]] || missing+=("$k"); done < <(env_keys "$f.template")
+    if (( ${#missing[@]} )); then err "$f missing keys: ${missing[*]}"; rc=1; else ok "$f matches its template"; fi
+    unset have
+  done
+  return $rc
 }
 
 # ── prompts ──

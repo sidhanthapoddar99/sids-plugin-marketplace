@@ -45,14 +45,14 @@ ctl_help() {
   row "health [svc…]"                   "one-shot container health table"
   printf '\n%sDatabase%s\n' "$C_B" "$C_RESET"
   row 'migrate [up|new "<msg>"|status|down]' "schema migrations (Alembic in apps/database/postgres + neo4j init)"
-  row "db shell <engine>"               "psql · redis-cli · cypher-shell, with .env credentials"
-  row "db backup | restore <dir>"       "dump the data core to data/backups/ · load a dump back"
+  row "db shell <engine>"               "psql · redis-cli · cypher-shell, with .env.secrets credentials"
+  row "db backup | restore <dir>"       "dump the data core to logs/backups/ · load a dump back"
   printf '\n%sTest%s\n' "$C_B" "$C_RESET"
   row "test [app|e2e]"                  "run test suites (e2e: against a throwaway stack)"
   row "gate [-q]"                       "the ladder: lint → check → test → build, stop on first red"
   row "build save|start|clean"          "frozen test builds — snapshot · serve · prune  (ctl build save -h)"
   printf '\n%sConfiguration%s\n' "$C_B" "$C_RESET"
-  row "setup"                           "seed .env, generate secrets, data dirs, install deps"
+  row "setup"                           "create .env.{secrets,data,proxy} from templates, generate secrets, dirs, deps"
   row "check"                           "conformance floor — layout, env contract, compose validity"
   row "status"                          "config doctor (env · runtimes · deps · health · stack)"
   printf '\n%sup modifiers%s  %s\n' "$C_DIM" "$C_RESET" "$(list_modifiers | sed 's/^/+/' | join_sp | or_none)"
@@ -78,7 +78,7 @@ case "$cmd" in
   shell)    run container/shell  "$@" ;;
   # ── containers: thin docker compose passthroughs ─────────
   # require_env before every dc call: compose interpolates ${VAR} for ALL subcommands
-  # (down included) — a stack you can start but not stop is worse than a missing .env error.
+  # (down included) — a stack you can start but not stop is worse than a missing env-file error.
   down)     is_help "${1:-}" && { passthrough_help down    "stop the stack (or one service)";    exit 0; }; require_env; dc down    "$@" ;;
   restart)  is_help "${1:-}" && { passthrough_help restart "restart the stack (or one service)"; exit 0; }; require_env; dc restart "$@" ;;
   logs)     is_help "${1:-}" && { passthrough_help logs    "tail container logs (-f to follow)"; exit 0; }; require_env; dc logs    "$@" ;;
@@ -98,7 +98,7 @@ case "$cmd" in
               restore) run db/restore "$@" ;;
               help|-h|--help) print_help db "data-core clients and dumps" \
                 'db shell <postgres|redis|neo4j>  ·  ctl db backup  ·  ctl db restore <dir>' \
-                $'Subcommands\n  shell <engine>   interactive client with .env credentials\n  backup           dump every engine into data/backups/<timestamp>/\n  restore <dir>    load a backup back (asks first)\n\nEach subcommand has its own help: ctl db <subcommand> -h.' ;;
+                $'Subcommands\n  shell <engine>   interactive client with .env.secrets credentials\n  backup           dump every engine into logs/backups/<timestamp>/\n  restore <dir>    load a backup back (asks first)\n\nEach subcommand has its own help: ctl db <subcommand> -h.' ;;
               *) err "unknown db subcommand: $sub"; say "run ${C_B}ctl db --help${C_RESET}"; exit 1 ;;
             esac ;;
   # ── test ─────────────────────────────────────────────────

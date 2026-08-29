@@ -8,21 +8,21 @@ Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletio
 
 | Group | Verb | Does |
 |---|---|---|
-| Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | Engines in docker (`compose.db.yaml`), apps on the host with reload. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs to `data/logs/`, pids to `data/run/`. |
+| Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | Engines in docker (`compose.db.yaml`), apps on the host with reload. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs to `logs/dev/`, pids to `logs/run/`. |
 | | `ps [--list \| kill [port…]]` | Everything running across three planes: host processes, frozen builds, containers. Attach or kill, plane-aware. |
 | | `lint [app] [--staged]` | ruff, clippy, oxlint, gofmt per app. |
 | Containers | `up [+modifier…] [-a] [--nqa] [-y] [--dry-run] [--list]` | The stack: `compose.base.yaml` plus modifiers. Interactive in a terminal, flag-driven otherwise. Runs migrations once before the apps. |
 | | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs, same file list. `down` never uses `-v`: state lives in `data/`. |
-| | `build [app…\|cli]` | Compose build. Frontend build args forwarded from each frontend's `.env`. `cli`: the Go binary. |
+| | `build [app…\|cli]` | Compose build. Build args are prefixes interpolated from `.env.proxy`. `cli`: the Go binary. |
 | | `clean [-y]` | Down plus caches. `data/` untouched. |
 | | `health [svc…]` | One-shot health table. |
 | Database | `migrate [up\|new "<msg>"\|status\|down]` | Alembic in `apps/database/postgres/`; Neo4j init. The only path that touches schema. |
-| | `db shell <engine>` | psql, redis-cli, cypher-shell with `.env` credentials. |
-| | `db backup`, `db restore <dir>` | Dump to `data/backups/<timestamp>/`; load back. Restore refuses while apps run. |
+| | `db shell <engine>` | psql, redis-cli, cypher-shell with `.env.secrets` credentials. |
+| | `db backup`, `db restore <dir>` | Dump to `logs/backups/<timestamp>/`; load back. Restore refuses while apps run. |
 | Test | `test [app\|e2e]` | Each app's own suite. `e2e`: a throwaway stack. See `06_testing.md`. |
 | | `gate [-q]` | The ladder: lint → check → test → build. Stops at the first red, names every rung not reached. |
-| | `build save\|start\|clean` | Frozen test builds under `data/test_build/`. |
-| Configuration | `setup` | `.env` from `.env.example`, secrets generated, per-frontend `.env`, `data/*` dirs, deps installed. |
+| | `build save\|start\|clean` | Frozen test builds under `logs/test_build/`. |
+| Configuration | `setup` | `.env.secrets`, `.env.data`, `.env.proxy` from their templates, secrets generated, `data/*` and `logs/*` dirs, deps installed. |
 | | `check` | Conformance floor. Below. |
 | | `status` | Read-only doctor: env, runtimes, deps, docker, health, stack. Never dies. |
 
@@ -39,11 +39,11 @@ Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletio
 |---|---|---|
 | `+expose_web` | `web` on `${HTTP_PORT}` / `${HTTPS_PORT}` | The default. Prod. |
 | `+expose` | Every app port to the host | Debug. Never prod. |
-| `+env_override` | Re-points upstreams and URLs to `${VAR}` from `.env` | A piece runs outside this compose. Refused when a mapped key is blank. |
+| `+env_override` | Re-points upstreams and URLs to `${VAR}` from `.env.proxy` and `.env.secrets` | A piece runs outside this compose. Refused when a mapped key is blank. |
 
 Rules the files obey, and `ctl check` enforces:
 
-- **Root-relative paths.** `ctl` runs compose with `--project-directory <root>`. Every path is `./apps/…`, `./data`. Never `../`. Compose loads `<root>/.env` itself.
+- **Root-relative paths.** `ctl` runs compose with `--project-directory <root>`. Every path is `./apps/…`, `./data`. Never `../`. `ctl` passes `--env-file .env.secrets --env-file .env.data --env-file .env.proxy`; compose reads no `.env` on its own. Needs compose ≥ 2.24.
 - **Base has no ports.** Lists union across files and are never removed, so exposure can only be added, by a modifier.
 - **Merge order is `base` then modifiers.** Maps (`environment`, `labels`) merge per key: a modifier overrides one key, the rest survive. Scalars (`image`, `command`) replace whole. Lists (`ports`, `depends_on`) union. `environment:` beats `env_file:`.
 - **No profiles, no bare `compose.yaml`, no `compose.override.yaml`.** Every file is named. The `-f` list `ctl` prints is the contract.
@@ -57,7 +57,8 @@ Rules the files obey, and `ctl check` enforces:
 
 Runs as a gate rung. Fails on the first of:
 
-- a `${VAR}` in any `config.yaml` that is not a key in `.env.example`
+- a `${VAR}` in any `config.yaml` that is not a key in one of the three `.env.*.template` files
+- a `*_PASSWORD` / `*_KEY` / `*_SECRET` key outside `.env.secrets.template`; a `.env.proxy.template` key not ending `_HOST/_PORT/_PREFIX/_URL`; a `.env.data.template` key not ending `_DIR`
 - a secret literal in any `config.yaml` (`*_KEY`, `*_PASSWORD`, `*_SECRET` not `${VAR}`)
 - a tracked `config.local.yaml`
 - `package.json`, `bun.lock`, `pnpm-workspace.yaml` at the root, in `apps/`, or directly in the frontend group folder
@@ -77,14 +78,14 @@ Runs as a gate rung. Fails on the first of:
 - [ ] `deploy.resources.limits` on every service, memory above all
 - [ ] logs to stdout, JSON, level from `config.yaml`; no secret logged
 - [ ] migrations run once by `ctl up` before the apps, never on app boot
-- [ ] TLS at the host reverse proxy in front of the stack; `client_max_body_size` and proxy timeouts set in `prod.conf.template`
-- [ ] non-root user in every image; no `COPY .env`
-- [ ] `data/` folders exist on the host with the right owner (`ctl setup`)
+- [ ] TLS at the host reverse proxy in front of the stack; `client_max_body_size` and proxy timeouts set in `nginx.conf.template`
+- [ ] non-root user in every image; no `COPY .env*`
+- [ ] `data/` and `logs/` folders exist on the host with the right owner (`ctl setup`)
 - [ ] a rollback: the previous `TAG`, or `ctl build save` snapshot
 
 ## Frozen builds
 
-`ctl build save <target> <name>` builds a target and freezes it under `data/test_build/build-<date>-<target>-<name>/` with branch, commit and date. `ctl build start` serves one on a port. A human testing a state tests a build that cannot change under them.
+`ctl build save <target> <name>` builds a target and freezes it under `logs/test_build/build-<date>-<target>-<name>/` with branch, commit and date. `ctl build start` serves one on a port. A human testing a state tests a build that cannot change under them.
 
 ## Multi-stack: several repos on one docker network
 

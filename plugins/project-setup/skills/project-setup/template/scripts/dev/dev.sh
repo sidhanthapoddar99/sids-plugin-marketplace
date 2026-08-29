@@ -7,7 +7,7 @@
 #   ctl dev --proxy         also run the nginx dev proxy (docker/compose.dev.yaml, host network) so every
 #                           frontend + backend sits on ONE origin: http://localhost:$DEV_PROXY_PORT.
 #                           Turned on automatically when two or more frontends are selected.
-#   ctl dev --detach        background them: logs → data/logs/dev-<app>.log, pids → data/run/
+#   ctl dev --detach        background them: logs → logs/dev/dev-<app>.log, pids → logs/run/
 #                           attach with `ctl ps` → a · stop with `ctl ps` → k (or ctl ps kill)
 #   ctl dev --dry-run       print the data-core bring-up + the host commands, run nothing
 #
@@ -16,7 +16,7 @@ set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 # [ADAPT] the host apps — name → port → command. The ONE source for --help, --dry-run, and the run.
-# Emitted as strings so help/dry-run print EXACTLY what runs (ports resolve from .env once loaded).
+# Emitted as strings so help/dry-run print EXACTLY what runs (ports resolve from .env.proxy once loaded).
 app_names() { printf '%s\n' api engine landing app docs dashboard single; }   # single = example-single-web-app-vite, the one-frontend shape
 frontends() { printf '%s\n' landing app docs dashboard; }      # the ones the dev proxy fronts
 app_port()  { case "$1" in
@@ -44,7 +44,7 @@ Direct  (the host command each app runs — what --dry-run prints; copy to run w
 $(for a in $(app_names); do printf '  %-8s %s%s%s\n' "$a" "$C_GRN" "$(app_cmd "$a")" "$C_RESET"; done)
 
 Options
-  -d, --detach    run in the BACKGROUND: logs → data/logs/dev-<app>.log, pidfiles → data/run/.
+  -d, --detach    run in the BACKGROUND: logs → logs/dev/dev-<app>.log, pidfiles → logs/run/.
                   Attach with 'ctl ps' → a; stop with 'ctl ps' → k (or ctl ps kill <port>).
   --proxy         also run the nginx dev proxy ($DEV_FILE, host network): one origin at
                   http://localhost:\${DEV_PROXY_PORT} routing every prefix to its dev server.

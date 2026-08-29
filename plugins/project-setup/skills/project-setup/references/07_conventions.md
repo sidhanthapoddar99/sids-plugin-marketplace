@@ -40,7 +40,7 @@ A restructure is done only when nothing describes the old tree. Delete or move; 
 | Retired duplicates | Two config systems, two docs sites, two tools for one job. Finish the migration and delete the loser. |
 | Committed archives | Datasets, dumps, model weights, zips beside code. Move to `data/` or external storage. |
 | Loose worktrees and scratch checkouts | Inside the repo or beside it. Keep them under an ignored path or outside the project folder. |
-| Scaffolded emptiness | An empty `docker/`, `infra/`, `docs/`, `tests/` "for later". A folder exists only when used. |
+| Scaffolded emptiness | An empty `docker/`, `infra/`, `docs/`, `tests/`, `logs/` "for later". A folder exists only when used. |
 
 ## Tripwires
 
@@ -50,9 +50,10 @@ Each of these means a rule above was broken somewhere else. Find that place.
 |---|---|
 | `VITE_API_URL`, `NEXT_PUBLIC_API_URL` | single origin (`03_setup.md`) |
 | CORS middleware for our own frontend | single origin |
-| `source .env` in a script | skip-if-set loading (`02_env.md`) |
+| `source .env*` in a script | skip-if-set loading (`02_env.md`) |
 | `os.environ[...]` outside `config.py` | one loader |
-| a password in `config.yaml` | secrets in `.env` only |
+| a password in `config.yaml` | secrets in `.env.secrets` only |
+| a `VITE_*` key in `.env.proxy`, or an env file inside a frontend | a frontend has no env file; its prefix comes from `.env.proxy` |
 | `alembic upgrade` in a Dockerfile `CMD` or app startup | migrations are an explicit step |
 | `ports:` in `compose.base.yaml` | exposure by modifier only |
 | `../` in a compose file | root-relative paths |

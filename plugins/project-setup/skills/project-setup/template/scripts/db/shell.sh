@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # db/shell.sh — `ctl db shell <engine>`. The right client inside the running engine container,
-# authenticated from .env. Works under ctl dev and ctl up alike (the engines are containers in both).
+# authenticated from .env.secrets. Works under ctl dev and ctl up alike (the engines are containers in both).
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
-usage() { print_help "db shell" "Interactive client for one data engine, with .env credentials." \
+usage() { print_help "db shell" "Interactive client for one data engine, with .env.secrets credentials." \
   'db shell <postgres|redis|neo4j> [-h]' \
 "Targets
   postgres        psql as \$POSTGRES_USER on \$POSTGRES_DB
@@ -20,6 +20,6 @@ require_env
 case "$1" in
   postgres) dc exec postgres psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" ;;
   redis)    dc exec redis redis-cli ${REDIS_PASSWORD:+-a "$REDIS_PASSWORD"} ;;
-  neo4j)    dc exec neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD:?NEO4J_PASSWORD blank in .env}" ;;
+  neo4j)    dc exec neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD:?NEO4J_PASSWORD blank in .env.secrets}" ;;
   *)        die "unknown engine '$1' — postgres | redis | neo4j" ;;
 esac

@@ -28,7 +28,7 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 
 ### Root
 - [x] `ctl` + `scripts/` real code (22 files)
-- [x] `.env.example` full contract, grouped by consumer
+- [x] `.env.secrets.template`, `.env.data.template`, `.env.proxy.template` with headers and per-key comments
 - [x] `.mise.toml`, `.gitignore`, `.dockerignore`, `lefthook.yml`
 - [x] `AGENTS.md`, `CLAUDE.md` = `@AGENTS.md`, `README.md`, `LICENSE`
 - [x] `data/.gitignore` (`*` / `!.gitignore`)
@@ -89,7 +89,7 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 | The frontend bundle carries no environment value. `apps/<fe>/.env` holds build constants only (`VITE_BASE_PATH`, display name). Proxy targets come from the root `.env` via the process env. No `config.jsonc`. | 2, 4 |
 | Backend precedence: process env > `config.local.yaml` (gitignored, literals only) > `config.yaml` (committed, `${VAR}` for secrets and endpoints). One loader per backend, finds the repo root, loads root `.env` skip-if-set. | 2 |
 | Backend hosts and ports: single server — root `.env` for `ctl dev`, literals in `compose.base.yaml` for docker. Multi-server — `+env_override` re-points a service to `${VAR}` from root `.env`; a piece not in this compose is reached by its `.env` value. | 2, 3 |
-| Compose and ctl read only the root `.env`. `ctl build` forwards `apps/<fe>/.env` opaquely as build args. | 2, 3 |
+| Three root env files by role: `.env.secrets`, `.env.data`, `.env.proxy`, each from a committed `.template`. Compose and ctl read only these (`--env-file` ×3). No frontend env file; prefixes reach frontends from `.env.proxy` as build args / process env. | 2, 3 |
 | Base is prod. `compose.db.yaml` included by base; loopback ports on engines; no ports in base; modifiers add exposure. Paths root-relative via `--project-directory`. | 3 |
 
 ## Old content map
