@@ -18,6 +18,8 @@ Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletio
 | Database | `migrate [up\|new "<msg>"\|status\|down]` | Alembic in `apps/database/postgres/`; Neo4j init. The only path that touches schema. |
 | | `db shell <engine>` | psql, redis-cli, cypher-shell with `.env.secrets` credentials. |
 | | `db backup`, `db restore <dir>` | Dump to `logs/backups/<timestamp>/`; load back. Restore refuses while apps run. |
+| Administration | `manage ops <list\|create\|disable\|enable\|reset-password\|lockout>` | Operator accounts, without the web auth flow. Below. |
+| | `manage settings <list\|get\|set>` | Platform settings, value parsed as JSON. |
 | Test | `test [app\|e2e]` | Each app's own suite. `e2e`: a throwaway stack. See `06_testing.md`. |
 | | `build save\|start\|clean` | Frozen test builds under `logs/test_build/`. |
 | Gates | `gate [all] [-q] [--memory SIZE]` | The ladder: lint → typecheck → dead → audit → test → check → build → e2e. Stops at the first red, names every rung not reached. One run at a time, under a memory lid. |
@@ -87,6 +89,23 @@ Runs as a gate rung. Fails on the first of:
 - [ ] non-root user in every image; no `COPY .env*`
 - [ ] `data/` and `logs/` folders exist on the host with the right owner (`ctl setup`)
 - [ ] a rollback: the previous `TAG`, or `ctl build save` snapshot
+
+## `ctl manage` — the break-glass console
+
+The one path to operator identity that does not go through the web. It seeds the first SuperAdmin, resets a password when the admin UI is down, flips a platform setting. Model: `neura-cloud-vault/scripts/admin/manage.sh` → `apps/api-admin/manager.py`. Template: `template/scripts/admin/manage.sh`, `template/apps/example-api-python/manager.py`.
+
+| Rule | Why |
+|---|---|
+| `manage.sh` is a thin forward: `cd <admin backend> && uv run python manager.py "$@"`. Bare `ctl manage` prints ctl's help; anything else reaches argparse, so `ctl manage ops --help` works. | One implementation. The shell layer adds nothing but the env guard. |
+| `manager.py` lives at the backend root, beside `app/`. It imports the app's loader and `core/security.py`, never a router. | It is a program, not a domain. Same hashing and connection values as the service; no second copy. |
+| It runs without the web auth flow. Access to the host is the boundary. | Nothing else can be: it exists for when auth is broken. So it runs on the host or over SSH, never in a container with a published port. |
+| Every mutating action writes to `operator_audit` (actor `console`, action, target, outcome). | An unaudited break-glass is a backdoor. |
+| Operators are disabled, never deleted. | The audit history must keep its subject. |
+| Operator identity is never reachable through public signup or OAuth. The first admin comes from `ctl manage ops create --super`. | The identity plane is separate (`03_setup.md`, case 7). |
+| A generated password (`--auto-password`) is printed once, alone on its line, and never logged. | It is a secret in transit. |
+| Needs the data core up: `ctl dev`, or `ctl up --services=postgres,redis`. | It talks to the tables directly. |
+
+Products without an operator plane delete `scripts/admin/` and `manager.py`.
 
 ## Frozen builds
 

@@ -124,6 +124,7 @@ One backend per responsibility. Several backends: `03_setup.md` case 5.
 | Rate limiting | the backend router, keyed by user or IP from `X-Forwarded-For` | Per-route limits in `config.yaml` (`limits.rate_per_minute`). Redis-backed when there is more than one replica. |
 | Auth tokens | `core/security.py` | Short-lived signed access tokens, opaque refresh tokens in Redis, argon2 passwords. One `JWT_SIGNING_KEY` shared with every validator. |
 | AI and third-party keys | `.env.secrets`, backend only | The frontend calls a proxy route. Per-user quota on that route. |
+| Operator identity | `manager.py` at the admin backend's root, run by `ctl manage` | Never reachable through public signup or OAuth. The first SuperAdmin is seeded from the host with `ctl manage ops create --super`; resets and lockouts go the same way; every action audited. See `05_ctl.md`. |
 | Audit and telemetry | a domain slice (`audit/`) | Who did what, structured, to stdout; a table when it must be queried. Never a secret or a body in a log. |
 
 ## ML and notebooks

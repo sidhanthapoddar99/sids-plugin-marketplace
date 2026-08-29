@@ -8,6 +8,7 @@
 #   Development    dev · ps
 #   Containers     up · down · restart · logs · exec · shell · build · clean · health
 #   Database       migrate · db shell|backup|restore
+#   Administration manage ops|settings (break-glass console, wraps the backend's manager.py)
 #   Test           test · build save|start|clean (frozen test builds)
 #   Gates          gate [all] · gate <rung> (lint typecheck dead audit test check build e2e)
 #                  gate clones|fuzz|perf run BY NAME — not in the ladder
@@ -49,6 +50,9 @@ ctl_help() {
   row 'migrate [up|new "<msg>"|status|down]' "schema migrations (Alembic in apps/database/postgres + neo4j init)"
   row "db shell <engine>"               "psql · redis-cli · cypher-shell, with .env.secrets credentials"
   row "db backup | restore <dir>"       "dump the data core to logs/backups/ · load a dump back"
+  printf '\n%sAdministration%s (break-glass; bypasses web auth — host access is the boundary; needs the data core up)\n' "$C_B" "$C_RESET"
+  row "manage ops <…>"                  "operators: list · create · disable · enable · reset-password · lockout"
+  row "manage settings <…>"             "platform settings: list · get · set"
   printf '\n%sTest%s\n' "$C_B" "$C_RESET"
   row "test [app|e2e]"                  "run test suites (e2e: against a throwaway stack)"
   row "build save|start|clean"          "frozen test builds — snapshot · serve · prune  (ctl build save -h)"
@@ -114,6 +118,8 @@ case "$cmd" in
                 $'Subcommands\n  shell <engine>   interactive client with .env.secrets credentials\n  backup           dump every engine into logs/backups/<timestamp>/\n  restore <dir>    load a backup back (asks first)\n\nEach subcommand has its own help: ctl db <subcommand> -h.' ;;
               *) err "unknown db subcommand: $sub"; say "run ${C_B}ctl db --help${C_RESET}"; exit 1 ;;
             esac ;;
+  # ── administration (break-glass operator console) ────────
+  manage)   run admin/manage "$@" ;;
   # ── test ─────────────────────────────────────────────────
   test)     run test/test "$@" ;;
   # ── gates ────────────────────────────────────────────────

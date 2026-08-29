@@ -79,6 +79,7 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 - [x] `scripts/gate/`: ladder `lint typecheck dead audit test check build e2e`, one file per rung, `_gate.sh` (quiet re-exec, reject args, require target), `_lock.sh` (one run + memory lid); by-name `clones fuzz perf`. `ctl typecheck` worker added. `scripts/test/gate.sh` deleted.
 - [x] `ctl up --services a,b` + interactive service picker after modifiers; `ctl dev` picks apps in a TTY (`--nqa` skips).
 - [x] `require_docker` names the fault (missing · stopped · no-compose); runs before the first compose call in `up`, passthroughs, `build`. Bug fixed: dead engine reported as "invalid combination".
+- [x] `ctl manage` break-glass console: `scripts/admin/manage.sh` + `apps/example-api-python/manager.py` stub; 05 section, 04 security-floor row.
 - [x] Conformance example: `apps/example-api-python/tests/conformance/test_structure.py` (registry, two checks, red fixtures, ledger).
 - [ ] Smoke-run the gate family on a real copy: `bash -n` passes; the rungs have not been executed against installed tools.
 - [ ] `ctl check` covers: config.yaml keys ⊆ `.env.example`, no manifests at root/apps, no ports in base, no `../` in compose, compose config valid per combination, `CLAUDE.md` content. TODO: `.env.example` comment rule.
