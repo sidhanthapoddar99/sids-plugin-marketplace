@@ -23,7 +23,7 @@ is_help "${1:-}" && { usage; exit 0; }
 target="${1:-all}"; rc=0
 run_py() { [[ -d $1 ]] || return 0; step "$1 (pytest)";      ( cd "$1" && uv run pytest ) || rc=1; }
 run_rs() { [[ -d $1 ]] || return 0; step "$1 (cargo test)";  ( cd "$1" && cargo test ) || rc=1; }
-run_js() { [[ -d $1 ]] || return 0; step "$1 (bun test)";    ( cd "$1" && bun test ) || rc=1; }
+run_js() { [[ -d $1 ]] || return 0; step "$1 (bun run test)"; ( cd "$1" && bun run test ) || rc=1; }
 run_go() { [[ -d $1 ]] || return 0; step "$1 (go test)";     ( cd "$1" && go test ./... ) || rc=1; }
 case "$target" in
   all)      run_py apps/example-api-python; run_py apps/database/postgres; run_rs apps/example-engine-rust; run_js apps/example-multi-web-app/landing; run_js apps/example-multi-web-app/app; run_js apps/example-multi-web-app/docs; run_js apps/example-dashboard-nextjs; run_go apps/example-tui-go ;;

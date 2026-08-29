@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# dev/lint.sh — `ctl lint [app] [--staged]`. Lint every app with its own tool (non-mutating,
-# CI-friendly). --staged limits the run to git-staged files, for the pre-commit hook.
+# gate/lint.sh — `ctl gate lint [app] [--staged]`. Rung 1: every linter over every app; first because it is the cheapest answer in the ladder.
+# One implementation, two callers: the ladder runs it with no arguments (the whole repo); by name it
+# takes a target and --staged (the pre-commit hook). -q/--quiet is the shared gate capture.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
+source "$CTL_ROOT/scripts/gate/_gate.sh"
+gate_quiet_reexec "$@"
 
-usage() { print_help "lint" "Lint every app (non-mutating)." \
-  'lint [api|engine|landing|app|docs|dashboard|cli|database] [--staged] [-h]' \
+usage() { print_help "gate lint" "Lint every app (non-mutating)." \
+  'gate lint [api|engine|landing|app|docs|dashboard|cli|database] [--staged] [-h]' \
 "Arguments
   (none)          lint everything
   api, database   ruff check
@@ -15,13 +18,14 @@ usage() { print_help "lint" "Lint every app (non-mutating)." \
 
 Options
   --staged        only git-staged files (skips an app with no staged file under it)
+  -q, --quiet     counts only when green; a red run prints in full
   -h, --help      show this help"; }
 
 is_help "${1:-}" && { usage; exit 0; }
 target=all staged=0
 while (( $# )); do case "$1" in
   --staged) staged=1; shift ;;
-  -*)       die "unknown flag $1 (see ctl lint -h)" ;;
+  -*)       die "unknown flag $1 (see ctl gate lint -h)" ;;
   *)        target="$1"; shift ;;
 esac; done
 rc=0
@@ -44,5 +48,5 @@ case "$target" in
   cli)      lint_go apps/example-tui-go ;;
   *)        die "unknown target: $target (all|api|engine|landing|app|docs|dashboard|cli|database)" ;;
 esac
-(( rc == 0 )) && ok "lint clean" || err "lint issues"
+(( rc == 0 )) && ok "gate lint green" || err "gate lint RED"
 exit $rc

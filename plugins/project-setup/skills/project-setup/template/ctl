@@ -5,19 +5,22 @@
 # (scripts/<group>/<name>.sh), and inlines only the trivial `docker compose` passthroughs.
 # Every command supports -h / --help; colors auto-disable when piped or NO_COLOR is set.
 #
-#   Development    dev · ps · lint
+#   Development    dev · ps
 #   Containers     up · down · restart · logs · exec · shell · build · clean · health
 #   Database       migrate · db shell|backup|restore
-#   Test           test · gate · build save|start|clean (frozen test builds)
+#   Test           test · build save|start|clean (frozen test builds)
+#   Gates          gate [all] · gate <rung> (lint typecheck dead audit test check build e2e)
+#                  gate clones|fuzz|perf run BY NAME — not in the ladder
 #   Configuration  setup · check · status
 #
 # COMPOSE MODEL. `ctl dev` runs docker/compose.db.yaml alone (engines, loopback ports) and the
-# apps on the host. `ctl up [+mod…]` runs docker/compose.base.yaml (the whole stack — it
-# includes the db file) plus stackable modifiers docker/compose.m.<name>.yaml, given as
-# `+name` tokens. No modifier given: an interactive multi-select in a terminal, else the
-# default (+expose_web). Bare `ctl up` walks modifiers → plan → confirm. `ctl dev --proxy` adds
-# docker/compose.dev.yaml: one nginx on the host network so several frontends share one origin.
-# Run `ctl <command> --help` for any command.
+# apps on the host. `ctl up [+mod…] [--services a,b]` runs docker/compose.base.yaml (the whole
+# stack — it includes the db file) plus stackable modifiers docker/compose.m.<name>.yaml, given
+# as `+name` tokens, for every service or a chosen subset. Bare `ctl up` in a terminal walks
+# modifiers → services → plan → confirm; no TTY = the default (+expose_web, every service).
+# `ctl dev --proxy` adds docker/compose.dev.yaml: one nginx on the host network so several
+# frontends share one origin. Every docker verb checks the engine FIRST and names the fault
+# (not installed · not running · compose plugin missing). Run `ctl <command> --help` for any command.
 
 set -euo pipefail
 CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -32,9 +35,8 @@ ctl_help() {
   printf '%sDevelopment%s (host loop)\n' "$C_B" "$C_RESET"
   row "dev [app…] [--proxy] [--detach]" "data core in docker, apps on the host with reload (--proxy: one origin)"
   row "ps [--list | kill [port…]]"      "browse everything running — attach · kill · port map"
-  row "lint [app] [--staged]"           "lint every app (ruff · clippy · oxlint · gofmt)"
   printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"
-  row "up [+modifier…]"                 "assemble + start the stack — interactive  (ctl up --help)"
+  row "up [+modifier…] [--services a,b]" "assemble + start the stack, or a subset — interactive  (ctl up --help)"
   row "down [svc]"                      "stop the stack (or one service)"
   row "restart [svc]"                   "restart the stack (or one service)"
   row "logs [svc] [-f]"                 "tail container logs"
@@ -49,8 +51,20 @@ ctl_help() {
   row "db backup | restore <dir>"       "dump the data core to logs/backups/ · load a dump back"
   printf '\n%sTest%s\n' "$C_B" "$C_RESET"
   row "test [app|e2e]"                  "run test suites (e2e: against a throwaway stack)"
-  row "gate [-q]"                       "the ladder: lint → check → test → build, stop on first red"
   row "build save|start|clean"          "frozen test builds — snapshot · serve · prune  (ctl build save -h)"
+  printf '\n%sGates%s (the ladder — a repo without CI runs it here; with CI, CI runs it)\n' "$C_B" "$C_RESET"
+  row "gate [all] [-q] [--memory SIZE]" "the whole ladder, in order below — stop on first red, name what did not run"
+  row "gate lint [app] [--staged]"      "ruff · clippy · oxlint · gofmt   (--staged: the pre-commit hook)"
+  row "gate typecheck [app]"            "tsc · mypy · cargo check · go vet"
+  row "gate dead"                       "dead-code census: knip ×2 · deptry · cargo udeps — zero findings"
+  row "gate audit"                      "gitleaks · bandit · pip-audit · bun audit · cargo audit · govulncheck"
+  row "gate test"                       "every app's suite, structure tests among them  (= ctl test)"
+  row "gate check"                      "repo conformance floor  (= ctl check)"
+  row "gate build"                      "every image and bundle  (= ctl build)"
+  row "gate e2e"                        "the browser suite on a throwaway stack  (= ctl test e2e)"
+  row "gate clones [--all] [--max N]"   "by name · copy-pasted code (jscpd) — never in the ladder"
+  row "gate fuzz [--time S]"            "by name · hypothesis · fast-check · cargo fuzz"
+  row "gate perf"                       "by name · pytest-benchmark · k6 · cargo bench → logs/perf/"
   printf '\n%sConfiguration%s\n' "$C_B" "$C_RESET"
   row "setup"                           "create .env.{secrets,data,proxy} from templates, generate secrets, dirs, deps"
   row "check"                           "conformance floor — layout, env contract, compose validity"
@@ -62,9 +76,8 @@ ctl_help() {
 cmd="${1:-help}"; shift || true
 case "$cmd" in
   # ── development ──────────────────────────────────────────
-  dev)      run dev/dev  "$@" ;;
-  ps)       run dev/ps   "$@" ;;
-  lint)     run dev/lint "$@" ;;
+  dev)      run dev/dev       "$@" ;;
+  ps)       run dev/ps        "$@" ;;
   # ── containers: substantive workers ──────────────────────
   up)       run container/up     "$@" ;;
   # `build` splits on the subverb: save|start|clean = frozen test builds (test/build.sh);
@@ -77,17 +90,17 @@ case "$cmd" in
   health)   run container/health "$@" ;;
   shell)    run container/shell  "$@" ;;
   # ── containers: thin docker compose passthroughs ─────────
-  # require_env before every dc call: compose interpolates ${VAR} for ALL subcommands
-  # (down included) — a stack you can start but not stop is worse than a missing env-file error.
-  down)     is_help "${1:-}" && { passthrough_help down    "stop the stack (or one service)";    exit 0; }; require_env; dc down    "$@" ;;
-  restart)  is_help "${1:-}" && { passthrough_help restart "restart the stack (or one service)"; exit 0; }; require_env; dc restart "$@" ;;
-  logs)     is_help "${1:-}" && { passthrough_help logs    "tail container logs (-f to follow)"; exit 0; }; require_env; dc logs    "$@" ;;
+  # require_env + require_docker before every dc call: compose interpolates ${VAR} for ALL
+  # subcommands (down included), and a dead daemon must be named as such, never as a compose error.
+  down)     is_help "${1:-}" && { passthrough_help down    "stop the stack (or one service)";    exit 0; }; require_env; require_docker; dc down    "$@" ;;
+  restart)  is_help "${1:-}" && { passthrough_help restart "restart the stack (or one service)"; exit 0; }; require_env; require_docker; dc restart "$@" ;;
+  logs)     is_help "${1:-}" && { passthrough_help logs    "tail container logs (-f to follow)"; exit 0; }; require_env; require_docker; dc logs    "$@" ;;
   exec)     is_help "${1:-}" && { print_help exec "Run a command inside a running service container." \
               'exec <service> [command…] [-h]' \
               $'Arguments\n  service       the compose service (api, engine, postgres, …)\n  command…      default: an interactive shell\n\nOptions\n  -h, --help    show this help' \
               "Forwards to \`docker compose exec\`."; exit 0; }
             [[ $# -ge 1 ]] || die "usage: ctl exec <service> [command…]"
-            require_env
+            require_env; require_docker
             svc="$1"; shift; if (( $# )); then dc exec "$svc" "$@"; else dc exec "$svc" sh; fi ;;
   # ── database ─────────────────────────────────────────────
   migrate)  run db/migrate "$@" ;;
@@ -103,7 +116,16 @@ case "$cmd" in
             esac ;;
   # ── test ─────────────────────────────────────────────────
   test)     run test/test "$@" ;;
-  gate)     run test/gate "$@" ;;
+  # ── gates ────────────────────────────────────────────────
+  # `ctl gate` and `ctl gate all` run the ladder (gate/all.sh); a rung name runs that rung's file;
+  # clones · fuzz · perf are gates run BY NAME and never in the ladder. Any other name is an error.
+  gate)     sub="${1:-all}"
+            case "$sub" in
+              -q|--quiet|--memory|--memory=*) run gate/all "$@" ;;
+              all|lint|typecheck|dead|audit|test|check|build|e2e|clones|fuzz|perf) shift; run "gate/$sub" "$@" ;;
+              -h|--help) run gate/all --help ;;
+              *) err "unknown gate: $sub"; say "run ${C_B}ctl gate --help${C_RESET} for the rung list"; exit 1 ;;
+            esac ;;
   # ── configuration ────────────────────────────────────────
   setup)    run config/setup  "$@" ;;
   check)    run config/check  "$@" ;;

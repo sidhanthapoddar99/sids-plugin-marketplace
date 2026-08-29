@@ -2,7 +2,7 @@
 pre-commit:
   commands:
     lint:
-      run: ctl lint --staged
+      run: ctl gate lint --staged
 pre-push:
   commands:
     test:

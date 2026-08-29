@@ -40,6 +40,8 @@ Rules:
 - **Promote when shared, never before.** A thing moves up one scope when its second consumer appears. A thing used once stays where it is used. The same rule sizes a backend: flat `app/` until the second domain, domain slices until a layer is reused by a second binary, crates after that.
 - **State lives at the narrowest scope that needs it.** Component state in the component, feature state in the feature, app state only for what every feature reads (session, theme).
 
+These rules are the input to a conformance check. When one is broken a second time, write the check; see "Conformance" in `06_testing.md`.
+
 ## Naming
 
 - App folders take the role, not the stack: `api/`, `engine/`, `dashboard/`, `cli/`. Suffix when two share a role: `api-admin/`, `api-platform/`.

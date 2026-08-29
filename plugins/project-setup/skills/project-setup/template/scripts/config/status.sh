@@ -35,11 +35,12 @@ for t in uv bun cargo go uvenv; do                        # stack-dependent — 
 done
 
 step "docker"
-if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-  ok "daemon reachable — compose $(docker compose version --short 2>/dev/null || echo '?')"
-else
-  warn "daemon not reachable (needed for ctl dev/up/build/health)"
-fi
+case "$(docker_state)" in
+  ok)         ok "engine running — compose $(docker compose version --short 2>/dev/null || echo '?')" ;;
+  missing)    warn "docker not installed (needed for ctl dev/up/build/health)" ;;
+  stopped)    warn "docker installed but the engine is not running — start it (systemctl start docker · Docker Desktop)" ;;
+  no-compose) warn "docker compose plugin missing (docker-compose-plugin ≥ 2.24)" ;;
+esac
 printf '  %s%-9s%s %s\n' "$C_DIM" "project"  "$C_RESET" "${COMPOSE_PROJECT_NAME:-$(basename "$CTL_ROOT")}"
 printf '  %s%-9s%s %s\n' "$C_DIM" "data dir" "$C_RESET" "${DATA_DIR:-./data}"
 printf '  %s%-9s%s %s\n' "$C_DIM" "logs dir" "$C_RESET" "${LOGS_DIR:-./logs}"
@@ -54,8 +55,8 @@ done
 
 step "data core"
 if (( ${#DATA_SVCS[@]} )); then
-  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then health_table "${DATA_SVCS[@]}"
-  else say "${C_DIM}docker not reachable${C_RESET}"; fi
+  if [[ "$(docker_state)" == ok ]]; then health_table "${DATA_SVCS[@]}"
+  else say "${C_DIM}docker not available (see above)${C_RESET}"; fi
 else say "${C_DIM}none (DATA_SVCS empty)${C_RESET}"; fi
 
 step "stack (what \`ctl up\` can assemble)"

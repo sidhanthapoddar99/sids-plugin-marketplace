@@ -2,8 +2,9 @@
 # dev/dev.sh — `ctl dev [app…]`. The host dev loop: the data core in docker (compose.db.yaml
 # alone — loopback ports, so host processes reach it), the apps on the host with reload.
 #
-#   ctl dev                 every app, foreground, prefixed output — Ctrl-C stops all
-#   ctl dev api app         only these apps
+#   ctl dev                 in a terminal: pick the apps (multi-select, all preselected), then run them
+#                           foreground with prefixed output — Ctrl-C stops all. No TTY or --nqa: every app.
+#   ctl dev api app         only these apps, no prompt
 #   ctl dev --proxy         also run the nginx dev proxy (docker/compose.dev.yaml, host network) so every
 #                           frontend + backend sits on ONE origin: http://localhost:$DEV_PROXY_PORT.
 #                           Turned on automatically when two or more frontends are selected.
@@ -36,9 +37,10 @@ app_cmd()   { case "$1" in
   *)         die "unknown app '$1'" ;; esac; }
 
 usage() { print_help "dev" "Data core in docker, apps on the host with reload." \
-  'dev [app…] [-d|--detach] [--proxy] [--no-core] [--dry-run] [-h]' \
+  'dev [app…] [-d|--detach] [--proxy] [--no-core] [--nqa] [--dry-run] [-h]' \
 "Arguments
-  app…            which apps to run — default: all ($(app_names | join_sp))
+  app…            which apps to run: $(app_names | join_sp)
+                  (none given: interactive pick in a terminal, all preselected; else every app)
 
 Direct  (the host command each app runs — what --dry-run prints; copy to run without ctl)
 $(for a in $(app_names); do printf '  %-8s %s%s%s\n' "$a" "$C_GRN" "$(app_cmd "$a")" "$C_RESET"; done)
@@ -50,6 +52,7 @@ Options
                   http://localhost:\${DEV_PROXY_PORT} routing every prefix to its dev server.
                   Automatic when two or more frontends ($(frontends | join_sp)) are selected.
   --no-core       don't touch the data core; assume it is reachable
+  --nqa           no questions — skip the app picker; no apps named = every app
   --dry-run, -n   print what would run, run nothing
   -h, --help      show this help
 
@@ -57,17 +60,28 @@ With a data core (DATA_SVCS set) it first runs \`docker compose -f $DB_FILE up -
 waits for health, then starts the host processes."; }
 
 # parse: positionals = apps, flags anywhere
-apps=() dry=0 detach=0 no_core=0 proxy=0
+apps=() dry=0 detach=0 no_core=0 proxy=0 nqa=0
 while (( $# )); do case "$1" in
   -h|--help)     usage; exit 0 ;;
   --dry-run|-n)  dry=1; shift ;;
   -d|--detach)   detach=1; shift ;;
   --proxy)       proxy=1; shift ;;
   --no-core)     no_core=1; shift ;;
+  --nqa|--no-questions-asked) nqa=1; shift ;;
   -*)            die "unknown flag '$1' (see ctl dev -h)" ;;
   *)             app_names | grep -qx "$1" || die "unknown app '$1' — one of: $(app_names | join_sp)"; apps+=("$1"); shift ;;
 esac; done
-(( ${#apps[@]} )) || mapfile -t apps < <(app_names)
+# no apps named: pick in a terminal (same widget as `ctl up`), else every app
+if (( ${#apps[@]} == 0 )); then
+  mapfile -t ALL_APPS < <(app_names)
+  if [[ -t 1 && -r /dev/tty && $nqa -eq 0 && $dry -eq 0 ]]; then
+    tui_select --into apps --multi --preselect "$(IFS=,; echo "${ALL_APPS[*]}")" \
+      --header "Apps — untick what should not run (Enter = every ticked one)" -- "${ALL_APPS[@]}" \
+      || { say "cancelled."; exit 0; }
+    printf '\n'
+    (( ${#apps[@]} )) || die "no app selected — nothing to run"
+  else apps=("${ALL_APPS[@]}"); fi
+fi
 # two or more frontends selected → they need one origin → the dev proxy comes up
 n_fe=0; for a in "${apps[@]}"; do frontends | grep -qx "$a" && n_fe=$((n_fe+1)); done
 (( n_fe >= 2 )) && proxy=1

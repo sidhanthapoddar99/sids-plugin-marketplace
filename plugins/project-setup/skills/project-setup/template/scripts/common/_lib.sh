@@ -168,7 +168,25 @@ require_tools() {  # require_tools mise docker …
   (( ${#missing[@]} )) && die "missing on PATH: ${missing[*]} (run: mise install)"
   return 0
 }
-require_docker() { require_tools docker; docker info >/dev/null 2>&1 || die "docker daemon not reachable"; }
+# docker_state — one word on stdout: ok · missing · stopped · no-compose. Never dies; `ctl status`
+# reads it too. The three failures are different repairs, so they are never one message.
+docker_state() {
+  command -v docker >/dev/null 2>&1 || { echo missing; return 0; }
+  docker info >/dev/null 2>&1        || { echo stopped; return 0; }
+  docker compose version >/dev/null 2>&1 || { echo no-compose; return 0; }
+  echo ok
+}
+# require_docker — die by NAME on the first thing wrong. Call it BEFORE the first compose call:
+# compose reports a dead daemon as a config error, and "invalid modifier combination" is the
+# wrong message for "the engine is not running".
+require_docker() {
+  case "$(docker_state)" in
+    ok)         return 0 ;;
+    missing)    die "docker is not installed — install Docker Engine (or Docker Desktop), then re-run" ;;
+    stopped)    die "docker engine is not running — start it (systemctl start docker · open Docker Desktop · on WSL2: check the integration), then re-run" ;;
+    no-compose) die "docker compose plugin missing — install docker-compose-plugin ≥ 2.24 (docker compose version)" ;;
+  esac
+}
 
 # ── container health ──
 tool_version() { command -v "$1" >/dev/null 2>&1 || return 1; case "$1" in go) go version;; *) "$1" --version;; esac 2>/dev/null | head -1 | tr -d '\n'; }

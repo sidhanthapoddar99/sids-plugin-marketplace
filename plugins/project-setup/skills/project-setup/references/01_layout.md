@@ -76,7 +76,7 @@ The root holds config, the brief, and folders. Never loose code.
 | `.gitignore` / `.dockerignore` | Ignore lists | Curated per ecosystem present. Tool config that spans the whole repo (`knip.json`) may sit at root; lint config for one ecosystem sits in the app (`biome.json`, `.oxlintrc.json`, `ruff` in `pyproject.toml`). |
 | `ctl` | The single entrypoint | Thin router into `scripts/`. |
 | `AGENTS.md` | The agent brief | The real file. `CLAUDE.md` holds one line: `@AGENTS.md`. |
-| `lefthook.yml` | Git hooks | Every hook calls `ctl` (`ctl lint --staged`, `ctl test`), never a tool directly. |
+| `lefthook.yml` | Git hooks | Every hook calls `ctl` (`ctl gate lint --staged`, `ctl test`), never a tool directly. |
 | `README.md` / `LICENSE` | | |
 
 > No workspace. `package.json`, `bun.lock`, `pnpm-workspace.yaml` never live in the root, in `apps/`, or directly in the frontend group folder. Each app and each package owns its own manifest and lock. `ctl check` fails on it.

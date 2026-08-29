@@ -10,8 +10,7 @@ Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletio
 |---|---|---|
 | Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | Engines in docker (`compose.db.yaml`), apps on the host with reload. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs to `logs/dev/`, pids to `logs/run/`. |
 | | `ps [--list \| kill [port…]]` | Everything running across three planes: host processes, frozen builds, containers. Attach or kill, plane-aware. |
-| | `lint [app] [--staged]` | ruff, clippy, oxlint, gofmt per app. |
-| Containers | `up [+modifier…] [-a] [--nqa] [-y] [--dry-run] [--list]` | The stack: `compose.base.yaml` plus modifiers. Interactive in a terminal, flag-driven otherwise. Runs migrations once before the apps. |
+| Containers | `up [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | The stack: `compose.base.yaml` plus modifiers, every service or a subset. In a terminal: pick modifiers → pick services (all preselected) → plan → confirm. Flags skip their prompt; no TTY = defaults. Runs migrations once before any app. |
 | | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs, same file list. `down` never uses `-v`: state lives in `data/`. |
 | | `build [app…\|cli]` | Compose build. Build args are prefixes interpolated from `.env.proxy`. `cli`: the Go binary. |
 | | `clean [-y]` | Down plus caches. `data/` untouched. |
@@ -20,8 +19,10 @@ Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletio
 | | `db shell <engine>` | psql, redis-cli, cypher-shell with `.env.secrets` credentials. |
 | | `db backup`, `db restore <dir>` | Dump to `logs/backups/<timestamp>/`; load back. Restore refuses while apps run. |
 | Test | `test [app\|e2e]` | Each app's own suite. `e2e`: a throwaway stack. See `06_testing.md`. |
-| | `gate [-q]` | The ladder: lint → check → test → build. Stops at the first red, names every rung not reached. |
 | | `build save\|start\|clean` | Frozen test builds under `logs/test_build/`. |
+| Gates | `gate [all] [-q] [--memory SIZE]` | The ladder: lint → typecheck → dead → audit → test → check → build → e2e. Stops at the first red, names every rung not reached. One run at a time, under a memory lid. |
+| | `gate <rung> [-q]` | One rung. `gate lint [app] [--staged]` and `gate typecheck [app]` take a target; the others take none. |
+| | `gate clones\|fuzz\|perf` | By name. Never in the ladder. |
 | Configuration | `setup` | `.env.secrets`, `.env.data`, `.env.proxy` from their templates, secrets generated, `data/*` and `logs/*` dirs, deps installed. |
 | | `check` | Conformance floor. Below. |
 | | `status` | Read-only doctor: env, runtimes, deps, docker, health, stack. Never dies. |
@@ -51,7 +52,11 @@ Rules the files obey, and `ctl check` enforces:
 - **Bind mounts, not named volumes.** `${DATA_DIR}/<engine>` on the host. Visible, backup-friendly. `data/.gitignore` keeps it out of git; `ctl setup` creates the folders.
 - **Internal ports are fixed** (`api:8000`); only published host ports vary, via `${VAR}`.
 
-`ctl up` shows the real `docker compose config` merge as a plan before running, so an invalid combination fails before anything starts.
+`ctl up` shows the real `docker compose config` merge as a plan before running, so an invalid combination fails before anything starts. With `--services`, the plan still lists every service in the file set and marks the subset; an app in the subset brings the whole data core and the migration step with it, an engine alone does not.
+
+**The docker guard runs first, by name.** Every docker verb calls `require_docker` before its first compose call. It tells three faults apart: not installed, engine not running, compose plugin missing. Compose itself reports a dead engine as a config error, which is how an earlier `up.sh` printed "invalid modifier combination" for "Docker is not running". `ctl status` shows the same three states without dying.
+
+The `scripts/` groups are `common config dev container db test gate`. A gate rung never holds logic: it calls the same worker its dev verb calls (`gate/test.sh` → `test/test.sh`); lint and typecheck have no separate dev verb, the rung is the worker, so the gate and the loop cannot drift.
 
 ## `ctl check` — the conformance floor
 

@@ -76,7 +76,11 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 - [-] desktop (`tauri/`) and mobile — not in template. Architecture page covers in one table row each, pointing at vault's `apps/client/tauri` shape.
 
 ### Cross-cutting
-- [ ] `scripts/test/gate.sh`: add `typecheck`, `dead`, `e2e`, `audit` rungs; `gate <rung>`; by-name `fuzz`, `perf`, `clones` (from neurasutra-editor `scripts/gate/`). Deferred until the page set is final.
+- [x] `scripts/gate/`: ladder `lint typecheck dead audit test check build e2e`, one file per rung, `_gate.sh` (quiet re-exec, reject args, require target), `_lock.sh` (one run + memory lid); by-name `clones fuzz perf`. `ctl typecheck` worker added. `scripts/test/gate.sh` deleted.
+- [x] `ctl up --services a,b` + interactive service picker after modifiers; `ctl dev` picks apps in a TTY (`--nqa` skips).
+- [x] `require_docker` names the fault (missing · stopped · no-compose); runs before the first compose call in `up`, passthroughs, `build`. Bug fixed: dead engine reported as "invalid combination".
+- [x] Conformance example: `apps/example-api-python/tests/conformance/test_structure.py` (registry, two checks, red fixtures, ledger).
+- [ ] Smoke-run the gate family on a real copy: `bash -n` passes; the rungs have not been executed against installed tools.
 - [ ] `ctl check` covers: config.yaml keys ⊆ `.env.example`, no manifests at root/apps, no ports in base, no `../` in compose, compose config valid per combination, `CLAUDE.md` content. TODO: `.env.example` comment rule.
 - [ ] every `<version>` placeholder present, none filled
 - [ ] one smoke run of `ctl check`, `ctl up --dry-run`, `ctl dev --dry-run` on a copy with docker
@@ -133,3 +137,62 @@ Where each old area lands. Unlisted old files are dropped.
 | `4-feature/*` | 6 | feature folders, styling discipline, caps and extraction, types contract |
 | `5-examples/*` | — | the template is the example |
 | `handoffs/*` | — | obsolete |
+
+## Gap check — old references vs the new pages (2026-08-30). For Sid to decide; nothing applied.
+
+Method: every file under `references_old/` and `snippets_old/` walked; each item grepped against `references/01–07` and `template/` before listing. Skipped: items already covered, and the dropped-by-decision topics (Traefik, process-compose, `infra/`, per-frontend `.env`, single root `.env`, `config.jsonc`, compose profiles, ML orchestration, vscode debugger, CI/CD, `handoffs/`, `5-examples`).
+
+### Highest value (agent's ranking)
+
+1. **Agent-brief contract** — `template/AGENTS.md` is 12 lines; pages 4/6/7 say "record it in AGENTS.md" (stack additions, gate rungs, exceptions, recorded choices, tripwire numbers, styling block) with no section to receive it.
+2. **Production serving** — per-language concurrency (Python = gunicorn workers + recycling with jitter, graceful timeouts; Rust/Go/Node = one process, scale by replicas), workers matched to the CPU limit, never `uvicorn --reload` in a prod CMD. Page 03 promised "worker model one paragraph"; none exists.
+3. **Typography allowlist + `frontend-design` precedence** — `text-sm` ~90 %, one emphasis weight, hierarchy by size+colour never weight; with tokens + a ui package this discipline overrides the `frontend-design` skill. Entirely absent from 04.
+4. **AI posture** — prompt-injection rules (allowlist tools, validate args, never execute model output, tools through the service layer's authz), per-environment provider keys + spend caps, provider adapters, versioned prompt files, model IDs in `config.yaml`. Absent from 04.
+5. **Theme switching** — nothing sets `[data-theme]`: localStorage + `prefers-color-scheme` writer, blocking pre-paint script for Next.js; the Vite SPA has no `index.html`. Status tokens (`--success/--warning/--danger/--info`) and a z-index scale missing from `tokens.css`.
+6. **Raw-SQL migration mechanics** — 04 prescribes the Alembic shim; template ships no `alembic_helpers.run_sql` nor `.up.sql/.down.sql` pair. Contradiction: old rule "when Python is not the schema owner use `sqlx migrate` / `golang-migrate`", new forces Alembic. Plus parked `migrate → sqlx prepare --check → build`.
+7. **Prod compose instance** — `compose.base.yaml` has no `x-defaults`, `restart`, app healthchecks with `start_period`, `stop_grace_period`, `deploy.resources`; `compose.db.yaml` has healthchecks for postgres only (so `wait_healthy` cannot judge redis/neo4j). Migrations as a one-shot compose service gated by `service_completed_successfully` still undecided.
+8. **Domain naming** — domains are ownership nouns, never activities (`build/`, `sync/`) or UI nav labels; one aggregator router per domain; domain-shared helpers at the domain root not `core/`; two backends never share an ORM package (schema is the only contract).
+9. **Engine gotchas** — SQLite pragmas (`WAL`, `busy_timeout`, `foreign_keys=ON`) + Alembic `render_as_batch=True`; Redis Streams need `maxmemory-policy noeviction`, AOF `everysec`, db-number map; Postgres `POSTGRES_INITDB_ARGS` locale, extension table (only `pgvector` survives).
+10. **`ctl manage` — break-glass operator console (Sid: take).** Model: neura-cloud-vault `scripts/admin/manage.sh` → `apps/api-admin/manager.py`. Thin forward (`cd <admin backend> && uv run python manager.py "$@"`); `manager.py` at the backend root, argparse: `ops create|list|disable|enable|reset-password|lockout [--clear]`, `settings list|get|set <key> <json>`. Direct DB/redis through the app's own config loader and `hash_password`; every mutation written to `operator_audit`; operators disabled never deleted; needs the data core up. Rule: runs without the web auth flow, host access is the boundary; the only path that seeds the first SuperAdmin. Goes to 05 (verb table + a "Break-glass" section) and 04 (security floor row); template gets `scripts/admin/manage.sh` + `apps/example-api-python/manager.py` stub.
+11. **Parked page-05 items still unwritten** — prod env files `chmod 600`; crash-loop tell (`Up N seconds`, `RestartCount`, `grep emerg`); escalate `ctl` to a binary only for structured state across runs; "raw `docker compose -f` must keep working beside ctl"; ctl conformance floor as a `ctl check` rule (`_lib.sh` sourced, every verb `run`-routed, single-file ctl = red).
+
+### Full list, by old folder
+
+| Old file | Item | Goes to | Verdict |
+|---|---|---|---|
+| `00_altitude-model` | Numbered tripwires with thresholds; crossing one obligates restructure **or a recorded deferral** | 07 | missing |
+| `00_altitude-model` | Audits compare the repo against its recorded choices, not the canon | 07, AGENTS.md | partial |
+| `00_altitude-model` | Evolution timing: reconcile in the milestone the domain settles; batch moves; audit triggers | 07 | missing |
+| `00_altitude-model` | No written rule → resolve from principles and record it, never improvise inline | 07 | missing |
+| `00_altitude-model` | The four altitudes (ties go up) | 07 | dropped; index promised "one paragraph" |
+| `01_question-flow` | Always-ask list; 5–10 bullet confirmation before proposing | SKILL.md | pending SKILL.md |
+| `01_question-flow` | Named defaults: zustand (client state), TanStack Query (server state); theming both modes, light-only marketing; OSS vs private | 04 | missing |
+| `02_decision-tree` | Three placement categories (app / internal lib / published package); escalation table; never a root `config.yaml` | 01, 02 | partial |
+| `1-ecosystem/repo-boundaries` | `<product>-<role>` naming (parked); each repo names its role and siblings in the brief; "aspirational independence" warning | 07, 01 | missing |
+| `1-ecosystem/cross-repo-contracts` | One ecosystem hub with the repo map; image tag contract (`:sha` + `:tag`, never repurposed) | 01, 05 | missing |
+| `1-ecosystem/docs-placement` | "None" is a valid docs answer; docs slot shape, vendored framework read-only; README docs pointer | 01, README | missing/partial |
+| `2-repo/01-layouts` | Single app at top level (now reversed on purpose); per-service DB env namespacing; `ctl publish` verb; non-product signal in the build config | 01, 02, 05, 04 | contradicted/partial |
+| `2-repo/02-root-hygiene` | Tool caches in `.gitignore` (`.pytest_cache`, `.ruff_cache`, `.mypy_cache`, `coverage/`); README stack/commands/config tables; per-app env-var table | template | missing/partial |
+| `2-repo/03-env-config` | `config.<env>.yaml` middle layer (dropped, not stated); `${VAR:-default}` / `${VAR:?}` forms (new says unset always fails — silent drop); per-service `__` prefix rationale; build-vs-runtime per-variable walk; secrets-manager graduation path | 02, 05 | contradicted/partial |
+| `2-repo/04-docker` | `x-` anchors; bind-mount UID/SELinux `:Z`/never 777; `${DATA_DIR}` override cases; DB-less repo guard softening; security headers (HSTS, nosniff) + brotli; observability staging; readiness ⇒ pull from LB vs liveness ⇒ restart | 05, 03, 04 | missing/partial |
+| `2-repo/05-ctl` | `ctl manage` break-glass operator console; setup never mutates config mid-launch; why apps run on the host in dev + never bind-mount source into a dev container; tool opt-out matrix (`02_script-alternatives` whole file); `lefthook install` wired in `ctl setup`; guard hook refusing commits under `data/` | 05, template | missing |
+| `2-repo/06-runtime` | mise plus a second version manager = anti-pattern | 04 | missing |
+| `3-app/01-structure` | App-vs-package test stated; no symlinks between apps; no repo scripts inside an app | 01 | missing |
+| `3-app/02-backend` | `[tool.uv] package = false`, pytest `pythonpath`; `uv` hygiene (no `uv pip install`, no `requirements.txt`, never hand-edit lock); operator identity never via public signup, first admin by break-glass CLI; admin look ≠ reason to split | 04, 07, 03 | missing/partial |
+| `3-app/03-web-app` | `index.html` + `data-theme`; `layout/` shells; `stores/` layer; layer import matrix (`lib/` never React/IO); ban on `context/`, `helpers/`, `types.ts` catch-alls; PWA installability checklist + SW update flow | template, 07, 04 | missing/partial |
+| `3-app/04-database` | In-process cache vs Redis by worker count; SQLite→Postgres trigger; `create_all()` in prod = red; native migration tool per schema owner; SQLite pragmas; Postgres locale/extensions; Redis streams/AOF/db map; redis+neo4j healthchecks | 04, 07, template | missing/contradicted |
+| `3-app/05-package` | ~15 flat components → group by family; no mega `packages/shared`; one export surface, no deep `src/` imports; theme toggle + pre-paint script; status tokens + z-index; never remap stock scale names; a token for a one-off = named magic number; seam `config` interface | 04, template | missing/partial |
+| `3-app/08-ai` | `.mcp.json` committed, `${VAR}` secrets; stdio vs remote transport; tool surface versioned, pin third-party servers, thin adapter over `service.py`; provider adapters; prompts as versioned files; injection posture; per-env keys + spend caps | 01, 04 | missing |
+| `3-app/09-security` | Three protection tiers recorded; `CF-Connecting-IP` behind a WAF; 429 + `Retry-After`; limits keyed on user/API key never raw IP for authed routes, per-class tiers; telemetry adapter with opt-out at the boundary; audit events ≠ request logs, retention policy for PII | 04 | missing/partial |
+| `3-app/10-deployment` | Concurrency model per language; gunicorn CMD + `--max-requests` jitter + timeouts + `--preload` trade-off; workers = CPU limit; immutable tags; Dockerfile checklist (multi-stage, pinned base, no dev deps in runtime) | 03, 05, template | missing/partial |
+| `4-feature/01` | Adapter-modules pattern (`modules/` + `base.py` + one output shape); ~10 files → subdivide inside the folder | 07 | missing |
+| `4-feature/02` | api layer owns paths, zod at the boundary, error normalisation, query keys; `api/` grouped by backend vocabulary; pages mirror URL tree, ~50 lines, router imports pages only | 07 | partial |
+| `4-feature/03` | No global `types.ts`/`types.py`; never import DTOs across domains — duplicate | 07 | missing |
+| `4-feature/04` | Typography allowlist; `frontend-design` precedence; fold repeated utilities into a variant on the second use; feature code = primitives + layout glue; hook-safe grep form; screenshot light+dark before done | 04, 07, 06 | missing |
+| `4-feature/05` | Cap exclusions (generated, vendored, fixtures) + "comment why"; rule of three with counter-rules; `helpers/`/`utils/`/`common/` banned, `shared/` at 3+; split signals | 07 | missing/partial |
+| `snippets_old/claude` | Structure-contract block (recorded choices, skeletons, tripwires, evolution, escalation); styling block in the brief; stack table | `template/AGENTS.md` | missing |
+| `snippets_old/python` | `alembic_helpers.run_sql` + shim revision | `template/apps/database/postgres/` | missing |
+| `snippets_old/frontend/light-dark.css` | Theme switch stylesheet + toggle | `packages/ui/src/styles/` | partial |
+| `snippets_old/scripts` | — | — | covered (template is a superset; `list_configs` dropped by design) |
+
+Drift the agent found that is already fixed this session: 06 gate pointer, 05 verb table (`typecheck`, `gate <rung>`). Still open: prod settings in `compose.base.yaml` (checklist has no instance to point at).

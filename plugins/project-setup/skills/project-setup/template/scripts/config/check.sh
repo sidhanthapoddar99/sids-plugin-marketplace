@@ -88,7 +88,7 @@ done
 ok "base has no ports · no ../ paths"
 
 have_env=1; for f in "${ENV_FILES[@]}"; do [[ -f $f ]] || have_env=0; done
-if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && (( have_env )); then
+if [[ "$(docker_state)" == ok ]] && (( have_env )); then
   step "compose config (the three env files supply \${VAR})"
   combos=("$DB_FILE" "$DEV_FILE" "$BASE")
   while IFS= read -r m; do [[ -n $m ]] && combos+=("$BASE $DOCKER_DIR/compose.m.$m.yaml"); done < <(list_modifiers)
@@ -98,7 +98,7 @@ if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && (( have_e
     else fail "$c — $out"; fi
   done
 else
-  warn "docker or .env.{secrets,data,proxy} unavailable — compose validation skipped"
+  warn "compose validation skipped — docker: $(docker_state) · env files present: $have_env"
 fi
 
 LOG_INDENT=""; hr

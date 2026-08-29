@@ -10,6 +10,7 @@ One paragraph: what this product is and which apps make it.
 - `ctl dev` — databases in docker, apps on the host (`--proxy` for one origin across frontends)
 - `ctl up` — full stack in docker, the web edge on 80/443
 - `ctl migrate` — apply schema migrations
+- `ctl gate` — the test ladder; green here is the only definition of green
 
 ## Manual, without ctl
 Each app's `README.md` shows how to run it from its own folder.
