@@ -1,0 +1,48 @@
+# The edge for a single-frontend product. Lives next to the app because the app owns the image.
+# Rendered by the nginx image's envsubst at start. Variables come from compose.base.yaml `environment:`:
+#   prefixes   ${API_PREFIX} ${ENGINE_PREFIX}        → ${VAR} from the root .env
+#   upstreams  ${API_UPSTREAM} ${ENGINE_UPSTREAM}    → literals in compose (api:8000, engine:8080);
+#              `ctl up +env_override` swaps them for ${API_HOST}:${API_PORT} from .env
+# The location blocks mirror the dev proxy in vite.config.ts, one for one.
+# Listens on 8080: the image runs as the unprivileged nginx user. TLS terminates at the host reverse proxy.
+
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;
+    client_max_body_size 20m;
+
+    # ---- static: the SPA at /, history fallback ----
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # ---- proxied: api (websocket-capable) ----
+    location ${API_PREFIX}/ {
+        proxy_pass http://${API_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # ---- proxied: engine (websocket-capable) ----
+    location ${ENGINE_PREFIX}/ {
+        proxy_pass http://${ENGINE_UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+}

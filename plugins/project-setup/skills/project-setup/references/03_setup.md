@@ -5,7 +5,7 @@ Every case below is the same system with a different number of pieces. Read the 
 ## The rules that hold in every case
 
 1. **One origin.** The browser sees one host. Every frontend and every backend sits behind it, separated by path prefix. Dev and prod route the same prefixes.
-2. **The edge is the `web` image.** One nginx, built by `apps/example-multi-web-app/Dockerfile`, holds every static frontend and proxies everything else. There is no second nginx service.
+2. **The edge is the `web` image.** One nginx that holds every static frontend and proxies everything else. Built by the single frontend's own `Dockerfile` (`example-single-web-app-vite/`) or by the group's (`example-multi-web-app/`). There is no second nginx service.
 3. **Prefixes and ports live in the root `.env`.** One prefix and one dev port per piece. nginx reads them by `envsubst`. The framework reads its own prefix as `base` / `basePath`.
 4. **Compose decides service names; `.env` decides the rest.** A service name is a literal in `compose.base.yaml` (`API_UPSTREAM: api:8000`). A host outside this compose comes from `.env` through `+env_override`.
 5. **`ctl dev` runs apps on the host, engines in docker. `ctl up` runs everything in docker.** Same `.env`, same `config.yaml`, no edit between the two.
@@ -38,7 +38,7 @@ Both templates carry the same `location` blocks. Only the upstream differs: `127
 
 ## Case 1 — same server, one repo: frontend and backend together
 
-The common case. `apps/example-multi-web-app/app` + `apps/example-api-python`, or any subset of the template.
+The common case. Template: `apps/example-single-web-app-vite` + `apps/example-api-python`. The SPA owns its `Dockerfile` (build, then nginx serving `/` and proxying `/api`, `/engine`) and its `nginx.conf.template`. That image is the `web` service. No dev proxy: `vite.config.ts` proxies, so one frontend is one origin already.
 
 | | Routing |
 |---|---|
@@ -104,7 +104,7 @@ Core vs BFF: a "backend for frontend" that only reshapes a core API is not a sec
 
 ## Case 6 — one static frontend, no backend
 
-A landing page, a docs site. `apps/example-multi-web-app/landing` alone. `DATA_SVCS=()`. `compose.base.yaml` keeps only `web`; the nginx template keeps the static locations, drops the proxied ones. `ctl dev` runs one dev server. The group folder still exists: a second frontend is then a folder, not a restructure.
+A landing page, a docs site. The single shape (`example-single-web-app-vite/`, or the same with Next.js export or Astro) with the proxied locations deleted from its `nginx.conf.template`. `DATA_SVCS=()`. `compose.base.yaml` keeps only `web`. `ctl dev` runs one dev server.
 
 ## Case 7 — multiple origins
 
@@ -114,7 +114,8 @@ Only for a public SDK or an embeddable widget consumed from third-party sites. T
 
 - A URL in a frontend bundle. `VITE_API_URL` per environment defeats the whole model.
 - A second nginx service. The `web` image is the edge.
-- A static frontend outside the group folder. A server frontend inside it.
+- A second static frontend beside a single one. Two static frontends means the group shape.
+- A server frontend inside the group folder.
 - A Dockerfile per static frontend.
 - CORS middleware on a backend to reach a frontend of this product. If CORS is needed, the origin rule was broken.
 - Serving a frontend from a backend (`StaticFiles`). nginx serves static.

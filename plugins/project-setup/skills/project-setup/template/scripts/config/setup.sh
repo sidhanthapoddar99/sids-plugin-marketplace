@@ -43,7 +43,7 @@ while IFS='=' read -r key val; do
 done < .env
 
 # per-frontend public env — the static group apps/example-multi-web-app/<name>/ plus the SSR app
-for fe in apps/example-multi-web-app/*/ apps/example-dashboard-nextjs/; do
+for fe in apps/example-multi-web-app/*/ apps/example-dashboard-nextjs/ apps/example-single-web-app-vite/; do
   [[ -f "$fe.env.example" && ! -f "$fe.env" ]] || continue
   cp "$fe.env.example" "$fe.env"; ok "created ${fe}.env"
 done

@@ -16,7 +16,8 @@ Each app's `README.md` shows how to run it from its own folder.
 
 ## Layout
 ```
-apps/      api engine web/{landing,app,docs} dashboard cli packages database infra
+apps/      example-api-python example-engine-rust example-multi-web-app/{landing,app,docs}
+           example-single-web-app-vite example-dashboard-nextjs example-tui-go packages database infra
 docker/    compose.db compose.base compose.dev compose.m.*
 scripts/   ctl workers
 data/      runtime state, gitignored

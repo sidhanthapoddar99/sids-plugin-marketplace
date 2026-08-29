@@ -16,7 +16,8 @@ your data/ is never read or written. The suite itself is \`bun run test:e2e\` in
 is_help "${1:-}" && { usage; exit 0; }
 keep=0; [[ "${1:-}" == --keep ]] && keep=1
 require_env; require_docker; require_tools bun
-[[ -d apps/example-multi-web-app/app/e2e ]] || die "no apps/example-multi-web-app/app/e2e — nothing to run"
+E2E_DIR=""; for d in apps/example-single-web-app-vite apps/example-multi-web-app/app; do [[ -d $d/e2e ]] && { E2E_DIR=$d; break; }; done
+[[ -n $E2E_DIR ]] || die "no e2e/ folder in any frontend — nothing to run"
 
 export DATA_DIR; DATA_DIR="$(mktemp -d -t e2e-data-XXXXXX)"
 for s in "${DATA_SVCS[@]}"; do mkdir -p "$DATA_DIR/$s"; done
@@ -26,5 +27,5 @@ trap teardown EXIT
 
 step "stack up (+expose) with DATA_DIR=$DATA_DIR"
 bash "$CTL_ROOT/scripts/container/up.sh" +expose --nqa -y
-step "bun run test:e2e (apps/example-multi-web-app/app)"
-( cd apps/example-multi-web-app/app && bun run test:e2e ) && ok "e2e green" || { err "e2e red"; exit 1; }
+step "bun run test:e2e ($E2E_DIR)"
+( cd "$E2E_DIR" && bun run test:e2e ) && ok "e2e green" || { err "e2e red"; exit 1; }

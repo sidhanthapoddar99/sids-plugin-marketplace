@@ -17,11 +17,12 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; 
 
 # [ADAPT] the host apps — name → port → command. The ONE source for --help, --dry-run, and the run.
 # Emitted as strings so help/dry-run print EXACTLY what runs (ports resolve from .env once loaded).
-app_names() { printf '%s\n' api engine landing app docs dashboard; }
+app_names() { printf '%s\n' api engine landing app docs dashboard single; }   # single = example-single-web-app-vite, the one-frontend shape
 frontends() { printf '%s\n' landing app docs dashboard; }      # the ones the dev proxy fronts
 app_port()  { case "$1" in
   api)       echo "${API_PORT:-8000}" ;;          engine)    echo "${ENGINE_PORT:-8080}" ;;
   landing)   echo "${WEB_LANDING_PORT:-3001}" ;;  app)       echo "${WEB_APP_PORT:-5173}" ;;
+  single)    echo "${WEB_APP_PORT:-5173}" ;;
   docs)      echo "${WEB_DOCS_PORT:-4321}" ;;     dashboard) echo "${DASHBOARD_PORT:-3000}" ;;
   *)         die "unknown app '$1' — one of: $(app_names | join_sp)" ;; esac; }
 app_cmd()   { case "$1" in
@@ -29,6 +30,7 @@ app_cmd()   { case "$1" in
   engine)    printf 'cargo watch -C apps/example-engine-rust -x run' ;;
   landing)   printf 'bun --cwd apps/example-multi-web-app/landing dev --port %s' "$(app_port landing)" ;;
   app)       printf 'bun --cwd apps/example-multi-web-app/app dev --port %s' "$(app_port app)" ;;
+  single)    printf 'bun --cwd apps/example-single-web-app-vite dev --port %s' "$(app_port single)" ;;
   docs)      printf 'bun --cwd apps/example-multi-web-app/docs dev --port %s' "$(app_port docs)" ;;
   dashboard) printf 'bun --cwd apps/example-dashboard-nextjs dev --port %s' "$(app_port dashboard)" ;;
   *)         die "unknown app '$1'" ;; esac; }

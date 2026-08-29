@@ -13,6 +13,7 @@ Every repo takes this shape. There are no layout variants to pick. A repo with o
 │   │   ├── Dockerfile
 │   │   ├── pyproject.toml
 │   │   └── README.md
+│   ├── <single-frontend>/      # OR: the only static frontend, own image (web/)
 │   ├── <frontend-group>/       # every static frontend, one image        (multi-web-app/)
 │   │   ├── Dockerfile          #   one build stage per frontend, ends in nginx: the edge
 │   │   ├── README.md
@@ -77,7 +78,8 @@ The root holds config, the brief, and folders. Never loose code.
 | Entry | Holds | Rule |
 |---|---|---|
 | `<backend>/` | One backend service | Python code in `app/`, no `src/`. Owns `README.md`, `pyproject.toml`, `config.yaml`, `Dockerfile`. |
-| `<frontend-group>/<name>/` | One static frontend (Vite, Next.js export, Astro) | Code in `src/`. Owns `README.md`, `package.json`, lock, `.env.example`. The group owns the one `Dockerfile`, which ends in nginx and is the edge. One static frontend still lives in the group. |
+| `<frontend-group>/<name>/` | One static frontend (Vite, Next.js export, Astro) | Code in `src/`. Owns `README.md`, `package.json`, lock, `.env.example`. The group owns the one `Dockerfile`, which ends in nginx and is the edge. |
+| `<single-frontend>/` | The only static frontend of the product | Own `Dockerfile` that ends in nginx and proxies the backends; own `nginx.conf.template` next to it; `vite.config.ts` proxies in dev. Template: `example-single-web-app-vite/`. Switch to the group when a second static frontend arrives. |
 | `<server-frontend>/` | A frontend that is a server (Next.js SSR) | Its own app, own `Dockerfile`, own compose service. Never inside the group. |
 | `<desktop>/`, `<mobile>/`, `<cli>/` | A native surface | Only if the product ships one. Shares `packages/` or the API contract. A PWA is the web frontend plus a manifest, not an app. |
 | `packages/<name>/` | Shared code | Manifest and lock live inside the package. An app never imports from another app. It imports from a package by a `link:` dependency (`"@scope/name": "link:../packages/name"`), not by a workspace. Published package code in `src/<pkg>/`. |

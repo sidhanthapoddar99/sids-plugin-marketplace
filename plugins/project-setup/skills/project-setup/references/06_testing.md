@@ -9,7 +9,7 @@ Tests live with the code they test. `ctl` runs them. The gate is the only defini
 | Unit and component | Next to the file: `thing.py` + `test_thing.py`; `Thing.tsx` + `Thing.test.tsx` | pytest, cargo test, vitest, `go test` |
 | Mutation tests | Next to the file: `Thing.mutants.tsx` | the app's own script |
 | Integration (DB, HTTP) | `apps/<backend>/tests/` | pytest against the engines from `ctl dev` |
-| End-to-end (browser) | `apps/example-multi-web-app/app/e2e/` | Playwright through `ctl test e2e` |
+| End-to-end (browser) | `apps/<frontend>/e2e/` (template: `example-single-web-app-vite/e2e/`) | Playwright through `ctl test e2e` |
 | Fixtures | `apps/<app>/tests/fixtures/` | never in `data/` |
 
 No root `tests/` folder. Each app owns its suite and its `test` script (`bun test`, `uv run pytest`, `cargo test`, `go test ./...`).

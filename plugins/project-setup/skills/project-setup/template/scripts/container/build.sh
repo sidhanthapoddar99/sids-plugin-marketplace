@@ -28,7 +28,7 @@ fi
 require_env; require_docker
 # forward every frontend .env as build args (opaque: names listed in compose.base.yaml build.args).
 # Static frontends live in apps/example-multi-web-app/<name>/; the SSR one is apps/example-dashboard-nextjs/.
-for fe in apps/example-multi-web-app/*/ apps/example-dashboard-nextjs/; do [[ -f "$fe.env" && -f "${fe}package.json" ]] && load_env_file "$fe.env"; done
+for fe in apps/example-multi-web-app/*/ apps/example-dashboard-nextjs/ apps/example-single-web-app-vite/; do [[ -f "$fe.env" && -f "${fe}package.json" ]] && load_env_file "$fe.env"; done
 step "docker compose build ${*:-(all)}"
 dc build "$@"
 ok "images built"

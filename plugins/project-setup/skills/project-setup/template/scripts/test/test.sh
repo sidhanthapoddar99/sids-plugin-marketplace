@@ -32,6 +32,7 @@ case "$target" in
   engine)   run_rs apps/example-engine-rust ;;
   landing)  run_js apps/example-multi-web-app/landing ;;
   app)      run_js apps/example-multi-web-app/app ;;
+  single)   run_js apps/example-single-web-app-vite ;;
   docs)     run_js apps/example-multi-web-app/docs ;;
   dashboard) run_js apps/example-dashboard-nextjs ;;
   cli)      run_go apps/example-tui-go ;;

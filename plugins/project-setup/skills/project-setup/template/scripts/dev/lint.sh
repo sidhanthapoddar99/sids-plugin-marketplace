@@ -38,6 +38,7 @@ case "$target" in
   engine)   lint_rs apps/example-engine-rust ;;
   landing)  lint_js apps/example-multi-web-app/landing ;;
   app)      lint_js apps/example-multi-web-app/app ;;
+  single)   lint_js apps/example-single-web-app-vite ;;
   docs)     lint_js apps/example-multi-web-app/docs ;;
   dashboard) lint_js apps/example-dashboard-nextjs ;;
   cli)      lint_go apps/example-tui-go ;;

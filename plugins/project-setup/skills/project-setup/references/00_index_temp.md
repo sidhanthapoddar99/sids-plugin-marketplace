@@ -53,6 +53,7 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 
 ### apps/ — frontend
 - [x] `example-multi-web-app/` group: `Dockerfile` (one image, ends in nginx), `README.md`, `app/` Vite SPA `/app`, `landing/` Next export `/`, `docs/` Astro `/docs`
+- [x] `example-single-web-app-vite/` — one SPA, own Dockerfile + `nginx.conf.template`, vite proxy, `e2e/`
 - [x] `example-dashboard-nextjs/` Next.js SSR `/dashboard`, own Dockerfile and service
 - [x] `infra/nginx/{prod,dev}.conf.template`, envsubst, prefixes and ports from root `.env`
 - [x] `docker/compose.dev.yaml` dev proxy on host network; `ctl dev --proxy`
@@ -63,7 +64,8 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 - [x] `packages/ui/` — shadcn shape, React as peerDependency
 - [x] `packages/types/` — API contract, generated
 - [x] `packages/tsconfig/` — shared base
-- [ ] `web/e2e/` folder + one colocated `*.test.tsx` example
+- [x] `e2e/` folder (in the single SPA)
+- [ ] one colocated `*.test.tsx` example
 - [ ] PWA note: manifest in `web/public/`, not an app
 
 ### apps/ — other

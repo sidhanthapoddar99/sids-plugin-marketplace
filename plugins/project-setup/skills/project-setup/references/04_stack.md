@@ -24,13 +24,13 @@ Template: `template/.mise.toml`, `template/lefthook.yml`.
 
 | Kind | Output | Served by | Framework | Use when | Template |
 |---|---|---|---|---|---|
-| SPA | static files | nginx | Vite | The normal app. Logged-in product UI. Default. | `apps/example-multi-web-app/app/` |
+| SPA | static files | nginx | Vite | The normal app. Logged-in product UI. Default. | alone: `apps/example-single-web-app-vite/`; in a group: `apps/example-multi-web-app/app/` |
 | SSG | static files | nginx | Next.js `output: "export"` | Landing and marketing pages. Strong SEO, no server. | `apps/example-multi-web-app/landing/` |
 | SSR | a Node server | its own container | Next.js `output: "standalone"` | Server rendering, a frontend with its own routes, fast first paint. | `apps/example-dashboard-nextjs/` |
 | Content | static files | nginx | Astro | Docs, blogs. Rare. | `apps/example-multi-web-app/docs/` |
 | PWA | not a kind | — | — | A manifest and a service worker in the SPA's `public/`. Not an app. | — |
 
-Pick by output. Static kinds live in the group folder and build into one image. A server kind is its own app. How they are wired: `03_setup.md`.
+Pick by output. One static frontend owns its image. Several static frontends live in a group folder and build into one image. A server kind is its own app. How they are wired: `03_setup.md`.
 
 ### Language and style
 
