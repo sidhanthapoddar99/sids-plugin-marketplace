@@ -25,12 +25,12 @@ app_port()  { case "$1" in
   docs)      echo "${WEB_DOCS_PORT:-4321}" ;;     dashboard) echo "${DASHBOARD_PORT:-3000}" ;;
   *)         die "unknown app '$1' — one of: $(app_names | join_sp)" ;; esac; }
 app_cmd()   { case "$1" in
-  api)       printf 'uv run --directory apps/api uvicorn app.main:app --reload --host %s --port %s' "${API_HOST:-localhost}" "$(app_port api)" ;;
-  engine)    printf 'cargo watch -C apps/engine -x run' ;;
-  landing)   printf 'bun --cwd apps/multi-web-app/landing dev --port %s' "$(app_port landing)" ;;
-  app)       printf 'bun --cwd apps/multi-web-app/app dev --port %s' "$(app_port app)" ;;
-  docs)      printf 'bun --cwd apps/multi-web-app/docs dev --port %s' "$(app_port docs)" ;;
-  dashboard) printf 'bun --cwd apps/dashboard dev --port %s' "$(app_port dashboard)" ;;
+  api)       printf 'uv run --directory apps/example-api-python uvicorn app.main:app --reload --host %s --port %s' "${API_HOST:-localhost}" "$(app_port api)" ;;
+  engine)    printf 'cargo watch -C apps/example-engine-rust -x run' ;;
+  landing)   printf 'bun --cwd apps/example-multi-web-app/landing dev --port %s' "$(app_port landing)" ;;
+  app)       printf 'bun --cwd apps/example-multi-web-app/app dev --port %s' "$(app_port app)" ;;
+  docs)      printf 'bun --cwd apps/example-multi-web-app/docs dev --port %s' "$(app_port docs)" ;;
+  dashboard) printf 'bun --cwd apps/example-dashboard-nextjs dev --port %s' "$(app_port dashboard)" ;;
   *)         die "unknown app '$1'" ;; esac; }
 
 usage() { print_help "dev" "Data core in docker, apps on the host with reload." \

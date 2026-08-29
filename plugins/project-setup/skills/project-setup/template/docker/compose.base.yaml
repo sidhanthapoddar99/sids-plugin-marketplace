@@ -13,7 +13,7 @@ include:
 services:
   api:
     image: ${REGISTRY}/api:${TAG}
-    build: { context: ./apps/api }
+    build: { context: ./apps/example-api-python }
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
@@ -33,7 +33,7 @@ services:
 
   engine:
     image: ${REGISTRY}/engine:${TAG}
-    build: { context: ./apps/engine }
+    build: { context: ./apps/example-engine-rust }
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       NEO4J_URL: bolt://neo4j:7687
@@ -45,13 +45,13 @@ services:
       ENCRYPTION_KEY_RUST: ${ENCRYPTION_KEY_RUST}
     depends_on: [postgres, neo4j]
 
-  # The edge. One nginx image holding every static frontend (apps/multi-web-app/*), proxying the rest.
+  # The edge. One nginx image holding every static frontend (apps/example-multi-web-app/*), proxying the rest.
   web:
     image: ${REGISTRY}/web:${TAG}
     build:
       context: ./apps                           # needs packages/ and infra/ too
-      dockerfile: multi-web-app/Dockerfile
-      args:                                     # values come from apps/multi-web-app/<name>/.env via `ctl build`.
+      dockerfile: example-multi-web-app/Dockerfile
+      args:                                     # values come from apps/example-multi-web-app/<name>/.env via `ctl build`.
         - NEXT_PUBLIC_SITE_NAME                 #   landing. compose never reads those files; ctl forwards them.
         - VITE_APP_NAME                         #   app
         - VITE_BASE_PATH
@@ -76,8 +76,8 @@ services:
   dashboard:
     image: ${REGISTRY}/dashboard:${TAG}
     build:
-      context: ./apps/dashboard
-      args:                                     # from apps/dashboard/.env via `ctl build`
+      context: ./apps/example-dashboard-nextjs
+      args:                                     # from apps/example-dashboard-nextjs/.env via `ctl build`
         - NEXT_PUBLIC_APP_NAME
     environment:                                # server side only
       API_HOST: api

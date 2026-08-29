@@ -15,7 +15,7 @@ __pycache__/
 target/
 
 # go
-apps/cli/bin/
+apps/example-tui-go/bin/
 
 # js
 node_modules/

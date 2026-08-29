@@ -11,7 +11,7 @@ usage() { print_help "clean" "Tear down the stack and wipe build caches (data/ i
   -h, --help      show this help
 
 Removes: the containers + network, node_modules/ dist/ .next/ per JS app, target/ per Rust app,
-__pycache__, apps/cli/bin/. Keeps: data/, .env, every lockfile."; }
+__pycache__, apps/example-tui-go/bin/. Keeps: data/, .env, every lockfile."; }
 
 is_help "${1:-}" && { usage; exit 0; }
 yes=0; [[ "${1:-}" == -y || "${1:-}" == --yes ]] && yes=1
@@ -25,6 +25,6 @@ for d in apps/*/ apps/packages/*/; do
   [[ -f "$d/package.json" ]] && rm -rf "$d/node_modules" "$d/dist" "$d/.next" "$d/.vite"
   [[ -f "$d/Cargo.toml" ]]   && ( cd "$d" && cargo clean ) 2>/dev/null
 done
-rm -rf apps/cli/bin
+rm -rf apps/example-tui-go/bin
 find apps -name __pycache__ -type d -prune -exec rm -rf {} + 2>/dev/null || true
 ok "clean"

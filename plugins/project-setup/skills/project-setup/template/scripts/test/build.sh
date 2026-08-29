@@ -37,12 +37,12 @@ CUSTOM_LABEL="custom…"
 #           none     save-only deliverable (wheel/tarball/library) — `start` refuses
 #                    politely and points at the folder
 BUILD_TARGETS=(
-  "landing|cd apps/multi-web-app/landing && bun run build|apps/multi-web-app/landing/out|static|"
-  "app|cd apps/multi-web-app/app && bun run build|apps/multi-web-app/app/dist|static|"
-  "docs|cd apps/multi-web-app/docs && bun run build|apps/multi-web-app/docs/dist|static|"
-  "dashboard|cd apps/dashboard && bun run build|apps/dashboard/.next/standalone|process|PORT={port} node server.js"
-  "api|cd apps/api && uv build|apps/api/dist|none|"
-  "cli|cd apps/cli && mkdir -p bin && go build -o bin/ ./cmd/...|apps/cli/bin|none|"
+  "landing|cd apps/example-multi-web-app/landing && bun run build|apps/example-multi-web-app/landing/out|static|"
+  "app|cd apps/example-multi-web-app/app && bun run build|apps/example-multi-web-app/app/dist|static|"
+  "docs|cd apps/example-multi-web-app/docs && bun run build|apps/example-multi-web-app/docs/dist|static|"
+  "dashboard|cd apps/example-dashboard-nextjs && bun run build|apps/example-dashboard-nextjs/.next/standalone|process|PORT={port} node server.js"
+  "api|cd apps/example-api-python && uv build|apps/example-api-python/dist|none|"
+  "cli|cd apps/example-tui-go && mkdir -p bin && go build -o bin/ ./cmd/...|apps/example-tui-go/bin|none|"
 )
 
 build_help() {

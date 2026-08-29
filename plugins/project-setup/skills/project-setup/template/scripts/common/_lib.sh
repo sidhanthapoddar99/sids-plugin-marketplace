@@ -43,7 +43,6 @@ read -r -a DATA_SVCS <<< "${DATA_SVCS:-postgres redis neo4j}" || true
 # an unset ${VAR} in compose becomes an empty string and the service breaks silently.
 declare -A MODIFIER_REQUIRES=(
   [env_override]="DATABASE_URL REDIS_URL NEO4J_URL API_HOST API_PORT ENGINE_HOST ENGINE_PORT DASHBOARD_HOST DASHBOARD_PORT"
-  [traefik]="PUBLIC_HOST"
 )
 
 # Project name: let docker compose decide it from .env's COMPOSE_PROJECT_NAME (or the repo

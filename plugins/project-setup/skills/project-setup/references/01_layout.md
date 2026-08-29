@@ -26,7 +26,7 @@ Every repo takes this shape. There are no layout variants to pick. A repo with o
 │   │   └── <package-name>/
 │   │       └── package.json    #   or pyproject.toml. The manifest lives inside the package
 │   ├── database/               # committed DB config, one folder per engine (postgres/, neo4j/, redis/)
-│   ├── infra/                  # infrastructure code: nginx templates, traefik, IaC
+│   ├── infra/                  # nginx/ (prod edge template), nginx-dev/ (dev proxy template)
 │   └── notebooks/              # exploration notebooks. Never imported by an app
 ├── scripts/                    # ctl workers: common/ config/ dev/ container/ db/ test/
 ├── docker/                     # compose.db compose.base compose.dev compose.m.*
@@ -82,7 +82,7 @@ The root holds config, the brief, and folders. Never loose code.
 | `<desktop>/`, `<mobile>/`, `<cli>/` | A native surface | Only if the product ships one. Shares `packages/` or the API contract. A PWA is the web frontend plus a manifest, not an app. |
 | `packages/<name>/` | Shared code | Manifest and lock live inside the package. An app never imports from another app. It imports from a package by a `link:` dependency (`"@scope/name": "link:../packages/name"`), not by a workspace. Published package code in `src/<pkg>/`. |
 | `database/<engine>/` | Committed DB config per engine: migrations, init scripts, server config | One owner, even when two backends share the DB. Hand-written migrations live here; see `04_stack.md`. |
-| `infra/` | nginx templates (`prod`, `dev`), Traefik, IaC | Not compose. The `web` image copies `nginx/prod.conf.template` in; `compose.dev.yaml` mounts `dev.conf.template`. |
+| `infra/` | `nginx/` (the prod edge template, copied into the `web` image) and `nginx-dev/` (the host-network dev proxy template, mounted by `compose.dev.yaml`). IaC if any. | Not compose. Traefik or any host proxy sits outside this repo. |
 | `notebooks/` | Exploration notebooks | Never imported by an app. Code an app needs moves into a package. |
 
 ## Three more rules

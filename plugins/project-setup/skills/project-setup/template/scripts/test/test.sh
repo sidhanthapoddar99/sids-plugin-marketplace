@@ -8,12 +8,12 @@ usage() { print_help "test" "Run test suites across the apps." \
   'test [api|engine|landing|app|docs|dashboard|cli|database|e2e] [-h]' \
 "Arguments
   (none)          every suite below (not e2e)
-  api             apps/api               — uv run pytest
+  api             apps/example-api-python               — uv run pytest
   database        apps/database/postgres — uv run pytest (migration round-trip; needs the data core up)
-  engine          apps/engine            — cargo test
-  landing, app, docs   apps/multi-web-app/<x>      — bun test
-  dashboard       apps/dashboard         — bun test
-  cli             apps/cli               — go test ./...
+  engine          apps/example-engine-rust            — cargo test
+  landing, app, docs   apps/example-multi-web-app/<x>      — bun test
+  dashboard       apps/example-dashboard-nextjs         — bun test
+  cli             apps/example-tui-go               — go test ./...
   e2e             the browser suite against a throwaway stack (test/e2e.sh)
 
 Options
@@ -26,15 +26,15 @@ run_rs() { [[ -d $1 ]] || return 0; step "$1 (cargo test)";  ( cd "$1" && cargo 
 run_js() { [[ -d $1 ]] || return 0; step "$1 (bun test)";    ( cd "$1" && bun test ) || rc=1; }
 run_go() { [[ -d $1 ]] || return 0; step "$1 (go test)";     ( cd "$1" && go test ./... ) || rc=1; }
 case "$target" in
-  all)      run_py apps/api; run_py apps/database/postgres; run_rs apps/engine; run_js apps/multi-web-app/landing; run_js apps/multi-web-app/app; run_js apps/multi-web-app/docs; run_js apps/dashboard; run_go apps/cli ;;
-  api)      run_py apps/api ;;
+  all)      run_py apps/example-api-python; run_py apps/database/postgres; run_rs apps/example-engine-rust; run_js apps/example-multi-web-app/landing; run_js apps/example-multi-web-app/app; run_js apps/example-multi-web-app/docs; run_js apps/example-dashboard-nextjs; run_go apps/example-tui-go ;;
+  api)      run_py apps/example-api-python ;;
   database) run_py apps/database/postgres ;;
-  engine)   run_rs apps/engine ;;
-  landing)  run_js apps/multi-web-app/landing ;;
-  app)      run_js apps/multi-web-app/app ;;
-  docs)     run_js apps/multi-web-app/docs ;;
-  dashboard) run_js apps/dashboard ;;
-  cli)      run_go apps/cli ;;
+  engine)   run_rs apps/example-engine-rust ;;
+  landing)  run_js apps/example-multi-web-app/landing ;;
+  app)      run_js apps/example-multi-web-app/app ;;
+  docs)     run_js apps/example-multi-web-app/docs ;;
+  dashboard) run_js apps/example-dashboard-nextjs ;;
+  cli)      run_go apps/example-tui-go ;;
   e2e)      exec bash "$CTL_ROOT/scripts/test/e2e.sh" "${@:2}" ;;
   *)        die "unknown target: $target (all|api|engine|landing|app|docs|dashboard|cli|database|e2e)" ;;
 esac

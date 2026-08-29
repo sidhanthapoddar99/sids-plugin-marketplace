@@ -32,15 +32,15 @@ lint_rs()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (fmt + clip
 lint_js()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (bun run lint)"; ( cd "$1" && bun run lint ) || rc=1; }
 lint_go()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (gofmt + vet)";  ( cd "$1" && test -z "$(gofmt -l .)" && go vet ./... ) || rc=1; }
 case "$target" in
-  all)      lint_py apps/api; lint_py apps/database/postgres; lint_rs apps/engine; lint_js apps/multi-web-app/landing; lint_js apps/multi-web-app/app; lint_js apps/multi-web-app/docs; lint_js apps/dashboard; lint_go apps/cli ;;
-  api)      lint_py apps/api ;;
+  all)      lint_py apps/example-api-python; lint_py apps/database/postgres; lint_rs apps/example-engine-rust; lint_js apps/example-multi-web-app/landing; lint_js apps/example-multi-web-app/app; lint_js apps/example-multi-web-app/docs; lint_js apps/example-dashboard-nextjs; lint_go apps/example-tui-go ;;
+  api)      lint_py apps/example-api-python ;;
   database) lint_py apps/database/postgres ;;
-  engine)   lint_rs apps/engine ;;
-  landing)  lint_js apps/multi-web-app/landing ;;
-  app)      lint_js apps/multi-web-app/app ;;
-  docs)     lint_js apps/multi-web-app/docs ;;
-  dashboard) lint_js apps/dashboard ;;
-  cli)      lint_go apps/cli ;;
+  engine)   lint_rs apps/example-engine-rust ;;
+  landing)  lint_js apps/example-multi-web-app/landing ;;
+  app)      lint_js apps/example-multi-web-app/app ;;
+  docs)     lint_js apps/example-multi-web-app/docs ;;
+  dashboard) lint_js apps/example-dashboard-nextjs ;;
+  cli)      lint_go apps/example-tui-go ;;
   *)        die "unknown target: $target (all|api|engine|landing|app|docs|dashboard|cli|database)" ;;
 esac
 (( rc == 0 )) && ok "lint clean" || err "lint issues"

@@ -10,7 +10,7 @@
 #                etc. from .env when a backend runs outside this compose.
 # NGINX_ENVSUBST_FILTER (set in compose) limits substitution to these names, so nginx's own
 # $host / $uri / $request_uri survive.
-# Listens on 8080: the image runs as the unprivileged nginx user. TLS terminates at traefik or the host.
+# Listens on 8080: the image runs as the unprivileged nginx user. TLS terminates at the host reverse proxy in front of this stack.
 
 server {
     listen 8080;

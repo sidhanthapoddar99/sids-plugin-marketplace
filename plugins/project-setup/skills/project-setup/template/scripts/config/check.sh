@@ -14,7 +14,7 @@ Rules
             no secret literal in config.yaml (every *_KEY / *_PASSWORD / *_SECRET value is \${VAR}) ·
             no config.local.yaml tracked by git
   layout    no package.json / bun.lock / pnpm-workspace.yaml at the root, directly in apps/, or
-            directly in apps/multi-web-app/ (the static group; each frontend is apps/multi-web-app/<name>/)
+            directly in apps/example-multi-web-app/ (the static group; each frontend is apps/example-multi-web-app/<name>/)
   brief     CLAUDE.md is exactly '@AGENTS.md'
   compose   no ports: in compose.base.yaml · no ../ in any docker/compose.*.yaml ·
             docker compose config validates: db alone, base alone, base + each modifier
@@ -43,10 +43,10 @@ else fail "no .env.example"; fi
 
 step "layout"
 for f in package.json bun.lock pnpm-workspace.yaml apps/package.json apps/bun.lock apps/pnpm-workspace.yaml \
-         apps/multi-web-app/package.json apps/multi-web-app/bun.lock apps/multi-web-app/pnpm-workspace.yaml; do
-  [[ -e $f ]] && fail "$f exists — no workspace at the root, in apps/ or in apps/multi-web-app/; each app owns its manifest"
+         apps/example-multi-web-app/package.json apps/example-multi-web-app/bun.lock apps/example-multi-web-app/pnpm-workspace.yaml; do
+  [[ -e $f ]] && fail "$f exists — no workspace at the root, in apps/ or in apps/example-multi-web-app/; each app owns its manifest"
 done
-ok "no root / apps/ / apps/multi-web-app/ manifests"
+ok "no root / apps/ / apps/example-multi-web-app/ manifests"
 
 step "brief"
 if [[ -f CLAUDE.md ]]; then

@@ -24,10 +24,10 @@ Template: `template/.mise.toml`, `template/lefthook.yml`.
 
 | Kind | Output | Served by | Framework | Use when | Template |
 |---|---|---|---|---|---|
-| SPA | static files | nginx | Vite | The normal app. Logged-in product UI. Default. | `apps/multi-web-app/app/` |
-| SSG | static files | nginx | Next.js `output: "export"` | Landing and marketing pages. Strong SEO, no server. | `apps/multi-web-app/landing/` |
-| SSR | a Node server | its own container | Next.js `output: "standalone"` | Server rendering, a frontend with its own routes, fast first paint. | `apps/dashboard/` |
-| Content | static files | nginx | Astro | Docs, blogs. Rare. | `apps/multi-web-app/docs/` |
+| SPA | static files | nginx | Vite | The normal app. Logged-in product UI. Default. | `apps/example-multi-web-app/app/` |
+| SSG | static files | nginx | Next.js `output: "export"` | Landing and marketing pages. Strong SEO, no server. | `apps/example-multi-web-app/landing/` |
+| SSR | a Node server | its own container | Next.js `output: "standalone"` | Server rendering, a frontend with its own routes, fast first paint. | `apps/example-dashboard-nextjs/` |
+| Content | static files | nginx | Astro | Docs, blogs. Rare. | `apps/example-multi-web-app/docs/` |
 | PWA | not a kind | — | — | A manifest and a service worker in the SPA's `public/`. Not an app. | — |
 
 Pick by output. Static kinds live in the group folder and build into one image. A server kind is its own app. How they are wired: `03_setup.md`.
@@ -49,9 +49,9 @@ Template: `template/apps/packages/styles/README.md`, `template/apps/packages/ui/
 
 | Choice | Use when | Framework | Template |
 |---|---|---|---|
-| Python, latest stable | Default. HTTP APIs, identity, business logic. | FastAPI. Flask where a tiny service wants it. | `apps/api/` |
-| Rust | Data plane, throughput, streaming, or a Tauri shell. | Axum | `apps/engine/` |
-| Go | CLIs, TUIs, orchestrators, small network services. Ships as one binary. | cobra + Bubble Tea | `apps/cli/` |
+| Python, latest stable | Default. HTTP APIs, identity, business logic. | FastAPI. Flask where a tiny service wants it. | `apps/example-api-python/` |
+| Rust | Data plane, throughput, streaming, or a Tauri shell. | Axum | `apps/example-engine-rust/` |
+| Go | CLIs, TUIs, orchestrators, small network services. Ships as one binary. | cobra + Bubble Tea | `apps/example-tui-go/` |
 | TypeScript on Node or bun | The needed library exists only in JS, or the product already runs a Next.js server. | Next.js route handlers, or Hono | — |
 
 Code layout: Python in `app/` (no `src/`): `main.py`, `config.py`, `routers/`, `services/`, `models/`, `schemas/`, `db/`. Rust in `src/`: `main.rs`, `config.rs`, `routes/`, `db/`. Go: `cmd/<name>/main.go`, `internal/{config,client,ui}/`.
@@ -77,7 +77,7 @@ Orchestration of remote training, spot instances and inference scaling is out of
 | Surface | Choice | Shape |
 |---|---|---|
 | Desktop | Tauri | `apps/desktop/`: the Rust shell loads the built SPA. Electron only when a Node runtime in the shell is required. |
-| Terminal | Go + Bubble Tea | `apps/cli/`. `ctl build cli` produces the binary. Not a container. |
+| Terminal | Go + Bubble Tea | `apps/example-tui-go/`. `ctl build cli` produces the binary. Not a container. |
 | Mobile | Kotlin, Swift | `apps/mobile-android/`, `apps/mobile-ios/`. Native. They share the API contract (`@scope/types`, OpenAPI), never UI code. |
 
 ## Data

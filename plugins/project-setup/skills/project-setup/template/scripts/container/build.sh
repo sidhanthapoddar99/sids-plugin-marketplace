@@ -12,7 +12,7 @@ usage() { print_help "build" "Build the service images (compose build) or the Go
 "Arguments
   (none)          every service in compose.base.yaml that has a build: context
   app…            only these services (api engine web dashboard …)
-  cli             go build apps/cli → apps/cli/bin/
+  cli             go build apps/example-tui-go → apps/example-tui-go/bin/
 
 Options
   -h, --help      show this help" \
@@ -21,14 +21,14 @@ Options
 is_help "${1:-}" && { usage; exit 0; }
 if [[ "${1:-}" == cli ]]; then
   require_tools go
-  step "go build apps/cli"
-  ( cd apps/cli && mkdir -p bin && go build -o bin/ ./cmd/... ) && ok "apps/cli/bin/"
+  step "go build apps/example-tui-go"
+  ( cd apps/example-tui-go && mkdir -p bin && go build -o bin/ ./cmd/... ) && ok "apps/example-tui-go/bin/"
   exit 0
 fi
 require_env; require_docker
 # forward every frontend .env as build args (opaque: names listed in compose.base.yaml build.args).
-# Static frontends live in apps/multi-web-app/<name>/; the SSR one is apps/dashboard/.
-for fe in apps/multi-web-app/*/ apps/dashboard/; do [[ -f "$fe.env" && -f "${fe}package.json" ]] && load_env_file "$fe.env"; done
+# Static frontends live in apps/example-multi-web-app/<name>/; the SSR one is apps/example-dashboard-nextjs/.
+for fe in apps/example-multi-web-app/*/ apps/example-dashboard-nextjs/; do [[ -f "$fe.env" && -f "${fe}package.json" ]] && load_env_file "$fe.env"; done
 step "docker compose build ${*:-(all)}"
 dc build "$@"
 ok "images built"

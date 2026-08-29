@@ -38,22 +38,22 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 ### docker/
 - [x] `compose.db.yaml` — engines, loopback ports, bind mounts
 - [x] `compose.base.yaml` — is prod, no ports, no `env_file`, `include:` db, explicit `environment:` per service
-- [x] `compose.m.expose_nginx.yaml`, `m.expose.yaml`, `m.env_override.yaml`, `m.traefik.yaml`
+- [x] `compose.m.expose_web.yaml`, `m.expose.yaml`, `m.env_override.yaml`. Traefik dropped: any host proxy sits outside this repo.
 - [x] all paths root-relative, no `../`
 - [ ] prod readiness in base: `x-defaults` anchor (`restart`, logging, `stop_grace_period`), `deploy.resources` per service, app healthchecks with `start_period`
 - [ ] decide: migrate as one-shot compose service gate, or `up.sh` runs migrate (current). Pick one, delete the other.
 - [ ] `<version>` on every image
 
 ### apps/ — backend
-- [x] `api/` FastAPI: `app/{main,config,routers,services,models,schemas,db}`, `config.yaml`, `Dockerfile`, `pyproject.toml`, `README.md`
-- [x] `engine/` Axum: `src/{main,config,routes,db}`, `config.yaml`, `Dockerfile`, `Cargo.toml`, `README.md`
+- [x] `example-api-python/` FastAPI: `app/{main,config,routers,services,models,schemas,db}`, `config.yaml`, `Dockerfile`, `pyproject.toml`, `README.md`
+- [x] `example-engine-rust/` Axum: `src/{main,config,routes,db}`, `config.yaml`, `Dockerfile`, `Cargo.toml`, `README.md`
 - [ ] `/health` and `/ready` routes named in `main.py` / `routes/mod.rs`
 - [ ] rate limit + `X-Forwarded-*` handling named in `main.py`
 - [ ] AI key proxy route named in `routers/` (backend-only rule)
 
 ### apps/ — frontend
-- [x] `multi-web-app/` group: `Dockerfile` (one image, ends in nginx), `README.md`, `app/` Vite SPA `/app`, `landing/` Next export `/`, `docs/` Astro `/docs`
-- [x] `dashboard/` Next.js SSR `/dashboard`, own Dockerfile and service
+- [x] `example-multi-web-app/` group: `Dockerfile` (one image, ends in nginx), `README.md`, `app/` Vite SPA `/app`, `landing/` Next export `/`, `docs/` Astro `/docs`
+- [x] `example-dashboard-nextjs/` Next.js SSR `/dashboard`, own Dockerfile and service
 - [x] `infra/nginx/{prod,dev}.conf.template`, envsubst, prefixes and ports from root `.env`
 - [x] `docker/compose.dev.yaml` dev proxy on host network; `ctl dev --proxy`
 - [x] `compose.m.expose_web`; no separate nginx service
@@ -67,9 +67,9 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 - [ ] PWA note: manifest in `web/public/`, not an app
 
 ### apps/ — other
-- [x] `cli/` Go: cobra + bubbletea, keyring token
+- [x] `example-tui-go/` Go: cobra + bubbletea, keyring token
 - [x] `database/{postgres,neo4j,redis}/` — hand-written migrations, advanced indexes in `0002`
-- [x] `infra/{nginx,traefik}/`
+- [x] `infra/nginx/` (prod edge template), `infra/nginx-dev/` (host-network dev proxy template)
 - [-] `notebooks/` — absent, folder exists only when used. Layout page says so.
 - [-] desktop (`tauri/`) and mobile — not in template. Architecture page covers in one table row each, pointing at vault's `apps/client/tauri` shape.
 

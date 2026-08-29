@@ -1,4 +1,4 @@
-# Build context for apps/multi-web-app/Dockerfile is ./apps, so the root .dockerignore does not apply here.
+# Build context for apps/example-multi-web-app/Dockerfile is ./apps, so the root .dockerignore does not apply here.
 .env
 .env.*
 !.env.example

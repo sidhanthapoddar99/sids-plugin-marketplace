@@ -1,6 +1,6 @@
 # Env — `.env`, `.env.example`, `config.yaml`, `config.local.yaml`
 
-Five files. Nothing else stores configuration. Template: `template/.env.example`, `template/apps/api/config.yaml`, `template/apps/multi-web-app/app/.env.example`.
+Five files. Nothing else stores configuration. Template: `template/.env.example`, `template/apps/example-api-python/config.yaml`, `template/apps/example-multi-web-app/app/.env.example`.
 
 | File | Where | Holds | Read by | Committed |
 |---|---|---|---|---|
@@ -14,7 +14,7 @@ Five files. Nothing else stores configuration. Template: `template/.env.example`
 
 1. **Every secret lives in the root `.env`.** Only backend services read it. A client-facing app never does. One exception: a Next.js server that proxies or runs its own routes reads server-only keys from it.
 2. **Compose and `ctl` read only the root `.env`.** Never an app's `.env` or `config.yaml`. One exception: `ctl build` forwards each frontend's `.env` as build args, without interpreting it.
-3. **Everything runs from the repo root.** `ctl` calls compose with `--project-directory <root>`. Every path in `.env` and in every compose file is root-relative: `./data`, `./apps/api`. Never `../`. `ctl check` fails on it.
+3. **Everything runs from the repo root.** `ctl` calls compose with `--project-directory <root>`. Every path in `.env` and in every compose file is root-relative: `./data`, `./apps/example-api-python`. Never `../`. `ctl check` fails on it.
 4. **A value lives in exactly one file**, chosen by who reads it. Compose, `ctl` or a backend → root `.env`. A frontend dev server → its own `.env`. A backend default → `config.yaml`.
 5. **Backend precedence:** process env > `config.local.yaml` > `config.yaml`. A real environment variable always wins.
 6. **The frontend bundle carries no environment value.** The API is on the same origin, so no URL is needed. See `03_setup.md`.
@@ -22,7 +22,7 @@ Five files. Nothing else stores configuration. Template: `template/.env.example`
 
 ## How a backend reads a value
 
-One module per backend does it all: `config.py`, `config.rs`, `config.go`, `config.ts`. Nothing else reads the environment or a file. Template: `template/apps/api/app/config.py`, `template/apps/engine/src/config.rs`.
+One module per backend does it all: `config.py`, `config.rs`, `config.go`, `config.ts`. Nothing else reads the environment or a file. Template: `template/apps/example-api-python/app/config.py`, `template/apps/example-engine-rust/src/config.rs`.
 
 1. Find the repo root: walk up to the folder that holds `ctl`. Load `<root>/.env` skip-if-set. Under docker there is no file; compose already set the environment, so this step does nothing.
 2. Read `config.yaml`. Deep-merge `config.local.yaml` over it if present.

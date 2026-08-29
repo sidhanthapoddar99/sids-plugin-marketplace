@@ -40,7 +40,6 @@ Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletio
 | `+expose_web` | `web` on `${HTTP_PORT}` / `${HTTPS_PORT}` | The default. Prod. |
 | `+expose` | Every app port to the host | Debug. Never prod. |
 | `+env_override` | Re-points upstreams and URLs to `${VAR}` from `.env` | A piece runs outside this compose. Refused when a mapped key is blank. |
-| `+traefik` | Traefik as the edge, labels on `web` | Instead of `+expose_web`. |
 
 Rules the files obey, and `ctl check` enforces:
 
@@ -78,7 +77,7 @@ Runs as a gate rung. Fails on the first of:
 - [ ] `deploy.resources.limits` on every service, memory above all
 - [ ] logs to stdout, JSON, level from `config.yaml`; no secret logged
 - [ ] migrations run once by `ctl up` before the apps, never on app boot
-- [ ] TLS at traefik or the host; `client_max_body_size` and proxy timeouts set in `prod.conf.template`
+- [ ] TLS at the host reverse proxy in front of the stack; `client_max_body_size` and proxy timeouts set in `prod.conf.template`
 - [ ] non-root user in every image; no `COPY .env`
 - [ ] `data/` folders exist on the host with the right owner (`ctl setup`)
 - [ ] a rollback: the previous `TAG`, or `ctl build save` snapshot

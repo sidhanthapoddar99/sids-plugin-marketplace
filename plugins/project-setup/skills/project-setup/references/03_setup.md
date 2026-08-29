@@ -5,7 +5,7 @@ Every case below is the same system with a different number of pieces. Read the 
 ## The rules that hold in every case
 
 1. **One origin.** The browser sees one host. Every frontend and every backend sits behind it, separated by path prefix. Dev and prod route the same prefixes.
-2. **The edge is the `web` image.** One nginx, built by `apps/multi-web-app/Dockerfile`, holds every static frontend and proxies everything else. There is no second nginx service.
+2. **The edge is the `web` image.** One nginx, built by `apps/example-multi-web-app/Dockerfile`, holds every static frontend and proxies everything else. There is no second nginx service.
 3. **Prefixes and ports live in the root `.env`.** One prefix and one dev port per piece. nginx reads them by `envsubst`. The framework reads its own prefix as `base` / `basePath`.
 4. **Compose decides service names; `.env` decides the rest.** A service name is a literal in `compose.base.yaml` (`API_UPSTREAM: api:8000`). A host outside this compose comes from `.env` through `+env_override`.
 5. **`ctl dev` runs apps on the host, engines in docker. `ctl up` runs everything in docker.** Same `.env`, same `config.yaml`, no edit between the two.
@@ -14,13 +14,13 @@ Every case below is the same system with a different number of pieces. Read the 
 The routing table, from `template/.env.example`:
 
 ```
-WEB_LANDING_PREFIX=/          WEB_LANDING_PORT=3001   apps/multi-web-app/landing   Next.js export
-WEB_APP_PREFIX=/app           WEB_APP_PORT=5173       apps/multi-web-app/app       Vite SPA
-WEB_DOCS_PREFIX=/docs         WEB_DOCS_PORT=4321      apps/multi-web-app/docs      Astro
-DASHBOARD_PREFIX=/dashboard   DASHBOARD_PORT=3000     apps/dashboard               Next.js server
-API_PREFIX=/api               API_PORT=8000           apps/api                     FastAPI
-ENGINE_PREFIX=/engine         ENGINE_PORT=8080        apps/engine                  Axum
-DEV_PROXY_PORT=3080                                   docker/compose.dev.yaml      the one origin in dev
+WEB_LANDING_PREFIX=/          WEB_LANDING_PORT=3001   apps/example-multi-web-app/landing   Next.js export
+WEB_APP_PREFIX=/app           WEB_APP_PORT=5173       apps/example-multi-web-app/app       Vite SPA
+WEB_DOCS_PREFIX=/docs         WEB_DOCS_PORT=4321      apps/example-multi-web-app/docs      Astro
+DASHBOARD_PREFIX=/dashboard   DASHBOARD_PORT=3000     apps/example-dashboard-nextjs        Next.js server
+API_PREFIX=/api               API_PORT=8000           apps/example-api-python              FastAPI
+ENGINE_PREFIX=/engine         ENGINE_PORT=8080        apps/example-engine-rust             Axum
+DEV_PROXY_PORT=3080                                   docker/compose.dev.yaml              the one origin in dev
 ```
 
 ## The pair: dev and prod
@@ -31,14 +31,14 @@ DEV_PROXY_PORT=3080                                   docker/compose.dev.yaml   
 | Backends | on the host, `localhost:<port>`, reload | containers, service names |
 | Static frontends | dev servers on their ports | built into the `web` image |
 | Server frontend | `next dev` | `dashboard` container |
-| The edge | Vite proxy (one frontend) or the dev proxy (several) | nginx in `web`, published by `+expose_web` |
-| Edge config | `apps/infra/nginx/dev.conf.template` | `apps/infra/nginx/prod.conf.template` |
+| The edge | Vite proxy (one frontend) or the dev proxy (several) | nginx in `web`, published by `+expose_web`. TLS and domains: a host proxy outside this repo. |
+| Edge config | `apps/infra/nginx-dev/dev.conf.template` | `apps/infra/nginx/prod.conf.template` |
 
 Both templates carry the same `location` blocks. Only the upstream differs: `127.0.0.1:${PORT}` in dev, a service name in prod.
 
 ## Case 1 — same server, one repo: frontend and backend together
 
-The common case. `apps/multi-web-app/app` + `apps/api`, or any subset of the template.
+The common case. `apps/example-multi-web-app/app` + `apps/example-api-python`, or any subset of the template.
 
 | | Routing |
 |---|---|
@@ -62,35 +62,35 @@ When only the database is elsewhere (managed Postgres), the same modifier re-poi
 
 ## Case 3 — several frontends
 
-Two or more frontends must share one origin: shared cookies, one login, links between `/` and `/app`. Template: `apps/multi-web-app/{landing,app,docs}` plus `apps/dashboard`.
+Two or more frontends must share one origin: shared cookies, one login, links between `/` and `/app`. Template: `apps/example-multi-web-app/{landing,app,docs}` plus `apps/example-dashboard-nextjs`.
 
-**Where they live.** Static frontends under one group folder, `apps/multi-web-app/<name>/`. Each owns its manifest, lock, `.env.example`, `tsconfig.json`, README. The group owns one `Dockerfile` and one `README.md`. A server frontend (Next.js SSR) is not in the group: it is `apps/dashboard/`, its own image and service.
+**Where they live.** Static frontends under one group folder, `apps/example-multi-web-app/<name>/`. Each owns its manifest, lock, `.env.example`, `tsconfig.json`, README. The group owns one `Dockerfile` and one `README.md`. A server frontend (Next.js SSR) is not in the group: it is `apps/example-dashboard-nextjs/`, its own image and service.
 
 **Dev.** `ctl dev --proxy`, automatic when two or more frontends are selected. `docker/compose.dev.yaml` runs one nginx on the host network with `dev.conf.template`: `/ → 127.0.0.1:${WEB_LANDING_PORT}`, `/app → :${WEB_APP_PORT}`, `/dashboard → :${DASHBOARD_PORT}`, `/api → :${API_PORT}`. Websocket upgrade on every location, so HMR works through it. Open `http://localhost:${DEV_PROXY_PORT}`. The Vite proxy block stays for single-frontend dev; under the dev proxy it is never hit.
 
-**Prod.** `apps/multi-web-app/Dockerfile`, context `./apps`:
+**Prod.** `apps/example-multi-web-app/Dockerfile`, context `./apps`:
 
 1. One build stage per static frontend: `oven/bun:<version>`, `ARG` for that frontend's public keys, `bun install --frozen-lockfile`, `bun run build`.
 2. Final stage `nginx:<version>`: `COPY` each output under its prefix in `/usr/share/nginx/html/`; `COPY prod.conf.template` to `/etc/nginx/templates/`. nginx renders it at start from the container environment. Listens on 8080, unprivileged. `+expose_web` publishes `${HTTP_PORT}:8080`.
 
-`ctl build` forwards each `apps/multi-web-app/<name>/.env` as build args. Compose lists the arg names, never the values.
+`ctl build` forwards each `apps/example-multi-web-app/<name>/.env` as build args. Compose lists the arg names, never the values.
 
-**Adding a static frontend:** a folder under `apps/multi-web-app/`, one build stage and one `COPY --from` in the Dockerfile, one `location` in both templates, one prefix and port in `.env.example`, one line in `app_names` in `scripts/dev/dev.sh`.
+**Adding a static frontend:** a folder under `apps/example-multi-web-app/`, one build stage and one `COPY --from` in the Dockerfile, one `location` in both templates, one prefix and port in `.env.example`, one line in `app_names` in `scripts/dev/dev.sh`.
 
 ## Case 4 — Next.js as a server
 
-A frontend that renders on the server, runs its own routes, or must start fast. Template: `apps/dashboard`.
+A frontend that renders on the server, runs its own routes, or must start fast. Template: `apps/example-dashboard-nextjs`.
 
 | | Routing |
 |---|---|
 | Dev | `next.config.ts` rewrites `/api/* → http://127.0.0.1:${API_PORT}/api/*`. Server components fetch the same. |
 | Prod | Container `dashboard` gets `API_HOST: api`, `API_PORT: 8000` from compose `environment:`. Server-side fetches use them. The browser side still calls `/api`, which the `web` edge routes. |
 
-Server-only keys (no `NEXT_PUBLIC_` prefix) are allowed here and only here. Under `ctl dev` they come from root `.env` through the process env, never from `apps/dashboard/.env`. `output: "standalone"`, own Dockerfile, `basePath` = `DASHBOARD_PREFIX`.
+Server-only keys (no `NEXT_PUBLIC_` prefix) are allowed here and only here. Under `ctl dev` they come from root `.env` through the process env, never from `apps/example-dashboard-nextjs/.env`. `output: "standalone"`, own Dockerfile, `basePath` = `DASHBOARD_PREFIX`.
 
 ## Case 5 — several backends
 
-Template: `apps/api` (Python, identity, writes) and `apps/engine` (Rust, data plane, reads). One backend per responsibility. A second backend needs a reason: a separate identity plane, a different runtime, an independent release cadence.
+Template: `apps/example-api-python` (Python, identity, writes) and `apps/example-engine-rust` (Rust, data plane, reads). One backend per responsibility. A second backend needs a reason: a separate identity plane, a different runtime, an independent release cadence.
 
 | Concern | Rule |
 |---|---|
@@ -104,7 +104,7 @@ Core vs BFF: a "backend for frontend" that only reshapes a core API is not a sec
 
 ## Case 6 — one static frontend, no backend
 
-A landing page, a docs site. `apps/multi-web-app/landing` alone. `DATA_SVCS=()`. `compose.base.yaml` keeps only `web`; the nginx template keeps the static locations, drops the proxied ones. `ctl dev` runs one dev server. The group folder still exists: a second frontend is then a folder, not a restructure.
+A landing page, a docs site. `apps/example-multi-web-app/landing` alone. `DATA_SVCS=()`. `compose.base.yaml` keeps only `web`; the nginx template keeps the static locations, drops the proxied ones. `ctl dev` runs one dev server. The group folder still exists: a second frontend is then a folder, not a restructure.
 
 ## Case 7 — multiple origins
 
