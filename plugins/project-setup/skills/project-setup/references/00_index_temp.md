@@ -14,15 +14,15 @@ Legend: `[x]` done · `[ ]` open · `[-]` dropped on purpose.
 
 | # | File | Owns | Status |
 |---|---|---|---|
-| 1 | `01_layout.md` | The one tree. Placement rules. `.gitignore`. README levels. Naming. Exceptions. | written, needs template sync |
-| 2 | `02_environment.md` | `.env` / `.env.example` / `config.yaml`. Value flow. Secret classes. Docker consumption. | written, needs path sync |
-| 3 | `05_ctl.md` | Compose model (db / base / m.*). `ctl` verbs. Prod readiness. Multi-stack. | empty |
-| 4 | `03_architecture.md` | Stack tables. Why/when/never for frontend, backend, data, desktop, mobile, AI, security. | `03_stack.md` written; rename + extend |
-| 5 | `04_testing.md` | Test placement. `ctl test`, `e2e`, `lint`, `gate`. Frozen builds. | empty |
-| 6 | `08_conventions.md` | AGENTS.md / memory. Feature folders. Styling discipline. Caps. Residue. | residue only |
-| 7 | `09_questions.md` | What to ask before scaffolding. Altitude in one paragraph. | empty |
+| 1 | `01_layout.md` | The one tree. Placement rules. `.gitignore`. README levels. Naming. Exceptions. | synced to template |
+| 2 | `02_env.md` | The five files. Rules. Loader steps. Docker consumption. Secret classes. | written |
+| 3 | `03_setup.md` | Rules that hold in every case. The dev/prod pair. Cases 1–7: same server, different server, several frontends (dev proxy + one image), Next.js server, several backends, static only, multiple origins. | written |
+| 4 | `04_stack.md` | Dev tools. Frontend kinds + theme + shared code. Backends. ML. Desktop, TUI, mobile. Data engines. Migrations decision. | written |
+| 5 | `05_ctl.md` | Verb table. Compose model + merge rules. `ctl check` rules. Prod-readiness checklist. Frozen builds. Multi-stack. No data core. | written |
+| 6 | `06_testing.md` | Placement. Verbs. Rules. Linters. | written |
+| 7 | `07_conventions.md` | Agent brief. Inside an app. Naming. Residue. Tripwires. Audit order. | written |
 
-Delete: `06_frontend.md`, `07_backend.md` (merged into 4). Renumber at the end so files read 01–07.
+Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02_environment`, `03_stack`, `04_testing`, `06_frontend`, `07_backend`, `08_conventions`, `09_questions`.
 
 ## Template checklist
 
@@ -52,8 +52,13 @@ Delete: `06_frontend.md`, `07_backend.md` (merged into 4). Renumber at the end s
 - [ ] AI key proxy route named in `routers/` (backend-only rule)
 
 ### apps/ — frontend
-- [x] `web/` Vite: `src/{main,routes,components,lib/api}`, `vite.config.ts` proxy mirrors nginx, `.env.example`, `Dockerfile`
-- [x] `site/` Next.js: `src/app/{layout,page}`, `next.config.ts` rewrites, `.env.example`, `Dockerfile`
+- [x] `multi-web-app/` group: `Dockerfile` (one image, ends in nginx), `README.md`, `app/` Vite SPA `/app`, `landing/` Next export `/`, `docs/` Astro `/docs`
+- [x] `dashboard/` Next.js SSR `/dashboard`, own Dockerfile and service
+- [x] `infra/nginx/{prod,dev}.conf.template`, envsubst, prefixes and ports from root `.env`
+- [x] `docker/compose.dev.yaml` dev proxy on host network; `ctl dev --proxy`
+- [x] `compose.m.expose_web`; no separate nginx service
+- [x] `apps/.dockerignore` for the `./apps` build context
+- [x] api → engine via `ENGINE_URL` (`config.yaml` `${VAR}`, compose literal, env_override)
 - [x] `packages/styles/` — `tokens.css`, `globals.css`, `elements.css` from vault
 - [x] `packages/ui/` — shadcn shape, React as peerDependency
 - [x] `packages/types/` — API contract, generated
@@ -72,6 +77,18 @@ Delete: `06_frontend.md`, `07_backend.md` (merged into 4). Renumber at the end s
 - [ ] `ctl check` covers: config.yaml keys ⊆ `.env.example`, no manifests at root/apps, no ports in base, no `../` in compose, compose config valid per combination, `CLAUDE.md` content. TODO: `.env.example` comment rule.
 - [ ] every `<version>` placeholder present, none filled
 - [ ] one smoke run of `ctl check`, `ctl up --dry-run`, `ctl dev --dry-run` on a copy with docker
+
+## Decisions taken — must appear in the named page
+
+| Decision | Page |
+|---|---|
+| Single origin, always. The browser talks to one host. Vite proxy routes `/api` in dev; nginx in prod; a Next.js server proxies for itself. Multi-origin only for a public SDK. | 4, 5 |
+| Static frontends live under `apps/web/<name>/` and build into ONE image that ends in nginx: that image is the `web` service and the edge. A server frontend (Next.js SSR) is its own app and service. Several frontends in dev share an origin through `compose.dev.yaml`. | 5 |
+| The frontend bundle carries no environment value. `apps/<fe>/.env` holds build constants only (`VITE_BASE_PATH`, display name). Proxy targets come from the root `.env` via the process env. No `config.jsonc`. | 2, 4 |
+| Backend precedence: process env > `config.local.yaml` (gitignored, literals only) > `config.yaml` (committed, `${VAR}` for secrets and endpoints). One loader per backend, finds the repo root, loads root `.env` skip-if-set. | 2 |
+| Backend hosts and ports: single server — root `.env` for `ctl dev`, literals in `compose.base.yaml` for docker. Multi-server — `+env_override` re-points a service to `${VAR}` from root `.env`; a piece not in this compose is reached by its `.env` value. | 2, 3 |
+| Compose and ctl read only the root `.env`. `ctl build` forwards `apps/<fe>/.env` opaquely as build args. | 2, 3 |
+| Base is prod. `compose.db.yaml` included by base; loopback ports on engines; no ports in base; modifiers add exposure. Paths root-relative via `--project-directory`. | 3 |
 
 ## Old content map
 

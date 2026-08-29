@@ -1,0 +1,75 @@
+# Conventions
+
+Rules that hold across every file and every change. Each one is an audit finding when broken.
+
+## The agent brief
+
+- `AGENTS.md` at the root is the real brief. `CLAUDE.md` is one line: `@AGENTS.md`. Both hosts read the same text.
+- `memory/` holds the working rules, one file per rule set. `AGENTS.md` links to it. Read it before any change.
+- `AGENTS.md` records every exception to the standard layout under its own heading. An unrecorded exception is a defect.
+- Template: `template/AGENTS.md`, `template/memory/00_rules.md`.
+
+## Inside an app
+
+| Rule | Detail |
+|---|---|
+| Feature folders | Frontend code groups by feature, not by kind: `features/<name>/{components,hooks,api}.ts`, not `components/`, `hooks/` at the top. Shared primitives stay in `components/` and `lib/`. |
+| API and pages | A page composes features and calls `lib/api.ts`. A feature never calls `fetch` directly. |
+| Types and contracts | The API contract is `@scope/types`, generated from OpenAPI. Backend schemas (`schemas/`) are the source. No hand-written mirror. |
+| Styling | Utilities from the theme (`bg-bg-1`, `rounded-md`), never `var(--…)` in a component, never a hex value, never an arbitrary value. Tokens change in `packages/styles/tokens.css` only. |
+| Caps | A file over 300 lines, a component over 150, a function over 40: split. A feature imported by two features: extract to a package. |
+| Extraction | Code two apps need moves to `apps/packages/`. An app never imports from another app. |
+
+## Naming
+
+- App folders take the role, not the stack: `api/`, `engine/`, `dashboard/`, `cli/`. Suffix when two share a role: `api-admin/`, `api-platform/`.
+- Package folders take what they export: `ui/`, `styles/`, `types/`, `tsconfig/`.
+- Scripts take the verb: `scripts/db/migrate.sh` is `ctl migrate`.
+- Compose files: `compose.<role>.yaml`; modifiers `compose.m.<name>.yaml`. Never a bare `compose.yaml`.
+- Env keys: `<SERVICE>_<THING>`: `POSTGRES_HOST`, `WEB_APP_PREFIX`, `ENGINE_URL`.
+- Files that must be sourced, not executed: leading underscore, `_lib.sh`.
+
+## Residue
+
+A restructure is done only when nothing describes the old tree. Delete or move; do not keep "just in case". Git history is the backup.
+
+| Residue | Rule |
+|---|---|
+| Stale self-description | `README.md`, `AGENTS.md` or docs naming folders, paths or commands that no longer exist. Fix in the same change that moved them. |
+| Graveyard folders | `old/`, `backup/`, `<thing>-v1/`, `*-old/`. Delete. |
+| Retired duplicates | Two config systems, two docs sites, two tools for one job. Finish the migration and delete the loser. |
+| Committed archives | Datasets, dumps, model weights, zips beside code. Move to `data/` or external storage. |
+| Loose worktrees and scratch checkouts | Inside the repo or beside it. Keep them under an ignored path or outside the project folder. |
+| Scaffolded emptiness | An empty `docker/`, `infra/`, `docs/`, `tests/` "for later". A folder exists only when used. |
+
+## Tripwires
+
+Each of these means a rule above was broken somewhere else. Find that place.
+
+| Seen | Broken rule |
+|---|---|
+| `VITE_API_URL`, `NEXT_PUBLIC_API_URL` | single origin (`03_setup.md`) |
+| CORS middleware for our own frontend | single origin |
+| `source .env` in a script | skip-if-set loading (`02_env.md`) |
+| `os.environ[...]` outside `config.py` | one loader |
+| a password in `config.yaml` | secrets in `.env` only |
+| `alembic upgrade` in a Dockerfile `CMD` or app startup | migrations are an explicit step |
+| `ports:` in `compose.base.yaml` | exposure by modifier only |
+| `../` in a compose file | root-relative paths |
+| `package.json` at the root or in `apps/` | no workspace |
+| a second nginx service | the `web` image is the edge |
+| `docker compose -f` in a README | `ctl` is the entrypoint |
+| a `tests/` folder at the root | tests live with the app |
+
+## Audit order
+
+When asked to audit a repo, check in this order and stop at the first failing layer. A broken lower layer makes the upper ones meaningless.
+
+1. Layout: the tree, root hygiene, residue (`01_layout.md`)
+2. Env: the five files, secrets, precedence (`02_env.md`)
+3. Setup: origin, prefixes, compose shape (`03_setup.md`, `05_ctl.md`)
+4. Stack: choices against the list (`04_stack.md`)
+5. Testing: placement and the gate (`06_testing.md`)
+6. This file.
+
+Report findings as a table: file, rule broken, fix. `ctl check` covers the mechanical part; run it first.

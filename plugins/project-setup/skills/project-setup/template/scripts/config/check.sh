@@ -10,8 +10,11 @@ usage() { print_help "check" "Conformance floor — layout, env contract, compos
   -h, --help      show this help
 
 Rules
-  env       every \${VAR} in apps/*/config.yaml is a key in .env.example
-  layout    no package.json / bun.lock / pnpm-workspace.yaml at the root or directly in apps/
+  env       every \${VAR} in apps/*/config.yaml is a key in .env.example ·
+            no secret literal in config.yaml (every *_KEY / *_PASSWORD / *_SECRET value is \${VAR}) ·
+            no config.local.yaml tracked by git
+  layout    no package.json / bun.lock / pnpm-workspace.yaml at the root, directly in apps/, or
+            directly in apps/multi-web-app/ (the static group; each frontend is apps/multi-web-app/<name>/)
   brief     CLAUDE.md is exactly '@AGENTS.md'
   compose   no ports: in compose.base.yaml · no ../ in any docker/compose.*.yaml ·
             docker compose config validates: db alone, base alone, base + each modifier
@@ -22,6 +25,11 @@ rc=0; fail() { err "$*"; rc=1; }
 LOG_INDENT="  "
 
 step "env contract"
+for cfg in apps/*/config.yaml; do
+  [[ -f $cfg ]] || continue
+  grep -nE '^\s*[a-z_]*(key|password|secret)[a-z_]*:\s*[^$ #]' "$cfg" | while IFS= read -r l; do fail "$cfg: secret literal — $l"; done
+done
+git ls-files --error-unmatch '*config.local.yaml' >/dev/null 2>&1 && fail "config.local.yaml is tracked by git"
 if [[ -f .env.example ]]; then
   mapfile -t known < <(env_keys .env.example)
   for cfg in apps/*/config.yaml; do
@@ -34,10 +42,11 @@ if [[ -f .env.example ]]; then
 else fail "no .env.example"; fi
 
 step "layout"
-for f in package.json bun.lock pnpm-workspace.yaml apps/package.json apps/bun.lock apps/pnpm-workspace.yaml; do
-  [[ -e $f ]] && fail "$f exists — no workspace at the root or in apps/; each app owns its manifest"
+for f in package.json bun.lock pnpm-workspace.yaml apps/package.json apps/bun.lock apps/pnpm-workspace.yaml \
+         apps/multi-web-app/package.json apps/multi-web-app/bun.lock apps/multi-web-app/pnpm-workspace.yaml; do
+  [[ -e $f ]] && fail "$f exists — no workspace at the root, in apps/ or in apps/multi-web-app/; each app owns its manifest"
 done
-ok "no root manifests"
+ok "no root / apps/ / apps/multi-web-app/ manifests"
 
 step "brief"
 if [[ -f CLAUDE.md ]]; then
@@ -57,7 +66,7 @@ ok "base has no ports · no ../ paths"
 if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && [[ -f .env ]]; then
   step "compose config (needs .env for \${VAR})"
   load_env_file .env
-  combos=("$DB_FILE" "$BASE")
+  combos=("$DB_FILE" "$DEV_FILE" "$BASE")
   while IFS= read -r m; do [[ -n $m ]] && combos+=("$BASE $DOCKER_DIR/compose.m.$m.yaml"); done < <(list_modifiers)
   for c in "${combos[@]}"; do
     args=(); for f in $c; do args+=(-f "$f"); done

@@ -1,6 +1,6 @@
 # The stack. This IS production. No ports here — modifiers add exposure.
 # No env_file. Each service lists exactly the variables it reads under `environment:`.
-#   ${VAR}   — operator decides; interpolated from .env (secrets, ports, public URLs)
+#   ${VAR}   — operator decides; interpolated from .env (secrets, ports, prefixes, public URLs)
 #   literal  — compose decides; service names on the compose network
 # So reading this file tells you everything a container gets. Nothing leaks in by accident.
 # Every app has image: (pull) and build: (ctl build).
@@ -25,6 +25,7 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       API_PREFIX: ${API_PREFIX}
+      ENGINE_URL: http://engine:8080             # api calls engine by service name
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
       ENCRYPTION_KEY_PYTHON: ${ENCRYPTION_KEY_PYTHON}
       PUBLIC_URL: ${PUBLIC_URL}
@@ -44,28 +45,42 @@ services:
       ENCRYPTION_KEY_RUST: ${ENCRYPTION_KEY_RUST}
     depends_on: [postgres, neo4j]
 
+  # The edge. One nginx image holding every static frontend (apps/multi-web-app/*), proxying the rest.
   web:
     image: ${REGISTRY}/web:${TAG}
     build:
-      context: ./apps/web
-      args:                                     # baked into the bundle. Public values only.
-        VITE_APP_NAME: ${VITE_APP_NAME}
-        VITE_BASE_PATH: /app
-    # static bundle served by nginx inside the image. No environment at runtime.
+      context: ./apps                           # needs packages/ and infra/ too
+      dockerfile: multi-web-app/Dockerfile
+      args:                                     # values come from apps/multi-web-app/<name>/.env via `ctl build`.
+        - NEXT_PUBLIC_SITE_NAME                 #   landing. compose never reads those files; ctl forwards them.
+        - VITE_APP_NAME                         #   app
+        - VITE_BASE_PATH
+        - PUBLIC_SITE_NAME                      #   docs
+    environment:
+      # prefixes: the operator's routing table, from .env
+      WEB_APP_PREFIX: ${WEB_APP_PREFIX}
+      WEB_DOCS_PREFIX: ${WEB_DOCS_PREFIX}
+      DASHBOARD_PREFIX: ${DASHBOARD_PREFIX}
+      API_PREFIX: ${API_PREFIX}
+      ENGINE_PREFIX: ${ENGINE_PREFIX}
+      # upstreams: compose decides the service names, so compose states them. +env_override swaps these.
+      API_UPSTREAM: api:8000
+      ENGINE_UPSTREAM: engine:8080
+      DASHBOARD_UPSTREAM: dashboard:3000
+      # only these names are substituted into the nginx template; nginx's own $host/$uri stay intact
+      NGINX_ENVSUBST_FILTER: ^(WEB_APP_PREFIX|WEB_DOCS_PREFIX|DASHBOARD_PREFIX|API_PREFIX|ENGINE_PREFIX|API_UPSTREAM|ENGINE_UPSTREAM|DASHBOARD_UPSTREAM)$
+    depends_on: [api, engine, dashboard]
+    # ports come from compose.m.expose_web.yaml (the image listens on 8080, unprivileged)
 
-  site:
-    image: ${REGISTRY}/site:${TAG}
+  # Next.js SSR — needs a Node server, so its own image; the edge proxies ${DASHBOARD_PREFIX} to it.
+  dashboard:
+    image: ${REGISTRY}/dashboard:${TAG}
     build:
-      context: ./apps/site
-      args:
-        NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME}
+      context: ./apps/dashboard
+      args:                                     # from apps/dashboard/.env via `ctl build`
+        - NEXT_PUBLIC_APP_NAME
     environment:                                # server side only
       API_HOST: api
       API_PORT: 8000
       PUBLIC_URL: ${PUBLIC_URL}
-
-  nginx:
-    image: nginx:<version>
-    volumes: ["./apps/infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
-    depends_on: [api, engine, web, site]
-    # ports come from compose.m.expose_nginx.yaml
+    depends_on: [api]

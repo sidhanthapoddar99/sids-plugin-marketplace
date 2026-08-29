@@ -3,6 +3,7 @@
 .env
 .env.*
 !.env.example
+**/config.local.yaml
 data/
 node_modules/
 .venv/

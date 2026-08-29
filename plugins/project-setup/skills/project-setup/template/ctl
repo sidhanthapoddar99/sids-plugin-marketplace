@@ -15,7 +15,8 @@
 # apps on the host. `ctl up [+mod…]` runs docker/compose.base.yaml (the whole stack — it
 # includes the db file) plus stackable modifiers docker/compose.m.<name>.yaml, given as
 # `+name` tokens. No modifier given: an interactive multi-select in a terminal, else the
-# default (+expose_nginx). Bare `ctl up` walks modifiers → plan → confirm.
+# default (+expose_web). Bare `ctl up` walks modifiers → plan → confirm. `ctl dev --proxy` adds
+# docker/compose.dev.yaml: one nginx on the host network so several frontends share one origin.
 # Run `ctl <command> --help` for any command.
 
 set -euo pipefail
@@ -29,7 +30,7 @@ run() { local s="$CTL_ROOT/scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s
 ctl_help() {
   printf '%s%s%s — control plane. One entrypoint for dev + containers.\n\n' "$C_B$C_CYN" "ctl" "$C_RESET"
   printf '%sDevelopment%s (host loop)\n' "$C_B" "$C_RESET"
-  row "dev [app…] [--detach]"           "data core in docker, apps on the host with reload"
+  row "dev [app…] [--proxy] [--detach]" "data core in docker, apps on the host with reload (--proxy: one origin)"
   row "ps [--list | kill [port…]]"      "browse everything running — attach · kill · port map"
   row "lint [app] [--staged]"           "lint every app (ruff · clippy · oxlint · gofmt)"
   printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"

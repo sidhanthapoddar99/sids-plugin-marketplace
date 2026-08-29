@@ -32,7 +32,7 @@ usage() { print_help "up" "Assemble + start the container stack (interactive, or
 Base is docker/compose.base.yaml (the whole stack, includes the data engines). Modifiers add
 exposure or re-point services; base itself publishes no ports." \
 "Example:  ctl up                        # interactive
-          ctl up +expose_nginx -y       # prod default, no prompts
+          ctl up +expose_web -y         # prod default, no prompts
           ctl up +expose +env_override  # debug ports, services re-pointed from .env
           ctl up --attach               # foreground; watch logs, Ctrl-C to stop"; }
 

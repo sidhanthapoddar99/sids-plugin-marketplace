@@ -1,9 +1,10 @@
 # Curated for the ecosystems present. Runtime state is handled by data/.gitignore.
 
-# secrets
+# secrets and local overrides
 .env
 .env.*
 !.env.example
+config.local.yaml
 
 # python
 __pycache__/

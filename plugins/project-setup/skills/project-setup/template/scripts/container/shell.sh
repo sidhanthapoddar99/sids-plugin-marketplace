@@ -7,7 +7,7 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; 
 usage() { print_help "shell" "Open a shell inside a running service container." \
   'shell <service> [-h]' \
 "Arguments
-  service         the compose service (api, engine, web, site, nginx, …)
+  service         the compose service (api, engine, web, dashboard, …)
 
 Options
   -h, --help      show this help" \

@@ -5,12 +5,12 @@ set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 usage() { print_help "lint" "Lint every app (non-mutating)." \
-  'lint [api|engine|web|site|cli|database] [--staged] [-h]' \
+  'lint [api|engine|landing|app|docs|dashboard|cli|database] [--staged] [-h]' \
 "Arguments
   (none)          lint everything
   api, database   ruff check
   engine          cargo fmt --check + clippy -D warnings
-  web, site       bun run lint  (oxlint)
+  landing, app, docs, dashboard   bun run lint  (oxlint)
   cli             gofmt -l + go vet
 
 Options
@@ -32,14 +32,16 @@ lint_rs()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (fmt + clip
 lint_js()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (bun run lint)"; ( cd "$1" && bun run lint ) || rc=1; }
 lint_go()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (gofmt + vet)";  ( cd "$1" && test -z "$(gofmt -l .)" && go vet ./... ) || rc=1; }
 case "$target" in
-  all)      lint_py apps/api; lint_py apps/database/postgres; lint_rs apps/engine; lint_js apps/web; lint_js apps/site; lint_go apps/cli ;;
+  all)      lint_py apps/api; lint_py apps/database/postgres; lint_rs apps/engine; lint_js apps/multi-web-app/landing; lint_js apps/multi-web-app/app; lint_js apps/multi-web-app/docs; lint_js apps/dashboard; lint_go apps/cli ;;
   api)      lint_py apps/api ;;
   database) lint_py apps/database/postgres ;;
   engine)   lint_rs apps/engine ;;
-  web)      lint_js apps/web ;;
-  site)     lint_js apps/site ;;
+  landing)  lint_js apps/multi-web-app/landing ;;
+  app)      lint_js apps/multi-web-app/app ;;
+  docs)     lint_js apps/multi-web-app/docs ;;
+  dashboard) lint_js apps/dashboard ;;
   cli)      lint_go apps/cli ;;
-  *)        die "unknown target: $target (all|api|engine|web|site|cli|database)" ;;
+  *)        die "unknown target: $target (all|api|engine|landing|app|docs|dashboard|cli|database)" ;;
 esac
 (( rc == 0 )) && ok "lint clean" || err "lint issues"
 exit $rc

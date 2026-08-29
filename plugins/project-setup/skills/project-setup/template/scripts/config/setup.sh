@@ -13,7 +13,7 @@ Steps
   1. cp .env.example .env if .env is missing; append keys .env.example gained since
   2. fill every blank *_KEY / *_SECRET with openssl rand -hex 32,
      every blank *_PASSWORD with a 24-char base64 string
-  3. per frontend: cp apps/<fe>/.env.example apps/<fe>/.env if missing
+  3. per frontend: cp .env.example → .env in apps/multi-web-app/<name>/ and apps/dashboard/ if missing
   4. mkdir data/{$(IFS=,; echo "${DATA_SVCS[*]}"),test_build,logs,run}  (data/.gitignore keeps them out of git)
   5. mise install · uv sync per python app · bun install per js app · cargo fetch · go mod download" \
 "Re-run any time to top up missing keys and secrets."; }
@@ -42,8 +42,8 @@ while IFS='=' read -r key val; do
   esac
 done < .env
 
-# per-frontend public env
-for fe in apps/*/; do
+# per-frontend public env — the static group apps/multi-web-app/<name>/ plus the SSR app
+for fe in apps/multi-web-app/*/ apps/dashboard/; do
   [[ -f "$fe.env.example" && ! -f "$fe.env" ]] || continue
   cp "$fe.env.example" "$fe.env"; ok "created ${fe}.env"
 done
@@ -60,7 +60,7 @@ for d in apps/*/ apps/database/postgres/; do
   [[ -f "$d/pyproject.toml" ]] || continue
   if command -v uv >/dev/null 2>&1; then ( cd "$d" && uv sync ) && ok "$d uv sync"; else warn "uv not found — $d skipped"; break; fi
 done
-for d in apps/*/ apps/packages/*/; do
+for d in apps/*/ apps/multi-web-app/*/ apps/packages/*/; do
   [[ -f "$d/package.json" ]] || continue
   if command -v bun >/dev/null 2>&1; then ( cd "$d" && bun install ) && ok "$d bun install"; else warn "bun not found — $d skipped"; break; fi
 done

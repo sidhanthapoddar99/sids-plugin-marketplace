@@ -1,5 +1,5 @@
-# Modifier. Traefik as the edge instead of exposing nginx. Labels route by path.
-# Use with `ctl up +traefik`, never together with +expose_nginx.
+# Modifier. Traefik as the edge in front of web instead of exposing it. Labels route by host.
+# Use with `ctl up +traefik`, never together with +expose_web.
 services:
   traefik:
     image: traefik:<version>
@@ -8,6 +8,8 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./apps/infra/traefik/dynamic.yaml:/dynamic.yaml:ro"
-  nginx:
+  web:
     labels:
-      traefik.http.routers.app.rule: "Host(`${PUBLIC_HOST}`)"
+      traefik.enable: "true"
+      traefik.http.routers.web.rule: "Host(`${PUBLIC_HOST}`)"
+      traefik.http.services.web.loadbalancer.server.port: "8080"

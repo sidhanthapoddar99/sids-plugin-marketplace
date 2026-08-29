@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# container/build.sh — `ctl build [app…|cli]`. Build the service images through compose (so build
-# args interpolate from .env exactly as `ctl up` sees them). `cli` builds the Go binary instead.
+# container/build.sh — `ctl build [app…|cli]`. Build the service images through compose.
+# Frontend build args (VITE_*, NEXT_PUBLIC_*) come from apps/<frontend>/.env: compose lists the arg
+# names without values, and this script exports each frontend's .env into the process environment
+# before `compose build`, so compose picks them up. It is the ONE place ctl touches an app .env,
+# and it forwards the file opaquely — it never interprets the keys. `cli` builds the Go binary instead.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
@@ -8,7 +11,7 @@ usage() { print_help "build" "Build the service images (compose build) or the Go
   'build [app…|cli] [-h]' \
 "Arguments
   (none)          every service in compose.base.yaml that has a build: context
-  app…            only these services (api engine web site …)
+  app…            only these services (api engine web dashboard …)
   cli             go build apps/cli → apps/cli/bin/
 
 Options
@@ -23,6 +26,9 @@ if [[ "${1:-}" == cli ]]; then
   exit 0
 fi
 require_env; require_docker
+# forward every frontend .env as build args (opaque: names listed in compose.base.yaml build.args).
+# Static frontends live in apps/multi-web-app/<name>/; the SSR one is apps/dashboard/.
+for fe in apps/multi-web-app/*/ apps/dashboard/; do [[ -f "$fe.env" && -f "${fe}package.json" ]] && load_env_file "$fe.env"; done
 step "docker compose build ${*:-(all)}"
 dc build "$@"
 ok "images built"

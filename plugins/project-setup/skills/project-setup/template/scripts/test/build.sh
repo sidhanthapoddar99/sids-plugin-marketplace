@@ -37,8 +37,10 @@ CUSTOM_LABEL="custom…"
 #           none     save-only deliverable (wheel/tarball/library) — `start` refuses
 #                    politely and points at the folder
 BUILD_TARGETS=(
-  "web|cd apps/web && bun run build|apps/web/dist|static|"
-  "site|cd apps/site && bun run build|apps/site/.next/standalone|process|PORT={port} node server.js"
+  "landing|cd apps/multi-web-app/landing && bun run build|apps/multi-web-app/landing/out|static|"
+  "app|cd apps/multi-web-app/app && bun run build|apps/multi-web-app/app/dist|static|"
+  "docs|cd apps/multi-web-app/docs && bun run build|apps/multi-web-app/docs/dist|static|"
+  "dashboard|cd apps/dashboard && bun run build|apps/dashboard/.next/standalone|process|PORT={port} node server.js"
   "api|cd apps/api && uv build|apps/api/dist|none|"
   "cli|cd apps/cli && mkdir -p bin && go build -o bin/ ./cmd/...|apps/cli/bin|none|"
 )

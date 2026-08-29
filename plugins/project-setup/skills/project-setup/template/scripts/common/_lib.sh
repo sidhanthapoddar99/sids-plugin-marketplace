@@ -10,6 +10,7 @@
 #
 # COMPOSE MODEL (one base + stackable modifiers, no profiles, no standalone configs):
 #   docker/compose.db.yaml     the data engines alone (loopback ports)   → `ctl dev`
+#   docker/compose.dev.yaml    the nginx dev proxy, host network         → `ctl dev --proxy`
 #   docker/compose.base.yaml   the whole stack; it `include:`s the db file; NO ports
 #   docker/compose.m.<name>.yaml   modifiers, discovered by filename       → `ctl up +<name>`
 # Every compose call passes --project-directory "$CTL_ROOT", so every relative path in
@@ -32,7 +33,8 @@
 DOCKER_DIR="docker"
 BASE="$DOCKER_DIR/compose.base.yaml"
 DB_FILE="$DOCKER_DIR/compose.db.yaml"
-DEFAULT_MODIFIERS=(expose_nginx)          # what `ctl up` applies when no +modifier is given
+DEV_FILE="$DOCKER_DIR/compose.dev.yaml"   # the same-origin dev proxy (nginx on the host network)
+DEFAULT_MODIFIERS=(expose_web)            # what `ctl up` applies when no +modifier is given
 
 # [ADAPT] the data core. Empty = no data core — every consumer degrades gracefully.
 read -r -a DATA_SVCS <<< "${DATA_SVCS:-postgres redis neo4j}" || true
@@ -40,7 +42,7 @@ read -r -a DATA_SVCS <<< "${DATA_SVCS:-postgres redis neo4j}" || true
 # [ADAPT] .env keys a modifier maps with ${VAR}. `ctl up` refuses the modifier when any is blank —
 # an unset ${VAR} in compose becomes an empty string and the service breaks silently.
 declare -A MODIFIER_REQUIRES=(
-  [env_override]="DATABASE_URL REDIS_URL NEO4J_URL API_HOST API_PORT"
+  [env_override]="DATABASE_URL REDIS_URL NEO4J_URL API_HOST API_PORT ENGINE_HOST ENGINE_PORT DASHBOARD_HOST DASHBOARD_PORT"
   [traefik]="PUBLIC_HOST"
 )
 
@@ -97,9 +99,11 @@ Any extra args forward straight to \`docker compose $1\`." \
 }
 
 # ── docker compose ──
-# Every call is anchored at the repo root. `dc` = the whole stack (base), `dc_db` = engines only.
-dc()    { docker compose --project-directory "$CTL_ROOT" -f "$BASE" "$@"; }
-dc_db() { docker compose --project-directory "$CTL_ROOT" -f "$DB_FILE" "$@"; }
+# Every call is anchored at the repo root. `dc` = the whole stack (base), `dc_db` = engines only,
+# `dc_dev` = the same-origin dev proxy (compose.dev.yaml).
+dc()     { docker compose --project-directory "$CTL_ROOT" -f "$BASE" "$@"; }
+dc_db()  { docker compose --project-directory "$CTL_ROOT" -f "$DB_FILE" "$@"; }
+dc_dev() { docker compose --project-directory "$CTL_ROOT" -f "$DEV_FILE" "$@"; }
 # auto-discovery — no hard-coded list. compose.m.<name>.yaml = modifier <name>.
 list_modifiers() { local f b; for f in "$DOCKER_DIR"/compose.m.*.yaml; do [[ -e $f ]] || continue
                      b=${f##*/compose.m.}; printf '%s\n' "${b%.yaml}"; done; }

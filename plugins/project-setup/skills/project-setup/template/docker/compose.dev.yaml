@@ -1,0 +1,26 @@
+# Same origin in dev with several frontends. Standalone file (not a modifier): `ctl dev` runs it alone.
+# Vite / Next / Astro dev servers keep running on their own ports on the host; this one nginx routes each
+# prefix to them, plus /api and /engine to the host-run backends, so the browser sees one origin at
+# http://localhost:${DEV_PROXY_PORT}. `ctl dev` starts it with --proxy, or automatically when two or more
+# frontends are selected. network_mode: host so 127.0.0.1:<port> in dev.conf.template is the host.
+services:
+  dev-proxy:
+    image: nginx:<version>
+    network_mode: host
+    volumes:
+      - ./apps/infra/nginx/dev.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./apps/infra/nginx/dev-proxy-headers.conf:/etc/nginx/dev-proxy-headers.conf:ro
+    environment:
+      DEV_PROXY_PORT: ${DEV_PROXY_PORT}
+      WEB_APP_PREFIX: ${WEB_APP_PREFIX}
+      WEB_DOCS_PREFIX: ${WEB_DOCS_PREFIX}
+      DASHBOARD_PREFIX: ${DASHBOARD_PREFIX}
+      API_PREFIX: ${API_PREFIX}
+      ENGINE_PREFIX: ${ENGINE_PREFIX}
+      WEB_LANDING_PORT: ${WEB_LANDING_PORT}
+      WEB_APP_PORT: ${WEB_APP_PORT}
+      WEB_DOCS_PORT: ${WEB_DOCS_PORT}
+      DASHBOARD_PORT: ${DASHBOARD_PORT}
+      API_PORT: ${API_PORT}
+      ENGINE_PORT: ${ENGINE_PORT}
+      NGINX_ENVSUBST_FILTER: ^(DEV_PROXY_PORT|WEB_APP_PREFIX|WEB_DOCS_PREFIX|DASHBOARD_PREFIX|API_PREFIX|ENGINE_PREFIX|WEB_LANDING_PORT|WEB_APP_PORT|WEB_DOCS_PORT|DASHBOARD_PORT|API_PORT|ENGINE_PORT)$
