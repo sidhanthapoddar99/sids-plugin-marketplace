@@ -7,7 +7,7 @@ services:
     ports: ["${HTTP_PORT}:80", "${HTTPS_PORT}:443"]
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "../apps/infra/traefik/dynamic.yaml:/dynamic.yaml:ro"
+      - "./apps/infra/traefik/dynamic.yaml:/dynamic.yaml:ro"
   nginx:
     labels:
       traefik.http.routers.app.rule: "Host(`${PUBLIC_HOST}`)"

@@ -1,8 +1,16 @@
 {
   "name": "@scope/ui",
-  "version": "0.1.0",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./tokens.css": "./src/tokens.css" },
+  "exports": { ".": "./src/index.ts", "./utils": "./src/lib/utils.ts" },
+  "dependencies": {
+    "@scope/types": "link:../types",
+    "class-variance-authority": "<version>",
+    "clsx": "<version>",
+    "lucide-react": "<version>",
+    "tailwind-merge": "<version>"
+  },
   "peerDependencies": { "react": "<version>", "react-dom": "<version>" },
-  "devDependencies": { "typescript": "<version>" }
+  "devDependencies": { "@scope/tsconfig": "link:../tsconfig", "typescript": "<version>" }
 }

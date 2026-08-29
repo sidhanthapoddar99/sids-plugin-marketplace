@@ -1,22 +1,113 @@
 #!/usr/bin/env bash
-# ctl — the single entrypoint. A thin router: parse the verb, source scripts/common/lib.sh,
-# exec the worker in scripts/<group>/<verb>.sh. No logic lives here.
+# ctl — <PROJECT> control plane. Drop at repo root (chmod +x, no extension — it's the public API).
 #
-# verbs:
-#   setup                       copy .env.example → .env, fill secrets, mkdir data/*
-#   check                       conformance: layout, env contract, compose validity
-#   dev [app...]                db in docker, listed apps on host (default: all)
-#   up [+expose|+expose_nginx|+env_override|+traefik]...
-#                               db + base + modifiers. default modifier: +expose_nginx
-#   down | logs [svc] | ps
-#   build [app|cli] | build save <name>
-#   migrate | migrate new "<msg>" | migrate status
-#   db shell|backup|restore <file>
-#   test [app|e2e] | lint [--staged]
+# A THIN ROUTER. It sources scripts/common/_lib.sh, dispatches each subcommand to its worker
+# (scripts/<group>/<name>.sh), and inlines only the trivial `docker compose` passthroughs.
+# Every command supports -h / --help; colors auto-disable when piped or NO_COLOR is set.
 #
-# resolution: verb → scripts/<group>/<verb>.sh, groups searched in order:
-#   config dev container db test
+#   Development    dev · ps · lint
+#   Containers     up · down · restart · logs · exec · shell · build · clean · health
+#   Database       migrate · db shell|backup|restore
+#   Test           test · gate · build save|start|clean (frozen test builds)
+#   Configuration  setup · check · status
+#
+# COMPOSE MODEL. `ctl dev` runs docker/compose.db.yaml alone (engines, loopback ports) and the
+# apps on the host. `ctl up [+mod…]` runs docker/compose.base.yaml (the whole stack — it
+# includes the db file) plus stackable modifiers docker/compose.m.<name>.yaml, given as
+# `+name` tokens. No modifier given: an interactive multi-select in a terminal, else the
+# default (+expose_nginx). Bare `ctl up` walks modifiers → plan → confirm.
+# Run `ctl <command> --help` for any command.
+
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$ROOT/scripts/common/lib.sh"
-route "$@"
+CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$CTL_ROOT/scripts/common/_lib.sh"
+cd "$CTL_ROOT"
+
+# route to a worker: ctl <cmd> → exec scripts/<file>.sh, passing the rest verbatim
+run() { local s="$CTL_ROOT/scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s — ship it in scripts/"; exec bash "$s" "$@"; }
+
+ctl_help() {
+  printf '%s%s%s — control plane. One entrypoint for dev + containers.\n\n' "$C_B$C_CYN" "ctl" "$C_RESET"
+  printf '%sDevelopment%s (host loop)\n' "$C_B" "$C_RESET"
+  row "dev [app…] [--detach]"           "data core in docker, apps on the host with reload"
+  row "ps [--list | kill [port…]]"      "browse everything running — attach · kill · port map"
+  row "lint [app] [--staged]"           "lint every app (ruff · clippy · oxlint · gofmt)"
+  printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"
+  row "up [+modifier…]"                 "assemble + start the stack — interactive  (ctl up --help)"
+  row "down [svc]"                      "stop the stack (or one service)"
+  row "restart [svc]"                   "restart the stack (or one service)"
+  row "logs [svc] [-f]"                 "tail container logs"
+  row "exec <svc> [cmd]"                "run a command in a container (default: shell)"
+  row "shell <svc>"                     "open a shell in a running container"
+  row "build [app|cli]"                 "build the service images (cli: the Go binary)"
+  row "clean [-y]"                      "tear down + wipe caches (asks first)"
+  row "health [svc…]"                   "one-shot container health table"
+  printf '\n%sDatabase%s\n' "$C_B" "$C_RESET"
+  row 'migrate [up|new "<msg>"|status|down]' "schema migrations (Alembic in apps/database/postgres + neo4j init)"
+  row "db shell <engine>"               "psql · redis-cli · cypher-shell, with .env credentials"
+  row "db backup | restore <dir>"       "dump the data core to data/backups/ · load a dump back"
+  printf '\n%sTest%s\n' "$C_B" "$C_RESET"
+  row "test [app|e2e]"                  "run test suites (e2e: against a throwaway stack)"
+  row "gate [-q]"                       "the ladder: lint → check → test → build, stop on first red"
+  row "build save|start|clean"          "frozen test builds — snapshot · serve · prune  (ctl build save -h)"
+  printf '\n%sConfiguration%s\n' "$C_B" "$C_RESET"
+  row "setup"                           "seed .env, generate secrets, data dirs, install deps"
+  row "check"                           "conformance floor — layout, env contract, compose validity"
+  row "status"                          "config doctor (env · runtimes · deps · health · stack)"
+  printf '\n%sup modifiers%s  %s\n' "$C_DIM" "$C_RESET" "$(list_modifiers | sed 's/^/+/' | join_sp | or_none)"
+  printf '%s-h/--help works on every command:  ctl <command> --help%s\n' "$C_DIM" "$C_RESET"
+}
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  # ── development ──────────────────────────────────────────
+  dev)      run dev/dev  "$@" ;;
+  ps)       run dev/ps   "$@" ;;
+  lint)     run dev/lint "$@" ;;
+  # ── containers: substantive workers ──────────────────────
+  up)       run container/up     "$@" ;;
+  # `build` splits on the subverb: save|start|clean = frozen test builds (test/build.sh);
+  # anything else (incl. bare `ctl build`) = the container image build.
+  build)    case "${1:-}" in
+              save|start|clean) run test/build      "$@" ;;
+              *)                run container/build "$@" ;;
+            esac ;;
+  clean)    run container/clean  "$@" ;;
+  health)   run container/health "$@" ;;
+  shell)    run container/shell  "$@" ;;
+  # ── containers: thin docker compose passthroughs ─────────
+  # require_env before every dc call: compose interpolates ${VAR} for ALL subcommands
+  # (down included) — a stack you can start but not stop is worse than a missing .env error.
+  down)     is_help "${1:-}" && { passthrough_help down    "stop the stack (or one service)";    exit 0; }; require_env; dc down    "$@" ;;
+  restart)  is_help "${1:-}" && { passthrough_help restart "restart the stack (or one service)"; exit 0; }; require_env; dc restart "$@" ;;
+  logs)     is_help "${1:-}" && { passthrough_help logs    "tail container logs (-f to follow)"; exit 0; }; require_env; dc logs    "$@" ;;
+  exec)     is_help "${1:-}" && { print_help exec "Run a command inside a running service container." \
+              'exec <service> [command…] [-h]' \
+              $'Arguments\n  service       the compose service (api, engine, postgres, …)\n  command…      default: an interactive shell\n\nOptions\n  -h, --help    show this help' \
+              "Forwards to \`docker compose exec\`."; exit 0; }
+            [[ $# -ge 1 ]] || die "usage: ctl exec <service> [command…]"
+            require_env
+            svc="$1"; shift; if (( $# )); then dc exec "$svc" "$@"; else dc exec "$svc" sh; fi ;;
+  # ── database ─────────────────────────────────────────────
+  migrate)  run db/migrate "$@" ;;
+  db)       sub="${1:-help}"; shift || true
+            case "$sub" in
+              shell)   run db/shell   "$@" ;;
+              backup)  run db/backup  "$@" ;;
+              restore) run db/restore "$@" ;;
+              help|-h|--help) print_help db "data-core clients and dumps" \
+                'db shell <postgres|redis|neo4j>  ·  ctl db backup  ·  ctl db restore <dir>' \
+                $'Subcommands\n  shell <engine>   interactive client with .env credentials\n  backup           dump every engine into data/backups/<timestamp>/\n  restore <dir>    load a backup back (asks first)\n\nEach subcommand has its own help: ctl db <subcommand> -h.' ;;
+              *) err "unknown db subcommand: $sub"; say "run ${C_B}ctl db --help${C_RESET}"; exit 1 ;;
+            esac ;;
+  # ── test ─────────────────────────────────────────────────
+  test)     run test/test "$@" ;;
+  gate)     run test/gate "$@" ;;
+  # ── configuration ────────────────────────────────────────
+  setup)    run config/setup  "$@" ;;
+  check)    run config/check  "$@" ;;
+  status)   run config/status "$@" ;;
+  # ── meta ─────────────────────────────────────────────────
+  help|-h|--help) ctl_help ;;
+  *)        err "unknown command: $cmd"; say "run ${C_B}ctl --help${C_RESET} for the command list"; exit 1 ;;
+esac

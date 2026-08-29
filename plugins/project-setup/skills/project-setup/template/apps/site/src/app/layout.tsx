@@ -1,1 +1,1 @@
-// Root layout. Imports @scope/ui tokens once.
+// Root layout. import "@scope/styles/globals.css" — the one style import.

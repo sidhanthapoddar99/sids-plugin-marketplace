@@ -1,7 +1,24 @@
 {
   "name": "site",
   "private": true,
-  "scripts": { "dev": "next dev", "build": "next build", "start": "next start", "test": "vitest" },
-  "dependencies": { "next": "<version>", "react": "<version>", "react-dom": "<version>", "@scope/ui": "link:../packages/ui", "@scope/types": "link:../packages/types" },
-  "devDependencies": { "typescript": "<version>", "tailwindcss": "<version>" }
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "next": "<version>",
+    "react": "<version>",
+    "react-dom": "<version>",
+    "@scope/ui": "link:../packages/ui",
+    "@scope/types": "link:../packages/types",
+    "@scope/styles": "link:../packages/styles"
+  },
+  "devDependencies": {
+    "typescript": "<version>",
+    "tailwindcss": "<version>",
+    "@scope/tsconfig": "link:../packages/tsconfig",
+    "@tailwindcss/postcss": "<version>"
+  }
 }

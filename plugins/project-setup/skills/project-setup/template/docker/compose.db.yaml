@@ -1,4 +1,4 @@
-# Data engines only. Runs alone under `ctl dev`; stacked under `ctl up`.
+# Data engines only. Runs alone under `ctl dev`; included by compose.base.yaml under `ctl up`.
 # Passwords come from .env. Ports bind to loopback only, so prod never exposes them to the network.
 # State: bind mounts under ${DATA_DIR}. Committed config: apps/database/.
 services:
@@ -18,7 +18,7 @@ services:
     ports: ["127.0.0.1:${REDIS_PORT}:6379"]
     volumes:
       - "${DATA_DIR}/redis:/data"
-      - "../apps/database/redis/redis.conf:/etc/redis/redis.conf:ro"
+      - "./apps/database/redis/redis.conf:/etc/redis/redis.conf:ro"
 
   neo4j:
     image: neo4j:<version>
@@ -27,4 +27,4 @@ services:
     ports: ["127.0.0.1:${NEO4J_BOLT_PORT}:7687"]
     volumes:
       - "${DATA_DIR}/neo4j:/data"
-      - "../apps/database/neo4j:/init:ro"       # init.cypher applied by `ctl migrate`
+      - "./apps/database/neo4j:/init:ro"       # init.cypher applied by `ctl migrate`
