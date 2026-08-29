@@ -5,4 +5,6 @@
 #    environment, so this step is a no-op.
 # 2. yaml.safe_load(config.yaml); deep-merge config.local.yaml over it if present (gitignored).
 # 3. walk the tree; replace every ${VAR} with os.environ[VAR]; raise on a missing one, naming the key.
-# 4. validate into a pydantic Settings model; export `settings`.
+# 4. apply the nested override channel: an env var `API__<SECTION>__<KEY>` (pydantic env_nested_delimiter="__",
+#    env_prefix="API__") overrides that one literal. This is how a container or CI tweaks pool_size without a file.
+# 5. validate into a pydantic Settings model; export `settings`.

@@ -7,7 +7,7 @@ proxies `/api`, `/engine` and `/dashboard` to their containers.
 
 | Name | Kind | Prefix (`.env.proxy`) | Dev port (`.env.proxy`) |
 |---|---|---|---|
-| `landing/` | Next.js `output: "export"` — SEO pages | `WEB_LANDING_PREFIX=/` | `WEB_LANDING_PORT=3001` |
+| `landing/` | Next.js `output: "export"` — SEO pages | owns `/` (no prefix key) | `WEB_LANDING_PORT=3001` |
 | `app/` | Vite SPA — the product UI | `WEB_APP_PREFIX=/app` | `WEB_APP_PORT=5173` |
 | `docs/` | Astro — documentation | `WEB_DOCS_PREFIX=/docs` | `WEB_DOCS_PORT=4321` |
 

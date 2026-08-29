@@ -8,8 +8,6 @@ FROM oven/bun:<version> AS landing
 WORKDIR /src
 COPY packages ./packages
 COPY example-multi-web-app/landing ./example-multi-web-app/landing
-ARG NEXT_PUBLIC_BASE_PATH=
-ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
 RUN cd example-multi-web-app/landing && bun install --frozen-lockfile && bun run build
 
 # ---- app: Vite SPA → dist/ ----
@@ -17,8 +15,8 @@ FROM oven/bun:<version> AS app
 WORKDIR /src
 COPY packages ./packages
 COPY example-multi-web-app/app ./example-multi-web-app/app
-ARG VITE_BASE_PATH=/app
-ENV VITE_BASE_PATH=${VITE_BASE_PATH}
+ARG WEB_APP_PREFIX
+ENV WEB_APP_PREFIX=${WEB_APP_PREFIX}
 RUN cd example-multi-web-app/app && bun install --frozen-lockfile && bun run build
 
 # ---- docs: Astro → dist/ ----
@@ -26,8 +24,8 @@ FROM oven/bun:<version> AS docs
 WORKDIR /src
 COPY packages ./packages
 COPY example-multi-web-app/docs ./example-multi-web-app/docs
-ARG PUBLIC_BASE_PATH=/docs
-ENV PUBLIC_BASE_PATH=${PUBLIC_BASE_PATH}
+ARG WEB_DOCS_PREFIX
+ENV WEB_DOCS_PREFIX=${WEB_DOCS_PREFIX}
 RUN cd example-multi-web-app/docs && bun install --frozen-lockfile && bun run build
 
 # ---- edge: nginx serves the three builds and proxies api / engine / dashboard ----

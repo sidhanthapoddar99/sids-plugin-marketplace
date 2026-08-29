@@ -14,6 +14,9 @@ One paragraph: what this product is and which apps make it.
 ## Manual, without ctl
 Each app's `README.md` shows how to run it from its own folder.
 
+## Lock files
+The template ships no `bun.lock`, `uv.lock` or `Cargo.lock`: every dependency is a `<version>` placeholder. `ctl setup` installs and creates them. Commit them.
+
 ## Layout
 ```
 apps/      example-api-python example-engine-rust example-multi-web-app/{landing,app,docs}

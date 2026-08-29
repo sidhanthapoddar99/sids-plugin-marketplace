@@ -8,7 +8,7 @@ The shape for a product with ONE static frontend. Compare `example-multi-web-app
 - Owns `vite.config.ts` with the dev proxy, so `ctl dev` needs no nginx dev proxy: one frontend, one origin already.
 
 Run from here: `ctl dev single` (exports `.env.secrets`, `.env.data`, `.env.proxy`, then `bun dev`).
-No `.env` here: the prefix is `VITE_BASE_PATH` = `WEB_APP_PREFIX` from `.env.proxy`. Test: `bun test`, e2e in `e2e/`.
+No `.env` here. It owns `/`, so no prefix key; ports and proxy targets come from `.env.proxy`. Test: `bun test`, e2e in `e2e/`.
 
 ## Using this shape instead of the group
 
@@ -21,7 +21,6 @@ No `.env` here: the prefix is `VITE_BASE_PATH` = `WEB_APP_PREFIX` from `.env.pro
       context: ./apps
       dockerfile: example-single-web-app-vite/Dockerfile
       args:
-        VITE_BASE_PATH: ${WEB_APP_PREFIX}
     environment:
       API_PREFIX: ${API_PREFIX}
       ENGINE_PREFIX: ${ENGINE_PREFIX}

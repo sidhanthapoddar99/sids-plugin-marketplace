@@ -7,8 +7,7 @@ FROM oven/bun:<version> AS build
 WORKDIR /src
 COPY packages ./packages
 COPY example-single-web-app-vite ./example-single-web-app-vite
-ARG VITE_BASE_PATH=/
-ENV VITE_BASE_PATH=${VITE_BASE_PATH}
+# the single shape owns /; no prefix arg
 RUN cd example-single-web-app-vite && bun install --frozen-lockfile && bun run build
 
 # ---- edge: nginx serves the bundle at / and proxies api / engine ----
@@ -17,5 +16,6 @@ FROM nginx:<version>
 COPY example-single-web-app-vite/nginx/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /src/example-single-web-app-vite/dist/ /usr/share/nginx/html/
 # non-root: the official image ships the `nginx` user; listen on an unprivileged port
+RUN chown -R nginx:nginx /var/cache/nginx /etc/nginx/conf.d && touch /var/run/nginx.pid && chown nginx:nginx /var/run/nginx.pid
 USER nginx
 EXPOSE 8080

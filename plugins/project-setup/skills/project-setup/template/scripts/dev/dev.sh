@@ -20,10 +20,10 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; 
 app_names() { printf '%s\n' api engine landing app docs dashboard single; }   # single = example-single-web-app-vite, the one-frontend shape
 frontends() { printf '%s\n' landing app docs dashboard; }      # the ones the dev proxy fronts
 app_port()  { case "$1" in
-  api)       echo "${API_PORT:-8000}" ;;          engine)    echo "${ENGINE_PORT:-8080}" ;;
-  landing)   echo "${WEB_LANDING_PORT:-3001}" ;;  app)       echo "${WEB_APP_PORT:-5173}" ;;
-  single)    echo "${WEB_APP_PORT:-5173}" ;;
-  docs)      echo "${WEB_DOCS_PORT:-4321}" ;;     dashboard) echo "${DASHBOARD_PORT:-3000}" ;;
+  api)       echo "${API_PORT:?API_PORT is blank in .env.proxy}" ;;          engine)    echo "${ENGINE_PORT:?ENGINE_PORT is blank in .env.proxy}" ;;
+  landing)   echo "${WEB_LANDING_PORT:?WEB_LANDING_PORT is blank in .env.proxy}" ;;  app)       echo "${WEB_APP_PORT:?WEB_APP_PORT is blank in .env.proxy}" ;;
+  single)    echo "${WEB_APP_PORT:?WEB_APP_PORT is blank in .env.proxy}" ;;
+  docs)      echo "${WEB_DOCS_PORT:?WEB_DOCS_PORT is blank in .env.proxy}" ;;     dashboard) echo "${DASHBOARD_PORT:?DASHBOARD_PORT is blank in .env.proxy}" ;;
   *)         die "unknown app '$1' — one of: $(app_names | join_sp)" ;; esac; }
 app_cmd()   { case "$1" in
   api)       printf 'uv run --directory apps/example-api-python uvicorn app.main:app --reload --host %s --port %s' "${API_HOST:-localhost}" "$(app_port api)" ;;
@@ -77,7 +77,7 @@ require_env
 if (( dry )); then
   step "(dry-run — nothing started)"
   (( ${#DATA_SVCS[@]} && ! no_core )) && say "data core   docker compose --project-directory . -f $DB_FILE up -d ${DATA_SVCS[*]}"
-  (( proxy )) && say "dev proxy   docker compose --project-directory . -f $DEV_FILE up -d   → http://localhost:${DEV_PROXY_PORT:-3080}"
+  (( proxy )) && say "dev proxy   docker compose --project-directory . -f $DEV_FILE up -d   → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env.proxy}"
   for a in "${apps[@]}"; do say "$(printf '%-11s' "$a") $(app_cmd "$a")"; done
   exit 0
 fi
@@ -96,7 +96,7 @@ fi
 # stays up with the apps, and `ctl ps` → k on its port stops the container.
 if (( proxy )); then
   require_docker
-  step "starting dev proxy ($DEV_FILE) → http://localhost:${DEV_PROXY_PORT:-3080}"
+  step "starting dev proxy ($DEV_FILE) → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env.proxy}"
   dc_dev up -d
 fi
 

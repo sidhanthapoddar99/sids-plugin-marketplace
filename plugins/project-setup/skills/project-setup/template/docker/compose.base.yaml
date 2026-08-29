@@ -54,9 +54,9 @@ services:
       context: ./apps                           # needs packages/ too
       dockerfile: example-multi-web-app/Dockerfile
       args:                                     # build constants = the prefixes, from .env.proxy. No per-frontend .env.
-        NEXT_PUBLIC_BASE_PATH: ${WEB_LANDING_PREFIX}   #   landing
-        VITE_BASE_PATH: ${WEB_APP_PREFIX}              #   app
-        PUBLIC_BASE_PATH: ${WEB_DOCS_PREFIX}           #   docs
+        WEB_APP_PREFIX: ${WEB_APP_PREFIX}              #   app   — base of the SPA
+        WEB_DOCS_PREFIX: ${WEB_DOCS_PREFIX}            #   docs  — base of the Astro site
+        # landing owns / and needs no prefix arg
     environment:
       # prefixes: the operator's routing table, from .env.proxy
       WEB_APP_PREFIX: ${WEB_APP_PREFIX}
@@ -79,7 +79,7 @@ services:
     build:
       context: ./apps/example-dashboard-nextjs
       args:                                     # the prefix, from .env.proxy
-        NEXT_PUBLIC_BASE_PATH: ${DASHBOARD_PREFIX}
+        DASHBOARD_PREFIX: ${DASHBOARD_PREFIX}
     environment:                                # server side only
       API_HOST: api
       API_PORT: 8000

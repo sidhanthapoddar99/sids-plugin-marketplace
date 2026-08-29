@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # container/build.sh — `ctl build [app…|cli]`. Build the service images through compose.
-# Frontend build args (VITE_BASE_PATH, NEXT_PUBLIC_BASE_PATH, PUBLIC_BASE_PATH) are interpolated by
+# Frontend build args (WEB_APP_PREFIX, WEB_DOCS_PREFIX, DASHBOARD_PREFIX) are interpolated by
 # compose from .env.proxy (the prefixes), passed with --env-file like every other dc call. There is
 # no per-frontend .env. `cli` builds the Go binary instead.
 set -euo pipefail

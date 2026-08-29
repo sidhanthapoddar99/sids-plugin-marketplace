@@ -1,11 +1,23 @@
-// base: process.env.VITE_BASE_PATH ?? "/"  — the prefix (WEB_APP_PREFIX) arrives as a build arg from
-// .env.proxy under `ctl build`, and from the process env under `ctl dev app`. A display name is a
-// literal here (define: { __APP_NAME__: JSON.stringify("<name>") }), never an env value.
-// Dev proxy mirrors apps/example-multi-web-app/nginx/nginx.conf.template so the browser sees one origin:
-//   ${API_PREFIX}    → http://127.0.0.1:${API_PORT}
-//   ${ENGINE_PREFIX} → http://127.0.0.1:${ENGINE_PORT}   (ws: true)
-// API_PORT / ENGINE_PORT / *_PREFIX come from the process env, which `ctl dev` filled from .env.proxy.
-// They never reach the bundle. Bare `bun dev` needs the three env files exported first — use `ctl dev app`.
-// Under `ctl dev --proxy` (several frontends, one origin) the nginx dev proxy routes /api itself and
-// the browser never hits this block; it stays so single-frontend `ctl dev app` still works alone.
-// plugins: react(), tailwindcss() from @tailwindcss/vite.
+// Vite config for a static frontend inside the group. One key, read directly: no VITE_ alias, no literal fallback.
+//
+//   import { defineConfig } from "vite";
+//   import react from "@vitejs/plugin-react";
+//   import tailwindcss from "@tailwindcss/vite";
+//
+//   const need = (k: string) => process.env[k] ?? (() => { throw new Error(`${k} is not set — run through ctl (ctl dev app), which exports .env.proxy`); })();
+//
+//   export default defineConfig({
+//     base: need("WEB_APP_PREFIX"),                       // .env.proxy → dev: process env; build: compose build arg
+//     plugins: [react(), tailwindcss()],
+//     define: { __APP_NAME__: JSON.stringify("<display name>") },   // a display name is a literal, not env
+//     server: {
+//       port: Number(need("WEB_APP_PORT")),
+//       proxy: {                                         // mirrors ../nginx/nginx.conf.template. Never hit under ctl dev --proxy.
+//         [need("API_PREFIX")]:    { target: `http://127.0.0.1:${need("API_PORT")}`,    changeOrigin: true, ws: true },
+//         [need("ENGINE_PREFIX")]: { target: `http://127.0.0.1:${need("ENGINE_PORT")}`, changeOrigin: true, ws: true },
+//       },
+//     },
+//   });
+//
+// Every value comes from .env.proxy. A missing one throws, so a bare `bun dev` without the env exported fails
+// at once instead of running on a guessed port. Nothing here reaches the bundle except `base` and `define`.

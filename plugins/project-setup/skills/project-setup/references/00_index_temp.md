@@ -14,9 +14,9 @@ Legend: `[x]` done · `[ ]` open · `[-]` dropped on purpose.
 
 | # | File | Owns | Status |
 |---|---|---|---|
-| 1 | `01_layout.md` | The one tree. Placement rules. `.gitignore`. README levels. Naming. Exceptions. | synced to template |
-| 2 | `02_env.md` | The five files. Rules. Loader steps. Docker consumption. Secret classes. | written |
-| 3 | `03_setup.md` | Rules that hold in every case. The dev/prod pair. Cases 1–7: same server, different server, several frontends (dev proxy + one image), Next.js server, several backends, static only, multiple origins. | written |
+| 1 | `01_layout.md` | The one tree. Placement rules. One repo or two. Ignore files. README levels. Naming. Exceptions. | reviewed against template, real projects, old skill |
+| 2 | `02_env.md` | Three env files + templates, `config.yaml`, `config.local.yaml`. Rules. Loader steps incl. nested override. Docker consumption. Secret classes. | reviewed |
+| 3 | `03_setup.md` | Rules that hold in every case. The dev/prod pair. Cases 1–7 incl. a second origin for an identity plane. nginx rules that bite. | reviewed |
 | 4 | `04_stack.md` | Dev tools. Frontend kinds + theme + shared code. Backends. ML. Desktop, TUI, mobile. Data engines. Migrations decision. | written |
 | 5 | `05_ctl.md` | Verb table. Compose model + merge rules. `ctl check` rules. Prod-readiness checklist. Frozen builds. Multi-stack. No data core. | written |
 | 6 | `06_testing.md` | Placement. Verbs. Rules. Linters. | written |
@@ -91,6 +91,29 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 | Backend hosts and ports: single server — root `.env` for `ctl dev`, literals in `compose.base.yaml` for docker. Multi-server — `+env_override` re-points a service to `${VAR}` from root `.env`; a piece not in this compose is reached by its `.env` value. | 2, 3 |
 | Three root env files by role: `.env.secrets`, `.env.data`, `.env.proxy`, each from a committed `.template`. Compose and ctl read only these (`--env-file` ×3). No frontend env file; prefixes reach frontends from `.env.proxy` as build args / process env. | 2, 3 |
 | Base is prod. `compose.db.yaml` included by base; loopback ports on engines; no ports in base; modifiers add exposure. Paths root-relative via `--project-directory`. | 3 |
+
+## Parked from the 01–03 review — apply when writing these pages
+
+| Page | Item |
+|---|---|
+| 04_stack | Rust app commits `rust-toolchain.toml`; mise pin is only an install hint |
+| 04_stack | How to find current stable: `mise ls-remote <tool> \| tail`; pin majors, avoid `latest` (bun the exception); `mise trust` per clone |
+| 04_stack | With no workspace, React version skew across apps is unmanaged: one pinned version in every manifest, `ctl check` compares them |
+| 04_stack | Published package: `exports` map, `files: ["dist"]`, library build (`vite build --lib`, `external: ["react"]`), react-less `core` bundled in, source-only phase as a recorded variant |
+| 04_stack | Embeddable package reads no env: config injected at mount; no module-level singletons; clean teardown |
+| 04_stack | PWA: when native instead (store presence, background, device APIs, iOS push); never blanket-cache `/api/*`; choose offline scope; generate the SW from the build |
+| 04_stack | Tauri vs Electron axis is webview parity, not only Node; never both in one repo; code signing per platform in CI |
+| 04_stack | Mobile: cross-platform valid for small team + simple UI; per-platform build config (`xcconfig`, `gradle.properties`); `ctl mobile-api-codegen` + CI drift check |
+| 04_stack | ML: dependency-flow choice (shared named env vs per-app lock, CUDA reason); `uvenv-name` handshake with ctl; graduation to a separate inference app; mise not for CUDA stacks; `train/eval/nb/data-prep` verbs → name the sibling ML skill |
+| 05_ctl | `migrate → sqlx prepare --check → build` ordering for Rust + SQL |
+| 05_ctl | Escalate to a compiled orchestrator only for structured state across runs |
+| 05_ctl | Raw `docker compose` must keep working beside ctl (state the invariant) |
+| 05_ctl | Prod env files `chmod 600`, owned by the app user |
+| 05_ctl | Crash-loop tell: perpetually young `Up N seconds`, `RestartCount`, `grep emerg` |
+| 06_testing | CI: PR builds get no secrets; short-lived OIDC over stored secrets |
+| 07_conventions | `memory/` naming: flat kebab-case files + `README.md` index; `AGENTS.md` imports them with `@memory/<file>.md` |
+| 07_conventions | Multi-repo naming `<product>-<role>`, prefix chosen at the first split |
+| 07_conventions | Frozen legacy package kept beside its replacement: excluded from lint and gates, README first line says frozen |
 
 ## Old content map
 
