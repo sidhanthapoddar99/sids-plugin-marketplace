@@ -45,8 +45,8 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 - [ ] `<version>` on every image
 
 ### apps/ — backend
-- [x] `example-api-python/` FastAPI: `app/{main,config,routers,services,models,schemas,db}`, `config.yaml`, `Dockerfile`, `pyproject.toml`, `README.md`
-- [x] `example-engine-rust/` Axum: `src/{main,config,routes,db}`, `config.yaml`, `Dockerfile`, `Cargo.toml`, `README.md`
+- [x] `example-api-python/` FastAPI: `app/{main,config,db,core/,health/,<domain>/{models,repository,service,router}}`, `config.yaml`, `Dockerfile`, `pyproject.toml`, `README.md`
+- [x] `example-engine-rust/` Axum: cargo workspace `crates/{common,data,auth,api}`, `rust-toolchain.toml`, `config.yaml`, `Dockerfile`, `Cargo.toml`, `README.md`
 - [ ] `/health` and `/ready` routes named in `main.py` / `routes/mod.rs`
 - [ ] rate limit + `X-Forwarded-*` handling named in `main.py`
 - [ ] AI key proxy route named in `routers/` (backend-only rule)

@@ -15,7 +15,7 @@ Rules that hold across every file and every change. Each one is an audit finding
 |---|---|
 | Feature folders | Frontend code groups by feature, not by kind: `features/<name>/{components,hooks,api}.ts`, not `components/`, `hooks/` at the top. Shared primitives stay in `components/` and `lib/`. |
 | API and pages | A page composes features and calls `lib/api.ts`. A feature never calls `fetch` directly. |
-| Types and contracts | The API contract is `@scope/types`, generated from OpenAPI. Backend schemas (`schemas/`) are the source. No hand-written mirror. |
+| Types and contracts | The API contract is `@scope/types`, generated from OpenAPI. Backend request/response models (`<domain>/models.py`) are the source. No hand-written mirror. |
 | Styling | Utilities from the theme (`bg-bg-1`, `rounded-md`), never `var(--…)` in a component, never a hex value, never an arbitrary value. Tokens change in `tokens.css` only. |
 | Caps | A file over 300 lines, a component over 150, a function over 40: split. A feature imported by two features: extract to a package. |
 | Extraction | Code two apps need moves to `apps/packages/`. An app never imports from another app. |
@@ -26,18 +26,18 @@ Code is placed by the scope that needs it, and a scope depends only inward. Same
 
 | Scope | Frontend | Backend |
 |---|---|---|
-| Product | `apps/packages/` — theme, components, API types | `apps/packages/` — shared Python or Rust crates, if any |
-| App | `src/lib/`, `src/components/` (app-wide primitives), `src/routes/` | `app/config.py`, `app/db/`, `app/main.py` |
-| Feature | `src/features/<name>/` — its components, hooks, api calls, state | `app/routers/<name>.py` + `app/services/<name>.py` + `app/schemas/<name>.py` |
+| Product | `apps/packages/` — theme, components, API types | `apps/packages/` — shared Python packages or Rust crates, if any |
+| App | `src/lib/`, `src/components/` (app-wide primitives), `src/routes/` | `app/main.py`, `app/config.py`, `app/db.py`, `app/core/` (security, redis, rate limit) |
+| Feature / domain | `src/features/<name>/` — its components, hooks, api calls, state | `app/<domain>/` — `models.py`, `repository.py`, `service.py`, `router.py` |
 | Unit | one component file, one hook | one function |
 
 Rules:
 
 - **A scope imports only from scopes above it.** A feature imports app primitives and packages. An app primitive never imports a feature. A router calls a service; a service never imports a router.
-- **Features do not import each other.** Two features that need the same thing share it through the app scope (or a package). If two features are always changed together, they are one feature.
-- **Each layer has one job.** Router: parse, authorise, call, serialise. Service: the rule. Repository or `db/`: the query. A page: compose features. A component: render props. No HTTP in a service, no SQL in a router, no `fetch` in a component.
+- **Features do not import each other's internals.** Frontend: two features that need the same thing share it through the app scope or a package. Backend: a domain calls another domain's `service`, never its `repository`. If two are always changed together, they are one.
+- **Each layer has one job.** Router: parse, authorise, call, serialise. Service: the rule, and the domain's only public surface. Repository: the query, given a connection; the caller owns the transaction. A page: compose features. A component: render props. No HTTP in a service, no SQL in a router, no `fetch` in a component.
 - **Cross the boundary with types, not internals.** A feature exposes an `index.ts`; a service exposes functions over domain objects; a backend exposes schemas that `@scope/types` is generated from. Nobody reaches into another's files.
-- **Promote when shared, never before.** A thing moves up one scope when its second consumer appears. A thing used once stays where it is used.
+- **Promote when shared, never before.** A thing moves up one scope when its second consumer appears. A thing used once stays where it is used. The same rule sizes a backend: flat `app/` until the second domain, domain slices until a layer is reused by a second binary, crates after that.
 - **State lives at the narrowest scope that needs it.** Component state in the component, feature state in the feature, app state only for what every feature reads (session, theme).
 
 ## Naming

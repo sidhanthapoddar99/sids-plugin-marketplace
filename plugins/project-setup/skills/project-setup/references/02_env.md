@@ -26,7 +26,7 @@ A frontend has no env file. Its prefix reaches it from `.env.proxy` through comp
 
 ## How a backend reads a value
 
-One module per backend does it all: `config.py`, `config.rs`, `config.go`, `config.ts`. Nothing else reads the environment or a file. Template: `template/apps/example-api-python/app/config.py`.
+One module per backend does it all: `config.py`, `config.rs`, `config.go`, `config.ts`. Nothing else reads the environment or a file. Template: `template/apps/example-api-python/app/config.py`, `template/apps/example-engine-rust/crates/common/src/config.rs`.
 
 1. Find the repo root: walk up to the folder that holds `ctl`. Load `.env.secrets`, `.env.data`, `.env.proxy` from it, skip-if-set. Under docker the files are absent; compose already set the environment, so this step does nothing. Skip-if-set is the point: `set -a; source .env` would let a file beat an inline override (`HTTP_PORT=8085 ctl up`) or a CI-injected secret. The price is plain `KEY=value` lines only: no multi-line values, no command substitution.
 2. Read `config.yaml`. Deep-merge `config.local.yaml` over it if present: nested maps merge key by key, arrays replace whole.

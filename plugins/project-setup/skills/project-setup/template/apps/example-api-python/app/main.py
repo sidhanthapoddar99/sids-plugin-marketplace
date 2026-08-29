@@ -1,3 +1,2 @@
-# FastAPI app factory. Imports `settings` from app.config. Mounts routers under settings.server.prefix.
-# Adds: /health (unauthenticated), rate limit middleware (settings.limits), no CORS middleware —
-# the browser talks to its own origin, nginx or the vite proxy routes.
+# Composition. Configures logging, opens the pool and redis in lifespan, mounts every domain router under
+# settings.server.prefix, registers the global error handler. Adds /health (alive) and /ready (deps). No rules here.

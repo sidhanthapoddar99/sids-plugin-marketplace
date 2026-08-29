@@ -81,7 +81,16 @@ Template: `template/apps/packages/ui/README.md` (the package), `template/apps/ex
 | Go | CLIs, TUIs, orchestrators, small network services. Ships as one binary. | cobra + Bubble Tea | `apps/example-tui-go/` |
 | TypeScript on Node or bun | The needed library exists only in JS, or the product already runs a Next.js server. | Next.js route handlers, or Hono | — |
 
-Code layout: Python in `app/` (no `src/`): `main.py`, `config.py`, `routers/`, `services/`, `models/`, `schemas/`, `db/`. Rust in `src/`: `main.rs`, `config.rs`, `routes/`, `db/`. Go: `cmd/<name>/main.go`, `internal/{config,client,ui}/`.
+Code layout grows with the number of domains:
+
+| Size | Shape |
+|---|---|
+| A few endpoints | Flat `app/`: `main.py`, `config.py`, `db.py`, `routes.py`, `models.py`. |
+| Several domains — the normal backend | Domain slices: `app/<domain>/{models,repository,service,router}.py`, plus `app/core/` for cross-cutting (security, redis, rate limit), `app/health/`, and `main.py` to compose. Inside a slice `router → service → repository`; across slices `service → service` only. A domain's public surface is its `service`. |
+| Layers reused by more than one binary, or compiled apart (Rust) | A cargo workspace, one crate per layer: `common` (config, errors), `data` (every query), `auth`, and a thin `api` binary with one handler module per domain. `api → auth, data → common`. `rust-toolchain.toml` is the real pin. |
+| Go CLI | `cmd/<name>/main.go`, `internal/{config,client,ui}/`. |
+
+Python lives in `app/`, never `src/`. Template: `template/apps/example-api-python/README.md`, `template/apps/example-engine-rust/README.md`.
 
 Every backend has: one config loader (`02_env.md`), `/health` (process alive) and `/ready` (dependencies reachable), rate limiting at the router, `X-Forwarded-*` trusted from the edge only, no CORS middleware. AI provider keys live only here, behind a proxy route the frontend calls. An MCP server is a backend app like any other.
 

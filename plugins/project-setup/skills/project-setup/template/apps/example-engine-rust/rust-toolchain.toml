@@ -1,0 +1,2 @@
+[toolchain]
+channel = "<version>"   # the real pin. .mise.toml is only the install hint; cargo respects this file

@@ -8,7 +8,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 <repo>/
 ├── apps/                       # every runnable or shared unit, even when there is only one
 │   ├── <backend>/              # one folder per backend service        (api/, engine/)
-│   │   ├── app/                #   Python code lives here. No src/. Rust uses src/; Go uses cmd/ + internal/
+│   │   ├── app/                #   Python code lives here. No src/. Rust: crates/ by layer; Go: cmd/ + internal/
 │   │   ├── config.yaml         #   service config. Reads ${VAR} from the root env files
 │   │   ├── Dockerfile
 │   │   ├── pyproject.toml
@@ -85,7 +85,7 @@ The root holds config, the brief, and folders. Never loose code.
 
 | Entry | Holds | Rule |
 |---|---|---|
-| `<backend>/` | One backend service | Python code in `app/` (`main.py`, `config.py`, `routers/`, `services/`, `models/`, `schemas/`, `db/`), no `src/`. Rust in `src/`. Go in `cmd/<name>/` + `internal/`. Owns `README.md`, manifest, `config.yaml`, `Dockerfile`. `config.local.yaml` is the developer's, gitignored. |
+| `<backend>/` | One backend service | Python code in `app/`, no `src/`: `main.py`, `config.py`, `db.py`, `core/`, `health/`, one `<domain>/` slice per domain (`models`, `repository`, `service`, `router`). Rust: a workspace of crates by layer (`common`, `data`, `auth`, `api`). Go: `cmd/<name>/` + `internal/`. Owns `README.md`, manifest, `config.yaml`, `Dockerfile`. `config.local.yaml` is the developer's, gitignored. |
 | `<frontend-group>/<name>/` | One static frontend (Vite, Next.js export, Astro) | Code in `src/`; `e2e/`, `public/`, extra HTML entrypoints as needed. Owns `README.md`, `package.json`, lock, `tsconfig.json`, its lint config. No env file. The group owns the one `Dockerfile`, `nginx/` (prod template, dev-proxy template and its headers include) and a `README.md`. Exactly one frontend owns `/`; it has no `_PREFIX` key. |
 | `<single-frontend>/` | The only static frontend of the product | Code in `src/`, theme and shadcn components inside it (`src/styles/`, `src/components/ui/`). Owns `README.md`, `package.json`, lock, `tsconfig.json`, `Dockerfile` (build, then nginx), `nginx/` with its edge template. No env file. `vite.config.ts` proxies in dev. Template: `example-single-web-app-vite/`. Switch to the group when a second static frontend arrives. |
 | `<server-frontend>/` | A frontend that is a server (Next.js SSR) | Its own app, own `Dockerfile`, own compose service. Never inside the group. |
