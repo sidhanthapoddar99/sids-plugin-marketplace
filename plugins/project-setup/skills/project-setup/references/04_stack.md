@@ -37,13 +37,40 @@ Pick by output. One static frontend owns its image. Several static frontends liv
 | Choice | Rule |
 |---|---|
 | TypeScript, `.tsx` | Always. Plain JS only where a framework forces it. |
-| Tailwind | Always. Default spacing, type and radius scales. No arbitrary values (`p-[13px]`). |
-| shadcn | The component vocabulary. Components live in `apps/packages/ui/`. |
-| Theme | One package, `apps/packages/styles/`: `tokens.css` (raw values, light on `:root`, dark on `[data-theme="dark"]`), `globals.css` (Tailwind entry, `@theme inline` maps tokens onto utilities), `elements.css` (base resets). Only colours are ours. One import per app: `@scope/styles/globals.css`. |
-| Shared code | `apps/packages/{ui,styles,types,tsconfig}`. Consumed by `link:`. Framework libraries are `peerDependencies`, so the consumer's copy is the only copy. No workspace. |
+| Tailwind v4 | Always. Default spacing, type and radius scales. No arbitrary values (`p-[13px]`). |
+| shadcn | The component vocabulary, `new-york`, `cssVariables: true`. |
+| Shared code | `apps/packages/{ui,types,tsconfig}`. Consumed by `link:`. Framework libraries are `peerDependencies`, so the consumer's copy is the only copy. No workspace. |
 | Types | `@scope/types` is generated from the API's OpenAPI. Never hand-edited. |
 
-Template: `template/apps/packages/styles/README.md`, `template/apps/packages/ui/package.json`.
+### Theme
+
+The theme and the components are one thing, with one internal shape wherever it lives:
+
+```
+styles/     tokens.css    raw values only. Colours by role (--bg-1..3, --fg-1..3, --border-1..2), light on :root,
+                          dark on [data-theme="dark"]. Radius base, fonts, motion. Nothing else switches by theme.
+            globals.css   the Tailwind entry. @import tailwindcss + tokens + elements. @theme = the default scales.
+                          @theme inline = tokens mapped onto utilities (--color-bg-1: var(--bg-1)) plus the shadcn
+                          aliases (--color-background, --color-primary …). @source points at the components.
+            elements.css  base element resets that consume tokens.
+components/ shadcn components, one file each, a folder for compound ones.
+lib/utils.ts  cn()
+```
+
+| Product has | Where the shape lives | Import in the app |
+|---|---|---|
+| one frontend | inside the app: `src/styles/`, `src/components/ui/`, `src/lib/` — the standard shadcn layout | `import "./styles/globals.css"` |
+| two or more | `apps/packages/ui/src/`, the same folders, linked by every frontend | `import "@scope/ui/globals.css"` |
+
+Moving from the first to the second is a move, not a rewrite. Rules that hold in both:
+
+- One CSS import per app, in the entry file. Nothing else imports CSS.
+- A colour is named once, in `tokens.css`, by role, never by hue. A component uses the utility (`bg-bg-1`, `border-thin`), never `var(--…)`, never a hex.
+- Variants differ by fill and border; sizes use the default scale (`px-3 py-1 text-sm rounded-sm`).
+- `cn()` is taught the named utilities `globals.css` adds (`border-thin`, `duration-fast`), or tailwind-merge drops them.
+- In the package, React and Tailwind are peerDependencies; React optional, so a CSS-only consumer (Astro docs) links it without React.
+
+Template: `template/apps/packages/ui/README.md` (the package), `template/apps/example-single-web-app-vite/src/` (the in-app shape).
 
 ## Backend
 

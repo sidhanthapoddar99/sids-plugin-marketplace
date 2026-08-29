@@ -20,7 +20,7 @@
 @custom-variant dark ([data-theme="dark"] &);
 
 /* The shared UI package lives outside each app root; scan it for classes. */
-@source "../../ui/src";
+@source "../components";
 
 @theme {
   /* ─────────── Type scale (Tailwind/shadcn defaults) ─────────── */

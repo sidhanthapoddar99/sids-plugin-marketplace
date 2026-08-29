@@ -1,1 +1,1 @@
-// Root layout. import "@scope/styles/globals.css" — the one style import.
+// Root layout. import "@scope/ui/globals.css" — the one style import.

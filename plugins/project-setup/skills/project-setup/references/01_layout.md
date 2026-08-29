@@ -26,7 +26,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 │   │       └── README.md
 │   ├── <server-frontend>/      # a frontend that is a server (Next.js SSR)  (dashboard/). Own Dockerfile
 │   ├── <desktop|mobile|cli>/   # only if the product ships one
-│   ├── packages/               # shared code. One folder per package    (ui/, styles/, types/, tsconfig/)
+│   ├── packages/               # shared code. One folder per package    (ui/, types/, tsconfig/)
 │   │   └── <package-name>/
 │   │       └── package.json    #   or pyproject.toml. The manifest lives inside the package
 │   ├── database/               # committed DB config, one folder per engine (postgres/, neo4j/, redis/)
@@ -87,7 +87,7 @@ The root holds config, the brief, and folders. Never loose code.
 |---|---|---|
 | `<backend>/` | One backend service | Python code in `app/` (`main.py`, `config.py`, `routers/`, `services/`, `models/`, `schemas/`, `db/`), no `src/`. Rust in `src/`. Go in `cmd/<name>/` + `internal/`. Owns `README.md`, manifest, `config.yaml`, `Dockerfile`. `config.local.yaml` is the developer's, gitignored. |
 | `<frontend-group>/<name>/` | One static frontend (Vite, Next.js export, Astro) | Code in `src/`; `e2e/`, `public/`, extra HTML entrypoints as needed. Owns `README.md`, `package.json`, lock, `tsconfig.json`, its lint config. No env file. The group owns the one `Dockerfile`, `nginx/` (prod template, dev-proxy template and its headers include) and a `README.md`. Exactly one frontend owns `/`; it has no `_PREFIX` key. |
-| `<single-frontend>/` | The only static frontend of the product | Code in `src/`. Owns `README.md`, `package.json`, lock, `tsconfig.json`, `Dockerfile` (build, then nginx), `nginx/` with its edge template. No env file. `vite.config.ts` proxies in dev. Template: `example-single-web-app-vite/`. Switch to the group when a second static frontend arrives. |
+| `<single-frontend>/` | The only static frontend of the product | Code in `src/`, theme and shadcn components inside it (`src/styles/`, `src/components/ui/`). Owns `README.md`, `package.json`, lock, `tsconfig.json`, `Dockerfile` (build, then nginx), `nginx/` with its edge template. No env file. `vite.config.ts` proxies in dev. Template: `example-single-web-app-vite/`. Switch to the group when a second static frontend arrives. |
 | `<server-frontend>/` | A frontend that is a server (Next.js SSR) | Its own app, own `Dockerfile`, own compose service. Never inside the group. |
 | `<desktop>/`, `<mobile>/`, `<cli>/` | A native surface | Only if the product ships one. Desktop shares `packages/`; mobile shares only the API contract; a Go CLI is `cmd/` + `internal/`, built by `ctl build cli` into `bin/`, gitignored. A PWA is the web frontend plus a manifest, not an app. |
 | `packages/<name>/` | Shared code | Manifest and lock live inside the package. An app never imports from another app. It imports from a package by a `link:` dependency (`"@scope/name": "link:../packages/name"`, `../../` from inside a group), not by a workspace. The `../` ban in `02_env.md` is about compose and env files, not manifests. Published package code in `src/<pkg>/`. |
@@ -135,7 +135,7 @@ Not blanket-ignored: `.vscode/` and `.claude/`. Commit the files that carry proj
 
 - App folders take the role name, not the stack name. `api/`, `engine/`, `dashboard/`, `cli/`, with an optional suffix: `api-admin/`, `api-platform/`.
 - The frontend group takes a name that says it is a group: `multi-web-app/`. Its children take the surface: `app/`, `landing/`, `docs/`, `admin/`.
-- Package folders take the thing they export. `ui/`, `styles/`, `types/`, `tsconfig/`.
+- Package folders take the thing they export. `ui/` (theme and components together), `types/`, `tsconfig/`.
 
 ## Exceptions
 

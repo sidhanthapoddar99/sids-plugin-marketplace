@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "astro": "<version>",
-    "@scope/styles": "link:../../packages/styles"
+    "@scope/ui": "link:../../packages/ui"
   },
   "devDependencies": {
     "typescript": "<version>",

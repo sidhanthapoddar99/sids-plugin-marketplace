@@ -1,1 +1,2 @@
-// Barrel. Export each component from its own file.
+// Public surface. Re-export every component from components/. Consumers import from "@scope/ui" only.
+export * from "./components";

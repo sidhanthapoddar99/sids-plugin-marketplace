@@ -60,7 +60,7 @@ Questions to ask before scaffolding go into `SKILL.md`, not a page. Deleted: `02
 - [x] `compose.m.expose_web`; no separate nginx service
 - [x] `apps/.dockerignore` for the `./apps` build context
 - [x] api → engine via `ENGINE_URL` (`config.yaml` `${VAR}`, compose literal, env_override)
-- [x] `packages/styles/` — `tokens.css`, `globals.css`, `elements.css` from vault
+- [x] `packages/ui/` — theme (`src/styles/`) and components (`src/components/`) in one package; single SPA keeps the same shape in-app
 - [x] `packages/ui/` — shadcn shape, React as peerDependency
 - [x] `packages/types/` — API contract, generated
 - [x] `packages/tsconfig/` — shared base

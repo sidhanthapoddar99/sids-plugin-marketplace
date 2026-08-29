@@ -3,7 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./utils": "./src/lib/utils.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./globals.css": "./src/styles/globals.css",
+    "./tokens.css": "./src/styles/tokens.css",
+    "./utils": "./src/lib/utils.ts"
+  },
   "dependencies": {
     "@scope/types": "link:../types",
     "class-variance-authority": "<version>",
@@ -11,6 +16,7 @@
     "lucide-react": "<version>",
     "tailwind-merge": "<version>"
   },
-  "peerDependencies": { "react": "<version>", "react-dom": "<version>" },
+  "peerDependencies": { "react": "<version>", "react-dom": "<version>", "tailwindcss": "<version>" },
+  "peerDependenciesMeta": { "react": { "optional": true }, "react-dom": { "optional": true } },
   "devDependencies": { "@scope/tsconfig": "link:../tsconfig", "typescript": "<version>" }
 }
