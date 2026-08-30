@@ -8,7 +8,7 @@ Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletio
 
 | Group | Verb | Does |
 |---|---|---|
-| Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | Engines in docker (`compose.db.yaml`), apps on the host with reload. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs to `logs/dev/`, pids to `logs/run/`. |
+| Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | Engines in docker (`compose.db.yaml`), apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs to `logs/dev/`, pids to `logs/run/`. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. |
 | | `ps [--list \| kill [port…]]` | Everything running across three planes: host processes, frozen builds, containers. Attach or kill, plane-aware. |
 | Containers | `up [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | The stack: `compose.base.yaml` plus modifiers, every service or a subset. In a terminal: pick modifiers → pick services (all preselected) → plan → confirm. Flags skip their prompt; no TTY = defaults. Runs migrations once before any app. |
 | | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs, same file list. `down` never uses `-v`: state lives in `data/`. |

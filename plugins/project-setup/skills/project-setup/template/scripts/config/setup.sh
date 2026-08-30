@@ -16,7 +16,7 @@ Steps
   2. in .env.secrets only: fill every blank *_KEY / *_SECRET with openssl rand -hex 32,
      every blank *_PASSWORD with a 24-char base64 string
   3. mkdir data/{$(IFS=,; echo "${DATA_SVCS[*]}")} and logs/{dev,run,backups,test_build}  (each folder's .gitignore keeps it out of git)
-  4. mise install · uv sync per python app · bun install per js app · cargo fetch · go mod download" \
+  4. mise install · uv sync per python app · bun install per js app · cargo fetch · go mod download · lefthook install" \
 "Re-run any time to top up missing keys and secrets."; }
 
 is_help "${1:-}" && { usage; exit 0; }
@@ -71,6 +71,11 @@ for d in apps/*/; do
   [[ -f "$d/go.mod" ]] || continue
   if command -v go >/dev/null 2>&1; then ( cd "$d" && go mod download ) && ok "$d go mod download"; else warn "go not found — $d skipped"; break; fi
 done
+# git hooks: lefthook.yml is inert until installed, so this is the one place that installs it
+if [[ -f lefthook.yml && -d .git ]]; then
+  if command -v lefthook >/dev/null 2>&1; then lefthook install >/dev/null && ok "lefthook install (hooks: pre-commit lint + data guard, pre-push test)"
+  else warn "lefthook not found — hooks not installed (mise install adds it)"; fi
+fi
 
 for f in "${ENV_FILES[@]}"; do
   blanks=$(grep -nE '^[A-Z_]+=\s*(#.*)?$' "$f" || true)

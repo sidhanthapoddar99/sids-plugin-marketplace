@@ -60,7 +60,7 @@ The template is an instance of this tree: `template/`. Copy it, delete what the 
 
 ### Root
 
-The root holds config, the brief, and folders. Never loose code.
+The root holds config, the brief, and folders. Never loose code. Before creating any folder, one test: a thing you run or deploy is an app (`apps/<name>/`); a thing you import or publish is a package (`apps/packages/<name>/`). Nothing is both.
 
 | Entry | Holds | Rule |
 |---|---|---|

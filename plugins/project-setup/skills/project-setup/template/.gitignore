@@ -10,6 +10,11 @@ config.local.yaml
 __pycache__/
 .venv/
 *.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+coverage/
+.coverage
 
 # rust
 target/

@@ -12,8 +12,33 @@ One paragraph: what this product is and which apps make it.
 - `ctl migrate` — apply schema migrations
 - `ctl gate` — the test ladder; green here is the only definition of green
 
+## Commands
+| Verb | Does |
+|---|---|
+| `ctl dev [app…] [--proxy]` | engines in docker, the chosen apps on the host with reload |
+| `ctl up [+modifier…] [--services a,b]` | the stack in docker, or a subset; interactive in a terminal |
+| `ctl migrate [new "<msg>"]` | apply or create a migration |
+| `ctl manage ops\|settings` | the break-glass operator console |
+| `ctl test [app\|e2e]` · `ctl gate [-q]` | one suite, or the whole ladder |
+| `ctl setup` · `ctl check` · `ctl status` | create env files and deps · the conformance floor · the doctor |
+
+`ctl --help` is the full list and is always current; this table is a summary.
+
 ## Manual, without ctl
-Each app's `README.md` shows how to run it from its own folder.
+Each app's `README.md` shows how to run it from its own folder, the env keys it reads, and how to test it.
+
+## Stack
+| Area | Pick |
+|---|---|
+| Backend | Python `<version>` / FastAPI · Rust `<version>` / Axum · Go `<version>` (CLI) |
+| Frontend | TypeScript, Vite `<version>`, Next.js `<version>`, Astro `<version>`, Tailwind v4, shadcn |
+| Data | Postgres `<version>` + pgvector · Redis `<version>` · Neo4j `<version>` |
+| Containers | docker compose ≥ 2.24; engines in docker for dev, everything for prod |
+| Config | `.env.secrets` / `.env.data` / `.env.proxy` + per-backend `config.yaml` |
+| Dev | mise · uv · bun · lefthook |
+
+## Documentation
+`docs/` when this repo is the docs home (`agent-ks`); otherwise the docs repo is named in `AGENTS.md`.
 
 ## Lock files
 The template ships no `bun.lock`, `uv.lock` or `Cargo.lock`: every dependency is a `<version>` placeholder. `ctl setup` installs and creates them. Commit them.
