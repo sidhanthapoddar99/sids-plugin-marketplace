@@ -21,6 +21,20 @@ The brief is a contract, not a welcome note. Skills are not always loaded; the b
 
 In a multi-repo product each brief states the repo's one-sentence role and names its siblings; repo names are `<product>-<role>`, the prefix chosen at the first split.
 
+## Documentation points at code, never the reverse
+
+Docs, plans, tracker issues and skill pages name the files, functions and lines they describe. Code does not name them back. A comment in code never says "see plan 12", "subtask 3.2", "`10_testing.md`" or "the docs explain this". The code knows nothing about the documentation.
+
+Why: documentation moves, renumbers and gets deleted; a tracker issue closes; a skill page is renamed. A code comment that names one goes stale on the next reorganisation and nobody notices, because no test reads comments. The reverse link is cheap to keep: a doc that names `scripts/gate/_gate.sh` is checked every time someone opens it.
+
+| Where | Rule |
+|---|---|
+| Code, scripts, compose, config, tests | Comments explain the code in front of them: what it holds, the rule it enforces, why it is shaped this way. No path to a doc, plan, issue or skill page. No private repo names or home-directory paths. |
+| `README.md`, `AGENTS.md`, `memory/` | The one exception. They are the entry doors and may point at `docs/`, the tracker and the skill. |
+| `docs/`, the tracker, skill references | Point at code by path. The pointer is the doc's job. |
+
+A rule a comment wants to cite is written into the comment itself, in one sentence.
+
 ## Scope and decoupling
 
 Code is placed by the scope that needs it, and a scope depends only inward. Same rule on both sides.
@@ -105,6 +119,7 @@ Each of these means a rule was broken somewhere else. Find that place.
 | a domain named `build/`, `sync/`, `ingest/` | ownership nouns (`06_backend.md`) |
 | `uvicorn --reload` in a Dockerfile | production serving (`06_backend.md`) |
 | a tripwire crossed with no deferral in `AGENTS.md` | the brief is the contract |
+| a code comment naming a doc page, plan, issue or skill file | documentation points at code, never the reverse |
 
 ## Audit order
 

@@ -22,7 +22,7 @@ Read `memory/` before any change. Rules there bind every agent. This brief is a 
 ## Skeletons
 
 - Backend `apps/<api>/app/`: `core/`, `health/`, domains `<list them>`; each `{models,repository,service,router}.py`. Domain-shared code at the domain root. Cross-domain: `service → service` only; DTOs duplicated, never imported.
-- Frontend `apps/<web>/src/`: `layout/ pages/ features/ api/ stores/ lib/`; primitives and theme from `<@scope/ui · src/components/ui + src/styles>`. All server calls through `api/`, zod at the boundary. `pages/` thin, mirroring the URL tree.
+- Frontend `apps/<web>/src/`: `layout/ pages/ features/ api/ stores/ hooks/ lib/`; primitives and theme from `<@scope/ui · src/components/ui + src/styles>`. All server calls through `api/`, zod at the boundary. `pages/` thin, mirroring the URL tree.
 - Packages: `<ui · types · tsconfig>`. Cross-app entities in `@scope/types`; feature-internal types co-locate; no global `types.ts`.
 
 ## Tripwires
@@ -41,6 +41,10 @@ With `tokens.css` and the ui package in place, this section overrides every gene
 - No hex, no raw px, no arbitrary values, no `var(--…)` in JSX.
 - Typography allowlist: `text-sm` (content), `text-base` (headings), `text-xs` (meta); `font-normal` everywhere; the one emphasis weight is `<font-medium | font-semibold>`, used only inside primitives. Hierarchy by size and colour, never weight.
 - After a UI change: screenshot light and dark, check against `<design/brand-guidelines/>`.
+
+## Documentation and code
+
+Documentation points at code. Code never points at documentation. `docs/`, tracker issues, plans and skill pages name files and lines. A code comment never names a doc page, a plan, a subtask number or a skill file; those move and renumber, and no test reads comments. The exceptions are `README.md`, `AGENTS.md` and `memory/`, which are the entry doors. A rule worth citing is written into the comment in one sentence.
 
 ## Exceptions to the standard layout
 
@@ -61,9 +65,9 @@ Additions to the stack list, with the reason: none.
 
 ## Commands
 
-`ctl setup` · `ctl dev [app…] [--proxy]` · `ctl up [+expose_web|+expose|+env_override] [--services a,b]` · `ctl migrate [new "<msg>"]` · `ctl manage ops|settings` · `ctl test [app]` · `ctl gate [-q]` · `ctl check` · `ctl status`
+`ctl --help` is the list. Summary: `ctl setup` · `ctl check` · `ctl status` · `ctl dev [app…] [--proxy]` · `ctl ps` · `ctl up [+expose_web|+expose|+env_override] [--services a,b]` · `ctl down` · `ctl restart` · `ctl logs` · `ctl exec` · `ctl shell` · `ctl health` · `ctl clean` · `ctl build [app|cli|save|start|clean]` · `ctl migrate [new "<msg>"|status]` · `ctl db backup|shell` · `ctl manage ops|settings` · `ctl test [app|e2e]` · `ctl gate [rung] [-q]` (rungs: `lint typecheck dead audit test check build e2e`; by name `clones fuzz perf`)
 
-Green means `ctl gate` passed. A recommended rung, once listed above, is never removed.
+Green means `ctl gate` passed. A rung, once listed above, is never removed. Project-specific verbs are added as `scripts/<group>/<name>.sh` plus a `run` line in `ctl`, and listed here.
 
 ## Escalation
 

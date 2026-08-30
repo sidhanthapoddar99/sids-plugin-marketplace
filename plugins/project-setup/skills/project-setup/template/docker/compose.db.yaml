@@ -1,30 +1,73 @@
 # Data engines only. Runs alone under `ctl dev`; included by compose.base.yaml under `ctl up`.
 # Passwords come from .env.secrets, ${DATA_DIR} from .env.data. Ports bind to loopback only, so prod never exposes them to the network.
 # State: bind mounts under ${DATA_DIR}. Committed config: apps/database/.
+# Every engine has a healthcheck: apps depend on it with condition: service_healthy. Started is not ready.
+# Engines get deliberately higher memory limits than apps; never starve the database.
+x-engine: &engine
+  restart: unless-stopped
+  stop_grace_period: 30s
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
 services:
   postgres:
+    <<: *engine
     image: pgvector/pgvector:<version>          # postgres + pgvector extension
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C.UTF-8"   # or collation drifts between machines
     ports: ["127.0.0.1:${POSTGRES_PORT}:5432"]
-    volumes: ["${DATA_DIR}/postgres:/var/lib/postgresql/data"]
-    healthcheck: { test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"] }
+    volumes:
+      - "${DATA_DIR}/postgres/pgdata:/var/lib/postgresql/data"
+      - "./apps/database/postgres/init:/docker-entrypoint-initdb.d:ro"   # extensions and roles, once, on an empty pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits: { memory: 2g }
 
   redis:
+    <<: *engine
     image: redis:<version>
     command: ["redis-server", "/etc/redis/redis.conf", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}         # read by the healthcheck only
     ports: ["127.0.0.1:${REDIS_PORT}:6379"]
     volumes:
       - "${DATA_DIR}/redis:/data"
       - "./apps/database/redis/redis.conf:/etc/redis/redis.conf:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG"]   # $$ escapes compose interpolation
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits: { memory: 512m }
 
   neo4j:
+    <<: *engine
     image: neo4j:<version>
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}         # read by the healthcheck only
     ports: ["127.0.0.1:${NEO4J_BOLT_PORT}:7687"]
     volumes:
       - "${DATA_DIR}/neo4j:/data"
       - "./apps/database/neo4j:/init:ro"       # init.cypher applied by `ctl migrate`
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p $$NEO4J_PASSWORD 'RETURN 1' >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s                         # the JVM boots slowly
+    deploy:
+      resources:
+        limits: { memory: 2g }

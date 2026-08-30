@@ -32,7 +32,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 │   ├── database/               # committed DB config, one folder per engine (postgres/, neo4j/, redis/)
 │   ├── notebooks/              # exploration notebooks. Never imported by an app
 │   └── .dockerignore           # the frontend image builds with context ./apps; root ignores do not apply
-├── scripts/                    # ctl workers: common/ config/ dev/ container/ db/ test/
+├── scripts/                    # ctl workers: common/ config/ dev/ container/ db/ admin/ test/ gate/
 ├── docker/                     # compose.db compose.base compose.dev compose.m.*
 ├── data/                       # actual data: engine mounts, datasets, uploads
 │   └── .gitignore              #   `**` and `!.gitignore`
@@ -102,7 +102,7 @@ One repo is the default. A part earns its own repo only on one of three grounds:
 
 - **A folder exists only when used.** Do not scaffold an empty `docker/`, `data/`, `logs/` or `docs/` for later. There is no `infra/`: the edge config lives with the frontend that owns the image, and any host proxy (Traefik, TLS) sits outside this repo.
 - **A published package is still a package.** When the product is a library or SDK, it lives in `apps/packages/<name>/`. The frontend next to it is a dev harness: `"private": true`, and the README's first line says so.
-- **ML projects use the same tree.** The training code is `apps/<name>/`. Per-experiment settings go in `apps/<name>/configs/<experiment>.yaml`, not `config.yaml`. Datasets and checkpoints go in `data/`, with a committed `data/README.md` saying where the real data lives and how to fetch it. Logs and run outputs in `logs/`. Usually no `docker/`. Training loops, remote runs and serving belong to a separate ML skill; see `04_stack.md`.
+- **ML projects use the same tree.** The training code is `apps/<name>/`. Per-experiment settings go in `apps/<name>/configs/<experiment>.yaml`, not `config.yaml`. Datasets and checkpoints go in `data/`, with a committed `data/README.md` saying where the real data lives and how to fetch it. Logs and run outputs in `logs/`. Usually no `docker/`. Training loops, remote runs and serving are out of scope; see `04_stack.md`.
 
 ## Ignore files
 

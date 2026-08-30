@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # gate/audit.sh — `ctl gate audit`. Rung 4: static security analysis, dependency vulnerability
 # scan, secret scan. The AI adversarial review is the fourth part of this class and is NOT a rung:
-# it is done per round by a second model with its own shell (~/.claude/references/codex-companion.md).
+# it is done per round by a second model with its own shell.
 #
 # Per ecosystem, from the tool the app pins:
 #   Python      bandit -r app · pip-audit (uv export → pip-audit -r)

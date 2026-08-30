@@ -38,7 +38,7 @@ Read the page that owns the question. Each page states the rule and points at `t
 | What is green | `references/10_testing.md` |
 | What holds everywhere; how to audit | `references/11_conventions.md` |
 
-`template/` is a complete instance of the tree with runnable-intent code: copy it, delete what the product does not need, rename `example-*` folders to role names. `template/ctl --help` is the verb list.
+`template/` is a complete instance of the tree. `ctl`, `scripts/`, `docker/`, the env templates, `AGENTS.md` and the conformance test are real and run. The app folders under `apps/` are shape only: each file's comment states what it holds, and the code is written per project. Copy it, delete what the product does not need, rename `example-*` folders to role names. `template/ctl --help` is the verb list.
 
 ## Bootstrapping
 
@@ -62,4 +62,4 @@ Find the page from the table above, answer from it, and point at the template pa
 
 ## Out of scope
 
-Training loops, remote GPUs and model serving: the sibling skill `ml-project-setup`. Docs-site content: `agent-ks`. Host proxies and TLS (Traefik, certbot): outside the repo, mentioned only where the edge meets them.
+Training loops, remote GPUs and model serving: not covered; decide per project and record in `AGENTS.md`. Docs-site content: `agent-ks`. Host proxies and TLS (Traefik, certbot): outside the repo, mentioned only where the edge meets them.

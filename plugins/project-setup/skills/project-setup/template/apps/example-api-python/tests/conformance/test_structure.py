@@ -1,7 +1,6 @@
 """Structure checks — unit tests whose subject is the file tree, not a function.
 
-This is the Python shape of the model in neurasutra-editor
-``apps/packages/editor/conformance/structure/``. One file holds the three parts:
+One file holds the three parts:
 
   REGISTRY   the list of checks, hand-written, in order. ``test_registry_count`` pins it,
              so a check cannot be dropped silently.
@@ -10,13 +9,13 @@ This is the Python shape of the model in neurasutra-editor
              with no red fixture is not proved to bite: on a clean tree, a check that
              returns nothing looks the same as a check that works.
 
-Three properties make it a test and not a scan (10_testing.md, "Conformance"):
+Three properties make it a test and not a scan:
   1. the rule is a hand-written list (LAYER_ORDER, ENV_READERS), never derived from disk
   2. every check has a red fixture (``test_detection_*``)
   3. exemptions expire — a LEDGER row for a file that no longer violates is itself red
 
 Runs under ``uv run pytest`` like any other test, so ``ctl test api`` and ``ctl gate test``
-both run it. Add a check when a rule in 11_conventions.md is broken a second time.
+both run it. Add a check when a repo rule is broken a second time.
 """
 
 from __future__ import annotations
@@ -46,7 +45,7 @@ class Violation:
 # service → service only. The order is the rule; a scan of the folders would not be.
 LAYER_ORDER = ("router", "service", "repository", "models")
 
-# The one module allowed to read the process environment (02_env.md, one loader per backend).
+# The one module allowed to read the process environment: one loader per backend.
 ENV_READERS = {"config.py"}
 
 # LEDGER — hand-kept exemptions: {relative path: reason}. A row whose file is clean is red.

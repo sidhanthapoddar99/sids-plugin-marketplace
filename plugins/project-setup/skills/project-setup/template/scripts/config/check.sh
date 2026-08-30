@@ -23,7 +23,7 @@ Rules
   brief     CLAUDE.md is exactly '@AGENTS.md'
   compose   no ports: in compose.base.yaml · no ../ in any docker/compose.*.yaml ·
             docker compose config validates: db alone, base alone, base + each modifier
-  TODO      every key in the templates carries a comment naming its consumer"; }
+"; }
 
 is_help "${1:-}" && { usage; exit 0; }
 rc=0; fail() { err "$*"; rc=1; }

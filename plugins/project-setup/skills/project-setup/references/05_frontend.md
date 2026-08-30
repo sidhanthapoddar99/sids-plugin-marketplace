@@ -34,7 +34,7 @@ Moving from the first to the second is a move, not a rewrite. Rules that hold in
 - In the package, React and Tailwind are peerDependencies; React optional, so a CSS-only consumer (Astro docs) links it without React.
 - ~15 flat components → group by family (`form/`, `overlay/`, `data/`). Never one mega `packages/shared`; split by concern; a package never imports app code.
 - The package set grows by concern: `ui`, `types`, `tsconfig` first; `services` (the typed API client and query keys two frontends share, the package form of `api/`) and `hooks` when a second frontend needs them. A second frontend never re-implements `api/`.
-- Never both: a local `components/ui/` or `styles/` beside the shared package is a red finding. The move is one direction.
+- Never both: a local `components/ui/` or `styles/` beside the shared package is a red finding. The move is one direction. The template shows both shapes on purpose (`example-single-web-app-vite/src/styles/` and `packages/ui/`); a real repo keeps one and deletes the other at bootstrap.
 
 ### Switching
 

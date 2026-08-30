@@ -4,4 +4,5 @@
 - Secrets live in `.env.secrets`. Paths in `.env.data`. Hosts, ports and prefixes in `.env.proxy`. Read the `.env.*.template` files to learn the contract. Never read the filled files.
 - Schema changes go through `apps/database/postgres/migrations/`. Never edit a live schema.
 - An app never imports from another app. Shared code is a package under `apps/packages/`.
+- Documentation points at code. A code comment never names a doc page, plan, issue or skill file. `README.md`, `AGENTS.md` and `memory/` are the only exceptions.
 - A frontend has no `.env`. Its prefix is a build arg from `.env.proxy`; everything in a bundle is public.

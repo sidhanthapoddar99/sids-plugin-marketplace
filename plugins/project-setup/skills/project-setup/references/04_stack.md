@@ -83,7 +83,7 @@ Pick from the requirement, not from habit. Runtime state lives in `data/`, bind-
 | Docker | Usually none for training. `ctl` keeps `dev`, `test`, `gate`, adds `train --config`, `eval --run`, `nb`, `data-prep`; drops `up`. |
 | UI or API on top | A separate app. Never inside the training folder. |
 
-Remote training, spot instances, checkpoint resume, inference autoscaling and ML CI belong to a sibling skill, `ml-project-setup`, which builds on this tree. Out of scope here.
+Remote training, spot instances, checkpoint resume, inference autoscaling and ML CI are out of scope here. Until a dedicated ML skill exists, decide them per project and record the decisions in `AGENTS.md`.
 
 ## Desktop and mobile
 

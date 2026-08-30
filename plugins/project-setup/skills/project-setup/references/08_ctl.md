@@ -60,7 +60,7 @@ Rules the files obey, and `ctl check` enforces:
 
 **The docker guard runs first, by name.** Every docker verb calls `require_docker` before its first compose call. It tells three faults apart: not installed, engine not running, compose plugin missing. Compose itself reports a dead engine as a config error, which is how an earlier `up.sh` printed "invalid modifier combination" for "Docker is not running". `ctl status` shows the same three states without dying.
 
-The `scripts/` groups are `common config dev container db test gate`. A gate rung never holds logic: it calls the same worker its dev verb calls (`gate/test.sh` → `test/test.sh`); lint and typecheck have no separate dev verb, the rung is the worker, so the gate and the loop cannot drift.
+The `scripts/` groups are `common config dev container db admin test gate`. A gate rung never holds logic: it calls the same worker its dev verb calls (`gate/test.sh` → `test/test.sh`); lint and typecheck have no separate dev verb, the rung is the worker, so the gate and the loop cannot drift.
 
 ## `ctl check` — the conformance floor
 
@@ -78,7 +78,7 @@ Runs as a gate rung. Fails on the first of:
 
 ## `ctl manage` — the break-glass console
 
-The one path to operator identity that does not go through the web. It seeds the first SuperAdmin, resets a password when the admin UI is down, flips a platform setting. Model: `neura-cloud-vault/scripts/admin/manage.sh` → `apps/api-admin/manager.py`. Template: `template/scripts/admin/manage.sh`, `template/apps/example-api-python/manager.py`.
+The one path to operator identity that does not go through the web. It seeds the first SuperAdmin, resets a password when the admin UI is down, flips a platform setting. Template: `template/scripts/admin/manage.sh`, `template/apps/example-api-python/manager.py`.
 
 | Rule | Why |
 |---|---|

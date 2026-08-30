@@ -1,13 +1,13 @@
 # Testing — the kinds, the ladder, and what green means
 
-Every check runs through `ctl gate`. The ladder is the only definition of green. A repo without CI runs it by hand; a repo with CI calls the same command. Model: `neurasutra-editor/scripts/gate/`.
+Every check runs through `ctl gate`. The ladder is the only definition of green. A repo without CI runs it by hand; a repo with CI calls the same command.
 
 ## The kinds
 
 | Kind | Covers | Tool | In the ladder |
 |---|---|---|---|
 | Lint and code quality | syntax and style; cyclomatic and logical complexity; dead and unused code; dependency hygiene | ruff, clippy, oxlint, gofmt; knip (dead-code census, two passes: with and without tests); `cargo udeps`, `deptry` | **must** — `lint`, `dead` |
-| Static analysis and security | type checking; static security analysis; dependency vulnerability scan; secret scan; AI adversarial code review | tsc, mypy, clippy; bandit, semgrep; `bun audit`, `pip-audit`, `cargo audit`; gitleaks; Codex adversarial review per round (`~/.claude/references/codex-companion.md`) | **must** — `typecheck`, `audit`; the review is per round, not a rung |
+| Static analysis and security | type checking; static security analysis; dependency vulnerability scan; secret scan; AI adversarial code review | tsc, mypy, clippy; bandit, semgrep; `bun audit`, `pip-audit`, `cargo audit`; gitleaks; Codex adversarial review per round | **must** — `typecheck`, `audit`; the review is per round, not a rung |
 | Unit | one function, class or module; boundaries; error paths; regressions | pytest, vitest, `cargo test`, `go test` | **must** — `test` |
 | Integration | database, HTTP APIs, queues, third-party clients, component-to-component | the same runners against real engines from `compose.db.yaml`; `httpx` / `supertest` against the app | recommended — `test` |
 | Conformance | the repo's own rules: layout, env contract, compose validity, structure checks (import zones, file caps, design tokens, scope placement) | `ctl check` for the repo level; structure checks registered in one file and run as ordinary tests. See "Conformance" below | recommended — `check` |
@@ -72,7 +72,7 @@ No root `tests/` folder. Each app owns its suite and its `test` script (`bun tes
 
 A conformance check is a unit test whose subject is the file tree, not a function. It proves the rules in `11_conventions.md` and `01_layout.md` mechanically: a service never imports a router, `os.environ` appears only in `config.py`, no hex value in a component, no file over the cap, a thing with two consumers lives in `packages/`. Lint judges syntax, types judge shapes, unit tests judge behaviour. Nothing else judges architecture, and architecture is what drifts across rounds under a green gate.
 
-Model: `neurasutra-editor/apps/packages/editor/conformance/`. One sentence covers its layout: **`structure/` reads the tree, `suites/` run the code, `fixtures/` are what suites borrow.** Inside `structure/`:
+The full-size layout, when one file is no longer enough: **`structure/` reads the tree, `suites/` run the code, `fixtures/` are what suites borrow.** Inside `structure/`:
 
 | Part | Job |
 |---|---|

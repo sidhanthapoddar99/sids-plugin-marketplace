@@ -17,7 +17,7 @@ Access to it IS the security boundary. Every mutating action writes a row to `op
 It lives at the backend root, beside `app/`, because it is a program, not a domain. It imports
 the app's own loader (`app.config.settings`) and primitives (`app.core.security.hash_password`),
 never a router: the same hashing and the same connection values as the running service, no
-second copy. Model: neura-cloud-vault apps/api-admin/manager.py.
+second copy.
 
 Intent only — bodies are stubs. Keep the argparse tree; fill the coroutines against the real tables.
 """
@@ -30,7 +30,7 @@ import getpass
 import secrets
 import sys
 
-# from app.config import settings              # the one loader (02_env.md)
+# from app.config import settings              # the one loader
 # from app.core.security import hash_password  # argon2, the same primitive the login route uses
 # import asyncpg, redis.asyncio as aioredis
 

@@ -20,11 +20,13 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; 
 # Emitted as strings so help/dry-run print EXACTLY what runs (ports resolve from .env.proxy once loaded).
 app_names() { printf '%s\n' api engine landing app docs dashboard single; }   # single = example-single-web-app-vite, the one-frontend shape
 frontends() { printf '%s\n' landing app docs dashboard; }      # the ones the dev proxy fronts
+# port_of VAR — the value from .env.proxy. Under --help the env may be absent: print the key name instead of dying.
+port_of()   { local v="$1"; if [[ -n "${!v:-}" ]]; then echo "${!v}"; elif [[ "${HELP_MODE:-0}" == 1 ]]; then echo "\$$v"; else die "$v is blank in .env.proxy"; fi; }
 app_port()  { case "$1" in
-  api)       echo "${API_PORT:?API_PORT is blank in .env.proxy}" ;;          engine)    echo "${ENGINE_PORT:?ENGINE_PORT is blank in .env.proxy}" ;;
-  landing)   echo "${WEB_LANDING_PORT:?WEB_LANDING_PORT is blank in .env.proxy}" ;;  app)       echo "${WEB_APP_PORT:?WEB_APP_PORT is blank in .env.proxy}" ;;
-  single)    echo "${WEB_APP_PORT:?WEB_APP_PORT is blank in .env.proxy}" ;;
-  docs)      echo "${WEB_DOCS_PORT:?WEB_DOCS_PORT is blank in .env.proxy}" ;;     dashboard) echo "${DASHBOARD_PORT:?DASHBOARD_PORT is blank in .env.proxy}" ;;
+  api)       port_of API_PORT ;;          engine)    port_of ENGINE_PORT ;;
+  landing)   port_of WEB_LANDING_PORT ;;  app)       port_of WEB_APP_PORT ;;
+  single)    port_of WEB_APP_PORT ;;
+  docs)      port_of WEB_DOCS_PORT ;;     dashboard) port_of DASHBOARD_PORT ;;
   *)         die "unknown app '$1' — one of: $(app_names | join_sp)" ;; esac; }
 app_cmd()   { case "$1" in
   api)       printf 'uv run --directory apps/example-api-python uvicorn app.main:app --reload --host %s --port %s' "${API_HOST:-localhost}" "$(app_port api)" ;;
@@ -43,7 +45,7 @@ usage() { print_help "dev" "Data core in docker, apps on the host with reload." 
                   (none given: interactive pick in a terminal, all preselected; else every app)
 
 Direct  (the host command each app runs — what --dry-run prints; copy to run without ctl)
-$(for a in $(app_names); do printf '  %-8s %s%s%s\n' "$a" "$C_GRN" "$(app_cmd "$a")" "$C_RESET"; done)
+$(for a in $(app_names); do printf '  %-10s %s%s%s\n' "$a" "$C_GRN" "$(app_cmd "$a")" "$C_RESET"; done)
 
 Options
   -d, --detach    run in the BACKGROUND: logs → logs/dev/dev-<app>.log, pidfiles → logs/run/.
@@ -62,7 +64,7 @@ waits for health, then starts the host processes."; }
 # parse: positionals = apps, flags anywhere
 apps=() dry=0 detach=0 no_core=0 proxy=0 nqa=0
 while (( $# )); do case "$1" in
-  -h|--help)     usage; exit 0 ;;
+  -h|--help)     HELP_MODE=1 usage; exit 0 ;;
   --dry-run|-n)  dry=1; shift ;;
   -d|--detach)   detach=1; shift ;;
   --proxy)       proxy=1; shift ;;

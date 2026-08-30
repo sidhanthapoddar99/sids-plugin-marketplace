@@ -2,7 +2,7 @@
 # admin/manage.sh — `ctl manage`. The break-glass operator console: a thin forward to the backend's
 # manager.py, run on the host (or over SSH). It bypasses the web auth flow, so ACCESS TO THIS HOST IS
 # THE SECURITY BOUNDARY. Every mutating action is written to the operator audit table. Needs the data
-# core up (`ctl dev` or `ctl up --services=postgres,redis`). Model: neura-cloud-vault scripts/admin/manage.sh.
+# core up (`ctl dev` or `ctl up --services=postgres,redis`).
 #
 # [ADAPT] ADMIN_DIR — the backend that owns operator identity. One per product.
 set -euo pipefail

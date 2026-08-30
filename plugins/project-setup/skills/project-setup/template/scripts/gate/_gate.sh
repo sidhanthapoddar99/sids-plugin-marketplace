@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/gate/_gate.sh — shared foundation for the `ctl gate` family. SOURCE this after _lib.sh.
 #
-# THE RUNG CONTRACT (10_testing.md). Every rung keeps four promises:
+# THE RUNG CONTRACT. Every rung keeps four promises:
 #   1. exit 0 only when the rule was proved — a rung that cannot find its target dies by name
 #   2. name the file and the line when it fails
 #   3. one implementation, two callers — a rung calls the same worker `ctl <verb>` calls
@@ -12,7 +12,7 @@
 # the caller asked for. Narrow a run with the dev verb (`ctl test api`); `gate lint` and `gate typecheck` take a target by name.
 # A rung takes no arguments (gate_reject_args) except lint and typecheck, whose dev verb IS the rung.
 #
-# Ported from neurasutra-editor scripts/gate/_gate.sh, minus that repo's frozen-package guards.
+# Ported from an earlier project, minus that repo's frozen-package guards.
 
 # gate_require_dir <repo-relative path> <what it is>
 gate_require_dir()  { [[ -d "$CTL_ROOT/$1" ]] || die "$2 not found: $1 — this gate has no target to run against"; }

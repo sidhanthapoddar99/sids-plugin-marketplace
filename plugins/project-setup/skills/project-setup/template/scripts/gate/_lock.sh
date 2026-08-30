@@ -4,7 +4,7 @@
 #
 # WHY. Two heavy runs at once on one box (a test worker can hold several GB) ran the kernel out
 # of memory and killed the login session — twice in one evening on the project this is ported
-# from (neurasutra-editor, 2026-08-26). Nothing in ctl had looked at memory.
+# from. Nothing in ctl had looked at memory.
 #
 # TWO GUARDS.
 #   THE LOCK   scripts/gate/gate.lock (gitignored). A run writes its pid, verb, start time and the
