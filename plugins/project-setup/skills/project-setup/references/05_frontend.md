@@ -33,6 +33,8 @@ Moving from the first to the second is a move, not a rewrite. Rules that hold in
 - `cn()` is taught the named utilities `globals.css` adds (`border-thin`, `duration-fast`), or tailwind-merge drops them.
 - In the package, React and Tailwind are peerDependencies; React optional, so a CSS-only consumer (Astro docs) links it without React.
 - ~15 flat components → group by family (`form/`, `overlay/`, `data/`). Never one mega `packages/shared`; split by concern; a package never imports app code.
+- The package set grows by concern: `ui`, `types`, `tsconfig` first; `services` (the typed API client and query keys two frontends share, the package form of `api/`) and `hooks` when a second frontend needs them. A second frontend never re-implements `api/`.
+- Never both: a local `components/ui/` or `styles/` beside the shared package is a red finding. The move is one direction.
 
 ### Switching
 
@@ -42,7 +44,7 @@ Moving from the first to the second is a move, not a rewrite. Rules that hold in
 |---|---|
 | Resolve | stored choice (`localStorage`) → `prefers-color-scheme` → `light`. |
 | Apply | `document.documentElement.dataset.theme = value`. Persist on change. Follow the OS only while no choice is stored. |
-| First paint | A blocking inline `<script>` in `index.html` (Vite) or the root layout (Next.js) sets the attribute before the first render. `useEffect` alone flashes the wrong theme for one frame on every load, and on SSR pages the server has no `localStorage`; the inline script is the fix, not a hydration trick. |
+| First paint | A blocking inline `<script>` in `index.html` (Vite) or the root layout (Next.js) sets the attribute before the first render. `useEffect` alone flashes the wrong theme for one frame on every load, and on SSR pages the server has no `localStorage`; the inline script is the fix, not a hydration trick. Next.js: `suppressHydrationWarning` on `<html>`, because the script mutates the attribute before hydration. |
 | Toggle | One component in the ui package. Feature code never touches the attribute. |
 
 ## Typography — stock vocabulary, strict policy
@@ -79,6 +81,7 @@ src/
 ├── features/<name>/     the substance: components, hooks, state, local types. index.ts is the only door
 ├── api/                 the one server boundary. Grouped by the backend's domain vocabulary (api/users.ts)
 ├── stores/              client state (zustand). Only what more than one feature reads
+├── hooks/               a hook two features share. Feature-local hooks stay in the feature
 └── lib/                 pure helpers. Imports nothing app-internal, no React, no IO
 ```
 
@@ -90,6 +93,7 @@ src/
 | `features/` | `api/`, `stores/`, `components/ui/`, `lib/`, another feature's `index.ts` | another feature's internals, `fetch` |
 | `pages/` | features, layout | `api/` directly, `fetch` |
 | `stores/` | `lib/` | `api/`, a component |
+| `hooks/` | `api/`, `stores/`, `lib/` | a feature, a component |
 
 No `context/`, `helpers/`, `utils/`, `types.ts` at the top of `src/`. A type has an owner at the lowest level that contains its consumers; a cross-app entity is in `@scope/types`.
 

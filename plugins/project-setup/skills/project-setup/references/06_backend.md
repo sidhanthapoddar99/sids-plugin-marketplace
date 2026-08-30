@@ -76,7 +76,8 @@ Rules:
 - `ctl migrate` applies them, `ctl migrate new` creates one. Never `alembic` by hand.
 - Migrations are an explicit step, never on app boot. `ctl up` runs them once before the apps; with N replicas the same step is a one-shot compose service the apps `depends_on` with `service_completed_successfully` (`09_production.md`).
 - The consuming language never writes DDL. A Rust query that needs a column: write the migration, run `ctl migrate`, then `cargo sqlx prepare`, then the query. The gate order is `migrate → sqlx prepare --check → build`.
-- SQLite: `render_as_batch=True` in both `context.configure` calls, or every `ALTER` fails.
+- Never edit an applied migration; write a new one. Two heads (two revisions with the same `down_revision`) are squashed before merging to main; `ctl migrate status` fails on a branch.
+- Autogenerate needs four things or it silently sees an empty schema and drops every table: `prepend_sys_path = .` in `alembic.ini`; `import app.models` (every model module) in `env.py` so `target_metadata` is populated; `sqlalchemy.url` set from the config loader, never `alembic.ini`; `render_as_batch=True` in both `context.configure` calls when SQLite is a target. Review and edit every generated revision; never mix generated and hand-written DDL in one file.
 - Other engines follow the same verbs: Neo4j constraints in `apps/database/neo4j/init.cypher`, idempotent; Redis config in `apps/database/redis/redis.conf`.
 
 Template: `template/apps/database/README.md`, `template/apps/database/postgres/migrations/versions/0002_indexes.py`.
@@ -86,7 +87,7 @@ Template: `template/apps/database/README.md`, `template/apps/database/postgres/m
 | Engine | Rules that bite |
 |---|---|
 | Postgres | `POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C.UTF-8"` or collation drifts between machines. Numbered init scripts in `apps/database/postgres/init/` for extensions and roles, run once on an empty `pgdata`. Bind-mount a nested `pgdata/`, not `data/postgres/` itself. `pg_isready` healthcheck; apps `depends_on: service_healthy`. Backups through `ctl db backup` (`pg_dump | gzip`). |
-| Redis | `--requirepass` always, dev included. `--appendonly yes --appendfsync everysec`. Streams need `--maxmemory-policy noeviction` or unread events are silently evicted. One instance, db numbers by use: 0 sessions, 1 cache, 2 rate limits, 3 streams, 4 jobs, 15 tests. Healthcheck `redis-cli -a $$REDIS_PASSWORD ping` (`$$` escapes compose). Never a blob in Redis. |
+| Redis | `--requirepass` always, dev included. `--appendonly yes --appendfsync everysec`. Streams need `--maxmemory-policy noeviction` or unread events are silently evicted. One instance, db numbers by use: 0 sessions, 1 cache, 2 rate limits, 3 streams, 4 jobs, 15 tests. Healthcheck `redis-cli -a $$REDIS_PASSWORD ping` (`$$` escapes compose). Backup: `BGSAVE` then copy `dump.rdb`, or rsync `appendonlydir/`; `ctl db backup` does both engines. Never a blob in Redis. |
 | SQLite | Pragmas on every connection: `journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON` (off by default), `synchronous=NORMAL`. One writer at a time; a web app plus a CLI is fine, N gunicorn workers writing is the Postgres signal. The file lives under `data/sqlite/`. Backup with `.backup`, never a raw copy mid-write. |
 | Neo4j | Constraints and indexes in `init.cypher`, idempotent (`IF NOT EXISTS`). Healthcheck a cypher ping. |
 

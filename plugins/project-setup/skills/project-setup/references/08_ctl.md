@@ -4,13 +4,15 @@
 
 Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletion. The `[ADAPT]` markers name the knobs.
 
+The verb table below is the floor, not the ceiling. A project adds the verbs its work needs (`ctl train`, `ctl sqlx-prepare`, `ctl mobile-api-codegen`, `ctl seed`, `ctl deploy`) the same way every existing verb is built: one worker at `scripts/<group>/<name>.sh` with the preamble, `--help`, and one `run <group>/<name>` line in `ctl`. New groups are fine (`scripts/ml/`, `scripts/admin/`). Two rules hold: logic never lives in `ctl` itself, and every added verb appears in `ctl --help` and in the `AGENTS.md` Commands section. Verbs that stop being used are deleted, not left as residue.
+
 ## Verbs
 
 | Group | Verb | Does |
 |---|---|---|
 | Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | Engines in docker (`compose.db.yaml`), apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs to `logs/dev/`, pids to `logs/run/`. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. |
 | | `ps [--list \| kill [port…]]` | Everything running across three planes: host processes, frozen builds, containers. Attach or kill, plane-aware. |
-| Containers | `up [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | The stack: `compose.base.yaml` plus modifiers, every service or a subset. In a terminal: pick modifiers → pick services (all preselected) → plan → confirm. Flags skip their prompt; no TTY = defaults. Runs migrations once before any app. |
+| Containers | `up [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | The stack: `compose.base.yaml` plus modifiers, every service or a subset. In a terminal: pick modifiers → pick services (all preselected) → plan → confirm. Flags skip their prompt. No TTY: the plan prints and the run refuses without `-y`; `--nqa -y` is the scripted form. Runs migrations once before any app. |
 | | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs, same file list. `down` never uses `-v`: state lives in `data/`. |
 | | `build [app…\|cli]` | Compose build. Build args are prefixes interpolated from `.env.proxy`. `cli`: the Go binary. |
 | | `clean [-y]` | Down plus caches. `data/` untouched. |
@@ -68,7 +70,7 @@ Runs as a gate rung. Fails on the first of:
 - a `*_PASSWORD` / `*_KEY` / `*_SECRET` key outside `.env.secrets.template`; a `.env.proxy.template` key not ending `_HOST/_PORT/_PREFIX/_URL`; a `.env.data.template` key not ending `_DIR`
 - a secret literal in any `config.yaml` (`*_KEY`, `*_PASSWORD`, `*_SECRET` not `${VAR}`)
 - a tracked `config.local.yaml`
-- `package.json`, `bun.lock`, `pnpm-workspace.yaml` at the root, in `apps/`, or directly in the frontend group folder
+- `package.json`, `bun.lock`, `pnpm-workspace.yaml` at the root, in `apps/`, or directly in the frontend group folder — unless `AGENTS.md` records the `root-manifest` exception of an open-source package repo (`01_layout.md`)
 - `ports:` in `compose.base.yaml`
 - `../` in any compose file
 - `docker compose config` failing for the db file, base, base + each modifier, or the dev file

@@ -5,6 +5,11 @@
 # (scripts/<group>/<name>.sh), and inlines only the trivial `docker compose` passthroughs.
 # Every command supports -h / --help; colors auto-disable when piped or NO_COLOR is set.
 #
+# THIS IS THE FLOOR, NOT THE CEILING. Add the verbs the project needs (train, seed, deploy,
+# sqlx-prepare, …): one worker at scripts/<group>/<name>.sh (preamble from _lib.sh, a usage()),
+# one `row` in ctl_help below, one `run <group>/<name>` line in the case. New groups are fine.
+# Logic never lives in this file. Delete verbs that stop being used.
+#
 #   Development    dev · ps
 #   Containers     up · down · restart · logs · exec · shell · build · clean · health
 #   Database       migrate · db shell|backup|restore

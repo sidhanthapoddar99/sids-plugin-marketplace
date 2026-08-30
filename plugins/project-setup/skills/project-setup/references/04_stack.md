@@ -53,6 +53,7 @@ Pick by output. One static frontend owns its image. Several static frontends liv
 | TypeScript on Node or bun | The needed library exists only in JS, or the product already runs a Next.js server. | Next.js route handlers, or Hono | — |
 | C++ | Compute-intensive work with no UI: numeric kernels, codecs, simulation, anything where Rust's ecosystem lacks the library. Exposed to the rest of the stack as a Python extension (pybind11 / nanobind) or a small gRPC/HTTP service; never called from a frontend. | CMake, one target per binary or module | — |
 | Other | A language that gives a specific, named benefit for one piece: an existing library, a runtime, a team's expertise, a platform requirement. Record the reason in `AGENTS.md`. It follows the same contract as every backend (`06_backend.md`). | — | — |
+| AI | Backend calls: the provider's own SDK (Anthropic SDK) behind one adapter. Frontend streaming UI: Vercel AI SDK, keys never reach it. Model IDs, params and pricing resolved through the `claude-api` skill at the time of writing, never from memory; they live in `config.yaml`. | — | — |
 
 One backend per responsibility. Several backends: `03_routing.md` case 5. An MCP server is a backend app like any other; published for others to run, it is a package.
 

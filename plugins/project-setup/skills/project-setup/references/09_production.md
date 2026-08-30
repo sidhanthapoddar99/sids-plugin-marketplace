@@ -27,7 +27,7 @@ The compose healthcheck reads `/health`. A host proxy or load balancer reads `/r
 
 ## The deploy
 
-1. `ctl build` with an immutable `TAG` (a git sha or a semver). Never redeploy a moving `latest`; a tag is never repurposed.
+1. `ctl build` with an immutable `TAG` (a git sha or a semver) on images named `<product>/<app>` (`acme/api`). Never redeploy a moving `latest`; a tag is never repurposed.
 2. `ctl up +expose_web -y`. The data core comes up and is waited on; migrations run once; then the apps.
 3. Migrations are never on app boot. With one replica, `up.sh` runs `ctl migrate up` before the apps. With N replicas the same step is a one-shot compose service (`migrate`, `restart: "no"`) that the apps `depends_on` with `condition: service_completed_successfully`, because N replicas racing `upgrade head` corrupt the version table. Pick one per project and delete the other path.
 4. Rollback is the previous `TAG`, or a `ctl build save` snapshot. A rollback path exists before the first deploy, not after the first incident.

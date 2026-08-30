@@ -135,10 +135,11 @@ Not blanket-ignored: `.vscode/` and `.claude/`. Commit the files that carry proj
 
 - App folders take the role name, not the stack name. `api/`, `engine/`, `dashboard/`, `cli/`, with an optional suffix: `api-admin/`, `api-platform/`.
 - The frontend group takes a name that says it is a group: `multi-web-app/`. Its children take the surface: `app/`, `landing/`, `docs/`, `admin/`.
-- Package folders take the thing they export. `ui/` (theme and components together), `types/`, `tsconfig/`.
+- Package folders take the thing they export. `ui/` (theme and components together), `types/`, `tsconfig/`; later `services/`, `hooks/` (`05_frontend.md`).
 
 ## Exceptions
 
 - The tree above yields when a host program demands its own structure. The host's contract wins; do not wrap it in `apps/`.
 - Examples: VS Code extension, browser extension, host-app plugin (Jellyfin, Obsidian), plugin marketplace (Claude Code, Codex).
 - Keep `ctl`, `scripts/`, `.mise.toml` only when the host allows them and they earn their place. Record the exception in `AGENTS.md`.
+- A pure open-source package repo, where the repo *is* the published artifact and contributors expect the ecosystem's root manifest (`package.json`, `pyproject.toml` at the root), may take that shape as a recorded choice. `ctl check` reads the choice from `AGENTS.md` (`Exceptions: root-manifest`) and skips the no-workspace rule for it.
