@@ -1,0 +1,10 @@
+# Build context for apps/example-multi-web-app/Dockerfile is ./apps, so the root .dockerignore does not apply here.
+.env
+.env.*
+**/node_modules/
+**/dist/
+**/.next/
+**/target/
+**/.venv/
+**/__pycache__/
+**/config.local.yaml

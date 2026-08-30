@@ -1,0 +1,87 @@
+# The stack. This IS production. No ports here — modifiers add exposure.
+# No env_file. Each service lists exactly the variables it reads under `environment:`.
+#   ${VAR}   — operator decides; interpolated from the three env files ctl passes with --env-file:
+#              .env.secrets (passwords, keys, REGISTRY/TAG) · .env.proxy (ports, prefixes, PUBLIC_URL) ·
+#              .env.data (DATA_DIR, used by the included compose.db.yaml)
+#   literal  — compose decides; service names on the compose network
+# So reading this file tells you everything a container gets. Nothing leaks in by accident.
+# Every app has image: (pull) and build: (ctl build).
+#
+# Database section: the engines are defined once, in compose.db.yaml, and included here.
+# `ctl up` runs this file alone and gets the whole stack. `ctl dev` runs compose.db.yaml alone.
+include:
+  - path: ./docker/compose.db.yaml
+
+services:
+  api:
+    image: ${REGISTRY}/api:${TAG}
+    build: { context: ./apps/example-api-python }
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+      API_PREFIX: ${API_PREFIX}
+      ENGINE_URL: http://engine:8080             # api calls engine by service name
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
+      ENCRYPTION_KEY_PYTHON: ${ENCRYPTION_KEY_PYTHON}
+      PUBLIC_URL: ${PUBLIC_URL}
+    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_started } }
+
+  engine:
+    image: ${REGISTRY}/engine:${TAG}
+    build: { context: ./apps/example-engine-rust }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      NEO4J_URL: bolt://neo4j:7687
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      ENGINE_HOST: 0.0.0.0
+      ENGINE_PORT: 8080
+      ENGINE_PREFIX: ${ENGINE_PREFIX}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
+      ENCRYPTION_KEY_RUST: ${ENCRYPTION_KEY_RUST}
+    depends_on: [postgres, neo4j]
+
+  # The edge. One nginx image holding every static frontend (apps/example-multi-web-app/*), proxying the rest.
+  web:
+    image: ${REGISTRY}/web:${TAG}
+    build:
+      context: ./apps                           # needs packages/ too
+      dockerfile: example-multi-web-app/Dockerfile
+      args:                                     # build constants = the prefixes, from .env.proxy. No per-frontend .env.
+        WEB_APP_PREFIX: ${WEB_APP_PREFIX}              #   app   — base of the SPA
+        WEB_DOCS_PREFIX: ${WEB_DOCS_PREFIX}            #   docs  — base of the Astro site
+        # landing owns / and needs no prefix arg
+    environment:
+      # prefixes: the operator's routing table, from .env.proxy
+      WEB_APP_PREFIX: ${WEB_APP_PREFIX}
+      WEB_DOCS_PREFIX: ${WEB_DOCS_PREFIX}
+      DASHBOARD_PREFIX: ${DASHBOARD_PREFIX}
+      API_PREFIX: ${API_PREFIX}
+      ENGINE_PREFIX: ${ENGINE_PREFIX}
+      # upstreams: compose decides the service names, so compose states them. +env_override swaps these.
+      API_UPSTREAM: api:8000
+      ENGINE_UPSTREAM: engine:8080
+      DASHBOARD_UPSTREAM: dashboard:3000
+      # only these names are substituted into the nginx template; nginx's own $host/$uri stay intact
+      NGINX_ENVSUBST_FILTER: ^(WEB_APP_PREFIX|WEB_DOCS_PREFIX|DASHBOARD_PREFIX|API_PREFIX|ENGINE_PREFIX|API_UPSTREAM|ENGINE_UPSTREAM|DASHBOARD_UPSTREAM)$
+    depends_on: [api, engine, dashboard]
+    # ports come from compose.m.expose_web.yaml (the image listens on 8080, unprivileged)
+
+  # Next.js SSR — needs a Node server, so its own image; the edge proxies ${DASHBOARD_PREFIX} to it.
+  dashboard:
+    image: ${REGISTRY}/dashboard:${TAG}
+    build:
+      context: ./apps/example-dashboard-nextjs
+      args:                                     # the prefix, from .env.proxy
+        DASHBOARD_PREFIX: ${DASHBOARD_PREFIX}
+    environment:                                # server side only
+      API_HOST: api
+      API_PORT: 8000
+      PUBLIC_URL: ${PUBLIC_URL}
+    depends_on: [api]

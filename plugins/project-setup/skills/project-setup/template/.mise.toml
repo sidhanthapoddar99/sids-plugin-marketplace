@@ -1,0 +1,15 @@
+# Tool version contract. `mise install` sets up a clone. Never fill a version from memory.
+[tools]
+python = "<version>"
+rust = "stable"
+go = "<version>"
+bun = "latest"
+uv = "latest"
+lefthook = "latest"
+# repo-wide gate tools (ctl gate audit). Per-app tools are pinned in the app's own manifest.
+gitleaks = "latest"
+"cargo:cargo-audit" = "latest"
+"go:golang.org/x/vuln/cmd/govulncheck" = "latest"
+
+[env]
+_.path = ["{{ config_root }}"]   # ctl runs bare

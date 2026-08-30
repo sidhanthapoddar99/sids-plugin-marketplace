@@ -1,0 +1,8 @@
+[project]
+name = "api"
+version = "0.1.0"
+requires-python = ">=<version>"
+dependencies = ["fastapi", "uvicorn", "pydantic-settings", "sqlalchemy", "asyncpg", "redis", "pyyaml", "python-dotenv"]
+[dependency-groups]
+# the gate's tools are pinned here, per app: ctl gate typecheck (mypy) · dead (deptry) · audit (bandit, pip-audit)
+dev = ["pytest", "pytest-asyncio", "ruff", "httpx", "mypy", "deptry", "bandit", "pip-audit"]

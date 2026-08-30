@@ -1,0 +1,143 @@
+/*
+ * Tailwind v4 entry — the ONE stylesheet each app imports.
+ *
+ * Pulls in Tailwind, the raw token variables, and the element resets, then
+ * declares the theme: @theme holds static scales (type, radius pill, blur,
+ * shadow) and @theme inline MAPS the raw token vars (tokens.css) onto
+ * Tailwind's namespaces so utilities like bg-sidebar / w-sidebar / rounded-md
+ * resolve through the live variables (and swap with [data-theme="dark"]).
+ *
+ * Sizing/spacing follow shadcn exactly: spacing is Tailwind's default 0.25rem
+ * scale, radius uses shadcn's --radius multipliers, type is the default
+ * ladder. Only the color schema is ours (grayscale glass).
+ */
+
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./elements.css" layer(base);
+
+/* Dark mode is driven by [data-theme="dark"] on <html>, not a `.dark` class. */
+@custom-variant dark ([data-theme="dark"] &);
+
+/* The shared UI package lives outside each app root; scan it for classes. */
+@source "../components";
+
+@theme {
+  /* ─────────── Type scale (Tailwind/shadcn defaults) ─────────── */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.75rem;
+
+  /* ─────────── Weights (regular/emphasis are ours; medium/semibold come from defaults) ─── */
+  --font-weight-regular: 400;
+  --font-weight-emphasis: 600;
+
+  /* ─────────── Pill radius (sm/md/lg/xl derived in @theme inline) ─────────── */
+  --radius-pill: 9999px;
+
+  /* ─────────── Glass blur ─────────── */
+  --blur-sm: 8px;
+  --blur-md: 16px;
+  --blur-lg: 32px;
+
+  /* ─────────── Shadows (soft, glass-friendly) ─────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+@theme inline {
+  /* ─────────── Colors → our grayscale tokens ─────────── */
+  --color-bg-1: var(--bg-1);
+  --color-bg-2: var(--bg-2);
+  --color-bg-3: var(--bg-3);
+  --color-fg-1: var(--fg-1);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-border-1: var(--border-1);
+  --color-border-2: var(--border-2);
+  --color-glass-1: var(--glass-1);
+  --color-glass-2: var(--glass-2);
+  --color-glass-3: var(--glass-3);
+
+  /* shadcn-standard color aliases (grayscale) so shadcn component code drops in */
+  --color-background: var(--bg-1);
+  --color-foreground: var(--fg-1);
+  --color-card: var(--bg-1);
+  --color-card-foreground: var(--fg-1);
+  --color-popover: var(--bg-1);
+  --color-popover-foreground: var(--fg-1);
+  --color-primary: var(--fg-1);
+  --color-primary-foreground: var(--bg-1);
+  --color-secondary: var(--bg-2);
+  --color-secondary-foreground: var(--fg-1);
+  --color-muted: var(--bg-2);
+  --color-muted-foreground: var(--fg-3);
+  --color-accent: var(--bg-3);
+  --color-accent-foreground: var(--fg-1);
+  --color-border: var(--border-1);
+  --color-input: var(--border-2);
+  --color-ring: var(--border-2);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+
+  /* ─────────── Radius (shadcn multiplier formulas off --radius) ─────────── */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+
+  /* ─────────── Fonts ─────────── */
+  --font-base: var(--font-family-base);
+  --font-sans: var(--font-family-base);
+  --font-mono: var(--font-family-mono);
+
+  /* ─────────── Easing ─────────── */
+  --ease-standard: var(--easing-standard);
+
+  /* ─────────── Sidebar structural widths (referenced as w-sidebar / w-sidebar-icon) ─── */
+  --width-sidebar: var(--sidebar-width);
+  --width-sidebar-icon: var(--sidebar-width-icon);
+  --width-sidebar-mobile: var(--sidebar-width-mobile);
+  /* Inset/floating rail: icon width + p-2 gutter (and +2px for the container border). */
+  --width-sidebar-icon-inset: calc(var(--sidebar-width-icon) + var(--spacing) * 4);
+  --width-sidebar-icon-inset-border: calc(var(--sidebar-width-icon) + var(--spacing) * 4 + 2px);
+}
+
+/* Named border widths (design tokens) — registered with tailwind-merge in ui/lib/utils.
+ * Tailwind v4 has no preflight that forces `border-style: solid`; its built-in width
+ * utilities each emit the style themselves, so a width-only utility would render as
+ * `border-style: none` (0px). Mirror the built-ins: set the style too (solid fallback,
+ * but honour --tw-border-style so `border-dashed`/etc. still compose). */
+@utility border-thin {
+  border-style: var(--tw-border-style, solid);
+  border-width: var(--border-thin);
+}
+@utility border-thick {
+  border-style: var(--tw-border-style, solid);
+  border-width: var(--border-thick);
+}
+
+/* Named transition durations (Tailwind v4 has no duration theme namespace). */
+@utility duration-fast {
+  transition-duration: var(--transition-fast);
+}
+@utility duration-normal {
+  transition-duration: var(--transition-normal);
+}

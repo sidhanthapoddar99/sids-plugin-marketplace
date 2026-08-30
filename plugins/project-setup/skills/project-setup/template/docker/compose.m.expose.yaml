@@ -1,0 +1,6 @@
+# Modifier. Publishes every app port to the host. Debug only. Never in prod.
+services:
+  web:       { ports: ["${HTTP_PORT}:8080"] }
+  dashboard: { ports: ["${DASHBOARD_PORT}:3000"] }
+  api:       { ports: ["${API_PORT}:8000"] }
+  engine:    { ports: ["${ENGINE_PORT}:8080"] }

@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = ["crates/common", "crates/data", "crates/auth", "crates/api"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "<version>"
+
+[workspace.dependencies]
+# tokio, axum, sqlx (postgres, offline), neo4rs, serde, serde_yaml, figment, dotenvy, jsonwebtoken, tracing, thiserror, anyhow

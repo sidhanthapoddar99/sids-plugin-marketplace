@@ -1,0 +1,6 @@
+[package]
+name = "api"
+[dependencies]
+common = { path = "../common" }
+data = { path = "../data" }
+auth = { path = "../auth" }

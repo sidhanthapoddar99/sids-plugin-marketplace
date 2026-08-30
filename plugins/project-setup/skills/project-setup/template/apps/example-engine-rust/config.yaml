@@ -1,0 +1,14 @@
+# ${VAR} from .env.secrets / .env.proxy, must be set. Literals are defaults; override them in config.local.yaml (gitignored).
+database:
+  url: ${DATABASE_URL}
+  pool_size: 8
+neo4j:
+  url: ${NEO4J_URL}
+  password: ${NEO4J_PASSWORD}
+server:
+  host: ${ENGINE_HOST}
+  port: ${ENGINE_PORT}
+  prefix: ${ENGINE_PREFIX}
+auth:
+  jwt_signing_key: ${JWT_SIGNING_KEY}
+  encryption_key: ${ENCRYPTION_KEY_RUST}

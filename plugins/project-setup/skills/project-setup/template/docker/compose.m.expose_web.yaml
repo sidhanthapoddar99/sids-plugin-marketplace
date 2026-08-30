@@ -1,0 +1,7 @@
+# Modifier. Publishes the edge (web) only. The default for `ctl up`.
+# The image listens on 8080/8443 as the unprivileged nginx user; TLS on 8443 needs certs mounted.
+services:
+  web:
+    ports:
+      - "${HTTP_PORT}:8080"
+      - "${HTTPS_PORT}:8443"

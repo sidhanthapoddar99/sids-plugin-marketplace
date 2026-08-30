@@ -1,0 +1,20 @@
+{
+  "name": "docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "astro dev",
+    "build": "astro build",
+    "lint": "oxlint src"
+  },
+  "dependencies": {
+    "astro": "<version>",
+    "@scope/ui": "link:../../packages/ui"
+  },
+  "devDependencies": {
+    "typescript": "<version>",
+    "tailwindcss": "<version>",
+    "@tailwindcss/vite": "<version>"
+  }
+}

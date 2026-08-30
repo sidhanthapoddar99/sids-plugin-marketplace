@@ -1,0 +1,30 @@
+# Data engines only. Runs alone under `ctl dev`; included by compose.base.yaml under `ctl up`.
+# Passwords come from .env.secrets, ${DATA_DIR} from .env.data. Ports bind to loopback only, so prod never exposes them to the network.
+# State: bind mounts under ${DATA_DIR}. Committed config: apps/database/.
+services:
+  postgres:
+    image: pgvector/pgvector:<version>          # postgres + pgvector extension
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports: ["127.0.0.1:${POSTGRES_PORT}:5432"]
+    volumes: ["${DATA_DIR}/postgres:/var/lib/postgresql/data"]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"] }
+
+  redis:
+    image: redis:<version>
+    command: ["redis-server", "/etc/redis/redis.conf", "--requirepass", "${REDIS_PASSWORD}"]
+    ports: ["127.0.0.1:${REDIS_PORT}:6379"]
+    volumes:
+      - "${DATA_DIR}/redis:/data"
+      - "./apps/database/redis/redis.conf:/etc/redis/redis.conf:ro"
+
+  neo4j:
+    image: neo4j:<version>
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+    ports: ["127.0.0.1:${NEO4J_BOLT_PORT}:7687"]
+    volumes:
+      - "${DATA_DIR}/neo4j:/data"
+      - "./apps/database/neo4j:/init:ro"       # init.cypher applied by `ctl migrate`

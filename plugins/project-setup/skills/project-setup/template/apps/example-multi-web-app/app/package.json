@@ -1,0 +1,26 @@
+{
+  "name": "app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest",
+    "lint": "oxlint src"
+  },
+  "dependencies": {
+    "react": "<version>",
+    "react-dom": "<version>",
+    "@scope/ui": "link:../../packages/ui",
+    "@scope/types": "link:../../packages/types"
+  },
+  "devDependencies": {
+    "vite": "<version>",
+    "typescript": "<version>",
+    "tailwindcss": "<version>",
+    "vitest": "<version>",
+    "@scope/tsconfig": "link:../../packages/tsconfig",
+    "@tailwindcss/vite": "<version>"
+  }
+}

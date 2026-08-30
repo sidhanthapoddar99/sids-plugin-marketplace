@@ -1,0 +1,31 @@
+{
+  "name": "single-web-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "oxlint src"
+  },
+  "dependencies": {
+    "react": "<version>",
+    "react-dom": "<version>",
+    "@scope/types": "link:../packages/types",
+    "class-variance-authority": "<version>",
+    "clsx": "<version>",
+    "tailwind-merge": "<version>",
+    "lucide-react": "<version>"
+  },
+  "devDependencies": {
+    "vite": "<version>",
+    "typescript": "<version>",
+    "tailwindcss": "<version>",
+    "vitest": "<version>",
+    "@playwright/test": "<version>",
+    "@scope/tsconfig": "link:../packages/tsconfig",
+    "@tailwindcss/vite": "<version>"
+  }
+}

@@ -234,3 +234,20 @@ Currently a one-liner; make it a proper section:
 2. **B6 (`composition-decisions.md`)** — separate file in plugin's references.
 3. **Word budget** — index pages 30–50 lines, sub-pages 80–200. Used as designed.
 4. **Old `docs/Claude Plugins/`** — deleted after Agent 9 confirmed full topic coverage in new docs (one `file://` rejection note added before delete).
+
+---
+
+## D. project-setup skill rewrite — IN PROGRESS
+
+Goal: shrink `plugins/project-setup/skills/project-setup` from 97 reference files to 9 + `SKILL.md`. One unified layout (`apps/` always). Prose states purpose and points at code in `assets/`; it never repeats the code.
+
+| Step | What | Status |
+|---|---|---|
+| D1 | Old content parked as `references_old/`, `snippets_old/` | ✅ Done (Sid) |
+| D2 | Create the 9 empty reference files | ✅ Done |
+| D3 | Write references one by one, from projects Sid names. Sid picks which file and when. | ⏳ |
+| D4 | Decide `snippets_old/` → `assets/`; trim to what the new references cite | ⏳ |
+| D5 | Rewrite `SKILL.md` as a ≤120-line router; description ≤1024 chars | ⏳ last |
+| D6 | Delete `references_old/`, `snippets_old/`; tag last old commit `project-setup/v1` | ⏳ after D5 |
+
+Open: what `memory/` in the unified tree holds; whether ML projects keep a one-section variant.
