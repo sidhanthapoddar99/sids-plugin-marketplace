@@ -47,13 +47,15 @@ Register the marketplace, then install what you want:
 ```
 codex plugin marketplace add sidhanthapoddar99/sids-plugin-marketplace
 codex plugin add project-setup@sids-plugin-marketplace
+codex plugin add agent-ks@sids-plugin-marketplace
+codex plugin add uvenv@sids-plugin-marketplace
 ```
 
 Start a new thread after installing — that is when Codex picks up new skills.
 
-Only `project-setup` is exported to Codex today. The generator `scripts/codex-sync`
-emits local-path entries only, so the plugins sourced from other repos (`agent-ks`,
-`uvenv`) stay Claude Code only until the generator is extended.
+All three plugins are listed for Codex. `project-setup` lives in this repo and has its
+own `.codex-plugin/plugin.json`. `agent-ks` and `uvenv` live in their own repos, so
+their Codex entries point at those repos and carry the display name inline.
 
 Requires Codex CLI 0.147 or later. Check with `codex --version`.
 
@@ -143,14 +145,12 @@ For skill authoring, use the `skill-creator` skill that ships with Claude Code.
 
 ```
 .
-├── .claude-plugin/marketplace.json   # the marketplace manifest — Claude Code, source of truth
-├── .agents/plugins/marketplace.json  # the marketplace manifest — Codex (GENERATED)
+├── .claude-plugin/marketplace.json   # the marketplace manifest — Claude Code
+├── .agents/plugins/marketplace.json  # the marketplace manifest — Codex, kept in sync by hand
 ├── CLAUDE.md                         # agent guidance for working in this repo
 ├── Documentation/                    # ten-file reference: plugins, marketplaces, skills across four hosts
 ├── plugins/
 │   └── project-setup/                # personal project / monorepo conventions
-├── scripts/
-│   └── codex-sync                    # generates the Codex layer from the Claude layer
 └── LICENSE                           # MIT
 ```
 

@@ -15,7 +15,7 @@ Each row gives one file and the question that sends you to it.
 | [05_hermes.md](05_hermes.md) | You write a Hermes skill, use the Skills Hub, or migrate skills from Claude Code. |
 | [06_opencode.md](06_opencode.md) | You extend OpenCode, which has code-module plugins and no marketplace. |
 | [07_skills-portable.md](07_skills-portable.md) | You want one skill folder that runs unchanged on all four hosts. |
-| [08_this-marketplace.md](08_this-marketplace.md) | You work in this repository: layout, `scripts/codex-sync`, adding a plugin, releasing a version. |
+| [08_this-marketplace.md](08_this-marketplace.md) | You work in this repository: layout, the two host layers, adding a plugin, releasing a version. |
 | [09_comparison.md](09_comparison.md) | You need the host-by-host table: manifests, install commands, scopes, trust. |
 
 ## Reading order

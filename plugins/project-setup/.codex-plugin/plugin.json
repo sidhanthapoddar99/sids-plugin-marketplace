@@ -12,7 +12,14 @@
     "shortDescription": "Architectural conventions for any repo",
     "longDescription": "Architectural decision-maker for repos, new and existing — repo layout, service boundaries, per-app stack and database choice, docker / compose, env and secrets, frontend structure, deployment. Ships 1 skill with three modes reached from plain language: init, audit, suggest. Composes with the sibling agent-ks and uvenv plugins.",
     "developerName": "Sid",
-    "category": "Developer Tools"
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Audit this repo's structure against project-setup."
+    ]
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "keywords": [

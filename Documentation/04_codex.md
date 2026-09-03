@@ -196,8 +196,6 @@ There is **no category enum in the Codex source**. The validator checks only tha
 
 These ten values appear in the official `openai/plugins` marketplace, so they are the safe set: `Business & Operations`, `Communication`, `Creativity`, `Data & Analytics`, `Developer Tools`, `Education & Research`, `Finance`, `Productivity`, `Scientific Research`, `Security`.
 
-The values `Other` and `Travel` appear in this repo's `scripts/codex-sync` comment. They appear in no OpenAI source. Treat both as **not verified**.
-
 ### A complete marketplace file
 
 This file lists one local plugin and passes on Codex 0.149.1.
@@ -322,7 +320,7 @@ Plugin hook commands receive `PLUGIN_ROOT` and `PLUGIN_DATA`. Codex also sets `C
 
 ## 11. This repo
 
-This marketplace generates its whole Codex layer from the Claude layer with `./scripts/codex-sync`. Read [08_this-marketplace.md](08_this-marketplace.md) for the generator, the overlay table and the drift check. For a side-by-side of Codex against the other hosts, read [09_comparison.md](09_comparison.md).
+This marketplace keeps its Codex layer in sync with the Claude layer by hand. Read [08_this-marketplace.md](08_this-marketplace.md) for the field mapping and the sync checklist. For a side-by-side of Codex against the other hosts, read [09_comparison.md](09_comparison.md).
 
 ## Sources
 

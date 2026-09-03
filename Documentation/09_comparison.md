@@ -74,7 +74,7 @@ A source tells the host where to fetch a plugin. Claude Code supports the widest
 | Shell command | Yes, `command`, from v2.1.229 | No | No | No |
 | Plain URL to `SKILL.md` | No | No | Yes, skills only | No |
 
-Codex resolves `url`, `git-subdir` and `npm` sources today. The claim in this repo's `CLAUDE.md` that Codex accepts only `local` sources is out of date for `codex-cli` 0.149.1. The repo generator `scripts/codex-sync` still enforces local-only. See [04_codex.md](04_codex.md) and [08_this-marketplace.md](08_this-marketplace.md).
+Codex resolves `url`, `git-subdir` and `npm` sources today, verified on `codex-cli` 0.149.1. This repo maps a Claude `git-subdir` source to a Codex `url` source by hand. See [04_codex.md](04_codex.md) and [08_this-marketplace.md](08_this-marketplace.md).
 
 ## 5. What a plugin may contain
 
