@@ -27,6 +27,23 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Developer Tools"
+    },
+    {
+      "name": "agent-ks",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/sidhanthapoddar99/agent-knowledge-system.git",
+        "path": "plugins/agent-ks"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Knowledge Management",
+      "interface": {
+        "displayName": "Agent KS",
+        "shortDescription": "Docs, blog and issue-tracker skills for agent-knowledge-system projects"
+      }
     }
   ]
 }
