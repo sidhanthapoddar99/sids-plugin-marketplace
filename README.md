@@ -1,14 +1,14 @@
 # sids-plugin-marketplace
 
-A community-friendly Claude Code plugin marketplace, maintained by Sid.
+A community-friendly plugin marketplace, maintained by Sid. It ships to Claude Code and Codex CLI.
 
 ## Purpose
 
-A marketplace is a catalogue of plugins that Claude Code users can install with one command. **This** marketplace serves three purposes:
+A marketplace is a catalogue of plugins that users can install with one command. **This** marketplace serves three purposes:
 
-1. **Distribute Sid's in-house plugins** — `ai-toolkit-dev` (a toolkit for authoring plugins, marketplaces, and skills) and `project-setup` (personal project / monorepo conventions). Both are kept in this repo under `plugins/`.
+1. **Distribute Sid's in-house plugins** — `project-setup` (personal project / monorepo conventions) is kept in this repo under `plugins/`. `agent-ks` and `uvenv` are listed here and live in their own repos.
 2. **Curate community plugins** — once submissions land, third-party plugins are listed alongside the in-house ones. Users get a single `add` command for everything in the catalogue.
-3. **Carry a substantive reference doc set** — `Documentation/ClaudePlugin/` and `Documentation/ClaudeSettings/` are open-source references for the Claude Code plugin ecosystem, fact-checked against the official Anthropic docs and the upstream `anthropics/claude-plugins-official` repo. Useful to anyone authoring plugins, not just consumers of this marketplace.
+3. **Carry a short reference doc set** — `Documentation/` is a ten-file reference on how plugins, marketplaces and skills work across Claude Code, Codex, Hermes and OpenCode. Written in simple technical English for humans and AI agents alike.
 
 ---
 
@@ -27,8 +27,9 @@ Inside a Claude Code session, register the marketplace once:
 Then install whichever plugins you want:
 
 ```
-/plugin install ai-toolkit-dev@sids-plugin-marketplace
 /plugin install project-setup@sids-plugin-marketplace
+/plugin install agent-ks@sids-plugin-marketplace
+/plugin install uvenv@sids-plugin-marketplace
 ```
 
 The `@sids-plugin-marketplace` suffix is optional if no other registered marketplace ships a plugin of the same name.
@@ -46,14 +47,13 @@ Register the marketplace, then install what you want:
 ```
 codex plugin marketplace add sidhanthapoddar99/sids-plugin-marketplace
 codex plugin add project-setup@sids-plugin-marketplace
-codex plugin add ai-toolkit-dev@sids-plugin-marketplace
 ```
 
 Start a new thread after installing — that is when Codex picks up new skills.
 
-Only `ai-toolkit-dev` and `project-setup` are available on Codex. Codex marketplace
-entries accept local paths only, so the plugins sourced from other repos
-(`agent-ks`, `uvenv`) cannot be listed here; they stay Claude Code only.
+Only `project-setup` is exported to Codex today. The generator `scripts/codex-sync`
+emits local-path entries only, so the plugins sourced from other repos (`agent-ks`,
+`uvenv`) stay Claude Code only until the generator is extended.
 
 Requires Codex CLI 0.147 or later. Check with `codex --version`.
 
@@ -63,10 +63,9 @@ Requires Codex CLI 0.147 or later. Check with `codex --version`.
 
 | Plugin | Description | Status |
 |---|---|---|
-| [`ai-toolkit-dev`](plugins/ai-toolkit-dev) | Toolkit for authoring Claude Code plugins, marketplaces, and skills | Work in progress |
 | [`project-setup`](plugins/project-setup) | Architectural decision-maker for repos — new and existing. Layout, env/config split, docker, design tokens, ML orchestration, mobile/desktop. Bootstrap AND restructure. | Work in progress |
 | `uvenv` ([repo](https://github.com/sidhanthapoddar99/uvenv)) | Operating manual for `uvenv` — bash/zsh wrapper around mise + uv that gives conda-style named global Python venvs you can activate from anywhere | Released (v0.3.0) |
-| `agent-ks` ([repo](https://github.com/sidhanthapoddar99/agent-knowledge-system)) | Operating manual for the agent-knowledge-system framework — 3 skills (docs / issues / artifacts), the `agent-ks` CLI dispatcher, 3 scaffolding slash commands. Formerly `documentation-guide` | Released (v0.6.0) |
+| `agent-ks` ([repo](https://github.com/sidhanthapoddar99/agent-knowledge-system)) | Operating manual for the agent-knowledge-system framework — docs, issues, artifacts skills, the `agent-ks` CLI dispatcher, scaffolding commands. Formerly `documentation-guide` | Released (v0.6.0) |
 
 ---
 
@@ -106,7 +105,7 @@ That's it. The marketplace itself only carries the index — your plugin lives i
 
 ### Other source forms
 
-The `github` form above is the most common. The `source` field also accepts `url` (any git repo, GitLab/Bitbucket/etc.), `git-subdir` (plugin in a monorepo subdirectory), `npm` (plugin published as an npm package), or a relative path string. See the source-types reference: [`Documentation/ClaudePlugin/04_marketplaces/02_source-types.md`](Documentation/ClaudePlugin/04_marketplaces/02_source-types.md).
+The `github` form above is the most common. The `source` field also accepts `url` (any git repo, GitLab/Bitbucket/etc.), `git-subdir` (plugin in a monorepo subdirectory), `npm` (plugin published as an npm package), or a relative path string. See [`Documentation/03_claude-code-marketplaces.md`](Documentation/03_claude-code-marketplaces.md).
 
 ### Submission review
 
@@ -122,47 +121,21 @@ On approval, your PR is merged and the marketplace ref is bumped — users will 
 
 ## Documentation
 
-This repo carries a substantial reference set on the Claude Code plugin ecosystem, useful whether you're authoring a plugin or operating a marketplace.
+`Documentation/` is ten files. Start at [`00_index.md`](Documentation/00_index.md).
 
-### `Documentation/ClaudePlugin/` — 16 chapters covering the plugin layer
-
-| Chapter | Topic |
+| File | Read this when |
 |---|---|
-| [`01_overview`](Documentation/ClaudePlugin/01_overview.md) | The three layers — model, runtime, packaging |
-| [`02_mental-model/`](Documentation/ClaudePlugin/02_mental-model/) | What the model sees vs. what the runtime sees, naming and namespacing |
-| [`03_storage-and-scope/`](Documentation/ClaudePlugin/03_storage-and-scope/) | Cache layout, data dir, scope union (`Managed > Local > Project > User`), env vars |
-| [`04_marketplaces/`](Documentation/ClaudePlugin/04_marketplaces/) | `marketplace.json` anatomy, source types, ref/sha pinning, release channels, cross-marketplace deps |
-| [`05_plugin-anatomy/`](Documentation/ClaudePlugin/05_plugin-anatomy/) | Directory layout, manifest fields, `userConfig`, plugin-shipped settings |
-| [`06_capabilities/`](Documentation/ClaudePlugin/06_capabilities/) | Every capability surface — skills, slash commands, subagents, hooks, MCP, LSP, monitors, channels, themes, output styles, bin wrappers |
-| [`07_lifecycle-and-runtime/`](Documentation/ClaudePlugin/07_lifecycle-and-runtime/) | Install flow, activation, hot-swap matrix, updates, garbage collection, validation |
-| [`08_composition-patterns/`](Documentation/ClaudePlugin/08_composition-patterns/) | Hand-author / depend / soft-fork decision matrix |
-| [`09_versioning-and-publishing/`](Documentation/ClaudePlugin/09_versioning-and-publishing/) | SemVer, the `<plugin>--v<X.Y.Z>` tag convention, version resolution, release loop |
-| [`10_trust-and-security`](Documentation/ClaudePlugin/10_trust-and-security.md) | Unsandboxed model, path-traversal limit, managed allowlist |
-| [`11_testing-and-iteration/`](Documentation/ClaudePlugin/11_testing-and-iteration/) | `--plugin-dir`, headless mode, benchmarking, the clean-install loop |
-| [`12_cli-and-ui/`](Documentation/ClaudePlugin/12_cli-and-ui/) | The `claude plugin` CLI, built-in slash commands, `/plugin` UI |
-| [`13_uninstall-and-cleanup`](Documentation/ClaudePlugin/13_uninstall-and-cleanup.md) | Uninstall mechanics, cache wipe, `--keep-data`, `--prune` |
-| [`14_distribution/`](Documentation/ClaudePlugin/14_distribution/) | Official marketplace submission, `/plugin-hints`, auto-update controls |
-| [`15_reference/`](Documentation/ClaudePlugin/15_reference/) | Env-vars cheatsheet, settings keys, frontmatter flags, legacy/migration |
-| [`16_examples/`](Documentation/ClaudePlugin/16_examples/) | Worked plugins and marketplaces — minimal, dogfood, catalogue, soft-fork |
+| [`01_concepts`](Documentation/01_concepts.md) | You want the platform-neutral definitions of skill, plugin and marketplace |
+| [`02_claude-code-plugins`](Documentation/02_claude-code-plugins.md) | You write, install or debug a Claude Code plugin |
+| [`03_claude-code-marketplaces`](Documentation/03_claude-code-marketplaces.md) | You run a Claude Code marketplace or pin a source |
+| [`04_codex`](Documentation/04_codex.md) | You ship a plugin or marketplace to Codex CLI |
+| [`05_hermes`](Documentation/05_hermes.md) | You write or share a skill for Hermes Agent |
+| [`06_opencode`](Documentation/06_opencode.md) | You write a plugin or skill for OpenCode |
+| [`07_skills-portable`](Documentation/07_skills-portable.md) | You want one skill that works on every host |
+| [`08_this-marketplace`](Documentation/08_this-marketplace.md) | You add a plugin to this repo or cut a release |
+| [`09_comparison`](Documentation/09_comparison.md) | You need the side-by-side tables |
 
-### `Documentation/ClaudeSettings/` — companion: the settings-side boundary
-
-Plugins can ship many things, but **not** the user's main `statusLine`, `permissions`, `keybindings`, or the `enabledPlugins` boolean itself. This small companion doc set covers the settings-side surface — six files documenting where plugin-related settings live (`enabledPlugins`, `extraKnownMarketplaces`, `strictKnownMarketplaces`, `pluginConfigs`), the four scopes (Managed / User / Project / Local), and the keys plugins cannot ship as defaults.
-
-[`Documentation/ClaudeSettings/`](Documentation/ClaudeSettings/) →
-
-### When to read what
-
-| Situation | Start here |
-|---|---|
-| First time encountering Claude Code plugins | [`01_overview`](Documentation/ClaudePlugin/01_overview.md) → [`02_mental-model/`](Documentation/ClaudePlugin/02_mental-model/) |
-| Authoring your first plugin | [`05_plugin-anatomy/`](Documentation/ClaudePlugin/05_plugin-anatomy/) → [`06_capabilities/`](Documentation/ClaudePlugin/06_capabilities/) → [`16_examples/01_minimal-plugin`](Documentation/ClaudePlugin/16_examples/01_minimal-plugin.md) |
-| Setting up a marketplace | [`04_marketplaces/`](Documentation/ClaudePlugin/04_marketplaces/) → [`16_examples/02_dogfood-marketplace`](Documentation/ClaudePlugin/16_examples/02_dogfood-marketplace.md) |
-| Cutting a release | [`09_versioning-and-publishing/`](Documentation/ClaudePlugin/09_versioning-and-publishing/) |
-| Debugging a plugin that won't load | [`12_cli-and-ui/`](Documentation/ClaudePlugin/12_cli-and-ui/) → [`07_lifecycle-and-runtime/06_schema-validation`](Documentation/ClaudePlugin/07_lifecycle-and-runtime/06_schema-validation.md) |
-| Org-restricted environment | [`Documentation/ClaudeSettings/05_plugin-related-settings`](Documentation/ClaudeSettings/05_plugin-related-settings.md) |
-
-For task-oriented authoring (the *how-to* rather than the *what exists*), the `ai-toolkit-dev` plugin is the companion — install it from this marketplace.
+For skill authoring, use the `skill-creator` skill that ships with Claude Code.
 
 ---
 
@@ -173,15 +146,11 @@ For task-oriented authoring (the *how-to* rather than the *what exists*), the `a
 ├── .claude-plugin/marketplace.json   # the marketplace manifest — Claude Code, source of truth
 ├── .agents/plugins/marketplace.json  # the marketplace manifest — Codex (GENERATED)
 ├── CLAUDE.md                         # agent guidance for working in this repo
-├── Documentation/
-│   ├── ClaudePlugin/                 # 16-chapter reference on the plugin ecosystem
-│   └── ClaudeSettings/               # companion: settings.json keys at the user/project/managed boundary
+├── Documentation/                    # ten-file reference: plugins, marketplaces, skills across four hosts
 ├── plugins/
-│   ├── ai-toolkit-dev/               # plugin authoring toolkit
 │   └── project-setup/                # personal project / monorepo conventions
 ├── scripts/
-│   ├── codex-sync                    # generates the Codex layer from the Claude layer
-│   └── ai-toolkit-dev-check-upstream # soft-fork drift report
+│   └── codex-sync                    # generates the Codex layer from the Claude layer
 └── LICENSE                           # MIT
 ```
 
@@ -198,5 +167,3 @@ Issues and PRs welcome at <https://github.com/sidhanthapoddar99/sids-plugin-mark
 ## License
 
 MIT — see [`LICENSE`](LICENSE).
-
-Some content under `plugins/ai-toolkit-dev/skills/` is vendored from upstream [`anthropics/claude-plugins-official`](https://github.com/anthropics/claude-plugins-official) (Apache-2.0) with provenance recorded in `plugins/ai-toolkit-dev/.upstream/manifest.json`. Those upstream attributions stay intact.

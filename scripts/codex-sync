@@ -42,11 +42,6 @@ MARKETPLACE_DISPLAY_NAME = "Sid's Plugins"
 # Communication, Creativity, Data & Analytics, Developer Tools,
 # Education & Research, Finance, Other, Productivity, Security, Travel.
 OVERLAY = {
-    "ai-toolkit-dev": {
-        "displayName": "AI Toolkit Dev",
-        "shortDescription": "Author plugins, marketplaces, and skills",
-        "category": "Developer Tools",
-    },
     "project-setup": {
         "displayName": "Project Setup",
         "shortDescription": "Architectural conventions for any repo",

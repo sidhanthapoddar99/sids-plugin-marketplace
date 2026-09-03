@@ -11,25 +11,6 @@
   ],
   "plugins": [
     {
-      "name": "ai-toolkit-dev",
-      "source": "./plugins/ai-toolkit-dev",
-      "description": "Toolkit for authoring Claude Code plugins, marketplaces, and skills. Ships 3 skills covering the plugin manifest, marketplace schema, and skill creation. Work in progress.",
-      "category": "plugin-development",
-      "tags": [
-        "plugins",
-        "marketplace",
-        "skills",
-        "claude-code",
-        "authoring"
-      ],
-      "keywords": [
-        "plugin-dev",
-        "skill-creator",
-        "plugin-json",
-        "marketplace-json"
-      ]
-    },
-    {
       "name": "project-setup",
       "source": "./plugins/project-setup",
       "description": "Architectural decision-maker for repos, new and existing — repo layout, service boundaries, per-app stack and database choice, docker / compose, env and secrets, frontend structure, deployment. Ships 1 skill with three modes reached from plain language: init, audit, suggest. Composes with the sibling agent-ks and uvenv plugins.",

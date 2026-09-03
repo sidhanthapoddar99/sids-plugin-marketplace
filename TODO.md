@@ -1,10 +1,17 @@
 # TODO — Documentation rewrite + plugin additions
 
+> **2026-09-03 — superseded.** Sections A, A2, B and C below describe work that has been
+> removed. The `ai-toolkit-dev` plugin and `scripts/ai-toolkit-dev-check-upstream` were
+> deleted; Claude Code's built-in `skill-creator` covers skill authoring. The 90-file
+> `Documentation/ClaudePlugin/` and `Documentation/ClaudeSettings/` sets were replaced by a
+> ten-file `Documentation/` covering Claude Code, Codex, Hermes and OpenCode. Only section D
+> (project-setup rewrite) is still live. The old sections are kept as history.
+
 Two streams of work, agreed on after the audit-driven revision pass.
 
-- **Plugin documentation** (`Documentation/ClaudePlugin/`) — comprehensive "what exists / what's possible" reference. NOT a how-to guide. **DONE.**
-- **Settings documentation** (`Documentation/ClaudeSettings/`) — small (6 files) reference for Claude Code's user-settings surface. **DONE.**
-- **Plugin additions** (`plugins/ai-toolkit-dev/`) — minimal task-oriented additions that genuinely belong inside the plugin. **PENDING (B1–B6 below).**
+- **Plugin documentation** (`Documentation/ClaudePlugin/`) — comprehensive "what exists / what's possible" reference. NOT a how-to guide. **DONE, then replaced (see note above).**
+- **Settings documentation** (`Documentation/ClaudeSettings/`) — small (6 files) reference for Claude Code's user-settings surface. **DONE, then replaced.**
+- **Plugin additions** (`plugins/ai-toolkit-dev/`) — minimal task-oriented additions that genuinely belong inside the plugin. **DROPPED with the plugin.**
 
 ---
 
