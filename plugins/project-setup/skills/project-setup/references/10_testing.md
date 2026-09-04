@@ -99,7 +99,7 @@ Earned, not scaffolded: add the first check when the first drift appears or the 
 - A backend suite runs against real engines, not mocks of them. SQLite in tests only when the app ships on SQLite.
 - E2E runs against a built stack on a throwaway `DATA_DIR`, never against dev servers, never against `data/`.
 - `go test -race` always. Concurrency bugs are cheapest here.
-- Lint config lives per ecosystem, in the app (`ruff` in `pyproject.toml`, `.oxlintrc.json`, `rustfmt.toml`). Repo-wide tools (`knip.json`) at the root.
+- Lint config lives per ecosystem, in the app (`ruff` in `pyproject.toml`, `.oxlintrc.json`, `rustfmt.toml`), because an app lifted out must still lint. Repo-wide tools (`knip.json`) at the root. The template carries none of these; write them per project.
 - `lefthook.yml`: `ctl gate lint --staged` on commit, `ctl test` on push. A hook never calls a tool directly.
 - CI, when it exists, runs `ctl gate`. Nothing else. PR builds get no secrets.
 - Every round of substantive work gets an adversarial review before it is called done. It is part of static analysis and security, done by a second model with its own shell. Reading is the failure mode; the reviewer runs the code.
@@ -115,14 +115,6 @@ Earned, not scaffolded: add the first check when the first drift appears or the 
 
 ## Verbs
 
-| Verb | Runs |
-|---|---|
-| `ctl gate [-q]` | the ladder |
-| `ctl gate <rung>` | one rung |
-| `ctl gate fuzz \| perf \| clones` | by name |
-| `ctl test [app\|e2e]` | the test worker directly |
-| `ctl gate lint [app] [--staged]` | the lint worker directly |
-| `ctl check` | the conformance worker directly |
-| `ctl build save` | a frozen build for a manual or exploratory pass; see `08_ctl.md` |
+The verbs are listed once, in `08_ctl.md` § Verbs. The ones this page uses: `ctl gate [-q]`, `ctl gate <rung>`, `ctl gate fuzz | perf | clones`, `ctl test [app|e2e]`, `ctl check`, `ctl build save`.
 
 Template: `template/scripts/gate/` (`all.sh` = the ladder, one file per rung, `_gate.sh` = the rung contract and `--quiet`, `_lock.sh` = one heavy run at a time under a memory lid), `template/scripts/test/`, `template/lefthook.yml`.

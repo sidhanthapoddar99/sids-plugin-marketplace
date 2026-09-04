@@ -48,11 +48,11 @@ Code is placed by the scope that needs it, and a scope depends only inward. Same
 
 - **A scope imports only from scopes above it.** A feature imports app primitives and packages. An app primitive never imports a feature. A router calls a service; a service never imports a router.
 - **Features do not import each other's internals.** Frontend: through `index.ts`, or share through the app scope or a package. Backend: a domain calls another domain's `service`, never its `repository`. If two are always changed together, they are one.
-- **Each layer has one job.** Router: parse, authorise, call, serialise. Service: the rule, and the domain's only public surface. Repository: the query, given a connection. A page: compose features. A component: render props. No HTTP in a service, no SQL in a router, no `fetch` in a component.
-- **Cross the boundary with types, not internals.** A feature exposes `index.ts`; a service exposes functions over domain objects; a backend exposes schemas that `@scope/types` is generated from. Never import a DTO across domains to reuse a shape; duplicate it.
-- **Promote when shared, never before.** A thing moves up one scope when its second consumer appears. The same rule sizes a backend: flat `app/` until the second domain, domain slices until a layer is reused by a second binary, crates after that.
-- **State lives at the narrowest scope that needs it.** Component state in the component, feature state in the feature, app state only for what every feature reads (session, theme).
-- **Providers of one kind are adapters.** `modules/<provider>/` behind one `base` contract, one output shape, engine code that never names a provider.
+- **Each layer has one job.** Backend layers: `06_backend.md` § Domain slices. Frontend: a page composes features and a component renders props. No HTTP in a service, no SQL in a router, no `fetch` in a component, because a layer with two jobs cannot be tested alone.
+- **Cross the boundary with types, not internals.** A feature exposes `index.ts`; a service exposes functions over domain objects; a backend exposes schemas that `@scope/types` is generated from. Never import a DTO across domains to reuse a shape; duplicate it, because a shared DTO couples two domains' releases and a field change in one breaks the other.
+- **Promote when shared, never before.** A thing moves up one scope when its second consumer appears, because a premature package is a second manifest to keep green for nothing. The same rule sizes a backend: flat `app/` until the second domain; domain slices until a layer is reused by a second binary; a cargo workspace of crates after that, which applies to Rust only.
+- **State lives at the narrowest scope that needs it.** Component state in the component, feature state in the feature, app state only for what every feature reads (session, theme). Wider state re-renders more than it needs to.
+- **Providers of one kind are adapters.** `06_backend.md` § Domain slices holds the rule and its reason.
 
 These rules are the input to a conformance check. When one is broken a second time, write the check; see "Conformance" in `10_testing.md`.
 
@@ -60,10 +60,10 @@ These rules are the input to a conformance check. When one is broken a second ti
 
 | Rule | Number | Detail |
 |---|---|---|
-| File | 300 lines soft, 500 hard | Source, tests, components. Not generated code, vendored code, lock files or data fixtures. Relaxed only with a comment at the top saying why, and a ledger row in the conformance test. |
-| Function | 40 lines | Split by responsibility. |
-| Component | 150 lines; page 50 | `05_frontend.md`. |
-| Feature folder | ~10 files | Subdivide inside the folder, by the axis that carries the real seam. |
+| File | 300 lines soft, 500 hard | Source, tests, components. Not generated code, vendored code, lock files or data fixtures. Past 300 a file holds two things; past 500 nobody reads it whole. Relaxed only with a comment at the top saying why, and a ledger row in the conformance test. |
+| Function | 40 lines | Split by responsibility, because a longer one carries a second responsibility. |
+| Component | 150 lines; page 50 | A page is a route, so it composes; a component past 150 lines holds a second component. This row is the home; `05_frontend.md` points here. |
+| Feature folder | ~10 files | Subdivide inside the folder, along the axis the files change on together. Ten files is where a listing stops fitting on one screen. |
 | Domains per backend | ~8–10 flat | Or when the domain model settles, whichever first. Below that a domain layer is ceremony. |
 | Logic | rule of three | One use inline; two, duplicate (they may diverge); three, extract and name it for what it means. Extract on first use when the pattern is non-obvious, dangerous (crypto, untrusted input), or owned by another layer. Framework boilerplate is not duplication. |
 | Styling | rule of two | The same utility combination twice → a primitive variant. |
@@ -72,9 +72,12 @@ No catch-all folders: `helpers/`, `utils/`, `common/`, a global `types.ts`. `aut
 
 ## Naming
 
-- App folders take the role, not the stack: `api/`, `engine/`, `dashboard/`, `cli/`. Suffix when two share a role: `api-admin/`, `api-platform/`.
+This section is the home of every folder name; `01_layout.md` points here. A name says what a thing is for, never what it is built with, because the stack changes and the role does not.
+
+- App folders take the role, not the stack: `api/`, `engine/`, `dashboard/`, `cli/`. Suffix when two share a role: `api-admin/`, `api-platform/`. The template's `example-api-python` names label the examples; a real repo renames them at bootstrap.
+- The static-frontend group takes a name that says it is a group: `multi-web-app/`. Its children take the surface: `app/`, `landing/`, `docs/`, `admin/`.
 - Domains are nouns of ownership, never activities or nav labels (`06_backend.md`).
-- Package folders take what they export: `ui/`, `types/`, `tsconfig/`.
+- Package folders take what they export: `ui/`, `types/`, `tsconfig/`; later `services/`, `hooks/` (`05_frontend.md`).
 - Scripts take the verb: `scripts/db/migrate.sh` is `ctl migrate`.
 - Compose files: `compose.<role>.yaml`; modifiers `compose.m.<name>.yaml`. Never a bare `compose.yaml`.
 - Env keys: `<SERVICE>_<THING>`: `POSTGRES_HOST`, `WEB_APP_PREFIX`, `ENGINE_URL`.
@@ -123,7 +126,7 @@ Each of these means a rule was broken somewhere else. Find that place.
 
 ## Audit order
 
-When asked to audit a repo, check in this order and stop at the first failing layer. A broken lower layer makes the upper ones meaningless.
+Check the layers in this order and report every one of them, lowest first, because a broken lower layer often explains an upper finding and the reader fixes in this order. The audit workflow itself, `ctl check` first and the report shape, is in `SKILL.md` § Auditing.
 
 1. Layout: the tree, root hygiene, residue (`01_layout.md`)
 2. Env: the five files, secrets, precedence (`02_env.md`)
@@ -134,5 +137,3 @@ When asked to audit a repo, check in this order and stop at the first failing la
 7. Production settings (`09_production.md`)
 8. Testing: placement and the gate (`10_testing.md`)
 9. This file.
-
-Report findings as a table: file, rule broken, fix. `ctl check` covers the mechanical part; run it first. A recorded choice or a recorded deferral is not a finding.

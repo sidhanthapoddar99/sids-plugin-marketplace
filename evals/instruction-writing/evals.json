@@ -6,8 +6,8 @@
       "prompt": "Audit the project CLAUDE.md at evals/files/claude-md-audit/CLAUDE.md. Tell me what is wrong with it and rewrite it. The repo is a small FastAPI service with a Vite frontend; the commit rules already live in docs/commits.md in that folder. Write the rewritten file to CLAUDE.md in the output folder and a short findings list to findings.md.",
       "expected_output": "A findings list that names the pasted commit block, the history asides, the bare rules without reasons, the ALL-CAPS lines, and the missing stopping rule. A rewritten CLAUDE.md that points at docs/commits.md, drops the history, gives each rule a reason, keeps one marked hard limit, and states what the agent decides alone versus asks.",
       "files": [
-        "evals/files/claude-md-audit/CLAUDE.md",
-        "evals/files/claude-md-audit/docs/commits.md"
+        "evals/instruction-writing/files/claude-md-audit/CLAUDE.md",
+        "evals/instruction-writing/files/claude-md-audit/docs/commits.md"
       ],
       "expectations": [
         "findings.md names the pasted commit-message block and says it should be a pointer to docs/commits.md",

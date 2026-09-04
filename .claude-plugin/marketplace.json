@@ -13,7 +13,7 @@
     {
       "name": "project-setup",
       "source": "./plugins/project-setup",
-      "description": "Architectural decision-maker for repos, new and existing — repo layout, service boundaries, per-app stack and database choice, docker / compose, env and secrets, frontend structure, deployment. Ships 1 skill with three modes reached from plain language: init, audit, suggest. Composes with the sibling agent-ks and uvenv plugins.",
+      "description": "Architectural decision-maker for repos, new and existing: repo layout, service boundaries, per-app stack and database choice, docker / compose, env and secrets, frontend structure, production settings. Ships 1 skill with three modes reached from plain language: bootstrap a repo, audit a repo, answer a single \"where does this go\" question mid-task. Composes with the sibling agent-ks and uvenv plugins.",
       "license": "PolyForm-Noncommercial-1.0.0",
       "category": "project-architecture",
       "tags": [

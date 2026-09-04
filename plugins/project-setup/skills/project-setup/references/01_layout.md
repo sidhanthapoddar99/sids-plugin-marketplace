@@ -79,7 +79,7 @@ The root holds config, the brief, and folders. Never loose code. Before creating
 | `lefthook.yml` | Git hooks | Every hook calls `ctl` (`ctl gate lint --staged`, `ctl test`), never a tool directly. |
 | `README.md` / `LICENSE` | | |
 
-> No workspace. `package.json`, `bun.lock`, `pnpm-workspace.yaml` never live in the root, in `apps/`, or directly in the frontend group folder. Each app and each package owns its own manifest and lock. `ctl check` fails on it.
+> No workspace. `package.json`, `bun.lock`, `pnpm-workspace.yaml` never live in the root, in `apps/`, or directly in a group folder (the static-frontend group, `apps/packages/`). Each app and each package owns its own manifest and lock, because a workspace hoists dependencies and then no app can be lifted out or built alone. `ctl check` fails on it. This page is the home of the rule; the tripwire in `11_conventions.md` and the check in `08_ctl.md` point here.
 
 ### Inside `apps/`
 
@@ -115,13 +115,7 @@ Root `.gitignore`: curated for the ecosystems present, not a kitchen-sink templa
 | Ecosystem artifacts | Only for ecosystems present: `__pycache__/`, `.venv/`, `node_modules/`, `dist/`, `target/`, tool caches. |
 | Logs and OS junk | `*.log`, `.DS_Store`. |
 
-```gitignore
-# data/.gitignore and logs/.gitignore — the whole file
-**
-!.gitignore
-```
-
-The rule travels with the folder. No `.gitkeep`, no root negation pattern. `ctl setup` creates `data/<engine>` per engine and `logs/{dev,run,backups,test_build}`. The same two lines work for any other state folder.
+`data/.gitignore` and `logs/.gitignore` are two lines each: ignore everything, keep the ignore file. `template/data/.gitignore` is the file. The rule travels with the folder, so no `.gitkeep` and no root negation pattern, because a root pattern breaks the moment the folder moves. `ctl setup` creates `data/<engine>` per engine and `logs/{dev,run,backups,test_build}`. The same two lines work for any other state folder.
 
 Not blanket-ignored: `.vscode/` and `.claude/`. Commit the files that carry project config (launch configs, project settings). Ignore the personal ones (`settings.local.json`).
 
@@ -133,13 +127,11 @@ Not blanket-ignored: `.vscode/` and `.claude/`. Commit the files that carry proj
 
 ## Naming
 
-- App folders take the role name, not the stack name. `api/`, `engine/`, `dashboard/`, `cli/`, with an optional suffix: `api-admin/`, `api-platform/`.
-- The frontend group takes a name that says it is a group: `multi-web-app/`. Its children take the surface: `app/`, `landing/`, `docs/`, `admin/`.
-- Package folders take the thing they export. `ui/` (theme and components together), `types/`, `tsconfig/`; later `services/`, `hooks/` (`05_frontend.md`).
+Folder names follow `11_conventions.md` § Naming: an app takes its role, a group says it is a group (`multi-web-app/`), its children take the surface (`app/`, `landing/`, `docs/`), a package takes what it exports.
 
 ## Exceptions
 
-- The tree above yields when a host program demands its own structure. The host's contract wins; do not wrap it in `apps/`.
+- The tree above yields when a host program demands its own structure. The host's contract wins; do not wrap it in `apps/`, because the host will not find it there.
 - Examples: VS Code extension, browser extension, host-app plugin (Jellyfin, Obsidian), plugin marketplace (Claude Code, Codex).
-- Keep `ctl`, `scripts/`, `.mise.toml` only when the host allows them and they earn their place. Record the exception in `AGENTS.md`.
-- A pure open-source package repo, where the repo *is* the published artifact and contributors expect the ecosystem's root manifest (`package.json`, `pyproject.toml` at the root), may take that shape as a recorded choice. `ctl check` reads the choice from `AGENTS.md` (`Exceptions: root-manifest`) and skips the no-workspace rule for it.
+- Keep `ctl`, `scripts/`, `.mise.toml` only when the host allows them and they earn their place. Record the exception under `## Exceptions to the standard layout` in `AGENTS.md`, because an unrecorded exception reads as drift at the next audit.
+- A pure open-source package repo, where the repo *is* the published artifact and contributors expect the ecosystem's root manifest (`package.json`, `pyproject.toml` at the root), may take that shape as a recorded choice. Write the word `root-manifest` under `## Exceptions to the standard layout` in `AGENTS.md`. `ctl check` reads it there and skips the root half of the no-workspace rule; `apps/` and the group folders keep it.

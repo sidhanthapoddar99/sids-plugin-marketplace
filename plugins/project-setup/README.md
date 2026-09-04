@@ -1,87 +1,37 @@
 # project-setup
 
-Opinionated project bootstrapping plugin. Encodes one coherent set of conventions for laying out, configuring, and running projects — so Claude follows them automatically when initialising or working in a repo, rather than inventing fresh patterns each time. Structural decisions are organised in a four-level altitude model (ecosystem → repo → app → feature), with named variants, checkable tripwires, and every chosen variant recorded in the project's CLAUDE.md.
+One skill: how a repo is shaped. It answers a bootstrap ("set up this project"), an audit ("does this repo follow the rules"), and a single question mid-task ("where does this go"). The same rules serve all three, so the answer does not depend on which one you asked.
 
-> [!warning]
-> **Work in progress.** The skill, command, and references library are landing in successive passes. Treat this as the spec, not a finished release.
+The skill is opinionated on purpose. One repo tree, one entrypoint (`ctl`), one origin, one file per kind of value. A convention that is written once and checked by a script beats a fresh decision on every task, because an agent reads the file cold and the check does not.
 
-## Purpose
+## Contents
 
-This plugin owns the **structural and architectural side** of every repo decision. Not just "scaffold a new project" — equally **"should I add this here", "where does this belong", "split this into a package", "move compose into a folder", "add a second backend", "pick a database"**, and everything else in that surface area.
+| Path | What it is |
+|---|---|
+| `skills/project-setup/SKILL.md` | The workflow for each mode, the page table, and the pointers into the template |
+| `skills/project-setup/references/01_layout.md` to `11_conventions.md` | Eleven pages. Each owns one question: layout, env, routing, stack, frontend, backend, security, `ctl`, production, testing, conventions and audit order |
+| `skills/project-setup/template/` | A complete instance of the tree. `ctl`, `scripts/`, `docker/`, the env templates, `AGENTS.md` and the conformance test are real and run. The app folders are shape only |
+| `../../evals/project-setup/` | The test prompts and fixtures used to check the skill with skill-creator. Kept outside the plugin so installs do not carry them |
 
-There is **no single ideal structure** — what's "right" depends on whether the project is mono- or poly-repo, has one or many backends, one or many frontends, ships ML or app code, what's getting deployed where, and a dozen other shape questions. So this plugin is not a template generator. It's:
+## What the template gives you
 
-1. A **knowledge base** of recognised project layouts and the conventions that apply to each.
-2. A **question-asker** that interrogates the user (or the existing repo) before recommending anything.
-3. A **decision engine** for individual architectural questions when the user is mid-work: surfaces the convention, explains the trade-off, proposes a concrete action.
-4. A **layout proposer** that, when invoked for a full bootstrap, produces a concrete tree and the snippets to wire it up.
+- `ctl`: one entrypoint. `ctl setup`, `ctl check`, `ctl dev`, `ctl up +modifier`, `ctl migrate`, `ctl test`, `ctl gate`. Run `template/ctl --help` for the list.
+- `ctl check`: the conformance floor. It runs every rule, prints every failure, and exits 0 only when all of them passed. It is also a rung of `ctl gate`.
+- Three root env files with committed templates: `.env.secrets`, `.env.data`, `.env.proxy`. A backend reads them through `config.yaml` with `${VAR}`. A frontend has no env file.
+- `docker/compose.base.yaml` with no ports, plus modifiers that add exposure. Base is production.
+- `AGENTS.md`: the brief. Every chosen variant, exception and deferral is recorded there, and an audit compares the repo against it.
 
-The same machinery powers initialising a new project, auditing an existing one for convention drift, suggesting an ideal structure for a half-done repo, and answering "where should this go" questions during day-to-day work.
+## What stays out
 
-## What gets shipped
+Docs-site content is the `agent-ks` plugin. Training loops, remote GPUs and model serving are decided per project and recorded in `AGENTS.md`. Host proxies and TLS live outside the repo.
 
-- **One skill** — `project-setup` — the umbrella triage skill. It owns the question flow and the references library.
-- **Three wholesale modes**, reached from plain language — no slash command:
-  - **init** ("bootstrap this repo") — interactive setup for a new project
-  - **audit** ("audit this repo") — scan the current repo, report drift from conventions
-  - **suggest** ("propose a structure") — propose an ideal structure for the current repo given what's there
-- **References library** — `skills/project-setup/references/` — layouts, env/config rules, docker patterns, scripts, language flows, frontend, databases, modularity, the `.claude/` folder, design tokens, README contract.
-- **Snippets** — `skills/project-setup/snippets/` — focused fragments (tokens.css, alembic shim, vite proxy, compose overlays, the `ctl` dispatcher, `.mise.toml`) the skill cites and drops in. **Not** a full project template.
-
-## Layouts recognised
-
-| # | Name | When it fits |
-|---|---|---|
-| 01 | single app / service | One runnable app — a CLI, library, lone backend, or lone frontend. |
-| 02 | multi-app monorepo | Two or more apps in one repo, any mix of backends + frontends. Multi-backend coordination, multi-frontend `packages/` workspaces, and the microservices-mesh end are points on one spectrum — count is a parameter, not a separate layout. |
-| 03 | polyrepo with deploy aggregator | Each service in its own repo plus a `-deploy` repo aggregating env + compose. |
-| 04 | ML project | uvenv-driven global envs, `requirements.txt`, no frontend, no compose. |
-| 05 | infra orchestrator | Docker compose tree driven by a Go CLI. |
-| 06 | embeddable package + reference host | The deliverable is a published package (UI component / SDK / engine) an external host mounts; the repo's `apps/web` is a reference host, not the product. |
-
-## ML cloud orchestration
-
-For Layout 04 (ML projects), the skill also covers cloud GPU orchestration — **tool-agnostic**: thin `scripts/cloud/` wrappers over the cloud provider's own CLI, escalating to a small custom CLI only when the wrappers accumulate cross-run state. No third-party orchestrator layer.
-
-Subtopics:
-
-- Spot-friendly training with checkpoint recovery
-- Inference autoscaling + auto-redeploy on preemption
-- Remote dev via SSH + VS Code Remote, Claude Code on the box
-- Agent SSH access (running an agent against a remote GPU)
-- ML CI/CD tiers (cheap / medium / expensive)
-
-See `skills/project-setup/references/2-repo/07-ml-orchestration/`.
-
-## Key conventions encoded
-
-- **Root `.env`** carries shared / common vars only. **Per-service `config.yaml`** in each backend reads those via `${VAR}` interpolation. Frontend has its **own** env scope (`VITE_*` / `NEXT_PUBLIC_*`) so backend secrets don't leak to clients.
-- **Compose lives in `docker/`, profile-less, on two axes**: an optional standalone **config** (`compose.<name>.yaml` that *replaces* base — `data`, `prod`; at most one per run) plus stackable **`.m.` modifiers** (`compose.m.<name>.yaml`, applied as `--modifier expose,traefik`; expose is tiered `expose` / `expose_data` / `expose_all`). Base declares the whole stack: no profiles, port-less, bind-mounts only.
-- **One control dispatcher at repo root** — `ctl` — is the single entrypoint: `ctl dev` (local host loop, hot reload, auto-starts the data core) / `ctl up [config] [--modifier "a,b"]` (containers; bare `ctl up` is interactive — pick → plan → confirm; production is `ctl up prod`, no separate verb) / `down`·`ps`·`logs` / `status`·`setup`·`migrate`. A thin router delegating to `docker compose`, a process runner, and `scripts/<category>/*.sh` — installed by copying the snippet toolkit verbatim, adapted by deletion (the conformance floor), callable bare via mise PATH.
-- **Root is an index, not a runtime** — no loose code at root; a root manifest (when required) is orchestration-only; in polyglot repos the JS workspace roots at the frontend group folder, not the repo root; `.gitignore` is curated per-ecosystem.
-- **Structure has numbers** — ~8–10 feature folders → a backend domain layer; ~10 files → a feature subdivides; 500/300 line caps; frontends keep a hard `src/` skeleton (`layout/ features/ pages/ api/ …`) with all server calls through `api/`. Every chosen variant + tripwire lands in the project CLAUDE.md's structure contract, and audits compare against those recorded choices.
-- **Clean root, ecosystem-typed code layout.** No loose code at root. Where code lives follows the stack — Python service → `app/`, frontend → `src/`, distributable package → `src/<pkg>/` — and nesting follows service count (one → top-level `./<name>/`, several → `apps/<name>/`).
-- **README documents three startup paths**: wrapper script, raw docker compose, no-docker host run.
-- **Modern Python for apps** (`pyproject.toml` + `uv.lock` + `uv sync`); **classic Python for ML** (`requirements.txt` + uvenv global env).
-- **Design tokens** in a single CSS file consumed by `var(--token)`. No hex, no raw px in component CSS. Light + dark via `[data-theme="dark"]` on `:root`. Light-only is allowed for marketing pages.
-- **mise** is mandatory; `.mise.toml` is the runtime version contract.
-- **Modularity caps**: 500-line hard, 300-line soft; folders by feature, not by kind; extract on third use.
-
-Full spec: distributed across [`skills/project-setup/references/`](skills/project-setup/references/).
-
-## Installation (when complete)
+## Install
 
 ```
-/plugin marketplace add sidhanthapoddar99/sids-plugin-marketplace
 /plugin install project-setup@sids-plugin-marketplace
+codex plugin add project-setup@sids-plugin-marketplace
 ```
-
-## Examples registry
-
-The skill never invents file paths — when it cites real-world evidence, it cites repos from `skills/project-setup/references/handoffs/examples-registry.md`, a per-installation registry the user populates with their own reference repos (with honest drift notes). The registry ships empty; each installation grows its own. Six anonymized annotated project trees live in `skills/project-setup/references/5-examples/`.
 
 ## License
 
-[PolyForm Noncommercial License 1.0.0](LICENSE). Any noncommercial use is a permitted purpose — personal projects, study, hobby work, education, public research, charitable / public-interest organisations. **Commercial use is not permitted.** For commercial-use licensing, contact `developer@neuralabs.org`.
-
-The full license text is in [`LICENSE`](LICENSE); canonical version at <https://polyformproject.org/licenses/noncommercial/1.0.0>.
+[PolyForm Noncommercial License 1.0.0](LICENSE). Any noncommercial use is permitted: personal projects, study, hobby work, education, public research, charitable and public-interest organisations. Commercial use is not permitted. For commercial-use licensing, contact `developer@neuralabs.org`.

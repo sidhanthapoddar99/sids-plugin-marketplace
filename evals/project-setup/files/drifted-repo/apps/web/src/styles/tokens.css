@@ -1,0 +1,83 @@
+/*
+ * <project> design tokens — the single source of raw variable VALUES.
+ *
+ * These are plain CSS custom properties. The Tailwind v4 `@theme` layer in
+ * globals.css MAPS them onto utility namespaces (--color-*, --radius-*,
+ * --width-*, …) so components reference utilities (bg-sidebar, w-sidebar,
+ * rounded-md) — never `var(--…)` directly. Two themes: light on :root, dark via
+ * [data-theme="dark"]. Only colors switch by theme; sizing is shadcn-standard.
+ *
+ */
+
+:root {
+  /* ─────────── Surfaces (grayscale) ─────────── */
+  --bg-1: #ffffff;
+  --bg-2: #fafafa;
+  --bg-3: #f0f0f0;
+
+  /* ─────────── Foreground (grayscale) ─────────── */
+  --fg-1: #0a0a0a;
+  --fg-2: #525252;
+  --fg-3: #a3a3a3;
+
+  /* ─────────── Borders ─────────── */
+  --border-1: #e5e5e5;
+  --border-2: #d4d4d4;
+
+  /* ─────────── Glass surfaces ─────────── */
+  --glass-1: rgba(255, 255, 255, 0.6);
+  --glass-2: rgba(255, 255, 255, 0.4);
+  --glass-3: rgba(255, 255, 255, 0.2);
+
+  /* ─────────── Sidebar (shadcn's sidebar palette, mapped onto our grayscale).
+     Declared with var() indirection so the dark surface/foreground overrides
+     below flow through automatically — no redeclare under [data-theme]. ─────── */
+  --sidebar: var(--bg-2);
+  --sidebar-foreground: var(--fg-1);
+  --sidebar-muted: var(--fg-3);
+  --sidebar-accent: var(--bg-3);
+  --sidebar-accent-foreground: var(--fg-1);
+  --sidebar-border: var(--border-1);
+  --sidebar-ring: var(--border-2);
+  --sidebar-primary: var(--fg-1);
+  --sidebar-primary-foreground: var(--bg-1);
+
+  /* ─────────── Radius base (shadcn) — sm/md/lg/xl derived in @theme ─────────── */
+  --radius: 0.625rem;
+
+  /* ─────────── Sidebar structural widths (shadcn dashboard-01: spacing*72 = 18rem,
+     3rem rail, 18rem mobile sheet) ─────────── */
+  --sidebar-width: 18rem;
+  --sidebar-width-icon: 3rem;
+  --sidebar-width-mobile: 18rem;
+
+  /* ─────────── Typography families ─────────── */
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  /* ─────────── Border thickness ─────────── */
+  --border-thin: 1px;
+  --border-thick: 2px;
+
+  /* ─────────── Motion ─────────── */
+  --transition-fast: 120ms;
+  --transition-normal: 200ms;
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+  --bg-1: #0a0a0a;
+  --bg-2: #141414;
+  --bg-3: #1f1f1f;
+
+  --fg-1: #fafafa;
+  --fg-2: #a3a3a3;
+  --fg-3: #525252;
+
+  --border-1: #262626;
+  --border-2: #373737;
+
+  --glass-1: rgba(20, 20, 20, 0.6);
+  --glass-2: rgba(20, 20, 20, 0.4);
+  --glass-3: rgba(20, 20, 20, 0.2);
+}

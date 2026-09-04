@@ -38,8 +38,8 @@ Pick by output. One static frontend owns its image. Several static frontends liv
 | Tailwind v4 | Always. Stock spacing, type and radius scales, never remapped. No arbitrary values (`p-[13px]`). |
 | shadcn | The component vocabulary, `new-york`, `cssVariables: true`. |
 | Client state | zustand. Server state: TanStack Query, owned by the `api/` layer. Never both for one value. |
-| Shared code | `apps/packages/{ui,types,tsconfig}`. Consumed by `link:`. Framework libraries are `peerDependencies`, so the consumer's copy is the only copy. No workspace. |
-| Version skew | With no workspace, nothing pins React across apps. Every manifest names the same `<version>`; `ctl check` compares them. |
+| Shared code | `apps/packages/{ui,types,tsconfig}`. Consumed by `link:`. Framework libraries are `peerDependencies`, so the consumer's copy is the only copy. No workspace (`01_layout.md` § Root). |
+| Version skew | With no workspace, nothing pins React across apps. Every manifest names the same version, and the pin is recorded in the `AGENTS.md` Stack table so an audit can compare the manifests against it. `ctl check` does not compare them. |
 | Types | `@scope/types` is generated from the API's OpenAPI. Never hand-edited. |
 | Theme | Both modes by default; light-only is a choice for marketing pages, recorded in `AGENTS.md`. |
 
@@ -77,7 +77,7 @@ Pick from the requirement, not from habit. Runtime state lives in `data/`, bind-
 | Piece | Rule |
 |---|---|
 | Training code | `apps/<name>/`, same tree as a backend. Per-experiment settings in `apps/<name>/configs/<experiment>.yaml`, not `config.yaml`. |
-| Notebooks | `apps/notebooks/`. Exploration only, never imported by an app. Code an app needs moves into a package. |
+| Notebooks | `apps/notebooks/`, a folder the project adds; the template does not carry it. Exploration only, never imported by an app (`01_layout.md` § Inside `apps/`). |
 | Data, checkpoints, outputs | `data/`. Gitignored by `data/.gitignore`. |
 | Environment | Exploration: one shared `uvenv` named env with broad ranges, because heavy GPU libraries are shared across experiments and hard-pinning torch causes CUDA mismatches. A root `uvenv-name` file names it; `ctl` activates it and fails loudly if missing. Exact reproducibility or a shipped model server: that piece becomes its own app with `pyproject.toml` + `uv.lock`; `uv pip compile` is the middle ground. |
 | Docker | Usually none for training. `ctl` keeps `dev`, `test`, `gate`, adds `train --config`, `eval --run`, `nb`, `data-prep`; drops `up`. |

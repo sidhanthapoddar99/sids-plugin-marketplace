@@ -4,20 +4,7 @@ The kind is chosen in `04_stack.md`; the routing in `03_routing.md`. This page i
 
 ## Theme
 
-The theme and the components are one thing, with one internal shape wherever it lives:
-
-```
-styles/     tokens.css    raw values only. Colours by role (--bg-1..3, --fg-1..3, --border-1..2, --success,
-                          --warning, --danger, --info), light on :root, dark on [data-theme="dark"]. Radius base,
-                          fonts, motion, a z-index scale. Nothing else switches by theme.
-            globals.css   the Tailwind entry. @import tailwindcss + tokens + elements. @theme = the stock scales.
-                          @theme inline = tokens mapped onto utilities (--color-bg-1: var(--bg-1)) plus the shadcn
-                          aliases (--color-background, --color-primary …). @source points at the components.
-            elements.css  base element resets that consume tokens.
-components/ shadcn components, one file each, a folder for compound ones. Every visual decision lives here.
-lib/utils.ts  cn()
-lib/theme.ts  the one theme switcher (below)
-```
+The theme and the components are one thing, with one internal shape wherever it lives. The shape is `template/apps/packages/ui/src/`: `styles/tokens.css` holds raw values only, colours by role, light on `:root` and dark on `[data-theme="dark"]`; `styles/globals.css` is the one Tailwind entry that maps tokens onto utilities and the shadcn aliases; `styles/elements.css` holds the element resets; `components/` holds the shadcn components, one file each; `lib/utils.ts` holds `cn()`. Each file's header comment says what it holds. `lib/theme.ts`, the one theme switcher, is written per project to the rules under Switching below; the template does not carry it.
 
 | Product has | Where the shape lives | Import in the app |
 |---|---|---|
@@ -38,7 +25,7 @@ Moving from the first to the second is a move, not a rewrite. Rules that hold in
 
 ### Switching
 
-`tokens.css` defines both modes; something must set `[data-theme]`. One implementation, `lib/theme.ts`, used by every frontend:
+`tokens.css` defines both modes; something must set `[data-theme]`. One implementation, `lib/theme.ts`, used by every frontend, because two switchers disagree on the stored key and the page flashes. Write it to these rules:
 
 | Step | Rule |
 |---|---|
@@ -71,19 +58,7 @@ After any UI change: screenshot light and dark and check against the brand guide
 
 ## The folder shape
 
-```
-src/
-├── main.tsx             the one CSS import, the router, the theme script's counterpart
-├── styles/              (single frontend) or the ui package
-├── components/ui/       (single frontend) or the ui package — primitives, never features
-├── layout/              shells: the app frame, sidebars, page chrome. A folder when a shell outgrows one file
-├── pages/               thin route components, mirroring the URL tree. ~50 lines. The router imports pages only
-├── features/<name>/     the substance: components, hooks, state, local types. index.ts is the only door
-├── api/                 the one server boundary. Grouped by the backend's domain vocabulary (api/users.ts)
-├── stores/              client state (zustand). Only what more than one feature reads
-├── hooks/               a hook two features share. Feature-local hooks stay in the feature
-└── lib/                 pure helpers. Imports nothing app-internal, no React, no IO
-```
+The shape is `template/apps/example-single-web-app-vite/src/`: `main.tsx`, `styles/`, `components/ui/`, `layout/`, `pages/`, `features/<name>/`, `api/`, `stores/`, `hooks/`, `lib/`. Each file's header comment states what the folder holds and what it may import. The import zones are the rule; the table is their one home, and the file comments enforce it locally:
 
 | Layer | May import | Never |
 |---|---|---|
@@ -108,9 +83,9 @@ No component, hook, page or store calls `fetch` directly. `api/` owns four thing
 | Compose, do not style | Feature code composes primitives and their documented variants. Raw utilities only for layout glue (flex, grid, gap, padding on wrappers). |
 | A look that does not exist | Add it to the primitive as a CVA variant or prop (`<Card variant="media">`), then use it. Never improvise inline. |
 | Fold on the second use | The same utility combination twice → a primitive variant before continuing. Stricter than the rule of three for logic (`11_conventions.md`), because a utility string is cheap to extract and styling duplication is where drift starts. |
-| Subdivide at ~10 files | Inside the feature folder, by sub-feature or by kind, whichever carries the real seams. Never fragment across siblings. |
-| Caps | A component over 150 lines, a page over 50: split. A feature imported by two features: extract to the app scope or a package. |
-| Cross the boundary with types | A feature exposes `index.ts`. Nobody reaches into another feature's files. Never import a DTO across features to reuse a shape; duplicate it. |
+| Subdivide at ~10 files | Inside the feature folder, by sub-feature or by kind, whichever axis the files change along together. Never fragment across siblings. The number lives in `11_conventions.md` § Caps. |
+| Caps | Component 150 lines, page 50: split. The numbers live in `11_conventions.md` § Caps. A feature imported by two features: extract to the app scope or a package. |
+| Cross the boundary with types | A feature exposes `index.ts`. Nobody reaches into another feature's files. Never import a DTO across features to reuse a shape; duplicate it. `11_conventions.md` § Scope says why. |
 
 Mechanical checks (empty output = compliant; a conformance test in `10_testing.md` is the durable form):
 

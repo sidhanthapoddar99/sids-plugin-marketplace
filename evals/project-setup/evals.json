@@ -1,0 +1,56 @@
+{
+  "skill_name": "project-setup",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "mid-task-where-does-this-go",
+      "prompt": "Quick one while I'm in the middle of the billing work in ./mid-task-repo. I've got a formatCurrency helper in apps/web/src/features/billing/money.ts that takes cents and a currency code and returns a display string. I now need the same thing in apps/web/src/features/dashboard/SummaryCard.tsx. Do I make apps/packages/utils and put it there, or move it to apps/web/src/lib/, or just import it across from features/billing? Give me the one answer and the path.",
+      "files": [
+        "evals/project-setup/files/mid-task-repo"
+      ],
+      "expected_output": "One answer: the helper moves to apps/web/src/lib/, in one file named for what it does, because the second consumer is a second feature inside the same app. The answer refuses a new apps/packages/utils, because a package is promoted only when a second app needs the code and a catch-all utils package is banned. It refuses the cross-feature import, because features do not import each other's internals. It names a template or reference path as the source of the rule. It does not stop to ask, because the repo, the app and both call sites are given.",
+      "expectations": [
+        "The answer places the helper in the app scope of apps/web (src/lib/), not in a new package and not left in features/billing/",
+        "The answer explicitly rejects creating apps/packages/utils, and gives promote-when-shared or the no-catch-all-utils rule as the reason",
+        "The answer explicitly rejects importing across features (features do not import each other's internals)",
+        "The answer names at least one concrete path inside the skill's template/ or references/ as the source of the rule",
+        "The assistant produced a final answer without asking the user a clarifying question first"
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "audit-drifted-repo",
+      "prompt": "Audit the repo at ./drifted-repo against our structure rules and give me the findings. It is a small internal tool: one FastAPI backend at apps/api, one Vite frontend at apps/web, Postgres and Redis. AGENTS.md is filled in and current. I want a table I can hand to the person who has to fix it.",
+      "files": [
+        "evals/project-setup/files/drifted-repo"
+      ],
+      "expected_output": "The audit runs ./ctl check first and reports its exit code. The findings table has the columns file, rule broken, fix. It contains three findings: the hard-coded jwt_signing_key literal in apps/api/config.yaml (config.yaml carries ${VAR} only; secrets live in .env.secrets), the ports: block in docker/compose.base.yaml (base has no ports; a modifier adds exposure), and apps/web/.env with VITE_API_URL (a frontend has no env file; the API is same-origin). Nothing recorded in AGENTS.md is reported as drift.",
+      "expectations": [
+        "The transcript shows ./ctl check was run inside the repo before the findings were reported, and the report states its exit code or its red/green result",
+        "The report names the hard-coded jwt_signing_key value in apps/api/config.yaml as a finding",
+        "The report names the ports: block in docker/compose.base.yaml as a finding",
+        "The report names apps/web/.env as a finding, and gives 'a frontend has no env file' or the single-origin rule as the reason broken",
+        "The findings are presented as a table whose columns are file, rule broken and fix",
+        "No item recorded in the repo's AGENTS.md Recorded choices table (app names, light + dark theme, captcha tier, Alembic migration style) is reported as a finding",
+        "The report does not claim the repo is conformant on the strength of ctl check alone; apps/web/.env is outside ctl check's rules and must come from reading"
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "bootstrap-answers-supplied",
+      "prompt": "Bootstrap a new repo in ./quotesmith. Here is everything, so do not ask me anything, just build it. Product: Quotesmith, an internal tool where our sales team builds and sends price quotes. One repo, not several. It is a deployed application, not a published package. No sibling repos. Docs live in this repo under docs/. Private, not open source. One backend, Python, FastAPI, no second backend, so nothing to coordinate through. One identity plane, staff only, no separate operator origin. One frontend, a Vite + React SPA, theme both light and dark, no desktop or mobile surface. Data: Postgres and Redis, no Neo4j, no SQLite. It is an app, not ML. No external services already running. Nothing touches an LLM. Protection tier: captcha, Turnstile. Versions, all pinned, use exactly these: Python 3.13, Node 22, Postgres 17, Redis 8, Vite 7, Tailwind 4. Name the backend folder api and the frontend folder web.",
+      "files": [],
+      "expected_output": "A repo at ./quotesmith copied from the template, trimmed to one Python backend at apps/api and one Vite frontend at apps/web, with Postgres and Redis only. Every <version> placeholder is replaced with the supplied pins. AGENTS.md is filled with the real names and choices. CLAUDE.md is the one line @AGENTS.md. ctl setup and ctl check were run and their real results reported. No question was asked, because every item the skill must ask about was supplied.",
+      "expectations": [
+        "The repo root holds ctl, scripts/, docker/, apps/, data/, logs/, memory/, AGENTS.md, CLAUDE.md and the three .env.*.template files",
+        "CLAUDE.md contains exactly the one line @AGENTS.md",
+        "No file anywhere in the created repo still contains the literal placeholder <version>",
+        "AGENTS.md Recorded choices, Skeletons and Stack tables are filled with this project's real names and the supplied versions, with no <angle-bracket> placeholders left",
+        "The app folders are named api and web, not example-api-python or example-single-web-app-vite",
+        "No .env file exists inside apps/web",
+        "The transcript shows ctl setup and ctl check were both run, and the reported result of ctl check matches its actual exit code",
+        "The assistant did not stop to ask the user a question, since every item on the skill's ask list is supplied in the prompt"
+      ]
+    }
+  ]
+}

@@ -23,7 +23,7 @@ A frontend has no env file. Its prefix reaches it from `.env.proxy` through comp
 6. **Everything runs from the repo root.** `ctl` calls compose with `--project-directory <root>`. Every path in `.env.data` and in every compose file is root-relative: `./data`, `./apps/…`. Never `../`.
 7. **Backend precedence:** process env > `config.local.yaml` > `config.yaml`. A real environment variable always wins. The loader reads the three files skip-if-set. Two channels reach a literal from the environment: `${VAR}` in `config.yaml` for values the file names, and the nested override `<APP>__<SECTION>__<KEY>` (`API__DATABASE__POOL_SIZE`) for any literal, which is how a container or CI tweaks one setting without a file.
 8. **Two things we do not do, on purpose.** No `config.<env>.yaml` layer (`config.prod.yaml`): an environment differs by its env files, never by a second committed config. No default forms in `${VAR}` (`${VAR:-8000}`, `${VAR:?}`): an unset key fails at startup and names itself; a default is a guess that runs. Two backends with separate databases prefix their keys (`AUTH_DATABASE_URL`, `BILLING_DATABASE_URL`), and the nested override prefix is per service (`API__`, `ENGINE__`) so two backends on one host never collide.
-9. **Templates are the contract.** Every key present, every secret blank, a comment per key naming the reader and how the value is made. `ctl setup` copies template → file and fills the generated secrets. Never read a filled file when auditing. Read the templates.
+9. **Templates are the contract.** Every key present, every secret blank, a comment per key naming the reader and how the value is made. `ctl setup` copies template → file and fills the generated secrets. Never read a filled file when auditing, because it holds live secrets and the audit output is a log. Read the templates; they carry every key.
 
 ## How a backend reads a value
 
@@ -34,15 +34,7 @@ One module per backend does it all: `config.py`, `config.rs`, `config.go`, `conf
 3. Replace every `${VAR}` from the environment. An unset `${VAR}` fails at startup and names the key. The app never runs on a guessed value.
 4. Validate into one typed settings object. The app imports that object.
 
-```yaml
-database:
-  url: ${DATABASE_URL}     # .env.secrets, must be set
-  pool_size: 20            # literal default. Override in config.local.yaml
-engine:
-  url: ${ENGINE_URL}       # .env.proxy: http://localhost:8080 under ctl dev; compose sets http://engine:8080
-```
-
-So `config.yaml` names every variable a backend reads, and the three templates name every variable the stack reads. Together they are the full inventory.
+`template/apps/example-api-python/config.yaml` shows the form: `${VAR}` for a secret or an endpoint, a literal for a default, and a comment per key naming which env file supplies it. So `config.yaml` names every variable a backend reads, and the three templates name every variable the stack reads. Together they are the full inventory.
 
 ## How a frontend reads a value
 
@@ -76,7 +68,7 @@ Under docker, `<PIECE>_HOST` in `.env.proxy` is not consulted: compose sets the 
 | Service password (Postgres, Redis, Neo4j) | `openssl rand -base64 24 \| tr -d '+/=' \| head -c 24` | Yearly, or on leak. |
 | Third-party credential | The provider's console | On leak. |
 
-`ctl setup` generates every blank `*_PASSWORD`, `*_KEY`, `*_SECRET` in `.env.secrets`, and on later runs appends any key the template gained; `ctl status` diffs each file against its template. Third-party credentials stay blank until pasted. A secret that ever reaches git is rotated, not deleted: history is forever. Every secret class has a written recovery step, not only a cadence. Shared keys are one variable (`JWT_SIGNING_KEY` for Python and Rust); keys not shared are separate (`ENCRYPTION_KEY_PYTHON`, `ENCRYPTION_KEY_RUST`).
+A key is a secret when its name holds a `_PASSWORD`, `_KEY` or `_SECRET` segment, at the end (`JWT_SIGNING_KEY`) or followed by more (`ENCRYPTION_KEY_PYTHON`). `ctl setup` generates every blank secret key in `.env.secrets`, and on later runs appends any key the template gained; `ctl status` diffs each file against its template. Third-party credentials stay blank until pasted. A secret that ever reaches git is rotated, not deleted, because history is forever. Every secret class needs a written recovery step, not only a cadence, because a rotation with no written step is done wrong under pressure. The shipped template comments carry the cadence only; write the step beside the key when the project fills the template. Shared keys are one variable (`JWT_SIGNING_KEY` for Python and Rust); keys not shared are separate (`ENCRYPTION_KEY_PYTHON`, `ENCRYPTION_KEY_RUST`).
 
 ## Template rules
 
@@ -89,8 +81,4 @@ Under docker, `<PIECE>_HOST` in `.env.proxy` is not consulted: compose sets the 
 
 ## `ctl check` on env
 
-- every `${VAR}` in every `config.yaml` is a key in one of the three templates
-- a key ending `_PASSWORD`, `_KEY`, `_SECRET` appears only in `.env.secrets.template`
-- every key in `.env.proxy.template` ends `_HOST`, `_PORT`, `_PREFIX`, `_URL` (plus `PUBLIC_URL`, `HTTP_PORT`, `HTTPS_PORT`, `DEV_PROXY_PORT`, `COMPOSE_PROJECT_NAME`)
-- every key in `.env.data.template` ends `_DIR`
-- no secret literal in any `config.yaml`; no tracked `config.local.yaml`; no tracked `.env.*` except templates
+The env rules that `ctl check` proves are listed once, in `08_ctl.md` § `ctl check`. Every rule on this page that names a key pattern is in that list.

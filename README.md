@@ -67,7 +67,7 @@ Requires Codex CLI 0.147 or later. Check with `codex --version`.
 
 | Plugin | Description | Status |
 |---|---|---|
-| [`project-setup`](plugins/project-setup) | Architectural decision-maker for repos — new and existing. Layout, env/config split, docker, design tokens, ML orchestration, mobile/desktop. Bootstrap AND restructure. | Work in progress |
+| [`project-setup`](plugins/project-setup) | How a repo is shaped: bootstrap, audit, or a single "where does this go" question. One tree, one `ctl` entrypoint, one origin, three env files. Eleven reference pages and a copyable template with a working `ctl check`. | Released (v0.5.0) |
 | [`instruction-writing`](plugins/instruction-writing) | How to write instruction files for AI agents: CLAUDE.md, AGENTS.md, rules files, SKILL.md bodies, references, briefs. Ten rules with their reasons, a review rubric, before-and-after examples. | Released (v0.1.1) |
 | `uvenv` ([repo](https://github.com/sidhanthapoddar99/uvenv)) | Operating manual for `uvenv` — bash/zsh wrapper around mise + uv that gives conda-style named global Python venvs you can activate from anywhere | Released (v0.3.0) |
 | `agent-ks` ([repo](https://github.com/sidhanthapoddar99/agent-knowledge-system)) | Operating manual for the agent-knowledge-system framework — docs, issues, artifacts skills, the `agent-ks` CLI dispatcher, scaffolding commands. Formerly `documentation-guide` | Released (v0.6.0) |
@@ -155,6 +155,7 @@ For skill authoring, use the `skill-creator` skill that ships with Claude Code.
 ├── plugins/
 │   ├── project-setup/                # personal project / monorepo conventions
 │   └── instruction-writing/          # how to write CLAUDE.md, AGENTS.md, skills, briefs
+├── evals/                            # skill test suites, one folder per plugin. Not shipped
 └── LICENSE                           # MIT
 ```
 

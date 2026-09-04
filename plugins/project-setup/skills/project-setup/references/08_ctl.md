@@ -64,17 +64,13 @@ The `scripts/` groups are `common config dev container db admin test gate`. A ga
 
 ## `ctl check` — the conformance floor
 
-Runs as a gate rung. Fails on the first of:
+Runs as a gate rung and directly. It runs every rule, prints every failure with its file, and exits 0 only when all of them passed, because a check that stops at the first red hides the second one and a check that prints an ok line under a failure teaches the reader to skip the output. This list is the one home of what it proves; `02_env.md`, `01_layout.md` and `11_conventions.md` point here. Worker: `template/scripts/config/check.sh`.
 
-- a `${VAR}` in any `config.yaml` that is not a key in one of the three `.env.*.template` files
-- a `*_PASSWORD` / `*_KEY` / `*_SECRET` key outside `.env.secrets.template`; a `.env.proxy.template` key not ending `_HOST/_PORT/_PREFIX/_URL`; a `.env.data.template` key not ending `_DIR`
-- a secret literal in any `config.yaml` (`*_KEY`, `*_PASSWORD`, `*_SECRET` not `${VAR}`)
-- a tracked `config.local.yaml`
-- `package.json`, `bun.lock`, `pnpm-workspace.yaml` at the root, in `apps/`, or directly in the frontend group folder — unless `AGENTS.md` records the `root-manifest` exception of an open-source package repo (`01_layout.md`)
-- `ports:` in `compose.base.yaml`
-- `../` in any compose file
-- `docker compose config` failing for the db file, base, base + each modifier, or the dev file
-- `CLAUDE.md` not exactly `@AGENTS.md`
+- versions: no `<version>` placeholder in `.mise.toml` or an app manifest (`pyproject.toml`, `package.json`, `Cargo.toml`, `rust-toolchain.toml`, `go.mod`). A placeholder breaks every toolchain install, so `ctl setup` refuses to install while one remains.
+- env: every `${VAR}` in any `config.yaml` is a key in one of the three `.env.*.template` files; a key with a `_PASSWORD`, `_KEY` or `_SECRET` segment appears only in `.env.secrets.template`; every `.env.proxy.template` key ends `_HOST`, `_PORT`, `_PREFIX` or `_URL` (or is `PUBLIC_URL`, `HTTP_PORT`, `HTTPS_PORT`, `DEV_PROXY_PORT`, `COMPOSE_PROJECT_NAME`); every `.env.data.template` key ends `_DIR`; no secret literal in any `config.yaml`; no tracked `config.local.yaml`; no tracked `.env.*` except the templates.
+- layout: no `package.json`, `bun.lock` or `pnpm-workspace.yaml` at the root or directly in `apps/`; no folder under `apps/` that holds a manifest next to child folders with manifests, because that is a workspace. The root half is skipped when `AGENTS.md` records `root-manifest` under `## Exceptions to the standard layout` (`01_layout.md` § Exceptions).
+- brief: `CLAUDE.md` is exactly `@AGENTS.md`.
+- compose: no `ports:` in `compose.base.yaml`; no `../` in any compose file; `docker compose config` validates the db file, the dev file, base, and base plus each modifier. This step is skipped, and says so, when docker is down or the env files are absent.
 
 ## `ctl manage` — the break-glass console
 

@@ -29,7 +29,7 @@ sids-plugin-marketplace/
 │   │   │       └── template/
 │   │   ├── LICENSE
 │   │   └── README.md
-│   └── instruction-writing/      # same shape: two manifests, one skill with references/ and evals/
+│   └── instruction-writing/      # same shape: two manifests, one skill with references/
 ├── CLAUDE.md                     # agent guidance for this repo
 ├── README.md
 ├── TODO.md

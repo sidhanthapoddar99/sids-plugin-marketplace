@@ -1,0 +1,22 @@
+# All settings of this service. ${VAR} comes from .env.secrets (keys, URLs) or .env.proxy (hosts, ports, prefixes) and must be set. Literals are defaults.
+# A developer overrides literals in config.local.yaml (gitignored). Never a secret there: secrets stay ${VAR}.
+database:
+  url: ${DATABASE_URL}
+  pool_size: 20
+redis:
+  url: ${REDIS_URL}
+  session_ttl_seconds: 86400
+server:
+  host: ${API_HOST}
+  port: ${API_PORT}
+  prefix: ${API_PREFIX}
+engine:
+  url: ${ENGINE_URL}         # http://localhost:8080 under ctl dev; http://engine:8080 under docker
+auth:
+  jwt_signing_key: ${JWT_SIGNING_KEY}
+  encryption_key: ${ENCRYPTION_KEY_PYTHON}
+  token_ttl_minutes: 60
+limits:
+  rate_per_minute: 120
+log:
+  level: info

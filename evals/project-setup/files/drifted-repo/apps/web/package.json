@@ -1,0 +1,29 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "oxlint src"
+  },
+  "dependencies": {
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "tailwind-merge": "3.3.1",
+    "lucide-react": "0.542.0"
+  },
+  "devDependencies": {
+    "vite": "7.1.4",
+    "typescript": "5.9.2",
+    "tailwindcss": "4.1.12",
+    "vitest": "3.2.4",
+    "@playwright/test": "1.55.0",
+    "@tailwindcss/vite": "4.1.12"
+  }
+}

@@ -1,0 +1,14 @@
+# Git hooks. Fast on commit (staged lint, a data guard), slow on push (the suites). Each hook calls
+# ctl, never a tool directly. `ctl setup` runs `lefthook install`; without that the hooks never fire.
+pre-commit:
+  commands:
+    lint:
+      run: ctl gate lint --staged
+    no-data:
+      # data/ and logs/ are self-ignored, but a forced add or a moved .gitignore lets a dump through.
+      # history is forever; refuse here.
+      run: '! git diff --cached --name-only | grep -E "^(data|logs)/" || { echo "refusing to commit under data/ or logs/"; exit 1; }'
+pre-push:
+  commands:
+    test:
+      run: ctl test

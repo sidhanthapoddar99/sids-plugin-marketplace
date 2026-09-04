@@ -7,7 +7,7 @@ The language is chosen in `04_stack.md`; the env contract is `02_env.md`; routin
 | Piece | Rule |
 |---|---|
 | One config loader | `config.py` / `config.rs` / `config.go`. Nothing else reads the environment or a file. `02_env.md`. |
-| `/health` and `/ready` | Liveness: the process is alive; failing means restart. Readiness: dependencies reachable, migrations applied; failing means pull from the load balancer, not restart. Two endpoints, two actions. |
+| `/health` and `/ready` | Two endpoints, two actions: `09_production.md` § Health. |
 | Its own prefix | `<PIECE>_HOST/_PORT/_PREFIX` in `.env.proxy`; it binds `_PORT` and mounts `_PREFIX`. |
 | Rate limiting at the router | Keyed on the user or API key, never the raw IP for authenticated routes. `07_security.md`. |
 | `X-Forwarded-*` trusted from the edge only | Never CORS middleware for our own frontend. |
@@ -31,9 +31,9 @@ Python lives in `app/`, never `src/`; a run service sets `[tool.uv] package = fa
 
 | Rule | Detail |
 |---|---|
-| The layers | `router` parses, authorises, calls, serialises. `service` holds the rule and is the domain's only public surface. `repository` runs the query, given a connection; the caller owns the transaction. `models` are the request/response types, the source `@scope/types` is generated from. |
-| Inside a slice | `router → service → repository`. Never backwards. |
-| Across slices | `service → service` only. A domain never touches another domain's `repository` or imports its `models` to reuse a shape: duplicate the DTO. |
+| The layers | One job each: `router` parses, authorises, calls, serialises; `service` holds the rule and is the domain's only public surface; `repository` runs the query, given a connection, and the caller owns the transaction; `models` are the request and response types that `@scope/types` is generated from. A layer with two jobs cannot be tested alone. |
+| Inside a slice | `router → service → repository`. Never backwards, because a repository that calls a service hides a second rule behind the query. |
+| Across slices | `service → service` only. A domain never touches another domain's `repository` or imports its `models` to reuse a shape: duplicate the DTO. `11_conventions.md` § Scope says why. |
 | Domain names | Nouns of ownership, never activities and never UI navigation labels. `catalog/`, `orders/`, `access/`; not `build/`, `sync/`, `ingest/`. Test: an activity says what the code does this quarter; an ownership noun says what it is responsible for permanently. A pipeline that builds a catalog lives in `catalog/`. |
 | Domains ≠ navigation | The UI groups by workflow; the backend by ownership. Two nav groups may map to one domain. The mapping is a recorded decision in `AGENTS.md`, never an implicit mirror. |
 | Ambiguous placement | A `dashboard` that aggregates everything, an `images` feature two domains use: put it somewhere defensible and record the one-line why. |
@@ -42,7 +42,7 @@ Python lives in `app/`, never `src/`; a run service sets `[tool.uv] package = fa
 | Two backends | Never share a models or ORM package. Each declares its own DTOs; the schema is the only shared contract. |
 | Reconcile in the same milestone | When the domain model settles or changes, move the folders then. Batch moves into a window where churn already happens; never one folder per PR across months. |
 
-Providers of one kind (LLMs, payment gateways, storage backends) follow the adapter pattern: `modules/<provider>/` behind one `base.py` contract, one canonical output shape, and engine code that never names a provider. `07_security.md` for the AI-specific rules.
+Providers of one kind (LLMs, payment gateways, storage backends) follow the adapter pattern: `modules/<provider>/` behind one `base.py` contract, one canonical output shape, and engine code that never names a provider, because a provider swap is then one folder and no engine test changes. This paragraph is the home of the rule; `07_security.md` adds the key-handling rules for AI providers and `11_conventions.md` points here.
 
 ## Serving
 
@@ -50,7 +50,7 @@ Dev is one hot-reload process (`uvicorn --reload`, `cargo watch`). Production is
 
 | Language | Production model |
 |---|---|
-| Python | gunicorn with uvicorn workers. `workers = (2 × cores) + 1` as a start, fewer for I/O-bound async apps; measure. Recycling `--max-requests 1000 --max-requests-jitter 100` bounds leaks and the jitter prevents a synchronised restart storm. `--timeout 60 --graceful-timeout 30 --keep-alive 5`. `--preload` in a container (you redeploy the image anyway). All in `gunicorn.conf.py` beside `pyproject.toml`, values from the environment (`WEB_CONCURRENCY`). The Dockerfile `CMD` is gunicorn; `--reload` never ships. |
+| Python | gunicorn with uvicorn workers. `workers = (2 × cores) + 1` as a start, fewer for I/O-bound async apps; measure. Recycling `--max-requests 1000 --max-requests-jitter 100` bounds leaks and the jitter prevents a synchronised restart storm. `--timeout 60 --graceful-timeout 30 --keep-alive 5`. `--preload` in a container (you redeploy the image anyway). All in `gunicorn.conf.py` beside `pyproject.toml`, values from the environment (`WEB_CONCURRENCY`). The template does not carry this file; write it per project. The Dockerfile `CMD` is gunicorn; `--reload` never ships. |
 | Rust | One process, Tokio threads. No workers, no recycling: a leak is fixed, not restarted around. Scale by replicas. Graceful shutdown on `SIGTERM` (`with_graceful_shutdown`). |
 | Go | One process, goroutines. Scale by replicas. |
 | Node | One process per container. Scale by replicas; never PM2 cluster mode inside a container the orchestrator also replicates. |
@@ -69,12 +69,12 @@ Schema changes always go through migrations. Never edit a live schema by hand; n
 
 Both conditions must hold for autogenerate: single consumer, plain schema. If either fails, `apps/database/` owns the migrations. One owner in every case.
 
-Hand-written with Alembic as the runner is three files per revision: a three-line `.py` shim, `.up.sql`, `.down.sql`. The shim calls `run_sql(__file__, ".up.sql")` from `alembic_helpers.py`; the SQL file is the source of truth, readable by a DBA, an operator and `sqlx` alike. `ctl migrate new "<msg>"` creates the trio; a `.down.sql` left empty says why in a comment.
+Hand-written with Alembic as the runner is three files per revision: a three-line `.py` shim, `.up.sql`, `.down.sql`. The shim calls `run_sql(__file__, ".up.sql")` from an `alembic_helpers.py` the project writes beside `env.py`; the SQL file is the source of truth, readable by a DBA, an operator and `sqlx` alike. `ctl migrate new "<msg>"` creates the trio; a `.down.sql` left empty says why in a comment.
 
 Rules:
 
-- `ctl migrate` applies them, `ctl migrate new` creates one. Never `alembic` by hand.
-- Migrations are an explicit step, never on app boot. `ctl up` runs them once before the apps; with N replicas the same step is a one-shot compose service the apps `depends_on` with `service_completed_successfully` (`09_production.md`).
+- `ctl migrate` applies them, `ctl migrate new` creates one. Never `alembic` by hand, because the worker runs it from `apps/database/postgres` under that folder's venv and applies the other engines' init in the same step; a bare `alembic` does half the job.
+- Migrations are an explicit step, never on app boot. How the deploy runs that step, with one replica or N: `09_production.md` § The deploy.
 - The consuming language never writes DDL. A Rust query that needs a column: write the migration, run `ctl migrate`, then `cargo sqlx prepare`, then the query. The gate order is `migrate → sqlx prepare --check → build`.
 - Never edit an applied migration; write a new one. Two heads (two revisions with the same `down_revision`) are squashed before merging to main; `ctl migrate status` fails on a branch.
 - Autogenerate needs four things or it silently sees an empty schema and drops every table: `prepend_sys_path = .` in `alembic.ini`; `import app.models` (every model module) in `env.py` so `target_metadata` is populated; `sqlalchemy.url` set from the config loader, never `alembic.ini`; `render_as_batch=True` in both `context.configure` calls when SQLite is a target. Review and edit every generated revision; never mix generated and hand-written DDL in one file.

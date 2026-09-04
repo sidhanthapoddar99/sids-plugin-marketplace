@@ -1,6 +1,6 @@
 {
   "name": "project-setup",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "The single authority for how a repo is shaped: bootstrapping a new project, auditing or restructuring an existing one, or any \"where does this go\" question mid-task. One repo tree (apps/, packages, data/, logs/), three root env files plus config.yaml, single-origin routing (Vite proxy in dev, nginx edge in prod), compose base plus modifiers, the ctl entrypoint (dev, up, migrate, manage, gate), stack choices (FastAPI / Axum / Go; Vite / Next.js / Astro; Postgres / Redis / SQLite / Neo4j), frontend and backend internals, the security floor, production settings, the test ladder with conformance tests, and the AGENTS.md brief contract. Ships 11 reference pages and a copyable template repo with a working ctl, scripts, compose files and env templates.",
   "author": {
     "name": "Sid",

@@ -11,7 +11,7 @@ The skill carries ten rules, each with its reason. The one that matters most: a 
 | `skills/instruction-writing/SKILL.md` | The ten rules with their reasons, and the table of file kinds |
 | `skills/instruction-writing/references/review-rubric.md` | A pass-or-fail checklist a fresh agent can run as an independent review |
 | `skills/instruction-writing/references/examples.md` | Before-and-after pairs for the rules whose fix is not obvious |
-| `skills/instruction-writing/evals/evals.json` | The test prompts used to check the skill with skill-creator |
+| `../../evals/instruction-writing/evals.json` | The test prompts used to check the skill with skill-creator. Kept outside the plugin so installs do not carry them |
 
 ## What stays out
 

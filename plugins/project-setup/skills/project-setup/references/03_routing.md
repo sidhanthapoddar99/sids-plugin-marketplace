@@ -11,17 +11,7 @@ Every case below is the same system with a different number of pieces. Read the 
 5. **`ctl dev` runs apps on the host, engines in docker. `ctl up` runs everything in docker.** Same three env files, same `config.yaml`, no edit between the two.
 6. **Backends coordinate through the root env files.** Shared secrets are one key in `.env.secrets` (`JWT_SIGNING_KEY`). A backend that calls another reads `<X>_URL` from its `config.yaml` as `${VAR}`; compose sets the literal in docker.
 
-The routing table, from `template/.env.proxy.template`:
-
-```
-(owns /)                      WEB_LANDING_PORT=3001   apps/example-multi-web-app/landing   Next.js export
-WEB_APP_PREFIX=/app           WEB_APP_PORT=5173       apps/example-multi-web-app/app       Vite SPA
-WEB_DOCS_PREFIX=/docs         WEB_DOCS_PORT=4321      apps/example-multi-web-app/docs      Astro
-DASHBOARD_PREFIX=/dashboard   DASHBOARD_PORT=3000     apps/example-dashboard-nextjs        Next.js server
-API_PREFIX=/api               API_PORT=8000           apps/example-api-python              FastAPI
-ENGINE_PREFIX=/engine         ENGINE_PORT=8080        apps/example-engine-rust             Axum
-DEV_PROXY_PORT=3080                                   docker/compose.dev.yaml              the one origin in dev
-```
+The routing table is `template/.env.proxy.template`. Read it there: one block per piece, the piece that owns `/` has no `_PREFIX`, and `DEV_PROXY_PORT` is the one origin in dev. Every path below that starts with `apps/` is a path inside `template/`.
 
 ## The pair: dev and prod
 
