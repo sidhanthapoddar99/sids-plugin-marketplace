@@ -50,6 +50,7 @@ An agent reads an instruction file cold. It has none of your context, it reads t
 | CLAUDE.md, rules file without `paths`, system prompt | at launch, every session | under 200 lines. Facts, hard limits, pointers |
 | AGENTS.md | at launch. Codex stops reading once all AGENTS.md files pass 32 KiB together | under 200 lines. Same content as CLAUDE.md |
 | rules file with `paths` | when the agent touches a matching file | under 200 lines. Facts and pointers for that path only |
+| SKILL.md description | always, in the skill list | under 1,536 characters. What the skill does, then every case that should trigger it, a little pushy, because models under-trigger and this is the only text they see before choosing |
 | SKILL.md body | when a task matches. It stays for the session | under 500 lines. The workflow, not the background |
 | reference under a skill | when the body points at it | no fixed limit. Where the detail lives |
 | brief for a subagent | at spawn, once. The agent never sees your conversation | no fixed limit. Self-contained: goal, files, hard limits, tiers, return shape |

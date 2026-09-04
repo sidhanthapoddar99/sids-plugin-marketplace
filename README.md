@@ -68,7 +68,7 @@ Requires Codex CLI 0.147 or later. Check with `codex --version`.
 | Plugin | Description | Status |
 |---|---|---|
 | [`project-setup`](plugins/project-setup) | Architectural decision-maker for repos — new and existing. Layout, env/config split, docker, design tokens, ML orchestration, mobile/desktop. Bootstrap AND restructure. | Work in progress |
-| [`instruction-writing`](plugins/instruction-writing) | How to write instruction files for AI agents: CLAUDE.md, AGENTS.md, rules files, SKILL.md bodies, references, briefs. Ten rules with their reasons, a review rubric, before-and-after examples. | Released (v0.1.0) |
+| [`instruction-writing`](plugins/instruction-writing) | How to write instruction files for AI agents: CLAUDE.md, AGENTS.md, rules files, SKILL.md bodies, references, briefs. Ten rules with their reasons, a review rubric, before-and-after examples. | Released (v0.1.1) |
 | `uvenv` ([repo](https://github.com/sidhanthapoddar99/uvenv)) | Operating manual for `uvenv` — bash/zsh wrapper around mise + uv that gives conda-style named global Python venvs you can activate from anywhere | Released (v0.3.0) |
 | `agent-ks` ([repo](https://github.com/sidhanthapoddar99/agent-knowledge-system)) | Operating manual for the agent-knowledge-system framework — docs, issues, artifacts skills, the `agent-ks` CLI dispatcher, scaffolding commands. Formerly `documentation-guide` | Released (v0.6.0) |
 
