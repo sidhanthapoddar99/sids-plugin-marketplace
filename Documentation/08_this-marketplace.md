@@ -6,7 +6,7 @@ For what a plugin or a marketplace is in general, read [01_concepts.md](01_conce
 
 ## 1. Repository layout
 
-The repo holds one in-house plugin, two catalogues and a reference doc set.
+The repo holds two in-house plugins, two catalogues and a reference doc set.
 
 ```
 sids-plugin-marketplace/
@@ -17,18 +17,19 @@ sids-plugin-marketplace/
 │       └── marketplace.json      # Codex catalogue
 ├── Documentation/                # this reference doc set
 ├── plugins/
-│   └── project-setup/
-│       ├── .claude-plugin/
-│       │   └── plugin.json       # plugin manifest, Claude
-│       ├── .codex-plugin/
-│       │   └── plugin.json       # plugin manifest, Codex
-│       ├── skills/
-│       │   └── project-setup/
-│       │       ├── SKILL.md
-│       │       ├── references/
-│       │       └── template/
-│       ├── LICENSE
-│       └── README.md
+│   ├── project-setup/
+│   │   ├── .claude-plugin/
+│   │   │   └── plugin.json       # plugin manifest, Claude
+│   │   ├── .codex-plugin/
+│   │   │   └── plugin.json       # plugin manifest, Codex
+│   │   ├── skills/
+│   │   │   └── project-setup/
+│   │   │       ├── SKILL.md
+│   │   │       ├── references/
+│   │   │       └── template/
+│   │   ├── LICENSE
+│   │   └── README.md
+│   └── instruction-writing/      # same shape: two manifests, one skill with references/ and evals/
 ├── CLAUDE.md                     # agent guidance for this repo
 ├── README.md
 ├── TODO.md
@@ -84,11 +85,12 @@ The official OpenAI marketplace uses this pattern. Its remote entries carry `int
 
 ## 4. Which plugin reaches which host
 
-All three plugins reach both hosts.
+All four plugins reach both hosts.
 
 | Plugin | Lives in | Claude source | Codex source | Codex manifest |
 |---|---|---|---|---|
 | `project-setup` | this repo | relative path | `local` | `plugins/project-setup/.codex-plugin/plugin.json` |
+| `instruction-writing` | this repo | relative path | `local` | `plugins/instruction-writing/.codex-plugin/plugin.json` |
 | `agent-ks` | `sidhanthapoddar99/agent-knowledge-system` | `git-subdir` | `url` with `path` | inline on the catalogue entry, then the remote repo's `.claude-plugin/plugin.json` at install |
 | `uvenv` | `sidhanthapoddar99/uvenv` | `git-subdir` | `url` with `path` | same |
 
@@ -246,6 +248,7 @@ Run these commands inside a Claude Code session.
 ```
 /plugin marketplace add sidhanthapoddar99/sids-plugin-marketplace
 /plugin install project-setup@sids-plugin-marketplace
+/plugin install instruction-writing@sids-plugin-marketplace
 /plugin install agent-ks@sids-plugin-marketplace
 /plugin install uvenv@sids-plugin-marketplace
 ```
@@ -273,6 +276,7 @@ Run these commands in your shell.
 ```bash
 codex plugin marketplace add sidhanthapoddar99/sids-plugin-marketplace
 codex plugin add project-setup@sids-plugin-marketplace
+codex plugin add instruction-writing@sids-plugin-marketplace
 codex plugin add agent-ks@sids-plugin-marketplace
 codex plugin add uvenv@sids-plugin-marketplace
 codex plugin list

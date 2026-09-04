@@ -1,0 +1,31 @@
+{
+  "name": "instruction-writing",
+  "version": "0.1.0",
+  "description": "How to write instruction files for AI agents",
+  "author": {
+    "name": "Sid",
+    "email": "developer@neuralabs.org"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Instruction Writing",
+    "shortDescription": "How to write instruction files for AI agents",
+    "longDescription": "How to write instruction files for AI agents: CLAUDE.md at every level, AGENTS.md for Codex, .claude/rules/ files, SKILL.md bodies, reference files under a skill, system prompts and briefs for subagents. Ten rules, each with its reason, a review rubric a fresh agent can run, and before-and-after examples. One skill, no scripts.",
+    "developerName": "Sid",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive"
+    ],
+    "defaultPrompt": [
+      "Review this repo's AGENTS.md against instruction-writing."
+    ]
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "keywords": [
+    "instruction-writing",
+    "claude-md",
+    "agents-md",
+    "skill-md",
+    "agent-brief"
+  ]
+}

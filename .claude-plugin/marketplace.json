@@ -31,6 +31,27 @@
       ]
     },
     {
+      "name": "instruction-writing",
+      "source": "./plugins/instruction-writing",
+      "description": "How to write instruction files for AI agents: CLAUDE.md at every level, AGENTS.md for Codex, .claude/rules/ files, SKILL.md bodies, reference files under a skill, system prompts and briefs for subagents. Ten rules, each with its reason, a review rubric a fresh agent can run, and before-and-after examples. One skill, no scripts.",
+      "license": "PolyForm-Noncommercial-1.0.0",
+      "category": "agent-instructions",
+      "tags": [
+        "claude-md",
+        "agents-md",
+        "skills",
+        "prompting",
+        "conventions"
+      ],
+      "keywords": [
+        "instruction-writing",
+        "claude-md",
+        "agents-md",
+        "skill-md",
+        "agent-brief"
+      ]
+    },
+    {
       "name": "agent-ks",
       "source": {
         "source": "git-subdir",

@@ -28,6 +28,7 @@ Then install whichever plugins you want:
 
 ```
 /plugin install project-setup@sids-plugin-marketplace
+/plugin install instruction-writing@sids-plugin-marketplace
 /plugin install agent-ks@sids-plugin-marketplace
 /plugin install uvenv@sids-plugin-marketplace
 ```
@@ -47,13 +48,14 @@ Register the marketplace, then install what you want:
 ```
 codex plugin marketplace add sidhanthapoddar99/sids-plugin-marketplace
 codex plugin add project-setup@sids-plugin-marketplace
+codex plugin add instruction-writing@sids-plugin-marketplace
 codex plugin add agent-ks@sids-plugin-marketplace
 codex plugin add uvenv@sids-plugin-marketplace
 ```
 
 Start a new thread after installing — that is when Codex picks up new skills.
 
-All three plugins are listed for Codex. `project-setup` lives in this repo and has its
+All four plugins are listed for Codex. `project-setup` and `instruction-writing` live in this repo and have their
 own `.codex-plugin/plugin.json`. `agent-ks` and `uvenv` live in their own repos, so
 their Codex entries point at those repos and carry the display name inline.
 
@@ -66,6 +68,7 @@ Requires Codex CLI 0.147 or later. Check with `codex --version`.
 | Plugin | Description | Status |
 |---|---|---|
 | [`project-setup`](plugins/project-setup) | Architectural decision-maker for repos — new and existing. Layout, env/config split, docker, design tokens, ML orchestration, mobile/desktop. Bootstrap AND restructure. | Work in progress |
+| [`instruction-writing`](plugins/instruction-writing) | How to write instruction files for AI agents: CLAUDE.md, AGENTS.md, rules files, SKILL.md bodies, references, briefs. Ten rules with their reasons, a review rubric, before-and-after examples. | Released (v0.1.0) |
 | `uvenv` ([repo](https://github.com/sidhanthapoddar99/uvenv)) | Operating manual for `uvenv` — bash/zsh wrapper around mise + uv that gives conda-style named global Python venvs you can activate from anywhere | Released (v0.3.0) |
 | `agent-ks` ([repo](https://github.com/sidhanthapoddar99/agent-knowledge-system)) | Operating manual for the agent-knowledge-system framework — docs, issues, artifacts skills, the `agent-ks` CLI dispatcher, scaffolding commands. Formerly `documentation-guide` | Released (v0.6.0) |
 
@@ -150,7 +153,8 @@ For skill authoring, use the `skill-creator` skill that ships with Claude Code.
 ├── CLAUDE.md                         # agent guidance for working in this repo
 ├── Documentation/                    # ten-file reference: plugins, marketplaces, skills across four hosts
 ├── plugins/
-│   └── project-setup/                # personal project / monorepo conventions
+│   ├── project-setup/                # personal project / monorepo conventions
+│   └── instruction-writing/          # how to write CLAUDE.md, AGENTS.md, skills, briefs
 └── LICENSE                           # MIT
 ```
 

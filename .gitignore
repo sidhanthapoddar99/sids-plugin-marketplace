@@ -1,0 +1,3 @@
+# Raw skill test runs. The eval prompts live in each skill's evals/evals.json;
+# the transcripts and outputs from running them are kept here and never committed.
+plugins/*/evals-workspace/

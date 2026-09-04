@@ -1,0 +1,61 @@
+{
+  "skill_name": "instruction-writing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Audit the project CLAUDE.md at evals/files/claude-md-audit/CLAUDE.md. Tell me what is wrong with it and rewrite it. The repo is a small FastAPI service with a Vite frontend; the commit rules already live in docs/commits.md in that folder. Write the rewritten file to CLAUDE.md in the output folder and a short findings list to findings.md.",
+      "expected_output": "A findings list that names the pasted commit block, the history asides, the bare rules without reasons, the ALL-CAPS lines, and the missing stopping rule. A rewritten CLAUDE.md that points at docs/commits.md, drops the history, gives each rule a reason, keeps one marked hard limit, and states what the agent decides alone versus asks.",
+      "files": [
+        "evals/files/claude-md-audit/CLAUDE.md",
+        "evals/files/claude-md-audit/docs/commits.md"
+      ],
+      "expectations": [
+        "findings.md names the pasted commit-message block and says it should be a pointer to docs/commits.md",
+        "findings.md names at least one history aside ('used to', 'previously', 'was renamed')",
+        "findings.md quotes at least one specific rule from the source and says it has no reason beside it",
+        "findings.md names the ALL-CAPS emphasis and separates the real limits (no commits to main, no secrets in code) from guidance",
+        "The rewritten CLAUDE.md contains no commit-message rules inline and points at docs/commits.md by path, not by @import",
+        "The rewritten CLAUDE.md describes no former state of the repo: no 'used to', 'previously', 'no longer', 'renamed from', and no mention of a removed app, tool or file",
+        "Every rule in the rewritten CLAUDE.md has a reason in the same sentence or the next one (a rule is a line that tells the agent to do or not do something. A command listing, a path table, a marked hard limit, a decision-tier heading, and a rule carrying the marker 'Reason not recorded. Ask the owner.' are not counted)",
+        "The rewritten CLAUDE.md has at most one ALL-CAPS MUST/NEVER/ALWAYS, and if present it is marked as a limit",
+        "The rewritten CLAUDE.md says what the agent decides alone and what stops it to ask",
+        "The rewritten CLAUDE.md is under 60 lines",
+        "The output states no fact the prompt or input files did not give (a command, a path, a tool, a threshold, a CI behaviour). A fact the file needs but the author did not have is marked as missing, not invented"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Write an AGENTS.md for Codex for this repo from scratch. It is a Go CLI called `relay` with a `cmd/relay` entrypoint, tests run with `go test ./...`, lint with `golangci-lint run`, and releases are cut by a maintainer only. There is a `docs/architecture.md` that explains the package layout; agents should read it before touching `internal/`. The maintainer does not want agents pushing tags or editing `go.mod` without asking. Write it to AGENTS.md in the output folder.",
+      "expected_output": "A short AGENTS.md in plain imperative sentences. Each rule carries its reason. Build, test and lint commands are given verbatim. It points at docs/architecture.md instead of summarising it. Tags and go.mod are stated once as limits. It says what the agent decides alone versus what stops it to ask. No history, no ALL-CAPS emphasis.",
+      "files": [],
+      "expectations": [
+        "AGENTS.md gives the exact commands go test ./... and golangci-lint run",
+        "AGENTS.md points at docs/architecture.md by path and does not restate the package layout",
+        "AGENTS.md states the tag and go.mod limits once, marked as limits, not repeated for emphasis",
+        "Every non-limit rule in AGENTS.md has a reason in the same sentence or the next one (a rule is a line that tells the agent to do or not do something. A command listing, a path table, a marked hard limit, a decision-tier heading, and a rule carrying the marker 'Reason not recorded. Ask the owner.' are not counted)",
+        "AGENTS.md says what the agent decides alone and what stops it to ask",
+        "AGENTS.md has no ALL-CAPS MUST/NEVER/ALWAYS/CRITICAL outside a marked limit",
+        "AGENTS.md is under 60 lines",
+        "AGENTS.md uses one name for the CLI throughout",
+        "The output states no fact the prompt or input files did not give (a command, a path, a tool, a threshold, a CI behaviour). A fact the file needs but the author did not have is marked as missing, not invented"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I need to hand a subagent the job of migrating our test fixtures from JSON to YAML. There are about 40 files under tests/fixtures/, the loader is in tests/conftest.py and already accepts both formats, and CI runs pytest. The subagent will not see this conversation. Write me the brief to give it. Save it as brief.md in the output folder.",
+      "expected_output": "A self-contained brief: the goal in one line, the files and paths involved, the constraints with reasons, the check to run (pytest), what the agent decides alone, what it records, what stops it to ask, and the exact shape of what it returns. No reference to 'as discussed' or the conversation.",
+      "files": [],
+      "expectations": [
+        "brief.md states the goal in its first two lines",
+        "brief.md names tests/fixtures/, tests/conftest.py and pytest",
+        "brief.md says what the subagent decides alone, and what makes it stop and ask",
+        "brief.md gives the return shape: what to report and in what form",
+        "brief.md does not lean on shared context: no 'as discussed', 'as above', or reference to the conversation as something the subagent already knows",
+        "Every constraint in brief.md has a reason in the same sentence or the next one (a rule is a line that tells the agent to do or not do something. A command listing, a path table, a marked hard limit, a decision-tier heading, and a rule carrying the marker 'Reason not recorded. Ask the owner.' are not counted)",
+        "brief.md tells the subagent to run pytest and to report the output, not just that it passed",
+        "brief.md contains no ALL-CAPS MUST/NEVER/ALWAYS",
+        "The output states no fact the prompt or input files did not give (a command, a path, a tool, a threshold, a CI behaviour). A fact the file needs but the author did not have is marked as missing, not invented"
+      ]
+    }
+  ]
+}

@@ -55,6 +55,6 @@ no growth beyond ten files without a reason.
 
 - Do not add slash commands, agents, or hooks to plugins meant for both hosts. Codex rejects hooks and has no commands.
 - Do not edit one host layer without the other. Walk the checklist above.
-- Do not add a generator or sync script for the Codex layer. Three plugins are cheaper to sync by hand than to keep a generator honest.
+- Do not add a generator or sync script for the Codex layer. Four plugins are cheaper to sync by hand than to keep a generator honest.
 - Do not add an upstream-tracking or soft-fork mechanism. This repo vendors nothing.
 - Do not expand `Documentation/` back into a many-file reference. Add to an existing file or replace one.
