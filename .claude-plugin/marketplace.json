@@ -37,7 +37,7 @@
         "url": "https://github.com/sidhanthapoddar99/agent-knowledge-system.git",
         "path": "plugins/agent-ks"
       },
-      "description": "Operating manual for the agent-knowledge-system framework: markdown docs, blog posts, site configuration, themes, the folder-per-issue tracker, and self-contained HTML artifacts. Ships eight skills, four of them commands (init, add-section, quick-idea-note, index-check), a read-only index-checking agent, and the `agent-ks` CLI. Requires bun.",
+      "description": "Operating manual for the agent-knowledge-system framework: markdown docs, blog posts, site configuration, themes, the folder-per-issue tracker, and self-contained HTML artifacts. Ships ten skills, three of them commands (config, quick-idea-note, index-check), a read-only index-checking agent, and the `agent-ks` CLI. Requires bun.",
       "homepage": "https://github.com/sidhanthapoddar99/agent-knowledge-system",
       "repository": "https://github.com/sidhanthapoddar99/agent-knowledge-system",
       "author": {

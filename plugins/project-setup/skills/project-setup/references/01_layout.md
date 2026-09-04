@@ -69,7 +69,7 @@ The root holds config, the brief, and folders. Never loose code. Before creating
 | `docker/` | Compose files | `compose.db`, `compose.base`, `compose.dev`, `compose.m.*`. Compose lives here, never inside an app. |
 | `data/` | Actual data: engine mounts (`postgres/`, `redis/`, `neo4j/`), datasets, uploads, checkpoints | Bind mounts point here. Self-ignored; see `.gitignore` below. |
 | `logs/` | Produced state: `dev/` logs, `run/` pids, `backups/`, `test_build/` | Everything `ctl` writes that is not data. Self-ignored. |
-| `docs/` | Docs site, built with `agent-ks` | Exists only when this repo is the docs home. One product has one docs home: never an in-repo `docs/` and a docs repo both. To scaffold, tell the user to run `/agent-ks-init`; it is interactive, never chain into it. |
+| `docs/` | Docs site, built with `agent-ks` | Exists only when this repo is the docs home. One product has one docs home: never an in-repo `docs/` and a docs repo both. To scaffold, tell the user to run `/agent-ks-config`; it is interactive, never chain into it. |
 | `memory/` | Agent working rules, one file per rule set | `AGENTS.md` links here. |
 | `.env.secrets.template`, `.env.data.template`, `.env.proxy.template` | The env contract in three roles: secrets, paths, routing | Committed. `ctl setup` copies each to `.env.<role>`, gitignored. See `02_env.md`. |
 | `.mise.toml` | Tool version contract | Its `[env]` block puts the repo root on `PATH` (`_.path = ["{{config_root}}"]`), which is what makes `ctl` run bare. So `ctl` must stay the only executable at the root: a stray script there becomes a bare command. `mise trust` once per clone. |
