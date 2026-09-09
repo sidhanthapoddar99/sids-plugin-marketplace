@@ -12,7 +12,7 @@ The language is chosen in `04_stack.md`; the env contract is `02_env.md`; routin
 | Rate limiting at the router | Keyed on the user or API key, never the raw IP for authenticated routes. `07_security.md`. |
 | `X-Forwarded-*` trusted from the edge only | Never CORS middleware for our own frontend. |
 | Its own image | Non-root user, multi-stage, pinned base, no dev deps in the runtime stage, no `COPY .env*`. |
-| Its own suite | `tests/` beside `app/`; structure tests in `tests/conformance/`. `10_testing.md`. |
+| Its own suite | Unit tests beside the file, integration in `tests/` beside `app/`. `10c_dynamic-tests.md`. Layer rules are lint config: `10b_static-checks.md`. |
 
 ## Layout by size
 

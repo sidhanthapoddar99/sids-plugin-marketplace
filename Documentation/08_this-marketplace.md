@@ -26,7 +26,8 @@ sids-plugin-marketplace/
 │   │   │   └── project-setup/
 │   │   │       ├── SKILL.md
 │   │   │       ├── references/
-│   │   │       └── template/
+│   │   │       ├── template/           # the floor every repo starts from
+│   │   │       └── additional-template/ # opt-in add-ons: hooks, memory/, e2e
 │   │   ├── LICENSE
 │   │   └── README.md
 │   └── instruction-writing/      # same shape: two manifests, one skill with references/

@@ -6,7 +6,7 @@
     "typecheck": "tsc --noEmit",
     "dev": "vite",
     "build": "vite build",
-    "test": "vitest",
+    "test": "vitest run",
     "test:e2e": "playwright test",
     "lint": "oxlint src"
   },

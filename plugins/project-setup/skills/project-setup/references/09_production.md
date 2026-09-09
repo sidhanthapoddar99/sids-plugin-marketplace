@@ -67,6 +67,11 @@ Rare. When two repos' stacks must reach each other by DNS:
 
 ## Checklist
 
+Walk this before the first public deploy, and again when a new service joins. The first three rows are the verification floor growing up with the repo; the rest are the stack.
+
+- [ ] `audit` and `build` are in `RUNGS` and in the `Gate ladder` row of `AGENTS.md`; the audit tools are in `.mise.toml` (`10b_static-checks.md`)
+- [ ] the security review has been walked and its answers recorded (`10a_review.md`, `07_security.md`)
+- [ ] git hooks are installed when more than one person commits (`additional-template/README.md`)
 - [ ] production `CMD` (gunicorn, one process for Rust/Go/Node); worker count matches the CPU limit; recycling with jitter on Python
 - [ ] `/health` and `/ready` exist; compose healthcheck with `start_period`; `depends_on: service_healthy`
 - [ ] graceful shutdown: lifespan cleanup, `stop_grace_period` ≥ graceful timeout

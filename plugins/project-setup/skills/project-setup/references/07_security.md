@@ -15,7 +15,7 @@ The rules that hold regardless of size. Each row names where the control lives, 
 | Audit | a domain slice (`audit/`) | Durable, queryable records: actor, action, target, outcome, time. Distinct from request logs. Never a secret or a body in a log. Logs carry a retention policy: IP plus user id is PII. |
 | Telemetry and error tracking | one adapter in `core/` | Swappable provider, opt-out enforced once at the boundary. Not day one: metrics first (`/metrics`), tracing when there is more than one service, error tracking and an uptime pinger as pain dictates. |
 | Secrets | `.env.secrets`, `config.yaml` as `${VAR}` | Never a literal in code or config, never a build arg, never in an image layer. A secret that reaches git is rotated. Prod files `chmod 600`, owned by the app user. A secrets manager (Vault, a cloud KMS) is the graduation path, not day one; the loader's skip-if-set rule is what makes the swap invisible. |
-| Dependencies | `ctl gate audit` | `pip-audit`, `bun audit`, `cargo audit`, `govulncheck`, gitleaks on every ladder run. `10_testing.md`. |
+| Dependencies | `ctl gate audit` | `pip-audit`, `bun audit`, `cargo audit`, `govulncheck`, gitleaks on every ladder run once the `audit` rung is on. `10b_static-checks.md`. |
 
 ## AI and third-party keys
 

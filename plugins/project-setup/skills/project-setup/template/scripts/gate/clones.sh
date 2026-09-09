@@ -30,7 +30,7 @@ require_tools bunx
 
 ignore="**/node_modules/**,**/target/**,**/.venv/**,**/dist/**,**/.next/**"
 scope="everything — tests too"
-if (( ! ALL )); then ignore+=",**/*.test.*,**/*_test.go,**/test_*.py,**/tests/**,**/e2e/**,**/conformance/**"; scope="production code only"; fi
+if (( ! ALL )); then ignore+=",**/*.test.*,**/*_test.go,**/test_*.py,**/tests/**,**/e2e/**"; scope="production code only"; fi
 reporters="console"; (( REPORT )) && reporters="console,html"
 
 step "gate clones — jscpd over apps/ ($scope)"

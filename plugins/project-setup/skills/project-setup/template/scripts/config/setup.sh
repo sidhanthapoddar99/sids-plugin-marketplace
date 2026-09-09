@@ -17,7 +17,8 @@ Steps
      every blank key with a _PASSWORD segment with a 24-char base64 string
   3. mkdir data/{$(IFS=,; echo "${DATA_SVCS[*]}")} and logs/{dev,run,backups,test_build}  (each folder's .gitignore keeps it out of git)
   4. refuse while any '<version>' placeholder remains in .mise.toml or an app manifest (ctl check names them)
-  5. mise install · uv sync per python app · bun install per js app · cargo fetch · go mod download · lefthook install
+  5. mise install · uv sync per python app · bun install per js app · cargo fetch · go mod download
+     · lefthook install, only when the repo carries a lefthook.yml
 
 Exit 0 only when every step succeeded. A failed install is named and the exit code is 1." \
 "Re-run any time to top up missing keys and secrets."; }
@@ -103,7 +104,7 @@ done
 if [[ -f lefthook.yml && -d .git ]]; then
   if command -v lefthook >/dev/null 2>&1; then
     if lefthook install >/dev/null; then ok "lefthook install (hooks: pre-commit lint + data guard, pre-push test)"; else fail "lefthook install failed"; fi
-  else warn "lefthook not found — hooks not installed (mise install adds it)"; fi
+  else warn "lefthook not found — hooks not installed (add lefthook to .mise.toml, then mise install)"; fi
 fi
 
 for f in "${ENV_FILES[@]}"; do

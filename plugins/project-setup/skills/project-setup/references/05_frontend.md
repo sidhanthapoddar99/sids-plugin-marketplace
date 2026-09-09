@@ -87,7 +87,7 @@ No component, hook, page or store calls `fetch` directly. `api/` owns four thing
 | Caps | Component 150 lines, page 50: split. The numbers live in `11_conventions.md` § Caps. A feature imported by two features: extract to the app scope or a package. |
 | Cross the boundary with types | A feature exposes `index.ts`. Nobody reaches into another feature's files. Never import a DTO across features to reuse a shape; duplicate it. `11_conventions.md` § Scope says why. |
 
-Mechanical checks (empty output = compliant; a conformance test in `10_testing.md` is the durable form):
+Mechanical checks (empty output = compliant; a lint rule per `10b_static-checks.md` § Layer rules is the durable form):
 
 ```bash
 grep -rEn --include='*.tsx' 'text-\[|bg-\[#|\bp-\[|var\(--' src/features src/pages      # arbitrary values, raw var()

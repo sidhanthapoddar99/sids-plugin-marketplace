@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # config/check.sh — `ctl check`. Conformance floor: the rules the layout and env contract impose.
-# Read-only. Prints every failure, exits non-zero if any. Runs as a gate rung (test/gate.sh).
+# Read-only. Prints every failure, exits non-zero if any. Runs as a gate rung too (gate/check.sh).
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 

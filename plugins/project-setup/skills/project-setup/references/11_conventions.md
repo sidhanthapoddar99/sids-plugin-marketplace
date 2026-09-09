@@ -4,7 +4,7 @@ Rules that hold across every file and every change. Each one is an audit finding
 
 ## The agent brief
 
-`AGENTS.md` at the root is the real brief. `CLAUDE.md` is one line: `@AGENTS.md`. Both hosts read the same text. `memory/` holds the working rules, one file per rule set, flat kebab-case, with a `README.md` index; `AGENTS.md` imports them with `@memory/<file>.md`. Template: `template/AGENTS.md`, `template/memory/`.
+`AGENTS.md` at the root is the real brief. `CLAUDE.md` is one line: `@AGENTS.md`. Both hosts read the same text. The working rules start as a `Working rules` section of `AGENTS.md`. When that section outgrows one screen, they move to `memory/`, one file per rule set, flat kebab-case, with a `README.md` index, and `AGENTS.md` imports them with `@memory/<file>.md`. Template: `template/AGENTS.md`. Add-on: `additional-template/memory/`.
 
 The brief is a contract, not a welcome note. Skills are not always loaded; the brief is. Every "record it in `AGENTS.md`" in these pages lands in one of these sections:
 
@@ -23,7 +23,7 @@ In a multi-repo product each brief states the repo's one-sentence role and names
 
 ## Documentation points at code, never the reverse
 
-Docs, plans, tracker issues and skill pages name the files, functions and lines they describe. Code does not name them back. A comment in code never says "see plan 12", "subtask 3.2", "`10_testing.md`" or "the docs explain this". The code knows nothing about the documentation.
+Docs, plans, tracker issues and skill pages name the files, functions and lines they describe. Code does not name them back. A comment in code never says "see plan 12", "subtask 3.2", "`10b_static-checks.md`" or "the docs explain this". The code knows nothing about the documentation.
 
 Why: documentation moves, renumbers and gets deleted; a tracker issue closes; a skill page is renamed. A code comment that names one goes stale on the next reorganisation and nobody notices, because no test reads comments. The reverse link is cheap to keep: a doc that names `scripts/gate/_gate.sh` is checked every time someone opens it.
 
@@ -54,13 +54,13 @@ Code is placed by the scope that needs it, and a scope depends only inward. Same
 - **State lives at the narrowest scope that needs it.** Component state in the component, feature state in the feature, app state only for what every feature reads (session, theme). Wider state re-renders more than it needs to.
 - **Providers of one kind are adapters.** `06_backend.md` § Domain slices holds the rule and its reason.
 
-These rules are the input to a conformance check. When one is broken a second time, write the check; see "Conformance" in `10_testing.md`.
+These rules are the input to a lint rule. When one is broken a second time, write the rule; see "Layer rules are lint config" in `10b_static-checks.md`.
 
 ## Caps and extraction
 
 | Rule | Number | Detail |
 |---|---|---|
-| File | 300 lines soft, 500 hard | Source, tests, components. Not generated code, vendored code, lock files or data fixtures. Past 300 a file holds two things; past 500 nobody reads it whole. Relaxed only with a comment at the top saying why, and a ledger row in the conformance test. |
+| File | 300 lines soft, 500 hard | Source, tests, components. Not generated code, vendored code, lock files or data fixtures. Past 300 a file holds two things; past 500 nobody reads it whole. Relaxed only with a comment at the top saying why, and an inline lint-ignore on that file. |
 | Function | 40 lines | Split by responsibility, because a longer one carries a second responsibility. |
 | Component | 150 lines; page 50 | A page is a route, so it composes; a component past 150 lines holds a second component. This row is the home; `05_frontend.md` points here. |
 | Feature folder | ~10 files | Subdivide inside the folder, along the axis the files change on together. Ten files is where a listing stops fitting on one screen. |
@@ -116,7 +116,7 @@ Each of these means a rule was broken somewhere else. Find that place.
 | `package.json` at the root or in `apps/` | no workspace (`01_layout.md`) |
 | a second nginx service | the `web` image is the edge |
 | `docker compose -f` in a README | `ctl` is the entrypoint |
-| a `tests/` folder at the root | tests live with the app (`10_testing.md`) |
+| a `tests/` folder at the root | tests live with the app (`10c_dynamic-tests.md`) |
 | `text-[13px]`, a hex in a `.tsx`, `var(--…)` in JSX | tokens and the stock scale (`05_frontend.md`) |
 | `fetch(` outside `src/api/` | the api layer |
 | a domain named `build/`, `sync/`, `ingest/` | ownership nouns (`06_backend.md`) |
@@ -135,5 +135,5 @@ Check the layers in this order and report every one of them, lowest first, becau
 5. Frontend and backend internals (`05_frontend.md`, `06_backend.md`)
 6. Security floor (`07_security.md`)
 7. Production settings (`09_production.md`)
-8. Testing: placement and the gate (`10_testing.md`)
+8. Verification: the ladder and the static rungs (`10b_static-checks.md`), test placement (`10c_dynamic-tests.md`), the review passes (`10a_review.md`)
 9. This file.

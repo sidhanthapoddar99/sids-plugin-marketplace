@@ -15,7 +15,7 @@
 #   Database       migrate · db shell|backup|restore
 #   Administration manage ops|settings (break-glass console, wraps the backend's manager.py)
 #   Test           test · build save|start|clean (frozen test builds)
-#   Gates          gate [all] · gate <rung> (lint typecheck dead audit test check build e2e)
+#   Gates          gate [all|static|dynamic] · gate <rung> (lint typecheck dead audit test check build e2e)
 #                  gate clones|fuzz|perf run BY NAME — not in the ladder
 #   Configuration  setup · check · status
 #
@@ -62,13 +62,14 @@ ctl_help() {
   row "test [app|e2e]"                  "run test suites (e2e: against a throwaway stack)"
   row "build save|start|clean"          "frozen test builds — snapshot · serve · prune  (ctl build save -h)"
   printf '\n%sGates%s (the ladder — a repo without CI runs it here; with CI, CI runs it)\n' "$C_B" "$C_RESET"
-  row "gate [all] [-q] [--memory SIZE]" "the whole ladder, in order below — stop on first red, name what did not run"
+  row "gate [all] [-q] [--memory SIZE]" "the rungs this repo lists, in order below — stop on first red, name what did not run"
+  row "gate static | dynamic"           "the listed rungs that read the code · the ones that run it"
   row "gate lint [app] [--staged]"      "ruff · clippy · oxlint · gofmt   (--staged: the pre-commit hook)"
   row "gate typecheck [app]"            "tsc · mypy · cargo check · go vet"
   row "gate dead"                       "dead-code census: knip ×2 · deptry · cargo udeps — zero findings"
   row "gate audit"                      "gitleaks · bandit · pip-audit · bun audit · cargo audit · govulncheck"
-  row "gate test"                       "every app's suite, structure tests among them  (= ctl test)"
-  row "gate check"                      "repo conformance floor  (= ctl check)"
+  row "gate test"                       "every app's suite  (= ctl test)"
+  row "gate check"                      "the repo contract  (= ctl check)"
   row "gate build"                      "every image and bundle  (= ctl build)"
   row "gate e2e"                        "the browser suite on a throwaway stack  (= ctl test e2e)"
   row "gate clones [--all] [--max N]"   "by name · copy-pasted code (jscpd) — never in the ladder"
@@ -76,7 +77,7 @@ ctl_help() {
   row "gate perf"                       "by name · pytest-benchmark · k6 · cargo bench → logs/perf/"
   printf '\n%sConfiguration%s\n' "$C_B" "$C_RESET"
   row "setup"                           "create .env.{secrets,data,proxy} from templates, generate secrets, dirs, deps"
-  row "check"                           "conformance floor — layout, env contract, compose validity"
+  row "check"                           "the repo contract — layout, env contract, compose validity, brief"
   row "status"                          "config doctor (env · runtimes · deps · health · stack)"
   printf '\n%sup modifiers%s  %s\n' "$C_DIM" "$C_RESET" "$(list_modifiers | sed 's/^/+/' | join_sp | or_none)"
   printf '%s-h/--help works on every command:  ctl <command> --help%s\n' "$C_DIM" "$C_RESET"
@@ -128,12 +129,13 @@ case "$cmd" in
   # ── test ─────────────────────────────────────────────────
   test)     run test/test "$@" ;;
   # ── gates ────────────────────────────────────────────────
-  # `ctl gate` and `ctl gate all` run the ladder (gate/all.sh); a rung name runs that rung's file;
-  # clones · fuzz · perf are gates run BY NAME and never in the ladder. Any other name is an error.
+  # `ctl gate`, `gate all`, `gate static`, `gate dynamic` run the ladder or a group of it (gate/all.sh);
+  # a rung name runs that rung's file; clones · fuzz · perf are gates run BY NAME and never in the
+  # ladder. Any other name is an error.
   gate)     sub="${1:-all}"
             case "$sub" in
-              -q|--quiet|--memory|--memory=*) run gate/all "$@" ;;
-              all|lint|typecheck|dead|audit|test|check|build|e2e|clones|fuzz|perf) shift; run "gate/$sub" "$@" ;;
+              -q|--quiet|--memory|--memory=*|all|static|dynamic) run gate/all "$@" ;;
+              lint|typecheck|dead|audit|test|check|build|e2e|clones|fuzz|perf) shift; run "gate/$sub" "$@" ;;
               -h|--help) run gate/all --help ;;
               *) err "unknown gate: $sub"; say "run ${C_B}ctl gate --help${C_RESET} for the rung list"; exit 1 ;;
             esac ;;

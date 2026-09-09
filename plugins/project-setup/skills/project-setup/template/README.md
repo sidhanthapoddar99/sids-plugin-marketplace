@@ -10,7 +10,7 @@ One paragraph: what this product is and which apps make it.
 - `ctl dev` — databases in docker, apps on the host (`--proxy` for one origin across frontends)
 - `ctl up` — full stack in docker, the web edge on 80/443
 - `ctl migrate` — apply schema migrations
-- `ctl gate` — the test ladder; green here is the only definition of green
+- `ctl gate` — the ladder; green here is the only definition of green
 
 ## Commands
 | Verb | Does |
@@ -19,8 +19,8 @@ One paragraph: what this product is and which apps make it.
 | `ctl up [+modifier…] [--services a,b]` | the stack in docker, or a subset; interactive in a terminal |
 | `ctl migrate [new "<msg>"]` | apply or create a migration |
 | `ctl manage ops\|settings` | the break-glass operator console |
-| `ctl test [app\|e2e]` · `ctl gate [-q]` | one suite, or the whole ladder |
-| `ctl setup` · `ctl check` · `ctl status` | create env files and deps · the conformance floor · the doctor |
+| `ctl test [app\|e2e]` · `ctl gate [static\|dynamic] [-q]` | one suite, or the ladder, or half of it |
+| `ctl setup` · `ctl check` · `ctl status` | create env files and deps · the repo contract · the doctor |
 
 `ctl --help` is the full list and is always current; this table is a summary.
 
@@ -35,7 +35,7 @@ Each app's `README.md` shows how to run it from its own folder, the env keys it 
 | Data | Postgres `<version>` + pgvector · Redis `<version>` · Neo4j `<version>` |
 | Containers | docker compose ≥ 2.24; engines in docker for dev, everything for prod |
 | Config | `.env.secrets` / `.env.data` / `.env.proxy` + per-backend `config.yaml` |
-| Dev | mise · uv · bun · lefthook |
+| Dev | mise · uv · bun |
 
 ## Documentation
 `docs/` when this repo is the docs home (`agent-ks`); otherwise the docs repo is named in `AGENTS.md`.
@@ -52,7 +52,6 @@ scripts/   ctl workers
 data/      actual data: engine mounts, datasets. gitignored
 logs/      produced state: logs, pids, backups, frozen builds. gitignored
 .env.secrets.template  .env.data.template  .env.proxy.template   the env contract (committed); ctl setup makes the real files
-memory/    agent rules
 ```
 
 ## Architecture

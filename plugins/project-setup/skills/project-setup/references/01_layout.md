@@ -39,14 +39,14 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 ├── logs/                       # produced state: logs, pids, backups, frozen builds
 │   └── .gitignore              #   same two lines
 ├── docs/                       # only when docs live in this repo
-├── memory/                     # agent working rules. AGENTS.md links here
+├── memory/                     # add-on: agent working rules split out of AGENTS.md once they outgrow it
 ├── .env.secrets.template       # every secret, blank. committed. ctl setup → .env.secrets (gitignored)
 ├── .env.data.template          # every path. committed. → .env.data
 ├── .env.proxy.template         # every host, port, prefix. committed. → .env.proxy
 ├── .mise.toml                  # tool version contract
 ├── .gitignore
 ├── .dockerignore
-├── lefthook.yml
+├── lefthook.yml                # add-on: git hooks, needs the ladder
 ├── ctl                         # the single entrypoint. Thin router into scripts/
 ├── AGENTS.md                   # the agent brief. The real file
 ├── CLAUDE.md                   # one line: @AGENTS.md
@@ -54,7 +54,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 └── LICENSE
 ```
 
-The template is an instance of this tree: `template/`. Copy it, delete what the product does not need. Its app folders carry the stack in their names (`example-api-python`) to label the examples; a real project uses role names. It ships no lock files (every dependency is `<version>`); `ctl setup` creates them. `docs/`, `notebooks/`, desktop and mobile are absent because a folder exists only when used.
+The template is an instance of this tree: `template/`. Copy it, delete what the product does not need. Its app folders carry the stack in their names (`example-api-python`) to label the examples; a real project uses role names. It ships no lock files (every dependency is `<version>`); `ctl setup` creates them. `docs/`, `notebooks/`, desktop and mobile are absent because a folder exists only when used. `memory/`, `lefthook.yml` and an `e2e/` folder are add-ons: they live in `additional-template/` and join a repo one at a time when the user asks. `additional-template/README.md` is the catalogue.
 
 ## Placement rules
 
@@ -70,13 +70,13 @@ The root holds config, the brief, and folders. Never loose code. Before creating
 | `data/` | Actual data: engine mounts (`postgres/`, `redis/`, `neo4j/`), datasets, uploads, checkpoints | Bind mounts point here. Self-ignored; see `.gitignore` below. |
 | `logs/` | Produced state: `dev/` logs, `run/` pids, `backups/`, `test_build/` | Everything `ctl` writes that is not data. Self-ignored. |
 | `docs/` | Docs site, built with `agent-ks` | Exists only when this repo is the docs home. One product has one docs home: never an in-repo `docs/` and a docs repo both. To scaffold, tell the user to run `/agent-ks-config`; it is interactive, never chain into it. |
-| `memory/` | Agent working rules, one file per rule set | `AGENTS.md` links here. |
+| `memory/` | Add-on. Agent working rules, one file per rule set | The rules start as a section of `AGENTS.md`. When that section outgrows one screen, they move here and `AGENTS.md` imports each file with `@memory/<file>.md`. |
 | `.env.secrets.template`, `.env.data.template`, `.env.proxy.template` | The env contract in three roles: secrets, paths, routing | Committed. `ctl setup` copies each to `.env.<role>`, gitignored. See `02_env.md`. |
 | `.mise.toml` | Tool version contract | Its `[env]` block puts the repo root on `PATH` (`_.path = ["{{config_root}}"]`), which is what makes `ctl` run bare. So `ctl` must stay the only executable at the root: a stray script there becomes a bare command. `mise trust` once per clone. |
 | `.gitignore` / `.dockerignore` | Ignore lists | Curated per ecosystem present. Tool config that spans the whole repo (`knip.json`) may sit at root; lint config for one ecosystem sits in the app (`biome.json`, `.oxlintrc.json`, `ruff` in `pyproject.toml`). |
 | `ctl` | The single entrypoint | Thin router into `scripts/`. |
 | `AGENTS.md` | The agent brief | The real file. `CLAUDE.md` holds one line: `@AGENTS.md`. |
-| `lefthook.yml` | Git hooks | Every hook calls `ctl` (`ctl gate lint --staged`, `ctl test`), never a tool directly. |
+| `lefthook.yml` | Add-on. Git hooks | Every hook calls `ctl` (`ctl gate lint --staged`, `ctl test`), never a tool directly. |
 | `README.md` / `LICENSE` | | |
 
 > No workspace. `package.json`, `bun.lock`, `pnpm-workspace.yaml` never live in the root, in `apps/`, or directly in a group folder (the static-frontend group, `apps/packages/`). Each app and each package owns its own manifest and lock, because a workspace hoists dependencies and then no app can be lifted out or built alone. `ctl check` fails on it. This page is the home of the rule; the tripwire in `11_conventions.md` and the check in `08_ctl.md` point here.

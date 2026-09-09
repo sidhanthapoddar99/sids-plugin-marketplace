@@ -5,7 +5,7 @@
     "typecheck": "tsc --noEmit",
     "dev": "next dev",
     "build": "next build",
-    "test": "vitest",
+    "test": "vitest run",
     "lint": "oxlint src"
   },
   "dependencies": {

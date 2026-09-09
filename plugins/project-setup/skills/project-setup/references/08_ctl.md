@@ -22,13 +22,14 @@ The verb table below is the floor, not the ceiling. A project adds the verbs its
 | | `db backup`, `db restore <dir>` | Dump to `logs/backups/<timestamp>/`; load back. Restore refuses while apps run. |
 | Administration | `manage ops <list\|create\|disable\|enable\|reset-password\|lockout>` | Operator accounts, without the web auth flow. Below. |
 | | `manage settings <list\|get\|set>` | Platform settings, value parsed as JSON. |
-| Test | `test [app\|e2e]` | Each app's own suite. `e2e`: a throwaway stack. See `10_testing.md`. |
+| Test | `test [app\|e2e]` | Each app's own suite. `e2e`: a throwaway stack. See `10c_dynamic-tests.md`. |
 | | `build save\|start\|clean` | Frozen test builds under `logs/test_build/`. `09_production.md`. |
-| Gates | `gate [all] [-q] [--memory SIZE]` | The ladder: lint → typecheck → dead → audit → test → check → build → e2e. Stops at the first red, names every rung not reached. One run at a time, under a memory lid. |
+| Gates | `gate [all] [-q] [--memory SIZE]` | The ladder: lint → typecheck → dead → audit → test → check → build → e2e, trimmed to the rungs `AGENTS.md` lists. The floor is `lint typecheck test check`. Stops at the first red, names every rung not reached. One run at a time, under a memory lid. `10b_static-checks.md`. |
+| | `gate static\|dynamic [-q]` | The listed rungs that read the code, or the ones that run it. Ladder order kept. |
 | | `gate <rung> [-q]` | One rung. `gate lint [app] [--staged]` and `gate typecheck [app]` take a target; the others take none. |
 | | `gate clones\|fuzz\|perf` | By name. Never in the ladder. |
 | Configuration | `setup` | `.env.secrets`, `.env.data`, `.env.proxy` from their templates, secrets generated, `data/*` and `logs/*` dirs, deps installed. |
-| | `check` | Conformance floor. Below. |
+| | `check` | The repo contract. Below. |
 | | `status` | Read-only doctor: env, runtimes, deps, docker, health, stack. Never dies. |
 
 ## The compose model
@@ -62,9 +63,9 @@ Rules the files obey, and `ctl check` enforces:
 
 The `scripts/` groups are `common config dev container db admin test gate`. A gate rung never holds logic: it calls the same worker its dev verb calls (`gate/test.sh` → `test/test.sh`); lint and typecheck have no separate dev verb, the rung is the worker, so the gate and the loop cannot drift.
 
-## `ctl check` — the conformance floor
+## `ctl check` — the repo contract
 
-Runs as a gate rung and directly. It runs every rule, prints every failure with its file, and exits 0 only when all of them passed, because a check that stops at the first red hides the second one and a check that prints an ok line under a failure teaches the reader to skip the output. This list is the one home of what it proves; `02_env.md`, `01_layout.md` and `11_conventions.md` point here. Worker: `template/scripts/config/check.sh`.
+Runs directly, and as the `check` rung of the ladder. It runs every rule, prints every failure with its file, and exits 0 only when all of them passed, because a check that stops at the first red hides the second one and a check that prints an ok line under a failure teaches the reader to skip the output. This list is the one home of what it proves; `02_env.md`, `01_layout.md` and `11_conventions.md` point here. Worker: `template/scripts/config/check.sh`.
 
 - versions: no `<version>` placeholder in `.mise.toml` or an app manifest (`pyproject.toml`, `package.json`, `Cargo.toml`, `rust-toolchain.toml`, `go.mod`). A placeholder breaks every toolchain install, so `ctl setup` refuses to install while one remains.
 - env: every `${VAR}` in any `config.yaml` is a key in one of the three `.env.*.template` files; a key with a `_PASSWORD`, `_KEY` or `_SECRET` segment appears only in `.env.secrets.template`; every `.env.proxy.template` key ends `_HOST`, `_PORT`, `_PREFIX` or `_URL` (or is `PUBLIC_URL`, `HTTP_PORT`, `HTTPS_PORT`, `DEV_PROXY_PORT`, `COMPOSE_PROJECT_NAME`); every `.env.data.template` key ends `_DIR`; no secret literal in any `config.yaml`; no tracked `config.local.yaml`; no tracked `.env.*` except the templates.

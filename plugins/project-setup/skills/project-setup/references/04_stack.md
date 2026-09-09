@@ -14,11 +14,11 @@ This page is the choice. How to build the thing chosen: `05_frontend.md`, `06_ba
 | uv | Python packages and venv per backend | `pyproject.toml` + `uv.lock` inside each app. Never `uv pip install` inside an app (bypasses the lock); no `requirements.txt` beside `pyproject.toml`; never hand-edit `uv.lock`. |
 | uvenv | Named global Python envs for ML and notebooks | Our toolkit over mise + uv. Where a `pyproject.toml` per app does not fit. See the `uvenv` skill. |
 | bun | JS runtime, package manager, script runner | Preferred. `npm` is the fallback when a tool does not work under bun. |
-| AI harness | Claude Code, Codex | Read `AGENTS.md` and `memory/`. Both hosts get the same brief. `.mcp.json` at the root is committed project config; secrets in it are `${VAR}`, never literals. |
+| AI harness | Claude Code, Codex | Read `AGENTS.md`, and `memory/` when it exists. Both hosts get the same brief. `.mcp.json` at the root is committed project config; secrets in it are `${VAR}`, never literals. |
 | agent-ks | Docs site and issue tracker | Owns `docs/`. |
-| lefthook | Git hooks | Lint on commit, tests on push. `ctl setup` runs `lefthook install`, or the hooks never fire. |
+| lefthook | Git hooks. Add-on | Lint on commit, tests on push. Joins when the user asks, usually at the second contributor. `ctl setup` runs `lefthook install` when `lefthook.yml` exists, or the hooks never fire. |
 
-Template: `template/.mise.toml`, `template/lefthook.yml`.
+Template: `template/.mise.toml`. Add-on: `additional-template/lefthook.yml`.
 
 ## Frontend
 
