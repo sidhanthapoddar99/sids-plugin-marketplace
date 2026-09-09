@@ -1,6 +1,6 @@
 ---
 name: project-setup
-description: Use this skill for how a repo is shaped: bootstrapping a new project, auditing or restructuring one, or a "where does this go" question mid-task in a repo built this way. It owns the tree (apps/, apps/packages/, data/, logs/), the three root env files and config.yaml, single-origin routing (Vite proxy, nginx edge), docker/ compose base plus modifiers, the ctl entrypoint (dev, up, migrate, manage, gate), stack choice (FastAPI / Axum / Go; Vite / Next.js / Astro; Postgres / Redis / SQLite / Neo4j), tokens.css and a typography allowlist that beats frontend-design once tokens exist, where migrations live, the security floor (captcha, rate limits), the gate ladder (a four-rung floor, the rest opt-in), the review passes, the add-ons (git hooks, memory/, e2e), and what AGENTS.md records. Trigger on any of those names, or on a second frontend or backend, even mid-task. Skip work inside one file, including a migration's SQL; docs content is agent-ks; instruction wording is instruction-writing; Kubernetes and cloud deploy targets are out of scope.
+description: Use this skill for how a repo is shaped: bootstrapping a new project, auditing or restructuring one, or a "where does this go" question mid-task in a repo built this way. It owns the tree (apps/, apps/packages/, data/, logs/), the three root env files and config.yaml, single-origin routing (Vite proxy, nginx edge), docker/ compose base plus modifiers, the ctl entrypoint (dev, up, migrate, manage, gate), stack choice (FastAPI / Axum / Go; Vite / Next.js / Astro; Postgres / Redis / SQLite / Neo4j), the frontend folder shape (a routing folder, layout/, modules/, components/, lib/, for Vite with TanStack Router and for Next.js), tokens.css and a typography allowlist that beats frontend-design once tokens exist, where migrations live, the security floor (captcha, rate limits), the gate ladder (a four-rung floor, the rest opt-in), the review passes, the add-ons (git hooks, memory/, e2e), and what AGENTS.md records. Trigger on any of those names, or on a second frontend or backend, even mid-task. Skip work inside one file, including a migration's SQL; docs content is agent-ks; instruction wording is instruction-writing; Kubernetes and cloud deploy targets are out of scope.
 ---
 
 # project-setup
@@ -10,7 +10,7 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 ## Before anything
 
 1. Read `AGENTS.md` at the repo root when it exists. It records the choices this repo has already made, and a recorded choice is never a finding.
-2. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 1,200 lines.
+2. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 1,300 lines.
 3. Point at `template/` for the code. A page states a rule and names the template path that shows it. It never repeats the code, so the code has one home.
 4. Treat `additional-template/` as opt-in. It holds the add-ons: git hooks, `memory/`, a browser suite. Its `README.md` says when each is usually earned. Install one only when the user asks. Recommend one with its reason, then wait. The same holds for a ladder rung beyond the four-rung floor.
 

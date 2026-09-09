@@ -17,7 +17,11 @@
     "class-variance-authority": "<version>",
     "clsx": "<version>",
     "tailwind-merge": "<version>",
-    "lucide-react": "<version>"
+    "lucide-react": "<version>",
+    "@tanstack/react-router": "<version>",
+    "@tanstack/react-query": "<version>",
+    "zustand": "<version>",
+    "zod": "<version>"
   },
   "devDependencies": {
     "vite": "<version>",
@@ -26,6 +30,7 @@
     "vitest": "<version>",
     "@playwright/test": "<version>",
     "@scope/tsconfig": "link:../packages/tsconfig",
-    "@tailwindcss/vite": "<version>"
+    "@tailwindcss/vite": "<version>",
+    "@tanstack/router-plugin": "<version>"
   }
 }

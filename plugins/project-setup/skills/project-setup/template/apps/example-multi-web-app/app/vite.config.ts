@@ -3,12 +3,13 @@
 //   import { defineConfig } from "vite";
 //   import react from "@vitejs/plugin-react";
 //   import tailwindcss from "@tailwindcss/vite";
+//   import { tanstackRouter } from "@tanstack/router-plugin/vite";   // file routing: src/routes/ → src/routeTree.gen.ts
 //
 //   const need = (k: string) => process.env[k] ?? (() => { throw new Error(`${k} is not set — run through ctl (ctl dev app), which exports .env.proxy`); })();
 //
 //   export default defineConfig({
 //     base: need("WEB_APP_PREFIX"),                       // .env.proxy → dev: process env; build: compose build arg
-//     plugins: [react(), tailwindcss()],
+//     plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],   // the router plugin goes first
 //     define: { __APP_NAME__: JSON.stringify("<display name>") },   // a display name is a literal, not env
 //     server: {
 //       port: Number(need("WEB_APP_PORT")),

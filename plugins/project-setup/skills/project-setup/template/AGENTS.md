@@ -34,7 +34,7 @@ When this section outgrows one screen, move it to `memory/` and import each file
 ## Skeletons
 
 - Backend `apps/<api>/app/` holds `core/`, `health/` and one folder per domain: `<list them>`. Each domain holds `models.py`, `repository.py`, `service.py` and `router.py`. Code two files of a domain share sits at the domain root. A domain calls another only `service → service`, so a router never reaches another domain's data. A DTO another domain needs is duplicated, never imported, so a domain can change its shape alone.
-- Frontend `apps/<web>/src/` holds `layout/ pages/ features/ api/ stores/ hooks/ lib/`. Primitives and theme come from `<@scope/ui · src/components/ui + src/styles>`. Every server call goes through `api/`, with zod at the boundary, so one place knows the wire shape. `pages/` stays thin and mirrors the URL tree, so a route is found by its path.
+- Frontend `apps/<web>/src/` holds the routing folder (`<routes/ · app/ · pages/>`, set by the framework), `layout/<name>/`, `modules/<name>/`, `components/`, `lib/`. A route file picks a layout and mounts one module, so a URL is found by its path and a screen by its name. A module owns its `components/`, `functions/` and `types.ts` and never imports a route, a layout or another module; a piece two modules need moves up to `components/` or `lib/`. Primitives and theme come from `<@scope/ui · src/components/ui + src/styles>`. Every server call goes through `lib/api/`, with zod at the boundary, so one place knows the wire shape.
 - Packages: `<ui · types · tsconfig>`. An entity two apps share lives in `@scope/types`. A type one feature uses lives inside that feature. There is no global `types.ts`, because it becomes the place everything leaks into.
 
 ## Tripwires
@@ -46,7 +46,7 @@ Crossing one obligates the restructure, or a one-line deferral recorded here (wh
 | 8 to 10 flat domains | Add a domain layer. |
 | 10 files in one feature folder | Subdivide inside the feature. |
 | A file over 300 lines | Split it. 500 is the hard cap. |
-| A page over 50 lines, or a component over 150 | Move logic into a feature or a primitive. |
+| A route file over 50 lines, or a component over 150 | Move logic into a module or a primitive. |
 | The same utility combination twice | Add a variant to the primitive. |
 | A helper used three times | Extract it and name it. |
 

@@ -11,7 +11,7 @@ The brief is a contract, not a welcome note. Skills are not always loaded; the b
 | Section | Holds |
 |---|---|
 | Recorded choices | One table: layout shape (single frontend / group), backend role, identity planes, migration style, theme modes, protection tier, ladder rungs, source-only or published. Audits compare the repo against this table, not against the canon. A chosen variant is not drift. |
-| Skeletons | The resolved tree for this repo: which domains, which features, which packages. Names, not placeholders. |
+| Skeletons | The resolved tree for this repo: which domains, which modules, which packages. Names, not placeholders. |
 | Tripwires | The numbers below, plus any this repo tightened. Crossing one obligates the restructure **or a one-line recorded deferral here** (what, until when). Silent growth past a tripwire is the failure this section exists to catch. |
 | Styling | The typography allowlist and the emphasis weight, resolved; the precedence rule over `frontend-design` (`05_frontend.md`). |
 | Exceptions | Every departure from the standard layout, with its reason. An unrecorded exception is a defect. |
@@ -42,14 +42,14 @@ Code is placed by the scope that needs it, and a scope depends only inward. Same
 | Scope | Frontend | Backend |
 |---|---|---|
 | Product | `apps/packages/` — theme, components, API types | `apps/packages/` — shared Python packages or Rust crates, if any |
-| App | `src/lib/`, `src/components/ui/`, `src/layout/`, `src/stores/` | `app/main.py`, `app/config.py`, `app/db.py`, `app/core/` |
-| Domain | `src/features/<name>/`, `src/api/<domain>.ts` | `app/<domain>/` — `models`, `repository`, `service`, `router` |
-| Unit | one component file, one hook | one function |
+| App | `src/lib/`, `src/components/`, `src/layout/`, the routing folder | `app/main.py`, `app/config.py`, `app/db.py`, `app/core/` |
+| Domain | `src/modules/<name>/`, `src/lib/api/<domain>.ts` | `app/<domain>/` — `models`, `repository`, `service`, `router` |
+| Unit | one component file, one function | one function |
 
-- **A scope imports only from scopes above it.** A feature imports app primitives and packages. An app primitive never imports a feature. A router calls a service; a service never imports a router.
-- **Features do not import each other's internals.** Frontend: through `index.ts`, or share through the app scope or a package. Backend: a domain calls another domain's `service`, never its `repository`. If two are always changed together, they are one.
-- **Each layer has one job.** Backend layers: `06_backend.md` § Domain slices. Frontend: a page composes features and a component renders props. No HTTP in a service, no SQL in a router, no `fetch` in a component, because a layer with two jobs cannot be tested alone.
-- **Cross the boundary with types, not internals.** A feature exposes `index.ts`; a service exposes functions over domain objects; a backend exposes schemas that `@scope/types` is generated from. Never import a DTO across domains to reuse a shape; duplicate it, because a shared DTO couples two domains' releases and a field change in one breaks the other.
+- **A scope imports only from scopes above it.** A module imports app components and packages. An app component never imports a module. A router calls a service; a service never imports a router.
+- **Modules do not import each other.** Frontend: a module never imports a sibling module; a shared piece moves to the app scope or a package. Backend: a domain calls another domain's `service`, never its `repository`. If two are always changed together, they are one.
+- **Each layer has one job.** Backend layers: `06_backend.md` § Domain slices. Frontend: a route picks a layout and mounts a module, a module assembles a screen, a component renders props. No HTTP in a service, no SQL in a router, no `fetch` in a component, because a layer with two jobs cannot be tested alone.
+- **Cross the boundary with types, not internals.** A module exposes `index.tsx`; a service exposes functions over domain objects; a backend exposes schemas that `@scope/types` is generated from. Never import a DTO across domains to reuse a shape; duplicate it, because a shared DTO couples two domains' releases and a field change in one breaks the other.
 - **Promote when shared, never before.** A thing moves up one scope when its second consumer appears, because a premature package is a second manifest to keep green for nothing. The same rule sizes a backend: flat `app/` until the second domain; domain slices until a layer is reused by a second binary; a cargo workspace of crates after that, which applies to Rust only.
 - **State lives at the narrowest scope that needs it.** Component state in the component, feature state in the feature, app state only for what every feature reads (session, theme). Wider state re-renders more than it needs to.
 - **Providers of one kind are adapters.** `06_backend.md` § Domain slices holds the rule and its reason.
@@ -68,7 +68,7 @@ These rules are the input to a lint rule. When one is broken a second time, writ
 | Logic | rule of three | One use inline; two, duplicate (they may diverge); three, extract and name it for what it means. Extract on first use when the pattern is non-obvious, dangerous (crypto, untrusted input), or owned by another layer. Framework boilerplate is not duplication. |
 | Styling | rule of two | The same utility combination twice → a primitive variant. |
 
-No catch-all folders: `helpers/`, `utils/`, `common/`, a global `types.ts`. `auth/helpers.py` is auth-scoped and fine; `shared/` exists only when three or more features need it. Split vertically by feature, never horizontally by kind.
+No catch-all folders: `helpers/`, `utils/`, `common/`, a global `types.ts`. `auth/helpers.py` is auth-scoped and fine; `shared/` exists only when three or more modules need it. Split vertically by module, never horizontally by kind.
 
 ## Naming
 
@@ -118,7 +118,8 @@ Each of these means a rule was broken somewhere else. Find that place.
 | `docker compose -f` in a README | `ctl` is the entrypoint |
 | a `tests/` folder at the root | tests live with the app (`10c_dynamic-tests.md`) |
 | `text-[13px]`, a hex in a `.tsx`, `var(--…)` in JSX | tokens and the stock scale (`05_frontend.md`) |
-| `fetch(` outside `src/api/` | the api layer |
+| `fetch(` outside `src/lib/api/` | the api layer (`05_frontend.md`) |
+| `src/features/`, `src/pages/` in a Vite app, a module importing a sibling | the folder shape (`05_frontend.md`) |
 | a domain named `build/`, `sync/`, `ingest/` | ownership nouns (`06_backend.md`) |
 | `uvicorn --reload` in a Dockerfile | production serving (`06_backend.md`) |
 | a tripwire crossed with no deferral in `AGENTS.md` | the brief is the contract |

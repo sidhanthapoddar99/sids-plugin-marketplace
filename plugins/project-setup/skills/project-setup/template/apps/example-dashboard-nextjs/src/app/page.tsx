@@ -1,1 +1,1 @@
-// Server component. Fetches from `http://${API_HOST}:${API_PORT}` on the server, never a NEXT_PUBLIC_ value.
+// "/" under the dashboard prefix — a server component that mounts modules/home. One line of composition.

@@ -37,7 +37,8 @@ Pick by output. One static frontend owns its image. Several static frontends liv
 | TypeScript, `.tsx` | Always. Plain JS only where a framework forces it. |
 | Tailwind v4 | Always. Stock spacing, type and radius scales, never remapped. No arbitrary values (`p-[13px]`). |
 | shadcn | The component vocabulary, `new-york`, `cssVariables: true`. |
-| Client state | zustand. Server state: TanStack Query, owned by the `api/` layer. Never both for one value. |
+| Routing in Vite | TanStack Router, file-based: `src/routes/` and a generated `routeTree.gen.ts`. Next.js and Astro route through their own folders. `05_frontend.md` § The folder shape. |
+| Client state | zustand. Server state: TanStack Query, owned by `lib/api/`. Never both for one value. |
 | Shared code | `apps/packages/{ui,types,tsconfig}`. Consumed by `link:`. Framework libraries are `peerDependencies`, so the consumer's copy is the only copy. No workspace (`01_layout.md` § Root). |
 | Version skew | With no workspace, nothing pins React across apps. Every manifest names the same version, and the pin is recorded in the `AGENTS.md` Stack table so an audit can compare the manifests against it. `ctl check` does not compare them. |
 | Types | `@scope/types` is generated from the API's OpenAPI. Never hand-edited. |

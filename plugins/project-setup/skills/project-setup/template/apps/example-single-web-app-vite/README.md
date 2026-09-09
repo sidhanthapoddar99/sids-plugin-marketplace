@@ -8,7 +8,9 @@ The shape for a product with ONE static frontend. Compare `example-multi-web-app
 - Owns `vite.config.ts` with the dev proxy, so `ctl dev` needs no nginx dev proxy: one frontend, one origin already.
 
 Run from here: `ctl dev single` (exports `.env.secrets`, `.env.data`, `.env.proxy`, then `bun dev`).
-No `.env` here. It owns `/`, so no prefix key; ports and proxy targets come from `.env.proxy`. Test: `bun test`, e2e in `e2e/`.
+No `.env` here. It owns `/`, so no prefix key; ports and proxy targets come from `.env.proxy`. Test: `bun test`. The browser suite (`e2e/`) is an add-on.
+
+`src/` follows the frontend shape in the `project-setup` skill, `05_frontend.md` § The folder shape: `routes/` (TanStack Router file routing), `layout/`, `modules/`, `components/`, `lib/`, `styles/`. Each file's header comment says what it holds and what it may import.
 
 ## Using this shape instead of the group
 

@@ -4,11 +4,12 @@
 //   import { defineConfig } from "vite";
 //   import react from "@vitejs/plugin-react";
 //   import tailwindcss from "@tailwindcss/vite";
+//   import { tanstackRouter } from "@tanstack/router-plugin/vite";   // file routing: src/routes/ → src/routeTree.gen.ts
 //
 //   const need = (k: string) => process.env[k] ?? (() => { throw new Error(`${k} is not set — run ctl dev single`); })();
 //
 //   export default defineConfig({
-//     plugins: [react(), tailwindcss()],
+//     plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],   // the router plugin goes first
 //     define: { __APP_NAME__: JSON.stringify("<display name>") },
 //     server: {
 //       port: Number(need("WEB_APP_PORT")),
