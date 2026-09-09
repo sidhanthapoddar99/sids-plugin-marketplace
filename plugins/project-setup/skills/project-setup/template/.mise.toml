@@ -5,6 +5,7 @@ rust = "stable"
 go = "<version>"
 bun = "latest"
 uv = "latest"
+golangci-lint = "<version>"   # the Go lint floor: gofmt, go vet, gocyclo through .golangci.yml
 # Add-on tools go here when the add-on is installed: lefthook for git hooks; gitleaks,
 # cargo-audit and govulncheck for `ctl gate audit`. Per-app tools are pinned in the app's own manifest.
 

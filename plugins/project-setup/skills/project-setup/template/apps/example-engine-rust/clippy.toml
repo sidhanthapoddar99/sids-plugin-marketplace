@@ -1,0 +1,3 @@
+# The lint floor for Rust. `ctl gate lint` runs clippy with `-D clippy::cognitive_complexity`, and
+# this file sets the threshold. `ctl check` fails a Rust app without a clippy.toml.
+cognitive-complexity-threshold = 15

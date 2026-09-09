@@ -81,6 +81,13 @@ for r in "${RUNGS[@]}"; do
   found=0; for rung in "${LADDER[@]}"; do [[ $r == "$rung" ]] && found=1; done
   (( found )) || die "RUNGS names '$r', which is not a ladder rung (${LADDER[*]})"
 done
+# The floor is not optional: a RUNGS without it would run a green gate over unlinted, untyped or
+# untested code, and nothing downstream could tell. `ctl check` compares RUNGS with AGENTS.md too.
+FLOOR=(lint typecheck test check)
+for f in "${FLOOR[@]}"; do
+  found=0; for r in "${RUNGS[@]}"; do [[ $r == "$f" ]] && found=1; done
+  (( found )) || die "RUNGS omits '$f' — the floor is ${FLOOR[*]}, and a rung once listed is never removed"
+done
 (( ${#SELECTED[@]} )) || die "no $GROUP rung is listed in RUNGS (${RUNGS[*]}) — nothing to prove"
 RUNGS=("${SELECTED[@]}")
 

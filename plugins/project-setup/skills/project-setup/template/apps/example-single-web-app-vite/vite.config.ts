@@ -1,6 +1,7 @@
 // The one Vite config for a single-frontend product. Served at /, so base is "/". One key per value, read directly,
 // no literal fallback: a missing key throws, so a bare `bun dev` without the env exported fails at once.
 //
+//   import { fileURLToPath, URL } from "node:url";
 //   import { defineConfig } from "vite";
 //   import react from "@vitejs/plugin-react";
 //   import tailwindcss from "@tailwindcss/vite";
@@ -10,6 +11,7 @@
 //
 //   export default defineConfig({
 //     plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],   // the router plugin goes first
+//     resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },   // "@/…" = src/, the same map as tsconfig paths
 //     define: { __APP_NAME__: JSON.stringify("<display name>") },
 //     server: {
 //       port: Number(need("WEB_APP_PORT")),

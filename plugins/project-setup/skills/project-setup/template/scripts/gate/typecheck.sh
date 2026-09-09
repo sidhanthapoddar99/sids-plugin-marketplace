@@ -22,20 +22,23 @@ Options
 
 is_help "${1:-}" && { usage; exit 0; }
 target="${1:-all}"; rc=0
+# an explicit target must exist: a typo that passes teaches the caller nothing. `all` skips absent apps.
+need_dir() { [[ -d $1 ]] || die "$1 not found — the target '$target' has no folder to typecheck"; }
 tc_py() { [[ -d $1 ]] || return 0; step "typecheck $1 (mypy)";        ( cd "$1" && uv run mypy app ) || rc=1; }
 tc_rs() { [[ -d $1 ]] || return 0; step "typecheck $1 (cargo check)"; ( cd "$1" && cargo check --workspace --all-targets ) || rc=1; }
 tc_js() { [[ -d $1 ]] || return 0; step "typecheck $1 (tsc)";         ( cd "$1" && bun run typecheck ) || rc=1; }
 tc_go() { [[ -d $1 ]] || return 0; step "typecheck $1 (go vet)";      ( cd "$1" && go vet ./... ) || rc=1; }
+# [ADAPT] APPS. `all` lists every app the repo can hold; delete the lines for apps the repo dropped.
 case "$target" in
   all)      tc_py apps/example-api-python; tc_rs apps/example-engine-rust; tc_js apps/example-multi-web-app/landing; tc_js apps/example-multi-web-app/app; tc_js apps/example-multi-web-app/docs; tc_js apps/example-single-web-app-vite; tc_js apps/example-dashboard-nextjs; tc_go apps/example-tui-go ;;
-  api)      tc_py apps/example-api-python ;;
-  engine)   tc_rs apps/example-engine-rust ;;
-  landing)  tc_js apps/example-multi-web-app/landing ;;
-  app)      tc_js apps/example-multi-web-app/app ;;
-  single)   tc_js apps/example-single-web-app-vite ;;
-  docs)     tc_js apps/example-multi-web-app/docs ;;
-  dashboard) tc_js apps/example-dashboard-nextjs ;;
-  cli)      tc_go apps/example-tui-go ;;
+  api)      need_dir apps/example-api-python;           tc_py apps/example-api-python ;;
+  engine)   need_dir apps/example-engine-rust;          tc_rs apps/example-engine-rust ;;
+  landing)  need_dir apps/example-multi-web-app/landing; tc_js apps/example-multi-web-app/landing ;;
+  app)      need_dir apps/example-multi-web-app/app;    tc_js apps/example-multi-web-app/app ;;
+  single)   need_dir apps/example-single-web-app-vite;  tc_js apps/example-single-web-app-vite ;;
+  docs)     need_dir apps/example-multi-web-app/docs;   tc_js apps/example-multi-web-app/docs ;;
+  dashboard) need_dir apps/example-dashboard-nextjs;    tc_js apps/example-dashboard-nextjs ;;
+  cli)      need_dir apps/example-tui-go;               tc_go apps/example-tui-go ;;
   *)        die "unknown target: $target (all|api|engine|landing|app|single|docs|dashboard|cli)" ;;
 esac
 (( rc == 0 )) && ok "gate typecheck green" || err "gate typecheck RED"

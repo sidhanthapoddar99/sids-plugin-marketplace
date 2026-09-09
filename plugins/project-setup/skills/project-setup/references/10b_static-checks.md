@@ -63,11 +63,11 @@ Every rung, and every check inside one, keeps four promises:
 | Python | ruff (lint + format), mypy | `ruff check`, `ruff format --check`, `mypy` |
 | Rust | rustfmt, clippy | `cargo fmt --check`, `cargo clippy -- -D warnings` |
 | TypeScript | oxlint, tsc, knip | `oxlint src`, `tsc --noEmit`, `knip` |
-| Go | gofmt, go vet | |
+| Go | gofmt, golangci-lint (go vet, gocyclo) | `gofmt -l`, `golangci-lint run ./...` |
 
-Lint config lives per ecosystem, in the app (`ruff` in `pyproject.toml`, `.oxlintrc.json`, `rustfmt.toml`), because an app lifted out must still lint. Repo-wide tools (`knip.json`) at the root. The template carries none of these; write them per project.
+Lint config lives per ecosystem, in the app, because an app lifted out must still lint: `[tool.ruff]` in `pyproject.toml`, `.oxlintrc.json` beside `package.json`, `clippy.toml` beside `Cargo.toml`, `.golangci.yml` beside `go.mod`. Repo-wide tools (`knip.json`) at the root. The template ships each of the four with the complexity floor set, and `ctl check` fails an app that has none, because a linter run without its config reports only its defaults and ruff's default has no complexity rule.
 
-Complexity is a lint rule with a threshold: ruff `C901`, clippy `cognitive_complexity`, oxlint `complexity`, gocyclo. The default is a cyclomatic complexity of 10 per function, the McCabe threshold every one of those tools accepts, and a cognitive complexity of 15 where the tool measures it. Set it in each app's lint config at bootstrap, because the floor rung `lint` only reports what the config asks for. A repo that tightens or loosens it records the number in `AGENTS.md`.
+Complexity is a lint rule with a threshold. The floor is a cyclomatic complexity of 10 per function, the McCabe number, and a cognitive complexity of 15 where the tool measures it: ruff `C901` at 10, clippy `cognitive_complexity` at 15 through `clippy.toml`, gocyclo at 10 through `.golangci.yml`. oxlint has no cyclomatic rule, so TypeScript uses the proxies it does have: `max-depth` 4, `max-lines-per-function` 80 and `max-params` 5. A project that runs eslint instead may use `complexity` at 10. A repo that tightens or loosens a number records it in `AGENTS.md`.
 
 ## Layer rules are lint config
 
@@ -86,7 +86,8 @@ Repo-level rules, the env contract and the compose shape, stay in `ctl check`. T
 
 ## Rules
 
-- Green means `ctl gate` passed. Nothing else does. Which rungs the ladder holds is written in `AGENTS.md`; a rung, once added, is never removed.
+- Green means `ctl gate` passed. Nothing else does. Which rungs the ladder holds is written twice, in the `Gate ladder` row of `AGENTS.md` and in `RUNGS` in `scripts/gate/all.sh`, and `ctl check` fails when the two differ. `all.sh` refuses a `RUNGS` without the four floor rungs. A rung, once added, is never removed.
+- A `test` rung with no test file passes and says so on its own line, "no test file yet", and the closing line says how many suites ran. The suite is found by the names `10c_dynamic-tests.md` mandates; a suite under other names is skipped with the same warning, so the names are the rule.
 - Adding a rung beyond the four is the user's decision. Recommend it with the reason; do not add it unasked, and do not add it during a bootstrap.
 - The audit tools (`gitleaks`, `cargo-audit`, `govulncheck`) join `.mise.toml` when the `audit` rung joins, not before.
 - `lefthook.yml` is an add-on: `ctl gate static --staged` is the shape of a pre-commit hook, `ctl test` of a pre-push hook. A hook never calls a tool directly. `additional-template/lefthook.yml`.

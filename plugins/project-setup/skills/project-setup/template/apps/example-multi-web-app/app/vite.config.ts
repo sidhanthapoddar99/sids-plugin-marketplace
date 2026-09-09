@@ -1,5 +1,6 @@
 // Vite config for a static frontend inside the group. One key, read directly: no VITE_ alias, no literal fallback.
 //
+//   import { fileURLToPath, URL } from "node:url";
 //   import { defineConfig } from "vite";
 //   import react from "@vitejs/plugin-react";
 //   import tailwindcss from "@tailwindcss/vite";
@@ -10,6 +11,7 @@
 //   export default defineConfig({
 //     base: need("WEB_APP_PREFIX"),                       // .env.proxy → dev: process env; build: compose build arg
 //     plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],   // the router plugin goes first
+//     resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },   // "@/…" = src/, the same map as tsconfig paths
 //     define: { __APP_NAME__: JSON.stringify("<display name>") },   // a display name is a literal, not env
 //     server: {
 //       port: Number(need("WEB_APP_PORT")),

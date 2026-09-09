@@ -41,9 +41,10 @@ gate_apps() {
 # prints every line it wrote. It works by RE-EXECUTING the rung with the flag removed, so no rung
 # threads a quiet mode through its body.
 
-# the count lines worth keeping when a rung passed: pytest / bun / cargo / go / playwright shapes,
-# a RED verdict, and the rung's own closing line
-GATE_COUNTS='[0-9]+[[:space:]]+(pass|fail|skip|passed|failed|warning|error)|test result:|^(ok|FAIL)[[:space:]]|— RED|(✓|✗) gate '
+# the lines worth keeping when a rung passed: pytest / bun / cargo / go / playwright count shapes,
+# a RED verdict, the rung's own closing line, and every warning line (`! …`). A warning says work
+# was skipped — an app with no test file yet — and a quiet run that drops it reads as a full one.
+GATE_COUNTS='[0-9]+[[:space:]]+(pass|fail|skip|passed|failed|warning|error)|test result:|^(ok|FAIL)[[:space:]]|— RED|(✓|✗) gate |^[[:space:]]*![[:space:]]|no test file yet|no suite ran'
 
 # gate_report_capture <log> <rc> — everything when it failed, the counts when it passed
 gate_report_capture() {

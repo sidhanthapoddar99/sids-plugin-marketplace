@@ -27,6 +27,11 @@ Rules
             the root rule is skipped when AGENTS.md records 'root-manifest' under
             '## Exceptions to the standard layout' (an open-source package repo)
   brief     CLAUDE.md is exactly '@AGENTS.md'
+  ladder    the 'Gate ladder' row in AGENTS.md lists the same rungs, in the same order, as RUNGS in
+            scripts/gate/all.sh — the audit reads the row and the gate runs the list, so they must agree
+  lint      every app ships its lint config with the complexity floor: [tool.ruff] in pyproject.toml,
+            .oxlintrc.json beside package.json, clippy.toml beside Cargo.toml, .golangci.yml beside go.mod —
+            a linter run without its config reports only its defaults, and ruff's default has no complexity rule
   compose   no ports: in compose.base.yaml · no ../ in any docker/compose.*.yaml ·
             docker compose config validates: db alone, dev alone, base alone, base + each modifier
 
@@ -121,6 +126,34 @@ if [[ -f CLAUDE.md ]]; then
   [[ -f AGENTS.md ]] || fail "AGENTS.md missing"
   pass "CLAUDE.md → AGENTS.md"
 else fail "CLAUDE.md missing"; fi
+
+step "ladder"
+# The row is `| Gate ladder | \`lint typecheck test check\` |`: the first backtick span is the list.
+# RUNGS is the line `RUNGS=(lint typecheck test check)` in all.sh. Word lists, compared in order.
+if [[ -f AGENTS.md && -f scripts/gate/all.sh ]]; then
+  row=$(grep -E '^\| *Gate ladder *\|' AGENTS.md | head -1 | sed -E 's/^[^`]*`([^`]*)`.*/\1/' | xargs || true)
+  rungs=$(grep -E '^RUNGS=\(' scripts/gate/all.sh | head -1 | sed -E 's/^RUNGS=\(([^)]*)\).*/\1/' | xargs || true)
+  [[ -n $row ]]   || fail "AGENTS.md has no 'Gate ladder' row with a backticked rung list"
+  [[ -n $rungs ]] || fail "scripts/gate/all.sh has no RUNGS=(…) line"
+  if [[ -n $row && -n $rungs && $row != "$rungs" ]]; then fail "AGENTS.md Gate ladder row says '$row' but scripts/gate/all.sh RUNGS says '$rungs' — keep the two equal"; fi
+  pass "AGENTS.md Gate ladder row = RUNGS ($rungs)"
+else fail "AGENTS.md or scripts/gate/all.sh missing — the ladder has no record to compare"; fi
+
+step "lint config"
+# One config per ecosystem, beside the manifest, because a linter run without it reports only its
+# defaults. Packages and the database folder count when they carry a manifest; node_modules never.
+while IFS= read -r m; do
+  d=$(dirname "$m")
+  case "$(basename "$m")" in
+    pyproject.toml) grep -qE '^\[tool\.ruff' "$m" || fail "$m has no [tool.ruff] section — the complexity floor (C901 at 10) is unset" ;;
+    package.json)   [[ -d $d/src ]] || continue   # a manifest with no source (packages/tsconfig) has nothing to lint
+                    [[ -f $d/.oxlintrc.json ]] || fail "$d has no .oxlintrc.json — oxlint runs with defaults and no size or depth floor" ;;
+    Cargo.toml)     [[ -f $d/clippy.toml ]] || fail "$d has no clippy.toml — the cognitive complexity threshold is unset" ;;
+    go.mod)         [[ -f $d/.golangci.yml ]] || fail "$d has no .golangci.yml — gocyclo never runs" ;;
+  esac
+done < <(find apps -maxdepth 3 \( -name pyproject.toml -o -name package.json -o -name Cargo.toml -o -name go.mod \) \
+          -not -path '*/node_modules/*' -not -path '*/target/*' -not -path '*/.venv/*' -not -path '*/crates/*' 2>/dev/null | sort)
+pass "every app ships its lint config"
 
 step "compose files"
 if grep -qE '^\s+ports:' "$BASE" 2>/dev/null; then fail "$BASE publishes ports — exposure belongs in a modifier"; fi

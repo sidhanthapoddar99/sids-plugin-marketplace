@@ -1,0 +1,12 @@
+# The lint floor for Go. `ctl gate lint` runs `golangci-lint run ./...`, which reads this file.
+# gocyclo at 10 is the complexity rule; govet is on by default. `ctl check` fails a Go app without it.
+version: "2"
+linters:
+  enable:
+    - gocyclo
+  settings:
+    gocyclo:
+      min-complexity: 10
+formatters:
+  enable:
+    - gofmt

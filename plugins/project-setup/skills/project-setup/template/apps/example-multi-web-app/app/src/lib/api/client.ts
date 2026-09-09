@@ -3,4 +3,4 @@
 // (types inferred with z.infer), one app-wide error shape, and the query keys beside the
 // functions they cache. Base paths from the prefixes: `/api`, `/engine`. Attaches the JWT.
 // Files group by the backend's domain vocabulary: lib/api/users.ts, lib/api/orders.ts — never by screen.
-// When a second frontend needs the same client, this folder becomes packages/services (05_frontend.md).
+// When a second frontend needs the same client, this folder becomes packages/services, the package form of lib/api.

@@ -8,13 +8,13 @@ source "$CTL_ROOT/scripts/gate/_gate.sh"
 gate_quiet_reexec "$@"
 
 usage() { print_help "gate lint" "Lint every app (non-mutating)." \
-  'gate lint [api|engine|landing|app|docs|dashboard|cli|database] [--staged] [-h]' \
+  'gate lint [api|engine|landing|app|single|docs|dashboard|cli|database] [--staged] [-h]' \
 "Arguments
   (none)          lint everything
-  api, database   ruff check
-  engine          cargo fmt --check + clippy -D warnings
-  landing, app, docs, dashboard   bun run lint  (oxlint)
-  cli             gofmt -l + go vet
+  api, database   ruff check  (reads [tool.ruff] in pyproject.toml: C901 at 10)
+  engine          cargo fmt --check + clippy -D warnings -D clippy::cognitive_complexity  (threshold in clippy.toml)
+  landing, app, single, docs, dashboard   bun run lint  (oxlint, reads .oxlintrc.json)
+  cli             gofmt -l + golangci-lint run  (reads .golangci.yml: gocyclo at 10)
 
 Options
   --staged        only git-staged files (skips an app with no staged file under it)
@@ -31,22 +31,33 @@ esac; done
 rc=0
 # touched <dir> — with --staged: 0 only if a staged file lives under <dir>
 touched() { (( staged )) || return 0; git diff --cached --name-only --diff-filter=ACMR -- "$1" | grep -q .; }
+# an explicit target must exist: a typo that passes teaches the caller nothing. `all` skips absent apps.
+need_dir()  { [[ -d $1 ]] || die "$1 not found — the target '$target' has no folder to lint"; }
+# Each linter reads the app's own config, which the template ships with the complexity floor set
+# (ruff C901, clippy cognitive_complexity, oxlint max-depth/max-lines-per-function, gocyclo).
+# A tool run without its config reports only its defaults, and ruff's default has no complexity rule.
 lint_py()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (ruff)";         ( cd "$1" && uv run ruff check . ) || rc=1; }
-lint_rs()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (fmt + clippy)"; ( cd "$1" && cargo fmt --check && cargo clippy --all-targets -- -D warnings ) || rc=1; }
+lint_rs()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (fmt + clippy)"; ( cd "$1" && cargo fmt --check && cargo clippy --all-targets -- -D warnings -D clippy::cognitive_complexity ) || rc=1; }
 lint_js()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (bun run lint)"; ( cd "$1" && bun run lint ) || rc=1; }
-lint_go()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (gofmt + vet)";  ( cd "$1" && test -z "$(gofmt -l .)" && go vet ./... ) || rc=1; }
+lint_go()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (gofmt + golangci-lint)"; ( cd "$1" && test -z "$(gofmt -l .)" && golangci-lint run ./... ) || rc=1; }
+# [ADAPT] APPS. `all` lists every app the repo can hold, the single-frontend shape beside the group;
+# delete the lines for apps the repo dropped. A default run that never lists a kept app is green
+# for work it never did.
 case "$target" in
-  all)      lint_py apps/example-api-python; lint_py apps/database/postgres; lint_rs apps/example-engine-rust; lint_js apps/example-multi-web-app/landing; lint_js apps/example-multi-web-app/app; lint_js apps/example-multi-web-app/docs; lint_js apps/example-dashboard-nextjs; lint_go apps/example-tui-go ;;
-  api)      lint_py apps/example-api-python ;;
-  database) lint_py apps/database/postgres ;;
-  engine)   lint_rs apps/example-engine-rust ;;
-  landing)  lint_js apps/example-multi-web-app/landing ;;
-  app)      lint_js apps/example-multi-web-app/app ;;
-  single)   lint_js apps/example-single-web-app-vite ;;
-  docs)     lint_js apps/example-multi-web-app/docs ;;
-  dashboard) lint_js apps/example-dashboard-nextjs ;;
-  cli)      lint_go apps/example-tui-go ;;
-  *)        die "unknown target: $target (all|api|engine|landing|app|docs|dashboard|cli|database)" ;;
+  all)      lint_py apps/example-api-python; lint_py apps/database/postgres; lint_rs apps/example-engine-rust
+            lint_js apps/example-single-web-app-vite
+            lint_js apps/example-multi-web-app/landing; lint_js apps/example-multi-web-app/app; lint_js apps/example-multi-web-app/docs
+            lint_js apps/example-dashboard-nextjs; lint_go apps/example-tui-go ;;
+  api)      need_dir apps/example-api-python;           lint_py apps/example-api-python ;;
+  database) need_dir apps/database/postgres;            lint_py apps/database/postgres ;;
+  engine)   need_dir apps/example-engine-rust;          lint_rs apps/example-engine-rust ;;
+  landing)  need_dir apps/example-multi-web-app/landing; lint_js apps/example-multi-web-app/landing ;;
+  app)      need_dir apps/example-multi-web-app/app;    lint_js apps/example-multi-web-app/app ;;
+  single)   need_dir apps/example-single-web-app-vite;  lint_js apps/example-single-web-app-vite ;;
+  docs)     need_dir apps/example-multi-web-app/docs;   lint_js apps/example-multi-web-app/docs ;;
+  dashboard) need_dir apps/example-dashboard-nextjs;    lint_js apps/example-dashboard-nextjs ;;
+  cli)      need_dir apps/example-tui-go;               lint_go apps/example-tui-go ;;
+  *)        die "unknown target: $target (all|api|engine|landing|app|single|docs|dashboard|cli|database)" ;;
 esac
 (( rc == 0 )) && ok "gate lint green" || err "gate lint RED"
 exit $rc

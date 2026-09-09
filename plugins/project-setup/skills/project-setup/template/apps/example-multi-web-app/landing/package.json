@@ -19,6 +19,7 @@
     "typescript": "<version>",
     "tailwindcss": "<version>",
     "@scope/tsconfig": "link:../../packages/tsconfig",
-    "@tailwindcss/postcss": "<version>"
+    "@tailwindcss/postcss": "<version>",
+    "vitest": "<version>"
   }
 }

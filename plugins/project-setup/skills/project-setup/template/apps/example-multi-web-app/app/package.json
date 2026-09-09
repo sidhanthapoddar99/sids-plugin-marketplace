@@ -26,6 +26,7 @@
     "vitest": "<version>",
     "@scope/tsconfig": "link:../../packages/tsconfig",
     "@tailwindcss/vite": "<version>",
-    "@tanstack/router-plugin": "<version>"
+    "@tanstack/router-plugin": "<version>",
+    "@vitejs/plugin-react": "<version>"
   }
 }

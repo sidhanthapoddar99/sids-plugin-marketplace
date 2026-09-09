@@ -4,8 +4,8 @@
 > removed. The `ai-toolkit-dev` plugin and `scripts/ai-toolkit-dev-check-upstream` were
 > deleted; Claude Code's built-in `skill-creator` covers skill authoring. The 90-file
 > `Documentation/ClaudePlugin/` and `Documentation/ClaudeSettings/` sets were replaced by a
-> ten-file `Documentation/` covering Claude Code, Codex, Hermes and OpenCode. Only section D
-> (project-setup rewrite) is still live. The old sections are kept as history.
+> ten-file `Documentation/` covering Claude Code, Codex, Hermes and OpenCode. Section D
+> (project-setup rewrite) shipped as 0.7.0. Every section below is history; nothing is open.
 
 Two streams of work, agreed on after the audit-driven revision pass.
 
@@ -248,41 +248,3 @@ Currently a one-liner; make it a proper section:
 
 Shipped as `plugins/project-setup` 0.5.0 to 0.7.0: 13 reference pages, `SKILL.md` as the router, a runnable `template/`, and `additional-template/` for the add-ons. `memory/` is an add-on; the working rules start inline in `AGENTS.md`.
 
----
-
-## E. project-setup 0.7.1 — the fix list from the 0.7.0 review
-
-Findings from the 0.7.0 adversarial review (Codex, `gpt-6-astra`, read-only, executed the scripts) merged with the local pass. Work them top down; delete each line when it lands. Paths are relative to `plugins/project-setup/skills/project-setup/`.
-
-**Gate honesty and enforcement** (pre-existing; can report green for work that never ran)
-
-- `scripts/test/test.sh`: an empty suite prints `tests passed`. Print a distinct line that says no suite ran.
-- `scripts/gate/_gate.sh`: quiet mode drops the no-tests warning, because the capture filter keeps only count lines. Keep warning lines.
-- `scripts/test/test.sh`, `scripts/gate/lint.sh` (and any other worker that enumerates apps): the default run never lists `apps/example-single-web-app-vite`, so a single-frontend repo gets a green gate with its tests never run.
-- `scripts/test/test.sh`: an explicit target whose folder is missing returns `tests passed`. Die by name.
-- `scripts/gate/all.sh`: `RUNGS=(test)` is accepted. Require the floor `lint typecheck test check`.
-- `scripts/config/check.sh`: nothing compares `RUNGS` with the `Gate ladder` row in `AGENTS.md`. Add the check, and simplify the row so it parses.
-- Complexity threshold: no lint config ships, `gate lint` runs tool defaults (ruff has no `C901` by default), and the Go branch never runs gocyclo. Ship a lint config per ecosystem with the threshold, and fail `ctl check` when an app lacks one.
-
-**Manifests and config**
-
-- `@/*` alias is used by `components.json` and file comments but defined in no `tsconfig.json`, `vite.config.ts` or `next.config.ts`.
-- `@vitejs/plugin-react` missing from both Vite manifests.
-- `example-dashboard-nextjs`: add zustand, `@tanstack/react-query`, zod, vitest. `landing`: add vitest. `docs`: add `@scope/tsconfig`, a `test` script and vitest, or drop it from `test.sh`.
-- `example-single-web-app-vite/package.json`: drop `test:e2e` and `@playwright/test`; they belong to the browser-suite add-on.
-
-**Contradictions between pages and file comments**
-
-- `routes/_app/dashboard.tsx` lets a loader reach into a module's `functions/`; the import table forbids a module's internals. A module exposes its loader through `index.tsx`.
-- `05_frontend.md` import table says a route never calls `fetch`; § The api layer lets a Next.js server page fetch. State the exception once, in the table.
-- `05_frontend.md` gives stores and hooks one row; the file comments give them different imports. Split the rows.
-- `modules/dashboard/modules/overview/index.tsx` promotes a shared sub-module to `src/modules/`, where siblings cannot import it. A shared assembly becomes a component.
-- `modules/dashboard/types.ts` sends a type two modules share to `@scope/types`, the cross-app scope. App scope first.
-- `05_frontend.md` says every frontend has the same five folders; docs and landing do not. A folder exists when used; an Astro page holds content and its CSS import lives in the layout.
-- `app/src/lib/api/client.ts` and `example-dashboard-nextjs/src/app/layout.tsx` name a skill page in a code comment, which `AGENTS.md` forbids.
-- `app/(app)/settings/[tab]/page.tsx` reads `params.tab` directly; in current Next.js `params` is a promise.
-- `template/AGENTS.md` lines 38, 47, 59 and `11_conventions.md` line 54 still say feature where the word is module.
-
-**Deferred**
-
-- `has_tests` in `test.sh` is filename-based; a suite configured for other names is skipped. The placement rules mandate the names, so document it rather than change it.

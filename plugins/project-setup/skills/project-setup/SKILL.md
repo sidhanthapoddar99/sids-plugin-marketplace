@@ -34,7 +34,7 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 | Where tests live; the dynamic rungs | `references/10c_dynamic-tests.md` |
 | What holds everywhere; the audit order | `references/11_conventions.md` |
 
-`template/` is the floor of the tree. `ctl`, `scripts/`, `docker/`, the env templates and `AGENTS.md` are real and run. `additional-template/` holds the add-ons at the same relative paths; they are real too, and a repo gets them one at a time on the user's word. The app folders under `apps/` are shape only: each file's comment states what it holds, and the code is written per project. A page may name a file the template does not carry, such as `gunicorn.conf.py`, `lib/theme.ts`, `alembic_helpers.py` or a lint config. Those are written per project too. `template/ctl --help` is the verb list.
+`template/` is the floor of the tree. `ctl`, `scripts/`, `docker/`, the env templates and `AGENTS.md` are real and run. `additional-template/` holds the add-ons at the same relative paths; they are real too, and a repo gets them one at a time on the user's word. The app folders under `apps/` are shape only: each file's comment states what it holds, and the code is written per project. A page may name a file the template does not carry, such as `gunicorn.conf.py`, `lib/theme.ts` or `alembic_helpers.py`. Those are written per project too. `template/ctl --help` is the verb list.
 
 ## Principles
 
@@ -90,7 +90,7 @@ Ask each of these rather than infer it, because each answer changes the tree and
 2. Delete the app folders the product does not need. A folder exists only when used.
 3. Rename every `example-*` folder to its role name. `11_conventions.md` § Naming gives the form.
 4. Resolve every `<version>` with the user. `ctl check` lists each file that still holds one. Never fill one from memory.
-4a. Write the lint config for each app that stays, with the complexity threshold from `10b_static-checks.md` § Linters, because the `lint` rung reports only what the config asks for.
+4a. Keep the lint config each app ships (`[tool.ruff]`, `.oxlintrc.json`, `clippy.toml`, `.golangci.yml`); `ctl check` fails an app without one. Change a threshold only with the user, and record it in `AGENTS.md`.
 5. Fill every section of `template/AGENTS.md`. The file is the example: nine sections, each with its table or its one-line placeholder. Replace every `<angle-bracket>` choice with the real one.
 6. Run `ctl setup`, then `ctl gate`. Report each exit code as it is. A red rung is a finding to fix, not a note.
 7. End with `ctl --help` and the manual path in the README. Name the optional rungs and the add-ons in one line, so the user knows they exist, and stop there.

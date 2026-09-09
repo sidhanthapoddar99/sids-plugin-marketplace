@@ -1,4 +1,19 @@
 {
   "extends": "@scope/tsconfig/base.json",
-  "include": ["src"]
+  "include": [
+    "src"
+  ],
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@scope/ui": [
+        "../packages/ui/src"
+      ],
+      "@scope/types": [
+        "../packages/types/src"
+      ]
+    }
+  }
 }

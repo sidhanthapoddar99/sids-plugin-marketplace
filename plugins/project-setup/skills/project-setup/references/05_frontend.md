@@ -58,7 +58,9 @@ After any UI change: screenshot light and dark and check against the brand guide
 
 ## The folder shape
 
-Every frontend has the same five folders under `src/`, plus one routing folder whose name the framework sets. A route file picks a layout and mounts one module. That sentence is the whole design; the folders exist so each word in it has one home.
+Every frontend draws from the same five folders under `src/`, plus one routing folder whose name the framework sets. A route file picks a layout and mounts one module. That sentence is the whole design; the folders exist so each word in it has one home. A folder exists when used: a static landing site has no `lib/`, and a docs site holds its content in its pages, so it has no `modules/` either.
+
+`@/` is the import alias for `src/`. Each app's `tsconfig.json` maps `@/*` to `./src/*`. A Vite app repeats the map as `resolve.alias` in `vite.config.ts`, because Vite does not read tsconfig paths; Next.js does.
 
 | Folder | Holds | Answers |
 |---|---|---|
@@ -75,7 +77,7 @@ The routing folder per framework, because each framework owns file routing and i
 |---|---|---|---|
 | Vite | `routes/` and a generated `routeTree.gen.ts` | TanStack Router, file-based. The plugin goes first in `vite.config.ts`. A route exists only when its file does, and a wrong link is a type error | `example-single-web-app-vite/src/`, `example-multi-web-app/app/src/` |
 | Next.js | `app/` | Built in. Route groups `(name)/` wrap a subtree in a layout without a URL segment | `example-dashboard-nextjs/src/`, `example-multi-web-app/landing/src/` |
-| Astro | `pages/` | Built in | `example-multi-web-app/docs/src/` |
+| Astro | `pages/` | Built in. A page holds its content, because on a docs site the content is the screen; the one CSS import lives in `layout/` | `example-multi-web-app/docs/src/` |
 
 Vite, the single-frontend shape. Comments in the template files say what each holds and what it may import.
 
@@ -134,22 +136,23 @@ The rules the tree implies. Each is a one-line comment in the template file it g
 
 | Layer | May import | Never | Why |
 |---|---|---|---|
-| routing folder | one layout, one module, `zod` for params | `lib/api`, `fetch`, a module's internals | a route decides where, not what |
+| routing folder | one layout, one module's `index.tsx`, `zod` for params | `lib/api`, `fetch`, a module's other files. One exception: a Next.js server page may fetch by service name, because it runs on the server where the browser client cannot | a route decides where, not what |
 | `layout/` | `components/`, `lib/stores` for session and theme | a module, `lib/api` | the same frame serves every screen |
 | `modules/<x>/` | its own folders, `components/`, `lib/` | a route, a layout, another module | a module can sit under two routes and never depends on a sibling |
-| `modules/<x>/modules/` | one level deep | a second level, a sibling module's sub-module | a sub-module two modules need is promoted, not reached into |
+| `modules/<x>/modules/` | one level deep | a second level, a sibling module's sub-module | a sub-module two modules need becomes a component under `components/`, because modules never import each other |
 | `components/` | `components/ui`, `lib/utils` | `lib/api`, a store, a module | it renders props |
 | `lib/api` | `lib/utils`, `@scope/types` | a component, a store, React | it is the one server boundary |
-| `lib/stores`, `lib/hooks` | `lib/api`, `lib/utils` | a module, a component | shared state has no UI |
+| `lib/stores` | `lib/utils` | `lib/api`, a module, a component | client state is never server state; TanStack Query in `lib/api` owns that |
+| `lib/hooks` | `lib/api`, `lib/stores`, `lib/utils` | a module, a component | a shared hook binds state to data and nothing above it |
 | `lib/utils` | nothing app-internal | React, `fetch` | it must lift out with the app |
 
-Promotion is the same rule as packages: a piece moves up at its second consumer. UI to `components/`, logic to `lib/`, and to `packages/ui` or `packages/services` at the second frontend. `functions/` inside a module holds hooks, queries and formatters; it is one folder rather than `hooks/` and `utils/`, because a module's logic is small enough to sit together.
+Promotion is the same rule as packages: a piece moves up one scope at its second consumer. UI to `components/`, logic to `lib/`, a type to `lib/` beside its api domain file, and to `packages/ui`, `packages/services` or `@scope/types` at the second frontend. `functions/` inside a module holds hooks, queries and formatters; it is one folder rather than `hooks/` and `utils/`, because a module's logic is small enough to sit together.
 
-No `context/`, `helpers/`, `utils/`, `types.ts` at the top of `src/`. A type has an owner at the lowest level that contains its consumers; a cross-app entity is in `@scope/types`.
+No `context/`, `helpers/`, `utils/`, `types.ts` at the top of `src/`. A type has an owner at the lowest level that contains its consumers: one module, its `types.ts`; two modules, `lib/`; two apps, `@scope/types`.
 
 ## The api layer
 
-No component, hook, route or store calls `fetch` directly. `lib/api/` owns four things: the endpoint paths (the only place a URL string exists), the response boundary (zod at the edge, types inferred with `z.infer`, nothing unvalidated enters the app), error normalisation (one app-wide error shape), and the query keys (beside the functions they cache, so invalidation is reviewable in one place). `lib/api/` groups by the backend's domain names, never by UI screen, so the two contract surfaces mirror each other. When the API changes, the diff is `lib/api/` plus the affected modules and nothing else. On Next.js a server page may fetch by service name on the server; the browser side still goes through `lib/api/`.
+No component, hook, route or store calls `fetch` directly. `lib/api/` owns four things: the endpoint paths (the only place a URL string exists), the response boundary (zod at the edge, types inferred with `z.infer`, nothing unvalidated enters the app), error normalisation (one app-wide error shape), and the query keys (beside the functions they cache, so invalidation is reviewable in one place). `lib/api/` groups by the backend's domain names, never by UI screen, so the two contract surfaces mirror each other. When the API changes, the diff is `lib/api/` plus the affected modules and nothing else. The one exception is the Next.js server page, and the import table above is its home.
 
 ## Module rules
 
