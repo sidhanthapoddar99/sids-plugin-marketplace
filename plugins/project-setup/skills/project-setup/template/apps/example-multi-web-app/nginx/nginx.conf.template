@@ -16,6 +16,10 @@ server {
     listen 8080;
     server_name _;
     root /usr/share/nginx/html;
+    # A directory asked for without its slash (/app?x=1) is answered 301 with the slash added.
+    # An absolute Location carries the port nginx listens on, 8080, not the port the browser used.
+    # Relative Location (/app/?x=1): the browser resolves it against its own origin.
+    absolute_redirect off;
 
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;

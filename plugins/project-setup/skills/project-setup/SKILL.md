@@ -5,7 +5,7 @@ description: Use this skill for how a repo is shaped: bootstrapping a new projec
 
 # project-setup
 
-One repo shape, one entrypoint, one origin. This skill decides where things go and how they connect. It answers three kinds of request with the same rules: a bootstrap, an audit, and a single question mid-task. The rules live in the thirteen pages under `references/`. This file is the workflow and the map.
+One repo shape, one entrypoint, one origin. This skill decides where things go and how they connect. It answers three kinds of request with the same rules: a bootstrap, an audit, and a single question mid-task. The rules live in the fourteen pages under `references/`. This file is the workflow and the map.
 
 ## Before anything
 
@@ -29,12 +29,15 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 | What must be safe | `references/07_security.md` |
 | What do I type | `references/08_ctl.md` |
 | What makes it prod | `references/09_production.md` |
+| How HTTP exposure and TLS are configured | `references/12_http-and-tls.md` |
 | What a person reviews by hand | `references/10a_review.md` |
 | What is green; the ladder; the static rungs | `references/10b_static-checks.md` |
 | Where tests live; the dynamic rungs | `references/10c_dynamic-tests.md` |
 | What holds everywhere; the audit order | `references/11_conventions.md` |
 
 `template/` is the floor of the tree. `ctl`, `scripts/`, `docker/`, the env templates and `AGENTS.md` are real and run. `additional-template/` holds the add-ons at the same relative paths; they are real too, and a repo gets them one at a time on the user's word. The app folders under `apps/` are shape only: each file's comment states what it holds, and the code is written per project. A page may name a file the template does not carry, such as `gunicorn.conf.py`, `lib/theme.ts` or `alembic_helpers.py`. Those are written per project too. `template/ctl --help` is the verb list.
+
+For changes to ctl’s environment loader, run the [ctl tooling tests](tests/ctl/README.md).
 
 ## Principles
 

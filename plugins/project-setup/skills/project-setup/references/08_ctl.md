@@ -43,8 +43,9 @@ The verb table below is the floor, not the ceiling. A project adds the verbs its
 
 | Modifier | Adds | When |
 |---|---|---|
-| `+expose_web` | `web` on `${HTTP_PORT}` / `${HTTPS_PORT}` | The default. Prod. |
-| `+expose` | Every app port to the host | Debug. Never prod. |
+| `+expose_web` | `web` on the `_PORT` of the piece that owns `/` (`WEB_LANDING_PORT`; `WEB_APP_PORT` in the single shape) | The default. Local docker: the same origin the dev server has. |
+| `+public` | `web` on `${HTTP_PORT}` / `${HTTPS_PORT}`; `PUBLIC_URL` to the apps that build absolute URLs | A public deployment. The three keys ship commented out in `.env.proxy.template`; refused while one is blank. |
+| `+expose` | Every app port to the host, each on its own `_PORT` | Debug. Never prod. |
 | `+env_override` | Re-points upstreams and URLs to `${VAR}` from `.env.proxy` and `.env.secrets` | A piece runs outside this compose. Refused when a mapped key is blank. |
 
 Rules the files obey, and `ctl check` enforces:
@@ -71,7 +72,7 @@ Runs directly, and as the `check` rung of the ladder. It runs every rule, prints
 - env: every `${VAR}` in any `config.yaml` is a key in one of the three `.env.*.template` files; a key with a `_PASSWORD`, `_KEY` or `_SECRET` segment appears only in `.env.secrets.template`; every `.env.proxy.template` key ends `_HOST`, `_PORT`, `_PREFIX` or `_URL` (or is `PUBLIC_URL`, `HTTP_PORT`, `HTTPS_PORT`, `DEV_PROXY_PORT`, `COMPOSE_PROJECT_NAME`); every `.env.data.template` key ends `_DIR`; no secret literal in any `config.yaml`; no tracked `config.local.yaml`; no tracked `.env.*` except the templates.
 - layout: no `package.json`, `bun.lock` or `pnpm-workspace.yaml` at the root or directly in `apps/`; no folder under `apps/` that holds a manifest next to child folders with manifests, because that is a workspace. The root half is skipped when `AGENTS.md` records `root-manifest` under `## Exceptions to the standard layout` (`01_layout.md` § Exceptions).
 - brief: `CLAUDE.md` is exactly `@AGENTS.md`.
-- compose: no `ports:` in `compose.base.yaml`; no `../` in any compose file; `docker compose config` validates the db file, the dev file, base, and base plus each modifier. This step is skipped, and says so, when docker is down or the env files are absent.
+- compose: no `ports:` in `compose.base.yaml`; no `../` in any compose file; every `${NAME}` inside the three filled env files names a set key, with no cycle, because these are the values `ctl` hands compose and the apps (`02_env.md` rule 6); `docker compose config` validates the db file, the dev file, base, and base plus each modifier, with the env loaded and resolved the way `ctl up` loads it. A modifier whose `MODIFIER_REQUIRES` keys are blank (`+public` before the public origin is uncommented) is skipped and named, the way `ctl up` refuses it. The compose validation is skipped, and says so, when docker is down or the env files are absent.
 
 ## `ctl manage` — the break-glass console
 

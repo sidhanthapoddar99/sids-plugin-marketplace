@@ -1,7 +1,7 @@
 # The stack. This IS production. No ports here — modifiers add exposure.
 # No env_file. Each service lists exactly the variables it reads under `environment:`.
 #   ${VAR}   — operator decides; interpolated from the three env files ctl passes with --env-file:
-#              .env.secrets (passwords, keys, REGISTRY/TAG) · .env.proxy (ports, prefixes, PUBLIC_URL) ·
+#              .env.secrets (passwords, keys, REGISTRY/TAG) · .env.proxy (ports, prefixes) ·
 #              .env.data (DATA_DIR, used by the included compose.db.yaml)
 #   literal  — compose decides; service names on the compose network
 # So reading this file tells you everything a container gets. Nothing leaks in by accident.
@@ -46,7 +46,7 @@ services:
       ENGINE_URL: http://engine:8080             # api calls engine by service name
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
       ENCRYPTION_KEY_PYTHON: ${ENCRYPTION_KEY_PYTHON}
-      PUBLIC_URL: ${PUBLIC_URL}
+      # PUBLIC_URL arrives only with +public (compose.m.public.yaml); absent = relative URLs only
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8000${API_PREFIX}/health || exit 1"]
       interval: 15s
@@ -124,7 +124,8 @@ services:
       api: { condition: service_healthy }
       engine: { condition: service_healthy }
       dashboard: { condition: service_healthy }
-    # ports come from compose.m.expose_web.yaml (the image listens on 8080, unprivileged)
+    # ports come from a modifier: +expose_web (the / owner's _PORT, local) or +public (80/443).
+    # The image listens on 8080, unprivileged.
 
   # Next.js SSR — needs a Node server, so its own image; the edge proxies ${DASHBOARD_PREFIX} to it.
   dashboard:
@@ -137,7 +138,7 @@ services:
     environment:                                # server side only
       API_HOST: api
       API_PORT: 8000
-      PUBLIC_URL: ${PUBLIC_URL}
+      # PUBLIC_URL arrives only with +public (compose.m.public.yaml); absent = relative URLs only
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:3000${DASHBOARD_PREFIX}/ >/dev/null || exit 1"]
       interval: 15s

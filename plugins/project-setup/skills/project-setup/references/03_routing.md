@@ -21,7 +21,7 @@ The routing table is `template/.env.proxy.template`. Read it there: one block pe
 | Backends | on the host, `localhost:<port>`, reload | containers, service names |
 | Static frontends | dev servers on their ports | built into the `web` image |
 | Server frontend | `next dev` | `dashboard` container |
-| The edge | Vite proxy (one frontend) or the dev proxy (several) | nginx in `web`, published by `+expose_web`. TLS and domains: a host proxy outside this repo. |
+| The edge | Vite proxy (one frontend) or the dev proxy (several) | nginx in `web`, published by `+expose_web` on the `_PORT` of the piece that owns `/` (local), or by `+public` on 80/443. TLS and domains: a host proxy outside this repo. |
 | Edge config | `apps/example-multi-web-app/nginx/nginx-dev.conf.template` + `nginx-dev-headers.conf` (the include every proxied location uses) | `apps/example-multi-web-app/nginx/nginx.conf.template`, copied into the image as `templates/default.conf.template` |
 
 Both templates route the same prefixes. Prod serves the static ones from disk and proxies the rest to service names; dev proxies every prefix to `127.0.0.1:${PORT}`, websocket upgrade on all of them. Both are rendered by nginx's `envsubst`, limited to the names in `NGINX_ENVSUBST_FILTER` (set in compose) so nginx's own `$host` and `$request_uri` survive.
@@ -61,7 +61,7 @@ Two or more frontends must share one origin: shared cookies, one login, links be
 **Prod.** `apps/example-multi-web-app/Dockerfile`, context `./apps`:
 
 1. One build stage per static frontend: `oven/bun:<version>`, `ARG` for that frontend's public keys, `bun install --frozen-lockfile`, `bun run build`.
-2. Final stage `nginx:<version>`: `COPY` each output under its prefix in `/usr/share/nginx/html/`; `COPY nginx/nginx.conf.template` to `/etc/nginx/templates/default.conf.template`. nginx renders it at start from the container environment. Listens on 8080 as the `nginx` user (the Dockerfile chowns the cache and pid first). `+expose_web` publishes `${HTTP_PORT}:8080` and `${HTTPS_PORT}:8443`; `+expose` publishes every app port for debugging.
+2. Final stage `nginx:<version>`: `COPY` each output under its prefix in `/usr/share/nginx/html/`; `COPY nginx/nginx.conf.template` to `/etc/nginx/templates/default.conf.template`. nginx renders it at start from the container environment. Listens on 8080 as the `nginx` user (the Dockerfile chowns the cache and pid first). `+expose_web` publishes `${WEB_LANDING_PORT}:8080`, the port of the piece that owns `/` (`WEB_APP_PORT` in the single shape); `+public` publishes `${HTTP_PORT}:8080` and `${HTTPS_PORT}:8443`; `+expose` publishes every app port for debugging.
 
 Build args are prefixes: compose passes `VITE_BASE_PATH: ${WEB_APP_PREFIX}` and the like, interpolated from `.env.proxy`. No secret is ever a build arg.
 
@@ -112,6 +112,7 @@ Two cases earn a second origin. Everything else is a prefix.
 - `Upgrade` / `Connection` headers on every websocket-capable location in prod, not only in the dev proxy.
 - `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto` are set at the edge; a backend trusts them only from the edge.
 - SPA fallback per prefix: `try_files $uri $uri/ ${WEB_APP_PREFIX}/index.html`. Without it deep links 404.
+- `absolute_redirect off;` in every `server {}` that serves a directory. nginx answers a directory asked for without its slash (`/app?x=1`) with a 301 that adds the slash, and an absolute `Location` carries the port nginx listens on, 8080, not the port the browser used, so the browser leaves its origin. With it off the `Location` is `/app/?x=1`, resolved against the browser's own origin, query intact. A browser caches a 301: test with a fresh context. Both `nginx.conf.template` files carry it.
 - Backend routes never at root: `/users` collides with SPA paths. API docs live under `${API_PREFIX}/docs`.
 
 ## Never

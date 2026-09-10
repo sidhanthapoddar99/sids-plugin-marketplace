@@ -1,0 +1,16 @@
+# Modifier. A real public deployment. Publishes the edge on the host's 80/443 and hands PUBLIC_URL
+# to the apps that build absolute URLs (links in mail, OAuth callbacks). Needs PUBLIC_URL, HTTP_PORT
+# and HTTPS_PORT uncommented in .env.proxy; `ctl up` refuses the modifier while one is blank
+# (MODIFIER_REQUIRES in scripts/common/_lib.sh). TLS on 8443 needs certs mounted; a host proxy in
+# front of the stack is the usual place for TLS instead. Use it alone: `ctl up +public -y`.
+services:
+  web:
+    ports:
+      - "${HTTP_PORT}:8080"
+      - "${HTTPS_PORT}:8443"
+  api:
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL}
+  dashboard:
+    environment:
+      PUBLIC_URL: ${PUBLIC_URL}

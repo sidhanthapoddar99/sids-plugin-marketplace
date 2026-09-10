@@ -33,7 +33,11 @@ Rules
             .oxlintrc.json beside package.json, clippy.toml beside Cargo.toml, .golangci.yml beside go.mod —
             a linter run without its config reports only its defaults, and ruff's default has no complexity rule
   compose   no ports: in compose.base.yaml · no ../ in any docker/compose.*.yaml ·
+            every \${NAME} inside the three env files names a set key, no cycle (the values ctl hands
+            compose and the apps) ·
             docker compose config validates: db alone, dev alone, base alone, base + each modifier
+            (a modifier whose required keys are blank, such as +public before the public origin is
+            uncommented, is skipped and named, the way ctl up refuses it)
 
 Every rule runs; nothing stops at the first failure. Exit 0 only when every rule passed.
 "; }
@@ -164,11 +168,25 @@ done
 pass "base has no ports · no ../ paths"
 
 have_env=1; for f in "${ENV_FILES[@]}"; do [[ -f $f ]] || have_env=0; done
+if (( have_env )); then
+  # The same load ctl up and ctl dev do: files skip-if-set, then every ${NAME} resolved. A
+  # reference that does not resolve is a finding here, because ctl would hand it on as text.
+  step "composed values (every \${NAME} in the env files names a set key)"
+  load_env_files
+  if expand_env_refs; then pass "every \${NAME} in the env files resolves"
+  else fail "an env file holds a reference ctl cannot resolve — ctl up and ctl dev would hand it on as text"; fi
+fi
 if [[ "$(docker_state)" == ok ]] && (( have_env )); then
-  step "compose config (the three env files supply \${VAR})"
+  step "compose config (the three env files supply \${VAR}, resolved as ctl up hands them on)"
   combos=("$DB_FILE" "$DEV_FILE" "$BASE")
   while IFS= read -r m; do [[ -n $m ]] && combos+=("$BASE $DOCKER_DIR/compose.m.$m.yaml"); done < <(list_modifiers)
   for c in "${combos[@]}"; do
+    # a modifier whose mapped keys are blank is skipped, the way ctl up refuses it: +public needs the
+    # optional public-origin keys uncommented, and a blank ${VAR} would validate as an empty string
+    if [[ $c == *compose.m.* ]]; then
+      m="${c##*compose.m.}"; m="${m%.yaml}"; mapfile -t blank < <(modifier_blank_keys "$m")
+      if (( ${#blank[@]} )); then warn "$c — skipped: +$m needs ${blank[*]} set in .env.proxy / .env.secrets (ctl up refuses it the same way)"; continue; fi
+    fi
     args=(); for f in $c; do args+=(-f "$f"); done
     if out=$(compose_cmd "${args[@]}" config -q 2>&1); then ok "$c"
     else fail "$c — $out"; fi

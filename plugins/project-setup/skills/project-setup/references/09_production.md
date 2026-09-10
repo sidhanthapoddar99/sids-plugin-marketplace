@@ -27,8 +27,10 @@ The compose healthcheck reads `/health`. A host proxy or load balancer reads `/r
 
 ## The deploy
 
+For central Traefik, Cloudflare Tunnel, ngrok, or direct Nginx HTTP with optional TLS, see [HTTP and TLS deployment options](12_http-and-tls.md). Public port mappings alone do not enable TLS; choose the exposure and certificate setup for your deployment.
+
 1. `ctl build` with an immutable `TAG` (a git sha or a semver) on images named `<product>/<app>` (`acme/api`). Never redeploy a moving `latest`; a tag is never repurposed.
-2. `ctl up +expose_web -y`. The data core comes up and is waited on; migrations run once; then the apps.
+2. Uncomment `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` in `.env.proxy` (`02_env.md` rule 10), then `ctl up +public -y`. The data core comes up and is waited on; migrations run once; then the apps. `ctl up` without a modifier is local docker: the edge on the `/` owner's port, no public origin.
 3. Migrations are never on app boot, because a boot-time migration runs once per replica and once per restart. With one replica, `up.sh` runs `ctl migrate up` before the apps. With N replicas the same step is a one-shot compose service (`migrate`, `restart: "no"`) that the apps `depends_on` with `condition: service_completed_successfully`, because N replicas racing `upgrade head` corrupt the version table. Pick one per project and delete the other path. This step is the home of the rule; `06_backend.md` § Migrations points here.
 4. Rollback is the previous `TAG`, or a `ctl build save` snapshot. A rollback path exists before the first deploy, not after the first incident.
 

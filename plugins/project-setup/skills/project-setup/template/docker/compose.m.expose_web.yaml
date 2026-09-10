@@ -1,7 +1,9 @@
-# Modifier. Publishes the edge (web) only. The default for `ctl up`.
-# The image listens on 8080/8443 as the unprivileged nginx user; TLS on 8443 needs certs mounted.
+# Modifier. Publishes the edge (web) only, on the _PORT of the piece that owns / (.env.proxy), so
+# http://localhost:<that port> is the product under `ctl up` as it is under `ctl dev`. The default
+# for `ctl up`. Local docker only: a public deployment uses +public (80/443, PUBLIC_URL).
+# The image listens on 8080 as the unprivileged nginx user.
+# Single shape: replace WEB_LANDING_PORT with WEB_APP_PORT, here and in compose.m.expose.yaml.
 services:
   web:
     ports:
-      - "${HTTP_PORT}:8080"
-      - "${HTTPS_PORT}:8443"
+      - "${WEB_LANDING_PORT}:8080"

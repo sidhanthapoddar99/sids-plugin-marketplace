@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# db/backup.sh — `ctl db backup`. Dump the data core into ${LOGS_DIR:-./logs}/backups/<timestamp>/:
+# db/backup.sh — `ctl db backup`. Dump the data core into ${BACKUP_DIR}/<timestamp>/ (.env.data):
 # postgres → pg_dump (custom format), redis → SAVE + copy dump.rdb, neo4j → cypher export of the
 # constraints/indexes only (a full neo4j dump needs the database stopped — see TODO).
 set -euo pipefail
@@ -10,13 +10,14 @@ usage() { print_help "db backup" "Dump every data engine into a timestamped fold
 "Options
   -h, --help      show this help
 
-Writes ${LOGS_DIR:-./logs}/backups/<YYYYmmdd-HHMMSS>/{postgres.dump, redis.rdb, neo4j-schema.cypher}.
+Writes \${BACKUP_DIR}/<YYYYmmdd-HHMMSS>/{postgres.dump, redis.rdb, neo4j-schema.cypher}
+(BACKUP_DIR from .env.data; default ./logs/backups).
 Restore with: ctl db restore <that folder>." \
 "TODO: a full neo4j dump (neo4j-admin database dump) needs the container stopped; not automated here."; }
 
 is_help "${1:-}" && { usage; exit 0; }
 require_env; require_docker
-dest="${LOGS_DIR:-./logs}/backups/$(date +%Y%m%d-%H%M%S)"; mkdir -p "$dest"
+dest="${BACKUP_DIR:-./logs/backups}/$(date +%Y%m%d-%H%M%S)"; mkdir -p "$dest"
 has() { printf '%s\n' "${DATA_SVCS[@]}" | grep -qx "$1"; }
 
 if has postgres; then

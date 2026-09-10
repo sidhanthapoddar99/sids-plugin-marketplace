@@ -42,7 +42,8 @@ Base is docker/compose.base.yaml (the whole stack, includes the data engines). M
 exposure or re-point services; base itself publishes no ports. Migrations run once, before any
 app service starts — never on app boot." \
 "Example:  ctl up                                # interactive
-          ctl up +expose_web -y                 # prod default, no prompts
+          ctl up -y                             # local docker: the default (+expose_web), no prompts
+          ctl up +public -y                     # public deployment: 80/443 + PUBLIC_URL, uncommented in .env.proxy
           ctl up +expose +env_override          # debug ports, services re-pointed from .env.proxy / .env.secrets
           ctl up --services=api,postgres -y     # one backend and its engine only
           ctl up --attach                       # foreground; watch logs, Ctrl-C to stop"; }
@@ -144,8 +145,9 @@ while true; do
   done
 
   mapfile -t files < <(compose_files "${modifiers[@]}")
-  compose_base=(docker compose --project-directory "$CTL_ROOT"); mapfile -t -O "${#compose_base[@]}" compose_base < <(env_file_args)
-  for f in "${files[@]}"; do compose_base+=(-f "$f"); done
+  file_args=(); for f in "${files[@]}"; do file_args+=(-f "$f"); done
+  # the same line compose_cmd runs, kept as an array: the plan prints it, --attach execs it
+  mapfile -t compose_base < <(compose_argv "${file_args[@]}")
 
   # ── services ── the picker needs the assembled file set, so it comes after the modifiers
   services=()
