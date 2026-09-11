@@ -5,14 +5,19 @@
 # container health, host-process helpers, and prompts. Keeping it here is what lets
 # each worker stay short and look identical.
 #
-# Workers live at `scripts/<group>/<name>.sh`, group ∈ common | config | dev | container | db | test.
+# Workers live at `scripts/<group>/<name>.sh`, group ∈ common | config | dev | container | db | admin | test | gate.
 # Add a worker with the preamble below, then wire one `run <group>/<name>` line into `ctl`.
 #
-# COMPOSE MODEL (one base + stackable modifiers, no profiles, no standalone configs):
-#   docker/compose.db.yaml     the data engines alone (loopback ports)   → `ctl dev`
-#   docker/compose.dev.yaml    the nginx dev proxy, host network         → `ctl dev --proxy`
-#   docker/compose.base.yaml   the whole stack; it `include:`s the db file; NO ports
-#   docker/compose.m.<name>.yaml   modifiers, discovered by filename       → `ctl up +<name>`
+# COMPOSE MODEL (a config + stackable modifiers + a service subset; no profiles, no override file):
+#   docker/compose.<name>.yaml     a CONFIG: one stack shape, discovered by filename → `ctl up --config <name>`
+#       base   the whole stack (includes the db file); the default; NO ports — this is prod
+#       db     the data engines alone; what `ctl dev` runs with +expose_db
+#       dev    the nginx dev proxy on the host network             → `ctl dev --proxy`
+#   docker/compose.m.<name>.yaml   a MODIFIER: an overlay on a config      → `ctl up +<name>`
+#   docker/presets.yaml            named `ctl up` argument lines           → `ctl up preset <name>`
+#   include:                       how one config borrows another file (base includes db)
+# A config never publishes a port; only a modifier does (ctl check proves it). Which modifiers fit a
+# config is computed, not declared: `docker compose config` on the pair must pass.
 # Every compose call passes --project-directory "$CTL_ROOT", so every relative path in the
 # env files and in every compose file resolves from the repo root (compose files say ./apps/…,
 # ./data, never ../).
@@ -40,14 +45,24 @@
 # ── repo root — set by ctl before sourcing; else derived from this file ──
 : "${CTL_ROOT:=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)}"
 DOCKER_DIR="docker"
-BASE="$DOCKER_DIR/compose.base.yaml"
-DB_FILE="$DOCKER_DIR/compose.db.yaml"
+DEFAULT_CONFIG=base                       # the config `ctl up` runs when --config is not given
+BASE="$DOCKER_DIR/compose.$DEFAULT_CONFIG.yaml"   # the passthroughs (down · logs · exec · health) read this file
 DEV_FILE="$DOCKER_DIR/compose.dev.yaml"   # the same-origin dev proxy (nginx on the host network)
-DEFAULT_MODIFIERS=(expose_web)            # what `ctl up` applies when no +modifier is given
+PRESETS_FILE="$DOCKER_DIR/presets.yaml"   # named `ctl up` argument lines; `ctl up set-preset` writes it
+DEFAULT_MODIFIERS=(expose_web)            # what `ctl up` applies on DEFAULT_CONFIG when no +modifier is given; other configs default to none
+DEV_PRESET=dev                            # the reserved preset `ctl dev` starts for its data core; missing = ctl dev refuses
 ENV_FILES=(.env.secrets .env.data .env.proxy)   # the three env files, in load order. Templates: <name>.template
 
 # [ADAPT] the data core. Empty = no data core — every consumer degrades gracefully.
-read -r -a DATA_SVCS <<< "${DATA_SVCS:-postgres redis neo4j}" || true
+# Overridable from the shell: `DATA_SVCS= ctl dev` (empty is empty, not the default). ctl sources this
+# file and then execs a worker, and bash cannot export an array, so the scalar the shell gave is kept
+# in *_STR and re-read by the worker. The default is the *_STR line, not the read line.
+export DATA_SVCS_STR="${DATA_SVCS_STR-${DATA_SVCS-postgres redis neo4j}}"
+read -r -a DATA_SVCS <<< "$DATA_SVCS_STR" || true
+# [ADAPT] the schema one-shots in the db config. `ctl dev` waits on them after the engines, because
+# nothing in that config depends on them; under `ctl up` the apps do. Empty = no schema step.
+export SCHEMA_SVCS_STR="${SCHEMA_SVCS_STR-${SCHEMA_SVCS-migrate neo4j-init}}"
+read -r -a SCHEMA_SVCS <<< "$SCHEMA_SVCS_STR" || true
 
 # [ADAPT] env keys a modifier maps with ${VAR} (across .env.secrets + .env.proxy). `ctl up` refuses
 # the modifier when any is blank, and `ctl check` skips validating it and says so —
@@ -56,6 +71,7 @@ read -r -a DATA_SVCS <<< "${DATA_SVCS:-postgres redis neo4j}" || true
 declare -A MODIFIER_REQUIRES=(
   [env_override]="DATABASE_URL REDIS_URL NEO4J_URL API_HOST API_PORT ENGINE_HOST ENGINE_PORT DASHBOARD_HOST DASHBOARD_PORT"
   [public]="PUBLIC_URL HTTP_PORT HTTPS_PORT"
+  [expose_db]="POSTGRES_PORT REDIS_PORT NEO4J_BOLT_PORT"   # a blank port would publish a random one
 )
 
 # Project name: let docker compose decide it from .env.proxy's COMPOSE_PROJECT_NAME (or the repo
@@ -112,7 +128,7 @@ Any extra args forward straight to \`docker compose $1\`." \
 
 # ── docker compose ──
 # Every call is anchored at the repo root and gets the three env files (compose reads no .env on
-# its own). `dc` = the whole stack (base), `dc_db` = engines only, `dc_dev` = the dev proxy.
+# its own). `dc` = the default config (base, the whole stack), `dc_dev` = the dev proxy.
 # env_file_args — one --env-file per ENV_FILES entry that exists; a missing file is simply skipped
 # here (require_env is the guard that dies). Compose precedence: shell env > --env-file, so an
 # exported var (DATA_DIR=… ctl up) still wins over the file. Compose expands ${NAME} only inside
@@ -125,17 +141,53 @@ env_file_args() { local f; for f in "${ENV_FILES[@]}"; do [[ -f "$CTL_ROOT/$f" ]
 compose_argv()  { printf '%s\n' docker compose --project-directory "$CTL_ROOT"; env_file_args; (( $# == 0 )) || printf '%s\n' "$@"; }
 compose_cmd()   { local -a argv; mapfile -t argv < <(compose_argv "$@"); "${argv[@]}"; }
 dc()     { compose_cmd -f "$BASE" "$@"; }
-dc_db()  { compose_cmd -f "$DB_FILE" "$@"; }
 dc_dev() { compose_cmd -f "$DEV_FILE" "$@"; }
-# auto-discovery — no hard-coded list. compose.m.<name>.yaml = modifier <name>.
+# auto-discovery — no hard-coded list.
+#   compose.<name>.yaml   = config <name>   (a name holds no dot, so compose.m.* is never a config)
+#   compose.m.<name>.yaml = modifier <name>
+list_configs()   { local f b; for f in "$DOCKER_DIR"/compose.*.yaml; do [[ -e $f ]] || continue
+                     b=${f##*/compose.}; b=${b%.yaml}; [[ $b == *.* ]] || printf '%s\n' "$b"; done; }
 list_modifiers() { local f b; for f in "$DOCKER_DIR"/compose.m.*.yaml; do [[ -e $f ]] || continue
                      b=${f##*/compose.m.}; printf '%s\n' "${b%.yaml}"; done; }
+config_file()    { printf '%s/compose.%s.yaml\n' "$DOCKER_DIR" "$1"; }
+modifier_file()  { printf '%s/compose.m.%s.yaml\n' "$DOCKER_DIR" "$1"; }
 join_sp() { paste -sd' ' - 2>/dev/null || tr '\n' ' '; }   # newline list → space-joined
 # echo stdin unchanged, or a dim "(none)" when it's empty — so lists never render as a dangling label.
 or_none() { local raw; raw=$(cat); raw="${raw%"${raw##*[![:space:]]}"}"
             [[ -n $raw ]] && printf '%s' "$raw" || printf '%s(none)%s' "$C_DIM" "$C_RESET"; }
-# compose_files <mod…> — print the -f list for `ctl up`: base first, then one file per modifier.
-compose_files() { printf '%s\n' "$BASE"; local m; for m in "$@"; do printf '%s/compose.m.%s.yaml\n' "$DOCKER_DIR" "$m"; done; }
+# compose_files <config> <mod…> — print the -f list for `ctl up`: the config first, then one file per modifier.
+compose_files() { config_file "$1"; shift; local m; for m in "$@"; do modifier_file "$m"; done; }
+# modifier_fits <config> <mod> — 0 when compose accepts the pair. Compatibility is computed, never
+# declared: a modifier that patches a service the config lacks fails `config`, so it is hidden.
+# Needs docker up; the caller guards. One compose call per pair.
+modifier_fits()  { compose_cmd -f "$(config_file "$1")" -f "$(modifier_file "$2")" config -q >/dev/null 2>&1; }
+# fitting_modifiers <config> — every modifier that fits <config>. A modifier whose MODIFIER_REQUIRES
+# keys are blank cannot be tested (a blank ${VAR} may pass or fail config), so it is listed and left
+# to check_modifier_env to refuse by name.
+fitting_modifiers() { local m; while IFS= read -r m; do [[ -z $m ]] && continue
+                        if [[ -n "$(modifier_blank_keys "$m")" ]] || modifier_fits "$1" "$m"; then printf '%s\n' "$m"; fi
+                      done < <(list_modifiers); }
+# ── presets: docker/presets.yaml, one `<name>: "<ctl up arguments>"` line per preset ──
+# The value is the stack shape that follows `ctl up` on the command line (--config, +modifier,
+# --services and nothing else), so `ctl up preset <name>` is `ctl up <value>` and needs no second
+# parser. Flat map only; comments and blank lines are skipped; CRLF is tolerated. A duplicated name:
+# the first line wins on read, list_presets names it once, and set-preset collapses it to one line.
+PRESET_LINE='^([A-Za-z0-9_-]+):[[:space:]]*(.*)$'
+list_presets() { [[ -f $PRESETS_FILE ]] || return 0
+                 local l; declare -A seen=(); while IFS= read -r l || [[ -n $l ]]; do l="${l%$'\r'}"
+                   [[ $l =~ $PRESET_LINE && ! -v seen[${BASH_REMATCH[1]}] ]] || continue
+                   seen[${BASH_REMATCH[1]}]=1; printf '%s\n' "${BASH_REMATCH[1]}"; done < "$PRESETS_FILE"; }
+# preset_args <name> — the stored argument line, unquoted; 1 when absent. A quoted value ends at
+# its closing quote, so a `#` inside it is kept; an unquoted value ends at a trailing ` #comment`.
+# An empty value is returned empty: the caller decides whether that is an error (`ctl up preset` does).
+preset_args()  { [[ -f $PRESETS_FILE ]] || return 1
+                 local l v; while IFS= read -r l || [[ -n $l ]]; do l="${l%$'\r'}"
+                   [[ $l =~ $PRESET_LINE && ${BASH_REMATCH[1]} == "$1" ]] || continue
+                   v="${BASH_REMATCH[2]}"
+                   if   [[ $v == \"*\" ]]; then v="${v#\"}"; v="${v%%\"*}"
+                   elif [[ $v == \'*  ]]; then v="${v#\'}"; v="${v%%\'*}"
+                   else v="${v%%[[:space:]]#*}"; [[ $v == \#* ]] && v=""; v="${v%"${v##*[![:space:]]}"}"; fi
+                   printf '%s\n' "$v"; return 0; done < "$PRESETS_FILE"; return 1; }
 # modifier_blank_keys <mod> — print each key MODIFIER_REQUIRES maps for <mod> that is blank or unset
 # in the loaded env. `ctl up` dies on one (check_modifier_env); `ctl check` skips the combination.
 modifier_blank_keys() { local k; for k in ${MODIFIER_REQUIRES[$1]:-}; do [[ -n "${!k:-}" ]] || printf '%s\n' "$k"; done; }
@@ -292,7 +344,9 @@ detach_run() {
 }
 
 # ── env schema (used by ctl status and ctl check) ──
-env_keys() { local k; while IFS='=' read -r k _; do [[ -z "$k" || "$k" == \#* ]] || printf '%s\n' "$k"; done < "$1"; }
+# env_keys <file> — every KEY of a KEY=value line, the same lines load_env_file loads: a key starts
+# at column 0. An indented line is a continuation comment, never a key, whatever it holds.
+env_keys() { local k; while IFS='=' read -r k _; do [[ $k =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && printf '%s\n' "$k"; done < "$1"; }
 check_env_schema() {  # 0 if every .env.X has every key its .env.X.template declares
   local f rc=0 k
   for f in "${ENV_FILES[@]}"; do

@@ -112,3 +112,16 @@ def test_a_cycle_fails(tmp_path: Path, body: str) -> None:
     result, _ = load_env(tmp_path, {".env.data": body}, [])
     assert result.returncode != 0
     assert "cycle" in result.stderr
+
+
+def test_an_indented_line_is_never_a_key(tmp_path: Path) -> None:
+    body = "DATA_DIR=./data\n                 # a continuation comment\n  NOT_A_KEY=1\nLOGS_DIR=${DATA_DIR}/logs\n"
+    (tmp_path / ".env.data.template").write_text(body)
+    result, _ = load_env(tmp_path, {".env.data": body}, [])
+    assert result.returncode == 0, result.stderr
+    keys = subprocess.run(
+        ["bash", "-c", f'source "{LIB}"; env_keys "$1" | paste -sd, -', "bash", str(tmp_path / ".env.data")],
+        env={"PATH": os.environ["PATH"], "CTL_ROOT": str(tmp_path), "NO_COLOR": "1"},
+        capture_output=True, text=True, check=False,
+    )
+    assert keys.stdout.strip() == "DATA_DIR,LOGS_DIR"

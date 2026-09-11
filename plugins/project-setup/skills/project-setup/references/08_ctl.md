@@ -10,14 +10,15 @@ The verb table below is the floor, not the ceiling. A project adds the verbs its
 
 | Group | Verb | Does |
 |---|---|---|
-| Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | Engines in docker (`compose.db.yaml`), apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs to `logs/dev/`, pids to `logs/run/`. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. |
+| Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | The data core through `ctl up preset dev --nqa -y`, the reserved preset (engines on loopback, the schema one-shots with them), then the apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs to `logs/dev/`, pids to `logs/run/`. `--no-core`: skip the data core. `--nqa`: skip the app picker. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. |
 | | `ps [--list \| kill [port…]]` | Everything running across three planes: host processes, frozen builds, containers. Attach or kill, plane-aware. |
-| Containers | `up [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | The stack: `compose.base.yaml` plus modifiers, every service or a subset. In a terminal: pick modifiers → pick services (all preselected) → plan → confirm. Flags skip their prompt. No TTY: the plan prints and the run refuses without `-y`; `--nqa -y` is the scripted form. Runs migrations once before any app. |
-| | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs, same file list. `down` never uses `-v`: state lives in `data/`. |
+| Containers | `up [--config c] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | A stack shape (`compose.<config>.yaml`, `base` by default) plus modifiers, every service or a subset. In a terminal: pick a config → pick the modifiers that fit → pick services (all preselected) → plan → confirm. Flags skip their prompt. No TTY: the plan prints and the run refuses without `-y`; `--nqa -y` is the scripted form. Compose orders engines, schema one-shots, apps by itself. `08a_ctl_docker.md`. |
+| | `up preset [<name>] [-y]`, `up preset --list`, `up set-preset [<name>]` | A saved `up` line from `docker/presets.yaml`: run one with no prompts, list them, or walk the pickers and save. `08a_ctl_docker.md` § 4. |
+| | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs against the `base` file. `down` never uses `-v`: state lives in `data/`. |
 | | `build [app…\|cli]` | Compose build. Build args are prefixes interpolated from `.env.proxy`. `cli`: the Go binary. |
 | | `clean [-y]` | Down plus caches. `data/` untouched. |
 | | `health [svc…]` | One-shot health table. |
-| Database | `migrate [up\|new "<msg>"\|status\|down]` | Alembic in `apps/database/postgres/`; Neo4j init. The only path that touches schema. |
+| Database | `db migrate [up\|new "<msg>"\|status\|down]` | The `migrate` and `neo4j-init` one-shots from `compose.db.yaml`, run inside the compose network with `docker compose run --rm --no-deps`. The only path that touches schema. The same one-shots run on their own whenever the db config comes up. Needs the engines up. |
 | | `db shell <engine>` | psql, redis-cli, cypher-shell with `.env.secrets` credentials. |
 | | `db backup`, `db restore <dir>` | Dump to `logs/backups/<timestamp>/`; load back. Restore refuses while apps run. |
 | Administration | `manage ops <list\|create\|disable\|enable\|reset-password\|lockout>` | Operator accounts, without the web auth flow. Below. |
@@ -34,31 +35,9 @@ The verb table below is the floor, not the ceiling. A project adds the verbs its
 
 ## The compose model
 
-| File | Role | Run by |
-|---|---|---|
-| `docker/compose.db.yaml` | The engines alone. Loopback ports, bind mounts under `${DATA_DIR}`. | `ctl dev` |
-| `docker/compose.dev.yaml` | The dev proxy: one nginx on the host network. | `ctl dev --proxy` |
-| `docker/compose.base.yaml` | The whole stack. `include:`s the db file. **No ports. No `env_file`.** This is prod. | `ctl up` |
-| `docker/compose.m.<name>.yaml` | Modifiers. Discovered by filename. | `ctl up +<name>` |
+`08a_ctl_docker.md` is the home of this. In one line: a **config** (`compose.<name>.yaml`, one stack shape, `base` is prod and the default) plus **modifiers** (`compose.m.<name>.yaml`, only the ones compose accepts on that config) plus a **service subset** (only those and their `depends_on` chain build and run), saved as a **preset** (`docker/presets.yaml`, one `ctl up` line per name), with **`include:`** as the way one config borrows another file. A config never publishes a port. The plan is the real `docker compose config` merge.
 
-| Modifier | Adds | When |
-|---|---|---|
-| `+expose_web` | `web` on the `_PORT` of the piece that owns `/` (`WEB_LANDING_PORT`; `WEB_APP_PORT` in the single shape) | The default. Local docker: the same origin the dev server has. |
-| `+public` | `web` on `${HTTP_PORT}` / `${HTTPS_PORT}`; `PUBLIC_URL` to the apps that build absolute URLs | A public deployment. The three keys ship commented out in `.env.proxy.template`; refused while one is blank. |
-| `+expose` | Every app port to the host, each on its own `_PORT` | Debug. Never prod. |
-| `+env_override` | Re-points upstreams and URLs to `${VAR}` from `.env.proxy` and `.env.secrets` | A piece runs outside this compose. Refused when a mapped key is blank. |
-
-Rules the files obey, and `ctl check` enforces:
-
-- **Root-relative paths.** `ctl` runs compose with `--project-directory <root>`. Every path is `./apps/…`, `./data`. Never `../`. `ctl` passes `--env-file .env.secrets --env-file .env.data --env-file .env.proxy`; compose reads no `.env` on its own. Needs compose ≥ 2.24.
-- **Base has no ports.** Lists union across files and are never removed, so exposure can only be added, by a modifier.
-- **Merge order is `base` then modifiers.** Maps (`environment`, `labels`) merge per key: a modifier overrides one key, the rest survive. Scalars (`image`, `command`) replace whole. Lists (`ports`, `depends_on`) union. `environment:` beats `env_file:`.
-- **No profiles, no bare `compose.yaml`, no `compose.override.yaml`.** Every file is named. The `-f` list `ctl` prints is the contract.
-- **Engines defined once**, in the db file. Base includes it. Needs compose ≥ 2.20.
-- **Bind mounts, not named volumes.** `${DATA_DIR}/<engine>` on the host. Visible, backup-friendly. `data/.gitignore` keeps it out of git; `ctl setup` creates the folders.
-- **Internal ports are fixed** (`api:8000`); only published host ports vary, via `${VAR}`.
-
-`ctl up` shows the real `docker compose config` merge as a plan before running, so an invalid combination fails before anything starts. With `--services`, the plan still lists every service in the file set and marks the subset; an app in the subset brings the whole data core and the migration step with it, an engine alone does not.
+Constants that hold everywhere: root-relative paths with `--project-directory <root>`; the three env files passed with `--env-file`, compose reads no `.env` on its own (compose ≥ 2.24); no profiles, no bare `compose.yaml`, no `compose.override.yaml`; bind mounts under `${DATA_DIR}`, never named volumes; internal ports fixed (`api:8000`), only published host ports vary.
 
 **The docker guard runs first, by name.** Every docker verb calls `require_docker` before its first compose call. It tells three faults apart: not installed, engine not running, compose plugin missing. Compose itself reports a dead engine as a config error, which is how an earlier `up.sh` printed "invalid modifier combination" for "Docker is not running". `ctl status` shows the same three states without dying.
 
@@ -72,7 +51,9 @@ Runs directly, and as the `check` rung of the ladder. It runs every rule, prints
 - env: every `${VAR}` in any `config.yaml` is a key in one of the three `.env.*.template` files; a key with a `_PASSWORD`, `_KEY` or `_SECRET` segment appears only in `.env.secrets.template`; every `.env.proxy.template` key ends `_HOST`, `_PORT`, `_PREFIX` or `_URL` (or is `PUBLIC_URL`, `HTTP_PORT`, `HTTPS_PORT`, `DEV_PROXY_PORT`, `COMPOSE_PROJECT_NAME`); every `.env.data.template` key ends `_DIR`; no secret literal in any `config.yaml`; no tracked `config.local.yaml`; no tracked `.env.*` except the templates.
 - layout: no `package.json`, `bun.lock` or `pnpm-workspace.yaml` at the root or directly in `apps/`; no folder under `apps/` that holds a manifest next to child folders with manifests, because that is a workspace. The root half is skipped when `AGENTS.md` records `root-manifest` under `## Exceptions to the standard layout` (`01_layout.md` § Exceptions).
 - brief: `CLAUDE.md` is exactly `@AGENTS.md`.
-- compose: no `ports:` in `compose.base.yaml`; no `../` in any compose file; every `${NAME}` inside the three filled env files names a set key, with no cycle, because these are the values `ctl` hands compose and the apps (`02_env.md` rule 6); `docker compose config` validates the db file, the dev file, base, and base plus each modifier, with the env loaded and resolved the way `ctl up` loads it. A modifier whose `MODIFIER_REQUIRES` keys are blank (`+public` before the public origin is uncommented) is skipped and named, the way `ctl up` refuses it. The compose validation is skipped, and says so, when docker is down or the env files are absent.
+- ladder: the `Gate ladder` row in `AGENTS.md` lists the same rungs, in the same order, as `RUNGS` in `scripts/gate/all.sh`, because the audit reads the row and the gate runs the list.
+- lint config: every app ships its linter config beside its manifest (`[tool.ruff]`, `.oxlintrc.json`, `clippy.toml`, `.golangci.yml`), because a linter without its config reports only its defaults.
+- compose: no `ports:` in any config (`compose.<name>.yaml`); no `../` in any compose file; every `${NAME}` inside the three filled env files names a set key, with no cycle, because these are the values `ctl` hands compose and the apps (`02_env.md` rule 6); `docker compose config` validates every config alone, and every modifier fits at least one config, with the fit list printed because that is what `ctl up` offers, with the env loaded and resolved the way `ctl up` loads it. A modifier whose `MODIFIER_REQUIRES` keys are blank (`+public` before the public origin is uncommented) is skipped and named, the way `ctl up` refuses it. The compose validation is skipped, and says so, when docker is down or the env files are absent.
 
 ## `ctl manage` — the break-glass console
 
@@ -80,20 +61,20 @@ The one path to operator identity that does not go through the web. It seeds the
 
 | Rule | Why |
 |---|---|
-| `manage.sh` is a thin forward: `cd <admin backend> && uv run python manager.py "$@"`. Bare `ctl manage` prints ctl's help; anything else reaches argparse, so `ctl manage ops --help` works. | One implementation. The shell layer adds nothing but the env guard. |
-| `manager.py` lives at the backend root, beside `app/`. It imports the app's loader and `core/security.py`, never a router. | It is a program, not a domain. Same hashing and connection values as the service; no second copy. |
-| It runs without the web auth flow. Access to the host is the boundary. | Nothing else can be: it exists for when auth is broken. So it runs on the host or over SSH, never in a container with a published port. |
+| `manage.sh` is a thin forward to `python manager.py "$@"`: inside the running api container when the stack is up (`ctl up`), else on the host through `uv run` (`ctl dev`, where `+expose_db` binds the engines to loopback). Bare `ctl manage` prints ctl's help; anything else reaches argparse, so `ctl manage ops --help` works. | One program, launched where the engines are reachable. The shell layer adds nothing but the env guard and that choice. |
+| `manager.py` lives at the backend root, beside `app/`, so it ships in the image. It imports the app's loader and `core/security.py`, never a router. | It is a program, not a domain. Same hashing and connection values as the service; no second copy. |
+| It runs without the web auth flow. Access to the host is the boundary. | Nothing else can be: it exists for when auth is broken. So it runs on the host, over SSH, or through `docker compose exec` from the host; no engine port is published for it. |
 | Every mutating action writes to `operator_audit` (actor `console`, action, target, outcome). | An unaudited break-glass is a backdoor. |
 | Operators are disabled, never deleted. | The audit history must keep its subject. |
 | Operator identity is never reachable through public signup or OAuth. The first admin comes from `ctl manage ops create --super`. | The identity plane is separate (`03_routing.md`, case 7). |
 | A generated password (`--auto-password`) is printed once, alone on its line, and never logged. | It is a secret in transit. |
-| Needs the data core up: `ctl dev`, or `ctl up --services=postgres,redis`. | It talks to the tables directly. |
+| Needs the data core up: `ctl dev`, or `ctl up`. | It talks to the tables directly. |
 
 Products without an operator plane delete `scripts/admin/` and `manager.py`.
 
 ## Without a data core
 
-`DATA_SVCS=()` in `_lib.sh`. `dev`, `up`, `setup`, `status`, `health` skip the engines. `compose.base.yaml` drops the include and the `depends_on`. `migrate` and `db` are deleted. `require_env` stays strict only if the apps still read secrets; `status` and `health` point at the app services and their healthchecks instead.
+`DATA_SVCS=()` in `_lib.sh`. `dev`, `up`, `setup`, `status`, `health` skip the engines. `compose.base.yaml` drops the include and the `depends_on`; the `db` config and `scripts/db/` are deleted. `require_env` stays strict only if the apps still read secrets; `status` and `health` point at the app services and their healthchecks instead.
 
 ## Without ctl
 

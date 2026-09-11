@@ -8,16 +8,17 @@ One paragraph: what this product is and which apps make it.
 
 ## Quick start with ctl
 - `ctl dev` — databases in docker, apps on the host (`--proxy` for one origin across frontends)
-- `ctl up` — full stack in docker, the web edge on 80/443
-- `ctl migrate` — apply schema migrations
+- `ctl up` — full stack in docker; `ctl up preset <name>` runs a saved line from `docker/presets.yaml`
+- `ctl db migrate` — apply schema migrations (they also run whenever the engines come up)
 - `ctl gate` — the ladder; green here is the only definition of green
 
 ## Commands
 | Verb | Does |
 |---|---|
 | `ctl dev [app…] [--proxy]` | engines in docker, the chosen apps on the host with reload |
-| `ctl up [+modifier…] [--services a,b]` | the stack in docker, or a subset; interactive in a terminal |
-| `ctl migrate [new "<msg>"]` | apply or create a migration |
+| `ctl up [--config c] [+modifier…] [--services a,b]` | a stack shape in docker, or a subset; interactive in a terminal |
+| `ctl up preset [<name>]` · `ctl up set-preset` | run a saved `up` line · save one from the pickers |
+| `ctl db migrate [new "<msg>"]` | apply or create a migration |
 | `ctl manage ops\|settings` | the break-glass operator console |
 | `ctl test [app\|e2e]` · `ctl gate [static\|dynamic] [-q]` | one suite, or the ladder, or half of it |
 | `ctl setup` · `ctl check` · `ctl status` | create env files and deps · the repo contract · the doctor |
@@ -47,7 +48,7 @@ The template ships no `bun.lock`, `uv.lock` or `Cargo.lock`: every dependency is
 ```
 apps/      example-api-python example-engine-rust example-multi-web-app/{landing,app,docs}
            example-single-web-app-vite example-dashboard-nextjs example-tui-go packages database
-docker/    compose.db compose.base compose.dev compose.m.*
+docker/    compose.<config> (base db dev) · compose.m.<modifier> · presets.yaml
 scripts/   ctl workers
 data/      actual data: engine mounts, datasets. gitignored
 logs/      produced state: logs, pids, backups, frozen builds. gitignored

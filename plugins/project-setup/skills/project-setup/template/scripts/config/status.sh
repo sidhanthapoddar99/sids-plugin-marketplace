@@ -60,8 +60,9 @@ if (( ${#DATA_SVCS[@]} )); then
 else say "${C_DIM}none (DATA_SVCS empty)${C_RESET}"; fi
 
 step "stack (what \`ctl up\` can assemble)"
-printf '  %-11s %s\n' "base"      "$BASE  (includes $DB_FILE)"
+printf '  %-11s %s\n' "configs"   "$(list_configs | join_sp | or_none)  (default: $DEFAULT_CONFIG)"
 printf '  %-11s %s\n' "modifiers" "$(list_modifiers | sed 's/^/+/' | join_sp | or_none)"
+printf '  %-11s %s\n' "presets"   "$(list_presets | join_sp | or_none)  ($PRESETS_FILE)"
 
 LOG_INDENT=""; hr
 (( rc == 0 )) && ok "ready" || warn "issues above — fix and re-run"

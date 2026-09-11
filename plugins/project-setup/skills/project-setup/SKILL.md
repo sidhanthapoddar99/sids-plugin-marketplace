@@ -1,11 +1,11 @@
 ---
 name: project-setup
-description: Use this skill for how a repo is shaped: bootstrapping a new project, auditing or restructuring one, or a "where does this go" question mid-task in a repo built this way. It owns the tree (apps/, apps/packages/, data/, logs/), the three root env files and config.yaml, single-origin routing (Vite proxy, nginx edge), docker/ compose base plus modifiers, the ctl entrypoint (dev, up, migrate, manage, gate), stack choice (FastAPI / Axum / Go; Vite / Next.js / Astro; Postgres / Redis / SQLite / Neo4j), the frontend folder shape (a routing folder, layout/, modules/, components/, lib/, for Vite with TanStack Router and for Next.js), tokens.css and a typography allowlist that beats frontend-design once tokens exist, where migrations live, the security floor (captcha, rate limits), the gate ladder (a four-rung floor, the rest opt-in), the review passes, the add-ons (git hooks, memory/, e2e), and what AGENTS.md records. Trigger on any of those names, or on a second frontend or backend, even mid-task. Skip work inside one file, including a migration's SQL; docs content is agent-ks; instruction wording is instruction-writing; Kubernetes and cloud deploy targets are out of scope.
+description: Use this skill for how a repo is shaped: bootstrapping a new project, auditing or restructuring one, or a "where does this go" question mid-task in a repo built this way. It owns the tree (apps/, apps/packages/, data/, logs/), the three root env files and config.yaml, single-origin routing (Vite proxy, nginx edge), docker/ compose configs plus modifiers, service subsets and presets, the ctl entrypoint (dev, up, up preset, db migrate, manage, gate), stack choice (FastAPI / Axum / Go; Vite / Next.js / Astro; Postgres / Redis / SQLite / Neo4j), the frontend folder shape (a routing folder, layout/, modules/, components/, lib/, for Vite with TanStack Router and for Next.js), tokens.css and a typography allowlist that beats frontend-design once tokens exist, where migrations live, the security floor (captcha, rate limits), the gate ladder (a four-rung floor, the rest opt-in), the review passes, the add-ons (git hooks, memory/, e2e), and what AGENTS.md records. Trigger on any of those names, or on a second frontend or backend, even mid-task. Skip work inside one file, including a migration's SQL; docs content is agent-ks; instruction wording is instruction-writing; Kubernetes and cloud deploy targets are out of scope.
 ---
 
 # project-setup
 
-One repo shape, one entrypoint, one origin. This skill decides where things go and how they connect. It answers three kinds of request with the same rules: a bootstrap, an audit, and a single question mid-task. The rules live in the fourteen pages under `references/`. This file is the workflow and the map.
+One repo shape, one entrypoint, one origin. This skill decides where things go and how they connect. It answers three kinds of request with the same rules: a bootstrap, an audit, and a single question mid-task. The rules live in the fifteen pages under `references/`. This file is the workflow and the map.
 
 ## Before anything
 
@@ -28,6 +28,7 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 | How is a backend built | `references/06_backend.md` |
 | What must be safe | `references/07_security.md` |
 | What do I type | `references/08_ctl.md` |
+| How `ctl up` assembles a stack: configs, modifiers, services, presets, include | `references/08a_ctl_docker.md` |
 | What makes it prod | `references/09_production.md` |
 | How HTTP exposure and TLS are configured | `references/12_http-and-tls.md` |
 | What a person reviews by hand | `references/10a_review.md` |
@@ -47,7 +48,7 @@ The fallback for a question no page covers. Each line points at the page that ow
 2. **One entrypoint, `ctl`** (`08_ctl.md`). A worker is a script under `scripts/` that one verb runs; a rung is one step of `ctl gate`. A rung calls the same worker the dev verb calls, so the check and the loop cannot drift.
 3. **One origin** (`03_routing.md`). The browser sees one host and prefixes separate the pieces, so there is no CORS and no URL in a bundle.
 4. **One value, one file, chosen by what it is** (`02_env.md`). Secret, path, route or backend default each have one file, so a key is found by its kind and `ctl check` can test the file by its key names.
-5. **Base is prod** (`08_ctl.md`, `09_production.md`). `compose.base.yaml` has no ports and modifiers add exposure, because compose lists only union, so exposure can only be added, never removed.
+5. **Base is prod** (`08a_ctl_docker.md`, `09_production.md`). A config (`compose.<name>.yaml`, `base` is the whole stack) has no ports and modifiers add exposure, because compose lists only union, so exposure can only be added, never removed.
 6. **Promote when shared, never before** (`11_conventions.md`). A thing moves up a scope at its second consumer, because a premature package is a second manifest to keep green for nothing.
 7. **Convergence is the design** (`05_frontend.md`). Tokens and a typography allowlist in `AGENTS.md` override `frontend-design` once they exist, because a bold new look on every page is drift, not design.
 8. **Green means `ctl gate` passed** (`10b_static-checks.md`). A check exits 0 only when the rule was proved, so green never means "nothing ran". The floor is four rungs that cost seconds; every further rung, hook and suite is the user's call, because a prototype pays for each on every commit.

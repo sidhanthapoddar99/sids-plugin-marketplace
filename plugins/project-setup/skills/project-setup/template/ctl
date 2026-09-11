@@ -11,22 +11,27 @@
 # Logic never lives in this file. Delete verbs that stop being used.
 #
 #   Development    dev · ps
-#   Containers     up · down · restart · logs · exec · shell · build · clean · health
-#   Database       migrate · db shell|backup|restore
+#   Containers     up [preset|set-preset] · down · restart · logs · exec · shell · build · clean · health
+#   Database       db migrate|shell|backup|restore
 #   Administration manage ops|settings (break-glass console, wraps the backend's manager.py)
 #   Test           test · build save|start|clean (frozen test builds)
 #   Gates          gate [all|static|dynamic] · gate <rung> (lint typecheck dead audit test check build e2e)
 #                  gate clones|fuzz|perf run BY NAME — not in the ladder
 #   Configuration  setup · check · status
 #
-# COMPOSE MODEL. `ctl dev` runs docker/compose.db.yaml alone (engines, loopback ports) and the
-# apps on the host. `ctl up [+mod…] [--services a,b]` runs docker/compose.base.yaml (the whole
-# stack — it includes the db file) plus stackable modifiers docker/compose.m.<name>.yaml, given
-# as `+name` tokens, for every service or a chosen subset. Bare `ctl up` in a terminal walks
-# modifiers → services → plan → confirm; no TTY = the default (+expose_web, every service).
-# `ctl dev --proxy` adds docker/compose.dev.yaml: one nginx on the host network so several
-# frontends share one origin. Every docker verb checks the engine FIRST and names the fault
-# (not installed · not running · compose plugin missing). Run `ctl <command> --help` for any command.
+# COMPOSE MODEL. Five things you touch: a CONFIG docker/compose.<name>.yaml (one stack shape; base
+# is the whole stack and the default, db is the engines alone), MODIFIERS docker/compose.m.<name>.yaml
+# (overlays, `+name`; only the ones compose accepts on the config are offered), a SERVICE SUBSET
+# (--services a,b; only those and their depends_on chain build and run), PRESETS docker/presets.yaml
+# (one saved `ctl up` line per name: `ctl up preset <name>`), and `include:` (base includes the db
+# file, so the engines are defined once). Bare `ctl up` in a terminal walks config → modifiers →
+# services → plan → confirm; no TTY = the default (base, +expose_web, every service). `ctl dev` runs
+# `ctl up preset dev` (the reserved preset: --config db +expose_db) for the engines and the apps on
+# the host; `ctl dev --proxy` adds docker/compose.dev.yaml, one nginx on the host network so several
+# frontends share one origin.
+# The schema step (`ctl db migrate`) runs inside the compose network, so no engine port is ever
+# published for it. Every docker verb checks the engine FIRST and names the fault (not installed ·
+# not running · compose plugin missing). Run `ctl <command> --help` for any command.
 
 set -euo pipefail
 CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -42,7 +47,8 @@ ctl_help() {
   row "dev [app…] [--proxy] [--detach]" "data core in docker, apps on the host with reload (--proxy: one origin)"
   row "ps [--list | kill [port…]]"      "browse everything running — attach · kill · port map"
   printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"
-  row "up [+modifier…] [--services a,b]" "assemble + start the stack, or a subset — interactive  (ctl up --help)"
+  row "up [--config c] [+mod…] [--services a,b]" "assemble + start a stack shape, or a subset — interactive  (ctl up --help)"
+  row "up preset [name] | set-preset [name]" "run a saved up line from docker/presets.yaml · save one from the pickers"
   row "down [svc]"                      "stop the stack (or one service)"
   row "restart [svc]"                   "restart the stack (or one service)"
   row "logs [svc] [-f]"                 "tail container logs"
@@ -52,7 +58,7 @@ ctl_help() {
   row "clean [-y]"                      "tear down + wipe caches (asks first)"
   row "health [svc…]"                   "one-shot container health table"
   printf '\n%sDatabase%s\n' "$C_B" "$C_RESET"
-  row 'migrate [up|new "<msg>"|status|down]' "schema migrations (Alembic in apps/database/postgres + neo4j init)"
+  row 'db migrate [up|new "<msg>"|status|down]' "schema migrations, run inside the compose network (Alembic + neo4j init)"
   row "db shell <engine>"               "psql · redis-cli · cypher-shell, with .env.secrets credentials"
   row "db backup | restore <dir>"       "dump the data core to logs/backups/ · load a dump back"
   printf '\n%sAdministration%s (break-glass; bypasses web auth — host access is the boundary; needs the data core up)\n' "$C_B" "$C_RESET"
@@ -79,7 +85,9 @@ ctl_help() {
   row "setup"                           "create .env.{secrets,data,proxy} from templates, generate secrets, dirs, deps"
   row "check"                           "the repo contract — layout, env contract, compose validity, brief"
   row "status"                          "config doctor (env · runtimes · deps · health · stack)"
-  printf '\n%sup modifiers%s  %s\n' "$C_DIM" "$C_RESET" "$(list_modifiers | sed 's/^/+/' | join_sp | or_none)"
+  printf '\n%sup configs%s    %s\n' "$C_DIM" "$C_RESET" "$(list_configs | join_sp | or_none)"
+  printf '%sup modifiers%s  %s\n' "$C_DIM" "$C_RESET" "$(list_modifiers | sed 's/^/+/' | join_sp | or_none)"
+  printf '%sup presets%s    %s\n' "$C_DIM" "$C_RESET" "$(list_presets | join_sp | or_none)"
   printf '%s-h/--help works on every command:  ctl <command> --help%s\n' "$C_DIM" "$C_RESET"
 }
 
@@ -113,15 +121,15 @@ case "$cmd" in
             require_env; require_docker
             svc="$1"; shift; if (( $# )); then dc exec "$svc" "$@"; else dc exec "$svc" sh; fi ;;
   # ── database ─────────────────────────────────────────────
-  migrate)  run db/migrate "$@" ;;
   db)       sub="${1:-help}"; shift || true
             case "$sub" in
+              migrate) run db/migrate "$@" ;;
               shell)   run db/shell   "$@" ;;
               backup)  run db/backup  "$@" ;;
               restore) run db/restore "$@" ;;
-              help|-h|--help) print_help db "data-core clients and dumps" \
-                'db shell <postgres|redis|neo4j>  ·  ctl db backup  ·  ctl db restore <dir>' \
-                $'Subcommands\n  shell <engine>   interactive client with .env.secrets credentials\n  backup           dump every engine into logs/backups/<timestamp>/\n  restore <dir>    load a backup back (asks first)\n\nEach subcommand has its own help: ctl db <subcommand> -h.' ;;
+              help|-h|--help) print_help db "schema, data-core clients and dumps" \
+                'db migrate [up|new "<msg>"|status|down]  ·  db shell <postgres|redis|neo4j>  ·  db backup  ·  db restore <dir>' \
+                $'Subcommands\n  migrate [sub]    apply or create schema migrations — the only path that touches schema\n  shell <engine>   interactive client with .env.secrets credentials\n  backup           dump every engine into logs/backups/<timestamp>/\n  restore <dir>    load a backup back (asks first)\n\nEach subcommand has its own help: ctl db <subcommand> -h.' ;;
               *) err "unknown db subcommand: $sub"; say "run ${C_B}ctl db --help${C_RESET}"; exit 1 ;;
             esac ;;
   # ── administration (break-glass operator console) ────────

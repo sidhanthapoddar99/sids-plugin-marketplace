@@ -17,7 +17,7 @@ The routing table is `template/.env.proxy.template`. Read it there: one block pe
 
 | | Dev — `ctl dev` | Prod — `ctl up` |
 |---|---|---|
-| Engines | `compose.db.yaml`, loopback ports | included by `compose.base.yaml` |
+| Engines | the `db` config with `+expose_db`: loopback ports | included by `compose.base.yaml`, no ports |
 | Backends | on the host, `localhost:<port>`, reload | containers, service names |
 | Static frontends | dev servers on their ports | built into the `web` image |
 | Server frontend | `next dev` | `dashboard` container |
@@ -48,7 +48,7 @@ The backend runs elsewhere: a managed service, another host, another repo. The b
 
 CORS never appears: the edge talks to the remote backend, not the browser. The same holds in reverse, when the frontend is the remote piece: that repo's edge proxies to this backend's public host.
 
-When only the database is elsewhere (managed Postgres), the same modifier re-points `DATABASE_URL`. `compose.db.yaml` is then not started: empty the `DATA_SVCS` default in `_lib.sh`, or export `DATA_SVCS=`. `ctl up` then skips `migrate`, and `ctl check` skips compose validation.
+When only the database is elsewhere (managed Postgres), the same modifier re-points `DATABASE_URL`. The `db` config is then not started: empty the `DATA_SVCS` default in `_lib.sh`, or export `DATA_SVCS=`, and drop the include from `base` (`08a_ctl_docker.md` § Worked example).
 
 ## Case 3 — several frontends
 

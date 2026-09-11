@@ -33,7 +33,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 │   ├── notebooks/              # exploration notebooks. Never imported by an app
 │   └── .dockerignore           # the frontend image builds with context ./apps; root ignores do not apply
 ├── scripts/                    # ctl workers: common/ config/ dev/ container/ db/ admin/ test/ gate/
-├── docker/                     # compose.db compose.base compose.dev compose.m.*
+├── docker/                     # compose.<config> (base db dev) · compose.m.<modifier> · presets.yaml
 ├── data/                       # actual data: engine mounts, datasets, uploads
 │   └── .gitignore              #   `**` and `!.gitignore`
 ├── logs/                       # produced state: logs, pids, backups, frozen builds
@@ -66,7 +66,7 @@ The root holds config, the brief, and folders. Never loose code. Before creating
 |---|---|---|
 | `apps/` | All code: apps, packages, database, notebooks | One app is still `apps/<name>/`. Same shape in every repo. |
 | `scripts/` | `ctl` workers | Copied from `template/scripts/`. Adapted by deletion. |
-| `docker/` | Compose files | `compose.db`, `compose.base`, `compose.dev`, `compose.m.*`. Compose lives here, never inside an app. |
+| `docker/` | Compose files | Configs `compose.<name>.yaml` (`base`, `db`, `dev`), modifiers `compose.m.<name>.yaml`, and `presets.yaml`. Compose lives here, never inside an app. `08a_ctl_docker.md`. |
 | `data/` | Actual data: engine mounts (`postgres/`, `redis/`, `neo4j/`), datasets, uploads, checkpoints | Bind mounts point here. Self-ignored; see `.gitignore` below. |
 | `logs/` | Produced state: `dev/` logs, `run/` pids, `backups/`, `test_build/` | Everything `ctl` writes that is not data. Self-ignored. |
 | `docs/` | Docs site, built with `agent-ks` | Exists only when this repo is the docs home. One product has one docs home: never an in-repo `docs/` and a docs repo both. To scaffold, tell the user to run `/agent-ks-config`; it is interactive, never chain into it. |

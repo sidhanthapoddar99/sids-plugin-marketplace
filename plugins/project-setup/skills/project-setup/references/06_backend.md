@@ -65,18 +65,18 @@ Schema changes always go through migrations. Never edit a live schema by hand; n
 |---|---|---|
 | Alembic autogenerate | Inside the backend, next to its models | One Python backend owns the database, and the schema needs nothing autogenerate cannot express. Autogenerate, review the diff, commit. |
 | Hand-written SQL | `apps/database/postgres/` | Two or more backends read the same database, or the schema uses what autogenerate handles badly: partial or expression indexes, extensions, triggers, custom types, data backfills, partitions. |
-| The owner's native tool | `apps/database/postgres/` | No Python backend owns the schema: `sqlx migrate` (Rust), `golang-migrate` (Go). Same folder, same `ctl migrate` verbs. |
+| The owner's native tool | `apps/database/postgres/` | No Python backend owns the schema: `sqlx migrate` (Rust), `golang-migrate` (Go). Same folder, same `ctl db migrate` verbs. |
 
 Both conditions must hold for autogenerate: single consumer, plain schema. If either fails, `apps/database/` owns the migrations. One owner in every case.
 
-Hand-written with Alembic as the runner is three files per revision: a three-line `.py` shim, `.up.sql`, `.down.sql`. The shim calls `run_sql(__file__, ".up.sql")` from an `alembic_helpers.py` the project writes beside `env.py`; the SQL file is the source of truth, readable by a DBA, an operator and `sqlx` alike. `ctl migrate new "<msg>"` creates the trio; a `.down.sql` left empty says why in a comment.
+Hand-written with Alembic as the runner is three files per revision: a three-line `.py` shim, `.up.sql`, `.down.sql`. The shim calls `run_sql(__file__, ".up.sql")` from an `alembic_helpers.py` the project writes beside `env.py`; the SQL file is the source of truth, readable by a DBA, an operator and `sqlx` alike. `ctl db migrate new "<msg>"` creates the trio; a `.down.sql` left empty says why in a comment.
 
 Rules:
 
-- `ctl migrate` applies them, `ctl migrate new` creates one. Never `alembic` by hand, because the worker runs it from `apps/database/postgres` under that folder's venv and applies the other engines' init in the same step; a bare `alembic` does half the job.
-- Migrations are an explicit step, never on app boot. How the deploy runs that step, with one replica or N: `09_production.md` § The deploy.
-- The consuming language never writes DDL. A Rust query that needs a column: write the migration, run `ctl migrate`, then `cargo sqlx prepare`, then the query. The gate order is `migrate → sqlx prepare --check → build`.
-- Never edit an applied migration; write a new one. Two heads (two revisions with the same `down_revision`) are squashed before merging to main; `ctl migrate status` fails on a branch.
+- `ctl db migrate` applies them, `ctl db migrate new` creates one. Never `alembic` by hand, because the worker runs the `migrate` one-shot from `compose.db.yaml` inside the compose network, then the `neo4j-init` one-shot; a bare `alembic` does half the job and needs an engine port the stack does not publish.
+- The apps never migrate on their own boot. They wait on the one-shots with `condition: service_completed_successfully`, so the step runs once per `up`, whatever the replica count. `09_production.md` § The deploy.
+- The consuming language never writes DDL. A Rust query that needs a column: write the migration, run `ctl db migrate`, then `cargo sqlx prepare`, then the query. The gate order is `db migrate → sqlx prepare --check → build`.
+- Never edit an applied migration; write a new one. Two heads (two revisions with the same `down_revision`) are squashed before merging to main; `ctl db migrate status` fails on a branch.
 - Autogenerate needs four things or it silently sees an empty schema and drops every table: `prepend_sys_path = .` in `alembic.ini`; `import app.models` (every model module) in `env.py` so `target_metadata` is populated; `sqlalchemy.url` set from the config loader, never `alembic.ini`; `render_as_batch=True` in both `context.configure` calls when SQLite is a target. Review and edit every generated revision; never mix generated and hand-written DDL in one file.
 - Other engines follow the same verbs: Neo4j constraints in `apps/database/neo4j/init.cypher`, idempotent; Redis config in `apps/database/redis/redis.conf`.
 

@@ -9,7 +9,7 @@ source "$CTL_ROOT/scripts/gate/_gate.sh"
 usage() { gate_usage test "run every app's test suite as a gate" \
 "It takes no arguments. Narrow a run while you work with \`ctl test [app]\`. The browser suite is
 its own rung (\`ctl gate e2e\`): a browser bolted onto the fast gate makes agents stop running it." \
-"Integration tests run against the real engines from compose.db.yaml; start them with \`ctl dev\`."; }
+"Integration tests run against the real engines of the db config; start them with \`ctl dev\`."; }
 gate_quiet_reexec "$@"
 is_help "${1:-}" && { usage; exit 0; }
 gate_reject_args "gate test" "use \`ctl test [app]\` to narrow a run" "$@"

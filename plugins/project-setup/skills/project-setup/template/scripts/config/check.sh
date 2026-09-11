@@ -32,10 +32,12 @@ Rules
   lint      every app ships its lint config with the complexity floor: [tool.ruff] in pyproject.toml,
             .oxlintrc.json beside package.json, clippy.toml beside Cargo.toml, .golangci.yml beside go.mod —
             a linter run without its config reports only its defaults, and ruff's default has no complexity rule
-  compose   no ports: in compose.base.yaml · no ../ in any docker/compose.*.yaml ·
+  compose   no ports: in any config (docker/compose.<name>.yaml) — only a modifier publishes ·
+            no ../ in any docker/compose.*.yaml ·
             every \${NAME} inside the three env files names a set key, no cycle (the values ctl hands
             compose and the apps) ·
-            docker compose config validates: db alone, dev alone, base alone, base + each modifier
+            docker compose config validates every config alone, and every modifier fits at least one
+            config (the pair validates) — the fit list is printed, because that is what ctl up offers
             (a modifier whose required keys are blank, such as +public before the public origin is
             uncommented, is skipped and named, the way ctl up refuses it)
 
@@ -160,12 +162,16 @@ done < <(find apps -maxdepth 3 \( -name pyproject.toml -o -name package.json -o 
 pass "every app ships its lint config"
 
 step "compose files"
-if grep -qE '^\s+ports:' "$BASE" 2>/dev/null; then fail "$BASE publishes ports — exposure belongs in a modifier"; fi
+# a config never publishes a port: lists only union across files, so exposure can only be added, by a modifier
+while IFS= read -r c; do [[ -z $c ]] && continue
+  # comments stripped first, then a `ports` key in block form or inside a flow map, with any spacing before the colon
+  f=$(config_file "$c"); sed 's/#.*//' "$f" 2>/dev/null | grep -qE '(^|[[:space:]{,])ports[[:space:]]*:' && fail "$f publishes ports — a config never does; exposure belongs in a modifier"
+done < <(list_configs)
 for f in "$DOCKER_DIR"/compose.*.yaml; do
   [[ -e $f ]] || continue
   grep -q '\.\./' "$f" && fail "$f uses ../ — paths are root-relative (--project-directory)"
 done
-pass "base has no ports · no ../ paths"
+pass "no config publishes a port · no ../ paths"
 
 have_env=1; for f in "${ENV_FILES[@]}"; do [[ -f $f ]] || have_env=0; done
 if (( have_env )); then
@@ -178,19 +184,23 @@ if (( have_env )); then
 fi
 if [[ "$(docker_state)" == ok ]] && (( have_env )); then
   step "compose config (the three env files supply \${VAR}, resolved as ctl up hands them on)"
-  combos=("$DB_FILE" "$DEV_FILE" "$BASE")
-  while IFS= read -r m; do [[ -n $m ]] && combos+=("$BASE $DOCKER_DIR/compose.m.$m.yaml"); done < <(list_modifiers)
-  for c in "${combos[@]}"; do
-    # a modifier whose mapped keys are blank is skipped, the way ctl up refuses it: +public needs the
-    # optional public-origin keys uncommented, and a blank ${VAR} would validate as an empty string
-    if [[ $c == *compose.m.* ]]; then
-      m="${c##*compose.m.}"; m="${m%.yaml}"; mapfile -t blank < <(modifier_blank_keys "$m")
-      if (( ${#blank[@]} )); then warn "$c — skipped: +$m needs ${blank[*]} set in .env.proxy / .env.secrets (ctl up refuses it the same way)"; continue; fi
-    fi
-    args=(); for f in $c; do args+=(-f "$f"); done
-    if out=$(compose_cmd "${args[@]}" config -q 2>&1); then ok "$c"
-    else fail "$c — $out"; fi
+  # every config must stand alone
+  mapfile -t cfgs < <(list_configs)
+  (( ${#cfgs[@]} )) || fail "no config in $DOCKER_DIR/ (docker/compose.<name>.yaml)"
+  for c in "${cfgs[@]}"; do
+    if out=$(compose_cmd -f "$(config_file "$c")" config -q 2>&1); then ok "config $c"
+    else fail "config $c — $out"; fi
   done
+  # every modifier must fit at least one config; the fit list is what ctl up offers for each config.
+  # A modifier whose mapped keys are blank is skipped, the way ctl up refuses it: +public needs the
+  # optional public-origin keys uncommented, and a blank ${VAR} would validate as an empty string.
+  while IFS= read -r m; do [[ -z $m ]] && continue
+    mapfile -t blank < <(modifier_blank_keys "$m")
+    if (( ${#blank[@]} )); then warn "+$m — skipped: needs ${blank[*]} set in .env.proxy / .env.secrets (ctl up refuses it the same way)"; continue; fi
+    fits=(); for c in "${cfgs[@]}"; do modifier_fits "$c" "$m" && fits+=("$c"); done
+    if (( ${#fits[@]} )); then ok "+$m fits: ${fits[*]}"
+    else fail "+$m fits no config — $(compose_cmd -f "$BASE" -f "$(modifier_file "$m")" config -q 2>&1 | head -1)"; fi
+  done < <(list_modifiers)
 else
   warn "compose validation skipped — docker: $(docker_state) · env files present: $have_env"
 fi

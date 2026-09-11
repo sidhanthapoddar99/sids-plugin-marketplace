@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# dev/dev.sh — `ctl dev [app…]`. The host dev loop: the data core in docker (compose.db.yaml
-# alone — loopback ports, so host processes reach it), the apps on the host with reload.
+# dev/dev.sh — `ctl dev [app…]`. The host dev loop: the data core in docker, the apps on the host
+# with reload. The data core is `ctl up preset dev`, a reserved line in docker/presets.yaml (the db
+# config bound to loopback so host processes reach it). Its schema one-shots run with it, so the loop
+# starts on a migrated schema. Edit the preset to change what `ctl dev` starts; a missing one is an error.
 #
 #   ctl dev                 in a terminal: pick the apps (multi-select, all preselected), then run them
 #                           foreground with prefixed output — Ctrl-C stops all. No TTY or --nqa: every app.
@@ -11,8 +13,6 @@
 #   ctl dev --detach        background them: logs → logs/dev/dev-<app>.log, pids → logs/run/
 #                           attach with `ctl ps` → a · stop with `ctl ps` → k (or ctl ps kill)
 #   ctl dev --dry-run       print the data-core bring-up + the host commands, run nothing
-#
-# Migrations are NOT run here — `ctl migrate` is an explicit step.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
@@ -58,8 +58,9 @@ Options
   --dry-run, -n   print what would run, run nothing
   -h, --help      show this help
 
-With a data core (DATA_SVCS set) it first runs \`docker compose -f $DB_FILE up -d\` and
-waits for health, then starts the host processes."; }
+With a data core (DATA_SVCS set) it first runs \`ctl up preset $DEV_PRESET --nqa -y\` (the reserved preset in
+$PRESETS_FILE: the engines bound to loopback, the schema one-shots with them), waits for health and
+for the schema step, then starts the host processes."; }
 
 # parse: positionals = apps, flags anywhere
 apps=() dry=0 detach=0 no_core=0 proxy=0 nqa=0
@@ -92,7 +93,7 @@ require_env
 
 if (( dry )); then
   step "(dry-run — nothing started)"
-  (( ${#DATA_SVCS[@]} && ! no_core )) && say "data core   docker compose --project-directory . -f $DB_FILE up -d ${DATA_SVCS[*]}"
+  (( ${#DATA_SVCS[@]} && ! no_core )) && say "data core   ctl up preset $DEV_PRESET --nqa -y   → ctl up $(preset_args "$DEV_PRESET" || echo "(preset '$DEV_PRESET' missing from $PRESETS_FILE)")"
   (( proxy )) && say "dev proxy   docker compose --project-directory . -f $DEV_FILE up -d   → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env.proxy}"
   for a in "${apps[@]}"; do say "$(printf '%-11s' "$a") $(app_cmd "$a")"; done
   exit 0
@@ -100,12 +101,20 @@ fi
 
 require_tools mise
 
-# data core — skipped cleanly when DATA_SVCS is empty (no-data-core projects) or --no-core
+# data core — the same worker `ctl up` runs, with the dev line and no prompts. Skipped cleanly when
+# DATA_SVCS is empty (no-data-core projects) or --no-core.
 if (( ${#DATA_SVCS[@]} && ! no_core )); then
   require_docker
-  step "ensuring data core ($DB_FILE)…"
-  dc_db up -d "${DATA_SVCS[@]}"
+  preset_args "$DEV_PRESET" >/dev/null || die "preset '$DEV_PRESET' missing from $PRESETS_FILE — it is what ctl dev starts. Add:  $DEV_PRESET: \"--config db +expose_db\""
+  step "ensuring data core (ctl up preset $DEV_PRESET)…"
+  bash "$CTL_ROOT/scripts/container/up.sh" preset "$DEV_PRESET" --nqa -y
   wait_healthy "${DATA_SVCS[@]}" 60 || warn "health poll failed — continuing anyway."
+  # nothing in the db config depends on the schema one-shots, so `up -d` returns while they run:
+  # block until each has exited, and stop on a non-zero exit, because the apps would start on a stale schema
+  if (( ${#SCHEMA_SVCS[@]} )); then
+    step "schema step: waiting on ${SCHEMA_SVCS[*]}"
+    dc wait "${SCHEMA_SVCS[@]}" >/dev/null || die "schema step failed — see: ctl logs ${SCHEMA_SVCS[*]}"
+  fi
 fi
 
 # dev proxy — one origin across frontends. The foreground loop stops it on Ctrl-C; under --detach it

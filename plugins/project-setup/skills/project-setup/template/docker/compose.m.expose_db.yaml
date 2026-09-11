@@ -1,0 +1,8 @@
+# Modifier. Binds each engine to loopback on its _PORT from .env.secrets, so a process on the host
+# (a dev server under `ctl dev`, psql, a debugger) reaches it. Loopback only: never the network.
+# The reserved preset `dev` (what `ctl dev` runs) is `--config db +expose_db`. Under `ctl up` the apps reach the engines by service name,
+# so this modifier is not needed there.
+services:
+  postgres: { ports: ["127.0.0.1:${POSTGRES_PORT}:5432"] }
+  redis:    { ports: ["127.0.0.1:${REDIS_PORT}:6379"] }
+  neo4j:    { ports: ["127.0.0.1:${NEO4J_BOLT_PORT}:7687"] }

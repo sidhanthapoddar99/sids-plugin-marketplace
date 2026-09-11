@@ -1,0 +1,7 @@
+# docker/presets.yaml — named `ctl up` runs. One line per preset:  <name>: "<what follows ctl up>"
+# `ctl up preset <name>` runs one (plan → confirm; -y skips the confirm). `ctl up set-preset` writes one.
+# The value is the reproduce line the plan prints, so a preset is a saved command and nothing else;
+# edit this file by hand if you like. A name is [A-Za-z0-9_-]. Comments and blank lines are ignored.
+dev: "--config db +expose_db"
+local: "--config base +expose_web"
+public: "--config base +public"

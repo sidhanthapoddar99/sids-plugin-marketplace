@@ -84,7 +84,7 @@ Additions to the stack list, with the reason: none.
 
 ## Commands
 
-`ctl --help` is the list. Summary: `ctl setup` · `ctl check` · `ctl status` · `ctl dev [app…] [--proxy]` · `ctl ps` · `ctl up [+expose_web|+public|+expose|+env_override] [--services a,b]` · `ctl down` · `ctl restart` · `ctl logs` · `ctl exec` · `ctl shell` · `ctl health` · `ctl clean` · `ctl build [app|cli|save|start|clean]` · `ctl migrate [new "<msg>"|status]` · `ctl db backup|shell` · `ctl manage ops|settings` · `ctl test [app|e2e]` · `ctl gate [all|static|dynamic|<rung>] [-q]`.
+`ctl --help` is the list. Summary: `ctl setup` · `ctl check` · `ctl status` · `ctl dev [app…] [--proxy]` · `ctl ps` · `ctl up [--config base|db|dev] [+expose_web|+public|+expose|+expose_db|+env_override] [--services a,b]` · `ctl up preset [<name>]` · `ctl up set-preset` · `ctl down` · `ctl restart` · `ctl logs` · `ctl exec` · `ctl shell` · `ctl health` · `ctl clean` · `ctl build [app|cli|save|start|clean]` · `ctl db migrate [new "<msg>"|status]` · `ctl db backup|shell` · `ctl manage ops|settings` · `ctl test [app|e2e]` · `ctl gate [all|static|dynamic|<rung>] [-q]`.
 
 Green means `ctl gate` passed. The rungs it runs are the `Gate ladder` row above and `RUNGS` in `scripts/gate/all.sh`. `ctl check` fails when the two differ, because the audit reads the row and the gate runs the list. To switch on `dead`, `audit`, `build` or `e2e`, add the name to both, in ladder order. A rung, once listed, is never removed. `clones`, `fuzz` and `perf` run by name and are never listed. Project-specific verbs are added as `scripts/<group>/<name>.sh` plus a `run` line in `ctl`, and listed here.
 

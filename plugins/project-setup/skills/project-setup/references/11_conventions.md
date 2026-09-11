@@ -78,7 +78,7 @@ This section is the home of every folder name; `01_layout.md` points here. A nam
 - The static-frontend group takes a name that says it is a group: `multi-web-app/`. Its children take the surface: `app/`, `landing/`, `docs/`, `admin/`.
 - Domains are nouns of ownership, never activities or nav labels (`06_backend.md`).
 - Package folders take what they export: `ui/`, `types/`, `tsconfig/`; later `services/`, `hooks/` (`05_frontend.md`).
-- Scripts take the verb: `scripts/db/migrate.sh` is `ctl migrate`.
+- Scripts take the verb: `scripts/db/migrate.sh` is `ctl db migrate`.
 - Compose files: `compose.<role>.yaml`; modifiers `compose.m.<name>.yaml`. Never a bare `compose.yaml`.
 - Env keys: `<SERVICE>_<THING>`: `POSTGRES_HOST`, `WEB_APP_PREFIX`, `ENGINE_URL`.
 - Files that must be sourced, not executed: leading underscore, `_lib.sh`.
@@ -111,7 +111,7 @@ Each of these means a rule was broken somewhere else. Find that place.
 | a password in `config.yaml` | secrets in `.env.secrets` only |
 | a `VITE_*` key in `.env.proxy`, or an env file inside a frontend | a frontend has no env file; its prefix comes from `.env.proxy` |
 | `alembic upgrade` or `create_all()` in a Dockerfile `CMD` or app startup | migrations are an explicit step (`06_backend.md`) |
-| `ports:` in `compose.base.yaml` | exposure by modifier only (`08_ctl.md`) |
+| `ports:` in any config `compose.<name>.yaml` | exposure by modifier only (`08a_ctl_docker.md`) |
 | `../` in a compose file | root-relative paths |
 | `package.json` at the root or in `apps/` | no workspace (`01_layout.md`) |
 | a second nginx service | the `web` image is the edge |

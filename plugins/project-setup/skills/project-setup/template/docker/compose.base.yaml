@@ -1,4 +1,5 @@
-# The stack. This IS production. No ports here — modifiers add exposure.
+# Config `base`: the whole stack. This IS production, and the default config of `ctl up`.
+# No ports here — a config never publishes a port; modifiers (compose.m.<name>.yaml) add exposure.
 # No env_file. Each service lists exactly the variables it reads under `environment:`.
 #   ${VAR}   — operator decides; interpolated from the three env files ctl passes with --env-file:
 #              .env.secrets (passwords, keys, REGISTRY/TAG) · .env.proxy (ports, prefixes) ·
@@ -8,17 +9,20 @@
 # Every app has image: (pull) and build: (ctl build).
 #
 # Production settings every service carries, written once in x-defaults and merged with `<<: *defaults`:
-#   restart            unless-stopped for every long-running service (on-failure for one-shot jobs)
+#   restart            unless-stopped for every long-running service ("no" for the one-shot jobs)
 #   logging            stdout/stderr only, json-file with a cap; the app's level comes from config.yaml
 #   stop_grace_period  ≥ the app's graceful timeout, or every deploy SIGKILLs mid-drain
 # Per service: a healthcheck on /health with a start_period covering boot, depends_on with
 # condition: service_healthy (started is not ready), and a memory limit so a leak restarts one
 # container instead of taking the host down. Engines carry their own in compose.db.yaml.
 #
-# Database section: the engines are defined once, in compose.db.yaml, and included here.
-# `ctl up` runs this file alone and gets the whole stack. `ctl dev` runs compose.db.yaml alone.
+# Database section: the engines and the schema one-shots (migrate, neo4j-init) are defined once, in
+# compose.db.yaml, and included here. Every app waits on the one-shots with
+# condition: service_completed_successfully, so compose orders engines → schema → apps by itself,
+# and `ctl up --services api` brings that chain along. Never inside an app's boot: the apps wait, they do not migrate.
 include:
   - path: ./docker/compose.db.yaml
+    project_directory: .                        # or the included file's ./apps and ${DATA_DIR} resolve against docker/
 
 x-defaults: &defaults
   restart: unless-stopped
@@ -59,6 +63,7 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
 
   engine:
     <<: *defaults
@@ -85,6 +90,8 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       neo4j: { condition: service_healthy }
+      migrate: { condition: service_completed_successfully }
+      neo4j-init: { condition: service_completed_successfully }
 
   # The edge. One nginx image holding every static frontend (apps/example-multi-web-app/*), proxying the rest.
   web:

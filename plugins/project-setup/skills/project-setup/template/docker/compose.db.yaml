@@ -1,11 +1,27 @@
-# Data engines only. Runs alone under `ctl dev`; included by compose.base.yaml under `ctl up`.
-# Passwords come from .env.secrets, ${DATA_DIR} from .env.data. Ports bind to loopback only, so prod never exposes them to the network.
+# Config `db`: the data engines and the schema step. A config is a stack shape `ctl up --config <name>`
+# runs on its own. This one is what `ctl dev` runs through the reserved preset `dev` (`--config db +expose_db`), and what
+# compose.base.yaml `include:`s, so the engines are defined once and every config that needs them
+# borrows this file — and gets the schema ordering with them.
+# No ports here: a config never publishes a port. +expose_db (compose.m.expose_db.yaml) binds each engine
+# to loopback for host processes; inside compose everything reaches the engines by service name.
+# Passwords come from .env.secrets, ${DATA_DIR} from .env.data.
 # State: bind mounts under ${DATA_DIR}. Committed config: apps/database/.
 # Every engine has a healthcheck: apps depend on it with condition: service_healthy. Started is not ready.
 # Engines get deliberately higher memory limits than apps; never starve the database.
+#
+# Schema: two one-shot services, migrate (Alembic) and neo4j-init (cypher-shell). They run inside the
+# compose network, so no engine port is ever published for them. exit 0 = applied, and both are
+# idempotent, so they run whenever this config comes up (`ctl dev` and `ctl up` alike). An app waits
+# on them with condition: service_completed_successfully; `ctl db migrate` re-runs them by name.
+# Never inside an app's own boot: the apps wait, they do not migrate.
 x-engine: &engine
   restart: unless-stopped
   stop_grace_period: 30s
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+x-oneshot: &oneshot
+  restart: "no"
   logging:
     driver: json-file
     options: { max-size: "10m", max-file: "5" }
@@ -19,7 +35,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C.UTF-8"   # or collation drifts between machines
-    ports: ["127.0.0.1:${POSTGRES_PORT}:5432"]
     volumes:
       - "${DATA_DIR}/postgres/pgdata:/var/lib/postgresql/data"
       - "./apps/database/postgres/init:/docker-entrypoint-initdb.d:ro"   # extensions and roles, once, on an empty pgdata
@@ -39,7 +54,6 @@ services:
     command: ["redis-server", "/etc/redis/redis.conf", "--requirepass", "${REDIS_PASSWORD}"]
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}         # read by the healthcheck only
-    ports: ["127.0.0.1:${REDIS_PORT}:6379"]
     volumes:
       - "${DATA_DIR}/redis:/data"
       - "./apps/database/redis/redis.conf:/etc/redis/redis.conf:ro"
@@ -58,10 +72,9 @@ services:
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD}         # read by the healthcheck only
-    ports: ["127.0.0.1:${NEO4J_BOLT_PORT}:7687"]
     volumes:
       - "${DATA_DIR}/neo4j:/data"
-      - "./apps/database/neo4j:/init:ro"       # init.cypher applied by `ctl migrate`
+      - "./apps/database/neo4j:/init:ro"       # init.cypher applied by the neo4j-init one-shot below
     healthcheck:
       test: ["CMD-SHELL", "cypher-shell -u neo4j -p $$NEO4J_PASSWORD 'RETURN 1' >/dev/null || exit 1"]
       interval: 15s
@@ -71,3 +84,26 @@ services:
     deploy:
       resources:
         limits: { memory: 2g }
+
+  # ── schema, one-shot ──
+  migrate:
+    <<: *oneshot
+    image: ${REGISTRY}/migrate:${TAG}
+    build: { context: ./apps/database/postgres }
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    volumes:
+      - "./apps/database/postgres:/work"         # the revisions come from the checkout; `db migrate new` writes back here
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  neo4j-init:
+    <<: *oneshot
+    image: neo4j:<version>                      # same image as the engine: it ships cypher-shell
+    environment:
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+    volumes:
+      - "./apps/database/neo4j:/init:ro"
+    entrypoint: ["sh", "-c", "cypher-shell -a bolt://neo4j:7687 -u neo4j -p \"$$NEO4J_PASSWORD\" -f /init/init.cypher"]
+    depends_on:
+      neo4j: { condition: service_healthy }

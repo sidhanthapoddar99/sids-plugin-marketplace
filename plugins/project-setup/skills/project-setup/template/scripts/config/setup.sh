@@ -112,7 +112,7 @@ for f in "${ENV_FILES[@]}"; do
   if [[ -n "$blanks" ]]; then warn "fill these blanks in $f:"; say "$blanks"; else ok "$f: no blanks"; fi
 done
 if (( rc == 0 )); then
-  say "next: ${C_B}ctl dev${C_RESET}   ${C_DIM}(then ctl migrate once the data core is up)${C_RESET}"
+  say "next: ${C_B}ctl dev${C_RESET}   ${C_DIM}(the engines come up migrated; ctl db migrate re-runs the schema step)${C_RESET}"
 else
   err "setup incomplete — fix the lines above, then re-run ctl setup"
 fi
