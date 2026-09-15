@@ -4,7 +4,7 @@ One paragraph: what this product is and which apps make it.
 
 ## Prerequisites
 - `mise install` — installs every toolchain pinned in `.mise.toml`
-- `ctl setup` — creates `.env` from `.env.template`, generates secrets, creates `data/*` and `logs/*`
+- `ctl setup` — creates `.env` from `.env.template`, generates declared local credentials, creates configured data/log/backup directories, installs and activates tools
 
 ## Quick start with ctl
 - `ctl dev` — databases in docker, apps on the host (`--proxy` for one origin across frontends)
@@ -27,6 +27,14 @@ One paragraph: what this product is and which apps make it.
 
 ## Manual, without ctl
 Each app's `README.md` shows how to run it from its own folder, the env keys it reads, and how to test it.
+
+## CTL requirements
+
+Host process supervision requires Linux or WSL, Bash, `/proc`, util-linux (`setsid`, `flock`) and GNU coreutils. Container startup also requires Docker Compose with dependency builds and `jq`. `ctl setup` activates declared mise tools before dependency commands; a selected app checks only its own runtime.
+
+Local credential generation is declared in `scripts/config/generated-credentials.conf`. Required supplied credentials are listed in `scripts/config/required-credentials.conf`. Provider credentials are never generated. Preserve the `.env.template` contract when adapting these lists.
+
+`DATA_DIR`, `LOGS_DIR` and `BACKUP_DIR` may be root-relative or absolute. CTL uses those configured paths for setup, process records, logs, backups and frozen builds. Development probes live in `scripts/dev/_apps.sh`; startup fails when they do not become ready. Container startup builds before activation and waits for readiness; runtime failure requires an operator recovery policy.
 
 ## Stack
 | Area | Pick |

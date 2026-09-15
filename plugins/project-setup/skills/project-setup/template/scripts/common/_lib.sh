@@ -135,7 +135,7 @@ Any extra args forward straight to \`docker compose $1\`." \
 # the exact line and `--attach` can exec it. Two callers, one place that builds the line.
 env_file_args() { local f; for f in "${ENV_FILES[@]}"; do [[ -f "$CTL_ROOT/$f" ]] || continue; printf -- '--env-file\n%s\n' "$CTL_ROOT/$f"; done; }
 compose_argv()  { printf '%s\n' docker compose --project-directory "$CTL_ROOT"; env_file_args; (( $# == 0 )) || printf '%s\n' "$@"; }
-compose_cmd()   { local -a argv; mapfile -t argv < <(compose_argv "$@"); "${argv[@]}"; }
+compose_cmd()   { resolve_storage_dirs || return; local -a argv; mapfile -t argv < <(compose_argv "$@"); "${argv[@]}"; }
 dc()     { compose_cmd -f "$BASE" "$@"; }
 dc_dev() { compose_cmd -f "$DEV_FILE" "$@"; }
 # auto-discovery — no hard-coded list.
@@ -248,12 +248,6 @@ require_env() {
 }
 load_env_files() { local f; for f in "${ENV_FILES[@]}"; do load_env_file "$f"; done; }   # skip-if-set; a missing file is skipped
 load_env_soft()  { load_env_files; expand_env_refs || true; }                              # diagnostics: never die
-require_tools() {  # require_tools mise docker …
-  local t missing=()
-  for t in "$@"; do command -v "$t" >/dev/null 2>&1 || missing+=("$t"); done
-  (( ${#missing[@]} )) && die "missing on PATH: ${missing[*]} (run: mise install)"
-  return 0
-}
 # docker_state — one word on stdout: ok · missing · stopped · no-compose. Never dies; `ctl status`
 # reads it too. The three failures are different repairs, so they are never one message.
 docker_state() {
@@ -279,10 +273,10 @@ tool_version() { command -v "$1" >/dev/null 2>&1 || return 1; case "$1" in go) g
 cname()      { printf '%s-%s' "${COMPOSE_PROJECT_NAME:-$(basename "$CTL_ROOT")}" "$1"; }
 svc_health() {  # resolve the REAL container, then read its health/status
   local id s
-  id=$(dc ps -aq "$1" 2>/dev/null | head -1)
-  [[ -n $id ]] || id="$(cname "$1")"
+  id=$(dc ps -aq "$1" 2>/dev/null | head -1) || { echo down; return 0; }
+  [[ -n $id ]] || { echo down; return 0; }
   # docker inspect can exit 0 with empty output for a missing container (WSL2) — treat empty as down.
-  s=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$id" 2>/dev/null)
+  s=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$id" 2>/dev/null) || { echo down; return 0; }
   s="${s//[$'\n\r\t ']/}"
   [[ -n $s ]] && printf '%s\n' "$s" || echo down
 }
@@ -323,22 +317,6 @@ port_pid() {
   [[ -z $pid ]] && command -v lsof >/dev/null 2>&1 && pid=$(lsof -tiTCP:"$p" -sTCP:LISTEN 2>/dev/null | head -1)
   printf '%s' "$pid"
 }
-# detach_run <name> <dir> <cmd…> — background a host process: output → logs/dev/<name>.log,
-# PID → logs/run/<name>.pid. The pidfile is what lets `ctl ps` re-attach (a) and stop (k) it.
-#   • `&` binds to the nohup command ALONE — backgrounding a compound forks a wrapper that keeps
-#     the caller's stdout open, so any pipe around ctl never sees EOF.
-#   • </dev/null — without it the daemon inherits the caller's stdin.
-detach_run() {
-  local name="$1" dir="$2"; shift 2
-  mkdir -p "$CTL_ROOT/logs/dev" "$CTL_ROOT/logs/run"
-  (
-    cd "$dir" || exit 1
-    nohup "$@" < /dev/null >> "$CTL_ROOT/logs/dev/$name.log" 2>&1 &
-    echo $! > "$CTL_ROOT/logs/run/$name.pid"
-  )
-  ok "$name detached (pid $(cat "$CTL_ROOT/logs/run/$name.pid")) — log: logs/dev/$name.log"
-}
-
 # ── env schema (used by ctl status and ctl check) ──
 # env_keys <file> — every KEY of a KEY=value line, the same lines load_env_file loads: a key starts
 # at column 0. An indented line is a continuation comment, never a key, whatever it holds.
@@ -362,3 +340,8 @@ confirm() { local a; printf '%s?%s %s [y/N] ' "$C_YEL" "$C_RESET" "$*"; read -r 
 # split a comma-list into the global array __SPLIT (trims whitespace, drops blanks)
 split_csv() { __SPLIT=(); local raw tok s; IFS=',' read -r -a raw <<< "$1"
   for tok in "${raw[@]}"; do s="${tok#"${tok%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; [[ -n $s ]] && __SPLIT+=("$s"); done; }
+
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_tools.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_paths.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_process.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../config/_discovery.sh"

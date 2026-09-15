@@ -116,6 +116,8 @@ def run_worker(root: Path, worker: Path, *args: str) -> subprocess.CompletedProc
     common = root / "scripts" / "common"
     if not common.exists():
         common.symlink_to(LIB.parent, target_is_directory=True)
+    if worker == DEV and not (root / "scripts/dev").exists():
+        (root / "scripts/dev").symlink_to(DEV.parent, target_is_directory=True)
     env = {"PATH": os.environ["PATH"], "HOME": str(root), "NO_COLOR": "1", "CTL_ROOT": str(root)}
     return subprocess.run(
         ["bash", str(worker), *args], env=env, capture_output=True, text=True, check=False

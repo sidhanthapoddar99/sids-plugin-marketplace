@@ -10,6 +10,7 @@
 # whose file set differs (ctl dev binds loopback ports, ctl up does not) under a live stack.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
+source "$CTL_ROOT/scripts/common/_runtime.sh"
 
 PG_DIR="apps/database/postgres"
 NEO4J_INIT="apps/database/neo4j/init.cypher"
@@ -34,14 +35,14 @@ require_env; require_docker
 sub="${1:-up}"; shift || true
 
 has_svc() { printf '%s\n' "${DATA_SVCS[@]}" | grep -qx "$1"; }
-[[ "$(svc_health postgres)" =~ ^(healthy|running)$ ]] || die "postgres is not up — run ctl dev, or ctl up preset dev, then retry"
+runtime_service_running postgres || die "postgres is not up — run ctl dev, or ctl up preset dev, then retry"
 # pg <alembic args…> — one migrate container, fresh image, gone afterwards
-pg()    { dc run --rm --no-deps --build migrate alembic "$@"; }
+pg()    { runtime_run --build migrate alembic "$@"; }
 neo4j() {
   [[ -f $NEO4J_INIT ]] || { say "${C_DIM}no $NEO4J_INIT — skipped${C_RESET}"; return 0; }
   has_svc neo4j || return 0
   step "neo4j-init: cypher-shell -f $NEO4J_INIT"
-  dc run --rm --no-deps neo4j-init
+  runtime_run neo4j-init
 }
 
 case "$sub" in
@@ -52,7 +53,7 @@ case "$sub" in
     [[ -n "${1:-}" ]] || die 'usage: ctl db migrate new "<message>"'
     step "alembic revision: $1"
     # --user: the container writes into the bind mount; without it the revision files come back root-owned
-    out=$(dc run --rm --no-deps --build --user "$(id -u):$(id -g)" migrate alembic revision -m "$1" | tee /dev/stderr)
+    out=$(runtime_run --build --user "$(id -u):$(id -g)" migrate alembic revision -m "$1" | tee /dev/stderr)
     # the mako template emits the .py shim at /work/… inside the container; map it back to the checkout
     # and create the empty SQL siblings it loads.
     revfile=$(grep -oE "/work/migrations/versions/[^ ]+\.py" <<<"$out" | head -n1 || true)

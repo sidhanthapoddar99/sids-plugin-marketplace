@@ -14,6 +14,7 @@ usage() { print_help "status" "Config doctor: env, toolchain, docker, deps, data
 is_help "${1:-}" && { usage; exit 0; }
 load_env_soft         # soft, non-clobbering load of the root .env file — status must never die
 rc=0
+resolve_storage_dirs || rc=1
 LOG_INDENT="  "       # nest every section's lines under its ▸ header
 
 step "env files"
@@ -23,6 +24,7 @@ done
 check_env_schema || rc=1
 
 step "runtimes"
+activate_tools || rc=1
 if command -v mise >/dev/null 2>&1; then
   ok "mise — $(tool_version mise)"
   mise current 2>/dev/null | sed "s/^/    /" || true
@@ -42,8 +44,9 @@ case "$(docker_state)" in
   no-compose) warn "docker compose plugin missing (docker-compose-plugin ≥ 2.24)" ;;
 esac
 printf '  %s%-9s%s %s\n' "$C_DIM" "project"  "$C_RESET" "${COMPOSE_PROJECT_NAME:-$(basename "$CTL_ROOT")}"
-printf '  %s%-9s%s %s\n' "$C_DIM" "data dir" "$C_RESET" "${DATA_DIR:-./data}"
-printf '  %s%-9s%s %s\n' "$C_DIM" "logs dir" "$C_RESET" "${LOGS_DIR:-./logs}"
+printf '  %s%-9s%s %s\n' "$C_DIM" "data dir" "$C_RESET" "${DATA_DIR-<unresolved>}"
+printf '  %s%-9s%s %s\n' "$C_DIM" "logs dir" "$C_RESET" "${LOGS_DIR-<unresolved>}"
+printf '  %s%-9s%s %s\n' "$C_DIM" "backup dir" "$C_RESET" "${BACKUP_DIR-<unresolved>}"
 
 step "deps (run \`ctl setup\` if missing)"
 for d in apps/*/ apps/packages/*/ apps/database/postgres/; do

@@ -54,9 +54,14 @@ step "versions"
 # Every file here holds a '<version>' placeholder in the shipped template. A placeholder in
 # .mise.toml or a manifest makes mise, uv, cargo and go fail, so ctl setup refuses to run until
 # each is resolved (with the user, never from memory).
-while IFS= read -r f; do fail "$f still holds '<version>' — resolve it before setup"; done \
-  < <({ grep -l --fixed-strings '<version>' .mise.toml 2>/dev/null; grep -rl --fixed-strings '<version>' apps --include=pyproject.toml --include=package.json \
-        --include=Cargo.toml --include=rust-toolchain.toml --include=go.mod --exclude-dir=node_modules 2>/dev/null; } || true)
+manifest_list=$(mktemp) || die "cannot create source manifest list"
+trap 'rm -f "$manifest_list"' EXIT
+discover_source_manifests > "$manifest_list" || fail "source package discovery failed"
+mapfile -d '' -t source_manifests < "$manifest_list"
+for manifest in "$CTL_ROOT/.mise.toml" "$CTL_ROOT/mise.toml" "${source_manifests[@]}"; do
+  [[ -f $manifest ]] || continue
+  grep -qF '<version>' "$manifest" && fail "${manifest#"$CTL_ROOT/"} still holds '<version>' — resolve it before setup"
+done
 pass "no <version> placeholder in .mise.toml or an app manifest"
 
 step "env contract"
@@ -79,9 +84,19 @@ for f in "${ENV_FILES[@]}"; do
   mapfile -t -O "${#known[@]}" known < <(env_keys "$f.template")
 done
 while IFS= read -r key; do fail ".env.template: duplicate key $key"; done < <(printf '%s\n' "${known[@]}" | sort | uniq -d)
+declare -A declared_secrets=()
+for declarations in scripts/config/generated-credentials.conf scripts/config/required-credentials.conf; do
+  [[ -f $declarations ]] || continue
+  while read -r key remainder || [[ -n $key ]]; do
+    [[ -z $key || $key == \#* ]] && continue
+    [[ $key =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { fail "$declarations: invalid credential name"; continue; }
+    declared_secrets["$key"]=1
+  done < "$declarations"
+done
 if [[ -f .env.template ]]; then
   while IFS='=' read -r key value || [[ -n $key ]]; do
-    [[ $key =~ ^[A-Za-z_][A-Za-z0-9_]*$ && $key =~ _(PASSWORD|KEY|SECRET)(_|$) ]] || continue
+    [[ $key =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+    [[ $key =~ _(PASSWORD|KEY|SECRET)(_|$) || -v declared_secrets["$key"] ]] || continue
     value="${value%$'\r'}"; value="${value%%[[:space:]]#*}"; value="${value%"${value##*[![:space:]]}"}"
     [[ -z $value ]] || fail ".env.template: $key must be blank"
   done < .env.template

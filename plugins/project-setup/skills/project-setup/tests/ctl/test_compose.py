@@ -62,3 +62,27 @@ def test_modifiers_render_and_use_process_overrides(compose_root: Path, modifier
         assert model["services"]["api"]["environment"]["DATABASE_URL"] == (
             "postgresql://app:synthetic-password@localhost:5432/app"
         )
+
+
+@pytest.mark.parametrize("value", ["state", "state with spaces"])
+@pytest.mark.parametrize("config", ["base", "db"])
+def test_compose_normalizes_bare_relative_storage(compose_root: Path, value: str, config: str) -> None:
+    env_file = compose_root / ".env"
+    env_file.write_text(env_file.read_text().replace("DATA_DIR=./data", f"DATA_DIR={value}"))
+    model = render(compose_root, config)
+    mount = model["services"]["postgres"]["volumes"][0]
+    assert mount["type"] == "bind"
+    assert mount["source"] == str(compose_root / value / "postgres/pgdata")
+
+
+def test_compose_rejects_blank_storage_before_invoking_docker(tmp_path: Path) -> None:
+    marker = tmp_path / "docker-invoked"
+    script = 'source "$1"; marker=$2; docker() { : > "$marker"; }; export DATA_DIR=""; compose_cmd config'
+    result = subprocess.run(
+        ["bash", "-c", script, "bash", str(TEMPLATE / "scripts/common/_lib.sh"), str(marker)],
+        env={"PATH": os.environ["PATH"], "CTL_ROOT": str(tmp_path)},
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode != 0
+    assert "DATA_DIR is blank" in result.stderr
+    assert not marker.exists()

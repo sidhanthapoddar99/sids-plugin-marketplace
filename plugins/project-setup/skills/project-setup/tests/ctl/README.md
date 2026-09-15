@@ -8,4 +8,11 @@ From the marketplace repository root, with Python 3 and pytest installed:
 python3 -m pytest plugins/project-setup/skills/project-setup/tests/ctl -q
 ```
 
-No Docker daemon or application dependencies are needed. The tests exercise the real template library, setup and conformance workers. Compose rendering tests use the Docker Compose CLI when available and skip explicitly when it is absent. They verify declared container keys, build arguments and process overrides without starting containers.
+Run the suite on Linux or WSL with Bash, util-linux (`setsid`, `flock`), GNU coreutils, `curl` and `jq`. No Docker daemon or application dependencies are needed. Tests exercise real shell workers and isolated child processes; temporary directories contain all test storage.
+
+- Environment, credentials and storage tests execute the real template helpers.
+- Development tests launch isolated processes and HTTP probes to check readiness, interruption and owned-group cleanup.
+- Setup uses executable doubles for fresh mise installation and activation; the Cargo workspace test also invokes real Cargo offline when available.
+- Production startup, administration and restore tests use recording Docker/database shims. They verify ordering, selection and failure propagation without deploying or restoring a live database.
+- Compose rendering tests use the real Docker Compose CLI when available and skip explicitly when it is absent. Cargo availability skips are also reported. These tests validate configuration without starting containers.
+- Optional WASM behavior is guidance in `references/06_backend.md`; no WASM watcher or target is installed or exercised by the base suite.

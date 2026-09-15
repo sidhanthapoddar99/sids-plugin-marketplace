@@ -7,7 +7,7 @@
 | Setting | Rule |
 |---|---|
 | `restart: unless-stopped` | Every long-running service. `on-failure` for one-shot jobs. Never `no` in prod. |
-| `healthcheck` | Every app, hitting `/health`, with `start_period` covering boot (migrations, model load). Without it a service that boots in 20 s is restarted in a loop. Engines: `pg_isready`, `redis-cli ping`, a cypher ping. |
+| `healthcheck` | Every app, proving readiness, with `start_period` covering boot (migrations, model load). Backend examples use `/ready`; the readiness budget must cover expected startup. Engines: `pg_isready`, `redis-cli ping`, a cypher ping. |
 | `depends_on: condition: service_healthy` | Apps on engines. Never a bare `depends_on`: started is not ready. |
 | `stop_grace_period` | ≥ the app's graceful timeout (`gunicorn --graceful-timeout 30` → `35s`). Otherwise every deploy SIGKILLs mid-drain. |
 | `deploy.resources.limits` | `memory` above all: an unbounded leak takes the host down, a bounded one restarts alone. `cpus` sized with the worker count. Engines get deliberately higher limits; never starve the database. |
@@ -23,20 +23,24 @@ Internal ports are literals (`api:8000`). Only published host ports vary, and on
 | `/health` | Is the process alive? Cheap: the event loop turns. | Restart the container. |
 | `/ready` | Can it serve now? Database reachable, migrations applied, model loaded. Returns `503` with the failing check named. | Pull from the load balancer. Do not restart. |
 
-The compose healthcheck reads `/health`. A host proxy or load balancer reads `/ready`.
+Compose healthchecks gate startup readiness and dependencies, so backend checks read `/ready`. `/health` remains the separate liveness signal. A host proxy or load balancer also reads `/ready`. Standalone Compose reports an unhealthy check; an automatic restart policy for unhealthy services is a separate operator decision.
 
 ## The deploy
 
 For central Traefik, Cloudflare Tunnel, ngrok, or direct Nginx HTTP with optional TLS, see [HTTP and TLS deployment options](12_http-and-tls.md). Public port mappings alone do not enable TLS; choose the exposure and certificate setup for your deployment.
 
-1. `ctl build` with an immutable `TAG` (a git sha or a semver) on images named `<product>/<app>` (`acme/api`). Never redeploy a moving `latest`; a tag is never repurposed.
-2. Uncomment `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` in `.env` (`02_env.md` rule 10), then `ctl up +public -y`, or `ctl up preset public -y`. Compose brings the engines up, runs the schema one-shots once, then the apps, from `depends_on` alone. `ctl up` without a modifier is local docker: the edge on the `/` owner's port, no public origin.
+1. Choose an immutable `TAG` (a git sha or a semver) on images named `<product>/<app>` (`acme/api`). `ctl build` can build them separately; `ctl up` also requires all selected and dependency image builds to succeed before activating containers. Never redeploy a moving `latest`; a tag is never repurposed.
+2. Uncomment `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` in `.env` (`02_env.md` rule 10), then `ctl up +public -y`, or `ctl up preset public -y`. Compose orders engines, schema one-shots and apps from `depends_on`. CTL checks the selected dependency closure against declared readiness checks and successful one-shot completion within a bounded budget. A build failure makes no activation call; an activation or readiness failure returns nonzero. `ctl up` without a modifier is local docker: the edge on the `/` owner's port, no public origin.
 3. Migrations are never inside an app's boot, because a boot-time migration runs once per replica and once per restart, and N replicas racing `upgrade head` corrupt the version table. The step is a one-shot compose service (`migrate` in `compose.db.yaml`, `restart: "no"`) that every app `depends_on` with `condition: service_completed_successfully`, so it runs once per `up` whatever the replica count, inside the compose network, with no engine port published. `ctl db migrate` re-runs it by name. This step is the home of the rule; `06_backend.md` § Migrations points here.
-4. Rollback is the previous `TAG`, or a `ctl build save` snapshot. A rollback path exists before the first deploy, not after the first incident.
+4. Define recovery before deployment: the previous compatible image set, schema recovery and backups as needed. A runtime failure after activation may leave a partially changed stack. CTL reports that failure; build-before-start is not atomic deployment rollback. Frozen builds support inspection but do not undo a database migration.
+
+The startup worker uses `scripts/common/_compose_start.sh`. Its caller supplies a 120-second activation/readiness budget. Selected long-running services require readiness healthchecks; a clean exit counts as success only for explicitly declared schema one-shots or dependencies requiring `service_completed_successfully`. Foreground mode streams logs after readiness, reports unexpected stream/service exit and stops the selected stack on interruption. A detached success does not promise continued health.
+
+For projects using Rust/WASM, follow `06_backend.md` § Rust and WASM: production selects a release profile explicitly and activates only compatible, completely built artifacts. Other projects gain no WASM tooling.
 
 ## The host
 
-- `data/` and `logs/` exist on the host with the right owner before the first `up`; `ctl setup` creates them. The container's UID must own the bind-mounted directory. On SELinux hosts the mount takes `:Z`. Never `chmod 777`.
+- The configured data, log and backup directories exist on the host with the right owner before the first `up`; `ctl setup` creates them through the path contract in `02_env.md`. The container's UID must own the bind-mounted directory. On SELinux hosts the mount takes `:Z`. Never `chmod 777`.
 - `.env`: `chmod 600`, owned by the deploy user. Never in the image; `COPY .env*` stays in image history forever.
 - TLS terminates at a host proxy in front of the stack (outside this repo); `web` listens on 8080 as a non-root user. `client_max_body_size` and proxy timeouts in `nginx.conf.template`, aligned with the app's `--timeout`. Security headers and compression at the edge (`07_security.md`).
 - Bind mounts, not named volumes: state is visible and backup-friendly. `${DATA_DIR}` moves it to a fast disk or a tmpfs in CI without touching a compose file.

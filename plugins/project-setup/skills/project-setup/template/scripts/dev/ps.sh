@@ -21,7 +21,7 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
-BUILDS_DIR="$CTL_ROOT/logs/test_build"
+BUILDS_DIR=""
 
 usage() { print_help "ps" "Everything the project runs (dev · build · docker): browse, attach, free." \
   'ps [--list] [kill [port…]] [-y] [-h]' \
@@ -101,6 +101,12 @@ free_entry() {  # plane-aware: host pid → TERM then KILL; docker → compose s
     step "docker compose stop $id   (frees :$port)"
     dc stop "$id" && ok "stopped $id" || err "could not stop $id"
   else
+    local record
+    if record=$(process_for_pid "$id"); then
+      process_stop "$record"
+      ok "stopped owned process group on :$port"
+      return 0
+    fi
     step "kill $id   (frees :$port)"
     kill "$id" 2>/dev/null || { err "no such pid $id (already gone?)"; return 0; }
     for i in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$id" 2>/dev/null || { ok "freed :$port"; return 0; }; sleep 0.3; done
@@ -109,28 +115,15 @@ free_entry() {  # plane-aware: host pid → TERM then KILL; docker → compose s
   fi
 }
 
-# pid_is_under <ancestor> <pid> — true if <pid> equals <ancestor> or descends from it.
-# The pidfile records the wrapper (`bash -c`, `uv run`); the port listener is its child.
-pid_is_under() {
-  local anc="$1" p="$2" i=0
-  while [[ -n $p && $p != 0 && $p != 1 && $i -lt 15 ]]; do
-    [[ $p == "$anc" ]] && return 0
-    p="$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')"; i=$((i+1))
-  done
-  return 1
-}
-
 attach_entry() {  # plane-aware follow (execs — Ctrl-C detaches, the process keeps running)
   local plane port kind id desc f pid log=""; IFS='|' read -r plane port kind id desc <<<"$1"
   if [[ $kind == svc ]]; then
     step "docker compose logs -f $id   (Ctrl-C detaches)"
     exec docker compose --project-directory "$CTL_ROOT" -f "$BASE" logs -f "$id"
   fi
-  for f in logs/run/*.pid; do
-    [[ -f $f ]] || continue
-    pid="$(cat "$f" 2>/dev/null)"; [[ -n $pid ]] && pid_is_under "$pid" "$id" || continue
-    log="logs/dev/$(basename "$f" .pid).log"; break
-  done
+  if f=$(process_for_pid "$id"); then
+    log="$LOGS_DIR/dev/$(basename "$f" .process).log"
+  fi
   [[ -n $log && -f $log ]] || { err "no log for pid $id — not started by 'ctl dev --detach', nothing to attach to"; return 1; }
   step "tail -f $log   (Ctrl-C detaches, pid $id keeps running)"
   exec tail -n 40 -f "$log"
@@ -222,7 +215,10 @@ while (( $# )); do case "$1" in
                || die "unknown arg: $1 (try ctl ps --help)" ;;
 esac; done
 
-load_env_soft          # soft — ps must never die
+load_env_files
+expand_env_refs || exit 1
+resolve_storage_dirs || exit 1
+BUILDS_DIR="$LOGS_DIR/test_build"
 
 if [[ $sub == kill ]]; then do_kill "$yes" ${ports[@]+"${ports[@]}"}; exit 0; fi
 

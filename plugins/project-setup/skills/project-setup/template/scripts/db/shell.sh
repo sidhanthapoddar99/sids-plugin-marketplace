@@ -3,6 +3,7 @@
 # authenticated from .env. Works under ctl dev and ctl up alike (the engines are containers in both).
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
+source "$CTL_ROOT/scripts/common/_runtime.sh"
 
 usage() { print_help "db shell" "Interactive client for one data engine, with .env credentials." \
   'db shell <postgres|redis|neo4j> [-h]' \
@@ -16,10 +17,12 @@ Options
 
 is_help "${1:-}" && { usage; exit 0; }
 [[ $# -ge 1 ]] || die "usage: ctl db shell <postgres|redis|neo4j>"
-require_env
+require_env; require_docker
+case "$1" in postgres|redis|neo4j) ;; *) die "unknown engine '$1' — postgres | redis | neo4j" ;; esac
+runtime_service_running "$1" || die "$1 is not running in the current Compose project"
 case "$1" in
-  postgres) dc exec postgres psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" ;;
-  redis)    dc exec redis redis-cli ${REDIS_PASSWORD:+-a "$REDIS_PASSWORD"} ;;
-  neo4j)    dc exec neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD:?NEO4J_PASSWORD blank in .env}" ;;
+  postgres) runtime_exec postgres psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" ;;
+  redis)    runtime_exec redis redis-cli ${REDIS_PASSWORD:+-a "$REDIS_PASSWORD"} ;;
+  neo4j)    runtime_exec neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD:?NEO4J_PASSWORD blank in .env}" ;;
   *)        die "unknown engine '$1' — postgres | redis | neo4j" ;;
 esac

@@ -21,7 +21,7 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
-BUILDS_DIR="$CTL_ROOT/logs/test_build"
+BUILDS_DIR=""
 KEEP_DEFAULT=5
 CUSTOM_LABEL="custom…"
 # PORT_PRESETS (the start picker's port list; first one = the --nqa default) comes from
@@ -129,7 +129,7 @@ build_save() {
   } > "$dir/.build-meta"
   ok "saved $(basename "$dir") ($(du -sh "$dir" | cut -f1))"
   if [[ $serve == none ]]; then
-    say "save-only target — artifact frozen at ${C_B}logs/test_build/$(basename "$dir")${C_RESET}"
+    say "save-only target — artifact frozen at ${C_B}$dir${C_RESET}"
   else
     say "start it:  ${C_B}ctl build start $name${C_RESET}"
   fi
@@ -166,7 +166,7 @@ build_start() {
   esac; done
 
   if (( list )); then
-    printf '%sfrozen builds%s   %s(newest first — logs/test_build/)%s\n' "$C_B" "$C_RESET" "$C_DIM" "$C_RESET"
+    printf '%sfrozen builds%s   %s(newest first — %s)%s\n' "$C_B" "$C_RESET" "$C_DIM" "$BUILDS_DIR" "$C_RESET"
     local n any=0
     while IFS= read -r n; do [[ -z $n ]] && continue
       printf '  %s-%s %s\n' "$C_DIM" "$C_RESET" "$(build_label "$n")"; any=1; done < <(list_builds)
@@ -176,7 +176,7 @@ build_start() {
 
   local interactive=0; [[ -t 1 && -r /dev/tty && $nqa -eq 0 ]] && interactive=1
   local BUILDS=(); mapfile -t BUILDS < <(list_builds)
-  (( ${#BUILDS[@]} )) || die "no frozen builds in logs/test_build/ — create one: ctl build save [target] [name]"
+  (( ${#BUILDS[@]} )) || die "no frozen builds in $BUILDS_DIR — create one: ctl build save [target] [name]"
 
   [[ -n $name ]] && { folder="$(resolve_build "$name")" || die "no frozen build matches \"$name\" (ctl build start --list)"; }
   # --nqa = no questions: default the unset axes (newest build, first preset port)
@@ -207,7 +207,7 @@ build_start() {
     if [[ $serve == none ]]; then
       ok "$(build_label "$folder")"
       say "save-only target ($(meta_field "$folder" target)) — nothing to serve."
-      say "artifact:  ${C_B}logs/test_build/$folder${C_RESET}   (inspect: ls logs/test_build/$folder)"
+      say "artifact:  ${C_B}$BUILDS_DIR/$folder${C_RESET}"
       exit 0
     fi
 
@@ -235,7 +235,7 @@ build_start() {
       static)  serve_disp="bunx serve -s . -l $port" ;;
       process) serve_disp="$(meta_field "$folder" serve_cmd)"; serve_disp="${serve_disp//\{port\}/$port}"
                [[ -n $serve_disp ]] || die "snapshot says serve: process but has no serve_cmd in .build-meta" ;;
-      *)       die "unknown serve strategy '$serve' in logs/test_build/$folder/.build-meta" ;;
+      *)       die "unknown serve strategy '$serve' in $BUILDS_DIR/$folder/.build-meta" ;;
     esac
     repro="$(meta_field "$folder" name)"; repro="ctl build start ${repro:-$folder} $port"   # save-name form reproduces it
     plan_ok=1; pid="$(port_pid "$port")"
@@ -247,7 +247,7 @@ build_start() {
     printf '  %scommit%s  %s\n'   "$C_DIM" "$C_RESET" "$(meta_field "$folder" commit)"
     printf '  %ssaved%s   %s\n'   "$C_DIM" "$C_RESET" "$(meta_field "$folder" date)"
     printf '  %ssize%s    %s\n'   "$C_DIM" "$C_RESET" "$(du -sh "$BUILDS_DIR/$folder" 2>/dev/null | cut -f1)"
-    printf '  %sserve%s   %s   (cwd: logs/test_build/%s)\n' "$C_DIM" "$C_RESET" "$serve_disp" "$folder"
+    printf '  %sserve%s   %s   (cwd: %s/%s)\n' "$C_DIM" "$C_RESET" "$serve_disp" "$BUILDS_DIR" "$folder"
     printf '  %surl%s     http://localhost:%s\n' "$C_DIM" "$C_RESET" "$port"
     if [[ -n $pid ]]; then
       err "port $port is already in use (pid $pid)"
@@ -289,10 +289,16 @@ build_start() {
   case "$serve" in
     static)  require_tools bunx; run_cmd="bunx serve -s . -l $port" ;;
     process) run_cmd="$serve_disp"; first="${run_cmd%% *}"
-             [[ $first == ./* || $first == /* ]] || require_tools "$first" ;;
+             [[ $first == ./* || $first == /* || $first == *=* ]] || require_tools "$first" ;;
   esac
   step "serving $folder → http://localhost:$port   (Ctrl-C stops it)"
-  cd "$BUILDS_DIR/$folder" && exec bash -c "$run_cmd"
+  process_init
+  require_tools curl
+  process_start "build-$folder-$port" "$BUILDS_DIR/$folder" bash -c "$run_cmd"
+  local build_record="$PROCESS_RECORD"
+  process_ready 30 "$(build_ready_cmd "$(meta_field "$folder" target)" "$port")" || return $?
+  process_start "follow-build-$$" "$CTL_ROOT" bash -c 'tail -n +1 -f "$1" >&3' bash "$LOGS_DIR/dev/$(basename "$build_record" .process).log" 3>&1
+  process_monitor
 }
 
 build_clean() {
@@ -325,6 +331,22 @@ build_clean() {
   ok "pruned ${#doomed[@]} — reproduce: ctl build clean --keep $keep -y"
 }
 
+build_ready_cmd() {
+  local target="$1" port="$2"
+  case "$target" in
+    landing|app|docs|dashboard) printf 'curl --fail --silent --max-time 1 %q' "http://localhost:$port/" ;;
+    *) die "define build_ready_cmd for target '$target'" ;;
+  esac
+}
+
+for argument in "$@"; do
+  is_help "$argument" && { build_help; exit 0; }
+done
+if [[ $# -eq 0 ]]; then build_help; exit 0; fi
+load_env_files
+expand_env_refs || exit 1
+resolve_storage_dirs || exit 1
+BUILDS_DIR="$LOGS_DIR/test_build"
 sub="${1:-}"; shift 2>/dev/null || true
 case "$sub" in
   save)         is_help "${1:-}" && { build_help; exit 0; }; build_save "$@" ;;

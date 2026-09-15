@@ -24,10 +24,10 @@ is_help "${1:-}" && { usage; exit 0; }
 target="${1:-all}"; rc=0
 # an explicit target must exist: a typo that passes teaches the caller nothing. `all` skips absent apps.
 need_dir() { [[ -d $1 ]] || die "$1 not found — the target '$target' has no folder to typecheck"; }
-tc_py() { [[ -d $1 ]] || return 0; step "typecheck $1 (mypy)";        ( cd "$1" && uv run mypy app ) || rc=1; }
-tc_rs() { [[ -d $1 ]] || return 0; step "typecheck $1 (cargo check)"; ( cd "$1" && cargo check --workspace --all-targets ) || rc=1; }
-tc_js() { [[ -d $1 ]] || return 0; step "typecheck $1 (tsc)";         ( cd "$1" && bun run typecheck ) || rc=1; }
-tc_go() { [[ -d $1 ]] || return 0; step "typecheck $1 (go vet)";      ( cd "$1" && go vet ./... ) || rc=1; }
+tc_py() { [[ -d $1 ]] || return 0; step "typecheck $1 (mypy)";        ( require_tools uv && cd "$1" && uv run mypy app ) || rc=1; }
+tc_rs() { [[ -d $1 ]] || return 0; step "typecheck $1 (cargo check)"; ( require_tools cargo && cd "$1" && cargo check --workspace --all-targets ) || rc=1; }
+tc_js() { [[ -d $1 ]] || return 0; step "typecheck $1 (tsc)";         ( require_tools bun && cd "$1" && bun run typecheck ) || rc=1; }
+tc_go() { [[ -d $1 ]] || return 0; step "typecheck $1 (go vet)";      ( require_tools go && cd "$1" && go vet ./... ) || rc=1; }
 # [ADAPT] APPS. `all` lists every app the repo can hold; delete the lines for apps the repo dropped.
 case "$target" in
   all)      tc_py apps/example-api-python; tc_rs apps/example-engine-rust; tc_js apps/example-multi-web-app/landing; tc_js apps/example-multi-web-app/app; tc_js apps/example-multi-web-app/docs; tc_js apps/example-single-web-app-vite; tc_js apps/example-dashboard-nextjs; tc_go apps/example-tui-go ;;

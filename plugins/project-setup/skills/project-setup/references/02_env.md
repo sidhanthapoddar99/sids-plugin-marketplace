@@ -18,7 +18,7 @@ Configuration has one root environment file and per-backend settings. Template: 
 6. **Resolve values before launching consumers.** Paths are root-relative (`./data`, `./logs`) or absolute deployment paths, never `../`. `ctl` anchors Compose with `--project-directory <root>`. Values may reference other keys with `${KEY}`, including later declarations: `BACKUP_DIR=${LOGS_DIR}/backups`. The loader first loads all keys skip-if-set, then resolves references using the winning environment values. It uses text substitution, never `eval`. An unset reference or a cycle fails naming the key. Template: `template/scripts/common/_lib.sh`, `expand_env_refs`.
 7. **Preserve backend precedence.** Process environment > `config.local.yaml` > `config.yaml`. Load the root file skip-if-set so inline overrides and CI-injected secrets win, including an explicitly empty value. The nested override `<APP>__<SECTION>__<KEY>` (`API__DATABASE__POOL_SIZE`) overrides literals; `${VAR}` names environment values used in YAML.
 8. **Keep defaults in one place.** Do not add `config.<env>.yaml` layers or default forms such as `${VAR:-8000}` in backend settings. An unset reference fails; a literal default belongs in `config.yaml`. Prefix separate databases (`AUTH_DATABASE_URL`, `BILLING_DATABASE_URL`) and nested overrides (`API__`, `ENGINE__`) so services sharing a host do not collide.
-9. **Audit the template.** Read `.env.template`, never a filled `.env`, because audit output is a log and the filled file holds live secrets. `ctl setup` copies the template, appends missing keys without replacing existing values, and generates blank local secret keys. `ctl status` compares key names with the template.
+9. **Audit the template.** Read `.env.template`, never a filled `.env`, because audit output is a log and the filled file holds live secrets. `ctl setup` copies the template, appends missing keys without replacing existing values, and generates only explicitly declared local credentials. `ctl status` compares key names with the template.
 10. **The public origin is opt-in.** `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` ship commented out. Local Docker publishes the edge on the port of the piece owning `/`. A public deployment enables these three keys and uses `ctl up +public`, which refuses blank values. Keep `PUBLIC_URL` out of required YAML references: an app that creates absolute URLs reads it from the process environment and treats absence as relative URLs only. Template: `template/docker/compose.m.public.yaml`.
 
 ## How a backend reads a value
@@ -63,7 +63,24 @@ Never use a `VITE_API_URL` alias or an API host in the bundle: browser requests 
 | Service password | `openssl rand -base64 24 \| tr -d '+/=' \| head -c 24` | Yearly or on leak |
 | Third-party credential | Provider console | On leak |
 
-`ctl setup` generates a blank key whose name holds a `_PASSWORD`, `_KEY` or `_SECRET` segment, at the end or followed by more (`ENCRYPTION_KEY_PYTHON`). Keep provider-issued credentials commented out until configured; the generator cannot distinguish an active blank provider key from a local generated key. Shared credentials use one key; separate credentials use separate names. Write each secret's recovery procedure beside its template entry when adapting the project, because a rotation needs the service-specific steps. Rotate leaked credentials even after removing them from the working tree, because Git retains history.
+Declare locally generated credentials in `scripts/config/generated-credentials.conf`. Each line names a key and its generator, so an arbitrary token name can be generated without treating provider API keys as local secrets. `hex32` generates 32 random bytes as hexadecimal; `password24` generates a 24-character password. The shipped file contains only credentials used by the example services. A project adds its own token to both `.env.template` and this declaration file when a service actually needs it. Remove declarations when removing their services.
+
+```text
+POSTGRES_PASSWORD password24
+JWT_SIGNING_KEY hex32
+```
+
+Leave provider-issued credentials out of this list, including names ending in `_TOKEN`, `_KEY` or `_SECRET`: those suffixes do not authorize generation. Optional integrations may stay commented out in the template. Setup preserves supplied file values and process overrides, and rerunning it does not rotate a generated credential. It reports key names, never generated values. Template: `template/scripts/config/_credentials.sh`.
+
+List required supplied credentials in `scripts/config/required-credentials.conf`, one name per line, and declare them in `.env.template`. Setup requires their effective values but never generates them. Active generated credentials are already required. An explicitly empty process override remains empty and fails that requirement. Commented or absent template keys are inactive; other blank settings produce a named warning and remain subject to the application's validation. This keeps optional integrations optional without claiming that an unconfigured required provider is ready.
+
+Shared credentials use one key; separate credentials use separate names. Write each secret's recovery procedure beside its template entry when adapting the project, because a rotation needs service-specific steps. Rotate leaked credentials even after removing them from the working tree, because Git retains history.
+
+## Host storage paths
+
+`scripts/common/_paths.sh` owns `resolve_storage_dirs`. After environment references have been expanded, it resolves the explicitly named `DATA_DIR`, `LOGS_DIR` and `BACKUP_DIR` for host operations. An absolute value stays absolute; a relative value is anchored at `CTL_ROOT`, not the shell's current directory or the `docker/` directory. It preserves spaces. Reusing an already resolved value does not prefix it again. A supplied blank value fails instead of silently selecting a different directory.
+
+Setup, host launch, process lookup, frozen builds, backups and Compose execution call this helper before using shared paths. Container startup validates them before rendering its model: a bare relative directory becomes an absolute bind-mount source, and an empty directory cannot become an unintended filesystem-root mount. Logs and process records live below `LOGS_DIR`; backups use `BACKUP_DIR`. The default backup location is `LOGS_DIR/backups`. Do not resolve every key ending in `_DIR`: application-specific paths and container destinations belong to their consuming code. Compose still receives its explicit root project directory, including the root override on included files. Backend-specific storage initialization remains project-owned.
 
 ## Template rules
 
@@ -71,7 +88,7 @@ Never use a `VITE_API_URL` alias or an API host in the bundle: browser requests 
 - Name each key's reader and generation method in its comment so an operator knows how to fill it.
 - Keep secrets blank so the committed template contains no credentials. Give non-secrets development defaults so setup produces usable local settings.
 - Compose values from leaves (`DATABASE_URL=postgresql://${POSTGRES_USER}:…`) so changing a host requires one edit.
-- Keep optional integrations as commented blocks so setup does not generate provider credentials.
+- Keep optional integrations as commented blocks so unused integrations do not require configuration. Provider credentials never appear in the generation list.
 - Ignore `.env` and `.env.*`; allow only the root `!/.env.template`. Exclude env files from Docker build contexts so secrets cannot enter images.
 
 ## `ctl check` on env

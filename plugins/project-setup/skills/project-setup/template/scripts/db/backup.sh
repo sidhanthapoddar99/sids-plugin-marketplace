@@ -4,6 +4,7 @@
 # constraints/indexes only (a full neo4j dump needs the database stopped — see TODO).
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
+source "$CTL_ROOT/scripts/common/_paths.sh"
 
 usage() { print_help "db backup" "Dump every data engine into a timestamped folder." \
   'db backup [-h]' \
@@ -17,6 +18,7 @@ Restore with: ctl db restore <that folder>." \
 
 is_help "${1:-}" && { usage; exit 0; }
 require_env; require_docker
+resolve_storage_dirs
 dest="${BACKUP_DIR:-./logs/backups}/$(date +%Y%m%d-%H%M%S)"; mkdir -p "$dest"
 has() { printf '%s\n' "${DATA_SVCS[@]}" | grep -qx "$1"; }
 
@@ -28,7 +30,9 @@ fi
 if has redis; then
   step "redis SAVE → $dest/redis.rdb"
   dc exec -T redis redis-cli ${REDIS_PASSWORD:+-a "$REDIS_PASSWORD"} SAVE >/dev/null
-  docker cp "$(dc ps -q redis):/data/dump.rdb" "$dest/redis.rdb"
+  redis_id=$(dc ps -q redis)
+  [[ -n $redis_id && $redis_id != *$'\n'* ]] || die "expected one running Redis container in the current Compose project"
+  docker cp "$redis_id:/data/dump.rdb" "$dest/redis.rdb"
   ok "redis"
 fi
 if has neo4j; then

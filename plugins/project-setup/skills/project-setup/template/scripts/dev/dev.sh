@@ -16,27 +16,7 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
-# [ADAPT] the host apps — name → port → command. The ONE source for --help, --dry-run, and the run.
-# Emitted as strings so help/dry-run print EXACTLY what runs (ports resolve from .env once loaded).
-app_names() { printf '%s\n' api engine landing app docs dashboard single; }   # single = example-single-web-app-vite, the one-frontend shape
-frontends() { printf '%s\n' landing app docs dashboard; }      # the ones the dev proxy fronts
-# port_of VAR — the value from .env. Under --help the env may be absent: print the key name instead of dying.
-port_of()   { local v="$1"; if [[ -n "${!v:-}" ]]; then echo "${!v}"; elif [[ "${HELP_MODE:-0}" == 1 ]]; then echo "\$$v"; else die "$v is blank in .env"; fi; }
-app_port()  { case "$1" in
-  api)       port_of API_PORT ;;          engine)    port_of ENGINE_PORT ;;
-  landing)   port_of WEB_LANDING_PORT ;;  app)       port_of WEB_APP_PORT ;;
-  single)    port_of WEB_APP_PORT ;;
-  docs)      port_of WEB_DOCS_PORT ;;     dashboard) port_of DASHBOARD_PORT ;;
-  *)         die "unknown app '$1' — one of: $(app_names | join_sp)" ;; esac; }
-app_cmd()   { case "$1" in
-  api)       printf 'uv run --directory apps/example-api-python uvicorn app.main:app --reload --host %s --port %s' "${API_HOST:-localhost}" "$(app_port api)" ;;
-  engine)    printf 'cargo watch -C apps/example-engine-rust -x run' ;;
-  landing)   printf 'bun --cwd apps/example-multi-web-app/landing dev --port %s' "$(app_port landing)" ;;
-  app)       printf 'bun --cwd apps/example-multi-web-app/app dev --port %s' "$(app_port app)" ;;
-  single)    printf 'bun --cwd apps/example-single-web-app-vite dev --port %s' "$(app_port single)" ;;
-  docs)      printf 'bun --cwd apps/example-multi-web-app/docs dev --port %s' "$(app_port docs)" ;;
-  dashboard) printf 'bun --cwd apps/example-dashboard-nextjs dev --port %s' "$(app_port dashboard)" ;;
-  *)         die "unknown app '$1'" ;; esac; }
+source "$CTL_ROOT/scripts/dev/_apps.sh"
 
 usage() { print_help "dev" "Data core in docker, apps on the host with reload." \
   'dev [app…] [-d|--detach] [--proxy] [--no-core] [--nqa] [--dry-run] [-h]' \
@@ -90,6 +70,7 @@ n_fe=0; for a in "${apps[@]}"; do frontends | grep -qx "$a" && n_fe=$((n_fe+1));
 (( n_fe >= 2 )) && proxy=1
 
 require_env
+resolve_storage_dirs
 
 if (( dry )); then
   step "(dry-run — nothing started)"
@@ -99,7 +80,31 @@ if (( dry )); then
   exit 0
 fi
 
-require_tools mise
+for a in "${apps[@]}"; do
+  mapfile -t app_requirements < <(app_tools "$a")
+  require_tools "${app_requirements[@]}"
+done
+process_init
+proxy_owned=0
+proxy_before=""
+proxy_command() {
+  local limit="$1"; shift
+  timeout --kill-after=2 "$limit" bash -c '
+    source "$1/scripts/common/_lib.sh"; shift
+    cd "$CTL_ROOT"; require_env; dc_dev "$@"
+  ' bash "$CTL_ROOT" "$@"
+}
+dev_cleanup() {
+  process_cleanup
+  local container
+  if (( proxy_owned )); then
+    for container in $(proxy_command 5 ps -q 2>/dev/null); do
+      [[ " $proxy_before " == *" $container "* ]] && continue
+      timeout --kill-after=1 5 docker stop "$container" >/dev/null 2>&1 || true
+    done
+  fi
+}
+trap 'dev_cleanup' EXIT
 
 # data core — the same worker `ctl up` runs, with the dev line and no prompts. Skipped cleanly when
 # DATA_SVCS is empty (no-data-core projects) or --no-core.
@@ -108,39 +113,47 @@ if (( ${#DATA_SVCS[@]} && ! no_core )); then
   preset_args "$DEV_PRESET" >/dev/null || die "preset '$DEV_PRESET' missing from $PRESETS_FILE — it is what ctl dev starts. Add:  $DEV_PRESET: \"--config db +expose_db\""
   step "ensuring data core (ctl up preset $DEV_PRESET)…"
   bash "$CTL_ROOT/scripts/container/up.sh" preset "$DEV_PRESET" --nqa -y
-  wait_healthy "${DATA_SVCS[@]}" 60 || warn "health poll failed — continuing anyway."
-  # nothing in the db config depends on the schema one-shots, so `up -d` returns while they run:
-  # block until each has exited, and stop on a non-zero exit, because the apps would start on a stale schema
-  if (( ${#SCHEMA_SVCS[@]} )); then
-    step "schema step: waiting on ${SCHEMA_SVCS[*]}"
-    dc wait "${SCHEMA_SVCS[@]}" >/dev/null || die "schema step failed — see: ctl logs ${SCHEMA_SVCS[*]}"
-  fi
 fi
 
 # dev proxy — one origin across frontends. The foreground loop stops it on Ctrl-C; under --detach it
 # stays up with the apps, and `ctl ps` → k on its port stops the container.
 if (( proxy )); then
   require_docker
+  require_tools curl
   step "starting dev proxy ($DEV_FILE) → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env}"
-  dc_dev up -d
+  proxy_before=$(proxy_command 5 ps -q | tr '\n' ' ')
+  if [[ -z $proxy_before ]]; then
+    proxy_owned=1
+    proxy_command 60 up -d
+  fi
+  printf -v proxy_probe 'curl --fail --silent --max-time 1 %q' "http://localhost:${DEV_PROXY_PORT}/_ctl/ready"
+  process_ready 30 "$proxy_probe" || exit $?
 fi
 
+for a in "${apps[@]}"; do
+  probe="$(app_ready_cmd "$a")"
+  if [[ -n "$(port_pid "$(app_port "$a")")" ]]; then
+    process_ready "$(app_ready_timeout "$a")" "$probe" || exit $?
+    ok "$a already ready — skipping"
+    continue
+  fi
+  step "starting $a — log: $LOGS_DIR/dev/dev-$a.log"
+  process_start "dev-$a" "$CTL_ROOT" bash -c "$(app_cmd "$a")"
+  if (( ! detach )); then
+    process_start "follow-dev-$a-$$" "$CTL_ROOT" bash -c 'tail -n +1 -s .1 -f "$1" | while IFS= read -r line; do printf "[%s] %s\n" "$2" "$line" >&3; done' bash "$LOGS_DIR/dev/dev-$a.log" "$a" 3>&1
+  fi
+  process_ready "$(app_ready_timeout "$a")" "$probe" || exit $?
+  ok "$a ready — log: $LOGS_DIR/dev/dev-$a.log"
+done
+
 if (( detach )); then
-  for a in "${apps[@]}"; do
-    [[ -n "$(port_pid "$(app_port "$a")")" ]] && { warn "$a already listening on :$(app_port "$a") — skipping"; continue; }
-    detach_run "dev-$a" "$CTL_ROOT" bash -c "$(app_cmd "$a")"
-  done
-  say "attach: ${C_B}ctl ps${C_RESET} → ${C_B}a${C_RESET}   ·   stop: ${C_B}ctl ps${C_RESET} → ${C_B}k${C_RESET}  (or ctl ps kill <port> -y)"
+  process_check_all
+  process_release
+  proxy_owned=0
+  say "attach: ctl ps → a   ·   stop: ctl ps kill <port> -y"
   exit 0
 fi
 
-step "starting host processes — Ctrl-C stops all"
-prefix() { local t="$1" c="$2"; while IFS= read -r l; do printf '%s[%s]%s %s\n' "$c" "$t" "$C_RESET" "$l"; done; }
-colors=("$C_YEL" "$C_CYN" "$C_GRN" "$C_DIM")
-pids=(); i=0
-for a in "${apps[@]}"; do
-  ( bash -c "$(app_cmd "$a")" 2>&1 | prefix "$(printf '%-6s' "$a")" "${colors[i % 4]}" ) & pids+=($!); i=$((i+1))
-done
-stop_proxy() { (( proxy )) && dc_dev down >/dev/null 2>&1 || true; }
-trap 'kill "${pids[@]}" 2>/dev/null || true; wait || true; stop_proxy; exit 0' INT TERM
-wait
+(( ${#PROCESS_RECORDS[@]} )) || exit 0
+step "host processes ready — Ctrl-C stops this launch"
+process_monitor

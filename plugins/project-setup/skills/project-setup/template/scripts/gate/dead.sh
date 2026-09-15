@@ -53,14 +53,16 @@ fi
 
 # Python — deptry + unused imports/variables, per app
 while IFS= read -r d; do [[ -n $d ]] || continue
-  census "deptry $d" bash -c "cd '$d' && uv run deptry ."
-  census "ruff F401/F841 $d" bash -c "cd '$d' && uv run ruff check --select F401,F841 ."
+  require_tools uv
+  census "deptry $d" bash -c 'cd "$1" && uv run deptry .' bash "$d"
+  census "ruff F401/F841 $d" bash -c 'cd "$1" && uv run ruff check --select F401,F841 .' bash "$d"
 done < <(gate_apps pyproject.toml)
 
 # Rust — cargo udeps only where the app pins a nightly toolchain for it
 while IFS= read -r d; do [[ -n $d ]] || continue
   if grep -q 'udeps' "$d/rust-toolchain.toml" 2>/dev/null; then
-    census "cargo udeps $d" bash -c "cd '$d' && cargo udeps --workspace --all-targets"
+    require_tools cargo
+    census "cargo udeps $d" bash -c 'cd "$1" && cargo udeps --workspace --all-targets' bash "$d"
   else say "  ${C_DIM}$d: cargo udeps not pinned — dead_code is judged by clippy under lint${C_RESET}"; fi
 done < <(gate_apps Cargo.toml)
 

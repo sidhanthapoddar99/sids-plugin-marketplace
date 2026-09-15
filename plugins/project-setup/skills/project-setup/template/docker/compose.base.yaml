@@ -11,7 +11,7 @@
 #   restart            unless-stopped for every long-running service ("no" for the one-shot jobs)
 #   logging            stdout/stderr only, json-file with a cap; the app's level comes from config.yaml
 #   stop_grace_period  ≥ the app's graceful timeout, or every deploy SIGKILLs mid-drain
-# Per service: a healthcheck on /health with a start_period covering boot, depends_on with
+# Per service: a readiness healthcheck with a start_period covering boot, depends_on with
 # condition: service_healthy (started is not ready), and a memory limit so a leak restarts one
 # container instead of taking the host down. Engines carry their own in compose.db.yaml.
 #
@@ -51,7 +51,7 @@ services:
       ENCRYPTION_KEY_PYTHON: ${ENCRYPTION_KEY_PYTHON}
       # PUBLIC_URL arrives only with +public (compose.m.public.yaml); absent = relative URLs only
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8000${API_PREFIX}/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000${API_PREFIX}/ready || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -78,7 +78,7 @@ services:
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
       ENCRYPTION_KEY_RUST: ${ENCRYPTION_KEY_RUST}
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8080${ENGINE_PREFIX}/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080${ENGINE_PREFIX}/ready || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3

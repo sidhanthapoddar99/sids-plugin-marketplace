@@ -31,8 +31,12 @@ gate_reject_args() {
 # folder are included when they carry the manifest; node_modules and vendored trees are not.
 # A rung that finds nothing for an ecosystem the repo does not use simply has no work there.
 gate_apps() {
-  find "$CTL_ROOT/apps" -maxdepth 3 -name "$1" -not -path '*/node_modules/*' -not -path '*/target/*' \
-    -not -path '*/.venv/*' -printf '%h\n' 2>/dev/null | sed "s|^$CTL_ROOT/||" | sort
+  local manifest directory
+  while IFS= read -r -d '' manifest; do
+    [[ ${manifest##*/} == "$1" ]] || continue
+    directory=${manifest%/*}
+    printf '%s\n' "${directory#"$CTL_ROOT/"}"
+  done < <(discover_source_manifests)
 }
 
 # ── --quiet, ONE IMPLEMENTATION FOR EVERY RUNG ───────────────────────────────

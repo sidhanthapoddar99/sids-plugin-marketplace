@@ -21,7 +21,8 @@ is_help "${1:-}" && { usage; exit 0; }
 if [[ "${1:-}" == cli ]]; then
   require_tools go
   step "go build apps/example-tui-go"
-  ( cd apps/example-tui-go && mkdir -p bin && go build -o bin/ ./cmd/... ) && ok "apps/example-tui-go/bin/"
+  ( cd apps/example-tui-go && mkdir -p bin && go build -o bin/ ./cmd/... )
+  ok "apps/example-tui-go/bin/"
   exit 0
 fi
 require_env; require_docker

@@ -94,3 +94,23 @@ Template: `template/apps/database/README.md`, `template/apps/database/postgres/m
 ## The break-glass console
 
 `manager.py` at the backend root, run by `ctl manage`: operators and platform settings without the web auth flow. It imports the app's loader and `core/security.py`, never a router. Rules: `08_ctl.md`. Template: `template/apps/example-api-python/manager.py`.
+
+## Rust and WASM — opt-in
+
+Add this workflow only when a project actually compiles Rust to WebAssembly. The base template installs no WASM target, bindings generator or watcher. Record the target, selected toolchain, required packaging tools and versions, output directory and compatibility contract in that project's `AGENTS.md`, because a browser module and a WASI module need different targets and runtimes.
+
+### Setup and builds
+
+Run tool checks from the crate's working directory after activating the project's tools, so a nested `rust-toolchain.toml` or mise configuration is respected. For a rustup-managed project, identify the selected toolchain with `rustup show active-toolchain`. Verify its target using `rustup target list --installed --toolchain <selected-toolchain>`; install a missing target with `rustup target add --toolchain <selected-toolchain> <target>`. Checking the default toolchain proves nothing about a different toolchain used by the build. Check each packaging tool with its version command before compiling. [Rustup cross-compilation](https://rust-lang.github.io/rustup/cross-compilation.html).
+
+Give the project's CTL worker distinct development and production paths. Development may use `cargo build --profile dev --target <target>`; production explicitly uses `cargo build --release --target <target>` or an approved release-derived profile. Select the toolchain identically in setup and build. Do not let an inherited development-mode flag select production output. Validate the chosen profile and output location before packaging, because successful compilation of a debug artifact is not a release build. Cargo's normal build default is the development profile. [Cargo profiles](https://doc.rust-lang.org/cargo/reference/profiles.html).
+
+### Watching and activation
+
+- Watch only the crate's source, manifests, lockfile and declared build inputs. Exclude generated bindings, output directories, `target`, dependencies and virtual environments so a build cannot trigger itself.
+- Debounce bursts of edits and serialize builds. If an edit arrives during a build, schedule one further build after it finishes; never let two builds write the same candidate output.
+- Build into a candidate directory. Check the complete artifact set before replacing the last good output. A failed build reports failure while retaining the last good artifacts; it does not announce the new source as active.
+- Activate only compatible artifacts. Check the project's declared ABI or protocol version against its consumers. For an incompatible change, coordinate a restart or a project-specific transition; file replacement alone does not make existing browser sessions or server instances compatible.
+- Stop the watcher and its owned build process on interruption. Production consumes a completed release artifact and never starts the development watcher.
+
+If the project adds an executable watcher, test burst coalescing, edits during a build, build failure, interruption, retention of the last good artifact and rejection of a development profile on the production path. These tests belong to that opt-in workflow; they do not impose a WASM runtime or document-draining API on other projects.

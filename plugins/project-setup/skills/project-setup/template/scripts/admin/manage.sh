@@ -10,9 +10,13 @@
 # [ADAPT] ADMIN_DIR / ADMIN_SVC — the backend that owns operator identity. One per product.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
+source "$CTL_ROOT/scripts/common/_runtime.sh"
 
 ADMIN_DIR="apps/example-api-python"
 ADMIN_SVC="api"
+ADMIN_RUNTIME="auto"
+ADMIN_CONTAINER_CMD=(python manager.py)
+ADMIN_HOST_CMD=(uv run python manager.py)
 
 usage() { print_help "manage" "Break-glass operator + platform-settings console (wraps manager.py)." \
   'manage <ops|settings> <action> [args…] [-h]' \
@@ -43,11 +47,22 @@ stack is up (ctl up), else on the host as ${C_GRN}cd $ADMIN_DIR && uv run python
 { [[ $# -eq 0 ]] || { [[ $# -eq 1 ]] && is_help "$1"; }; } && { usage; exit 0; }
 
 require_env
+case "$ADMIN_RUNTIME" in
+  auto|container)
+    if [[ "$(docker_state)" == ok ]]; then
+      if runtime_service_running "$ADMIN_SVC"; then
+        say "${C_DIM}→ inside the $ADMIN_SVC container${C_RESET}"
+        runtime_exec "$ADMIN_SVC" "${ADMIN_CONTAINER_CMD[@]}" "$@"; exit $?
+      fi
+    elif [[ $ADMIN_RUNTIME == container ]]; then
+      require_docker
+    fi
+    [[ $ADMIN_RUNTIME != container ]] || die "$ADMIN_SVC is not running in the current Compose project"
+    ;;
+  host) ;;
+  *) die "unsupported administration runtime: $ADMIN_RUNTIME (auto | host | container)" ;;
+esac
 [[ -f "$ADMIN_DIR/manager.py" ]] || die "$ADMIN_DIR/manager.py missing — the console lives at the backend root"
-if [[ "$(docker_state)" == ok && "$(svc_health "$ADMIN_SVC")" =~ ^(healthy|running)$ ]]; then
-  say "${C_DIM}→ inside the $ADMIN_SVC container${C_RESET}"
-  dc exec "$ADMIN_SVC" python manager.py "$@"; exit $?
-fi
-require_tools uv
+require_tools "${ADMIN_HOST_CMD[0]}"
 say "${C_DIM}→ on the host (the $ADMIN_SVC container is not running)${C_RESET}"
-cd "$ADMIN_DIR" && exec uv run python manager.py "$@"
+cd "$ADMIN_DIR" && exec "${ADMIN_HOST_CMD[@]}" "$@"

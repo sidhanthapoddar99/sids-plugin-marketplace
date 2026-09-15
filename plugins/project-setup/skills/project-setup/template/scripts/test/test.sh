@@ -31,10 +31,10 @@ need_dir() { [[ -d $1 ]] || die "$1 not found — the target '$target' has no fo
 # warning, so keep the names. cargo test and go test pass an empty suite on their own.
 has_tests() { [[ -n $(find "$1" -path '*/node_modules' -prune -o -path '*/e2e' -prune -o -path '*/.venv' -prune -o \( -name 'test_*.py' -o -name '*_test.py' -o -name '*.test.*' -o -name '*.spec.*' \) -print -quit 2>/dev/null) ]]; }
 no_tests_yet() { warn "$1: no test file yet — nothing ran here"; empty+=("$1"); }
-run_py() { [[ -d $1 ]] || return 0; step "$1 (pytest)";      has_tests "$1" || { no_tests_yet "$1"; return 0; }; ran=$(( ran + 1 )); ( cd "$1" && uv run pytest ) || rc=1; }
-run_rs() { [[ -d $1 ]] || return 0; step "$1 (cargo test)";  ran=$(( ran + 1 )); ( cd "$1" && cargo test ) || rc=1; }
-run_js() { [[ -d $1 ]] || return 0; step "$1 (bun run test)"; has_tests "$1" || { no_tests_yet "$1"; return 0; }; ran=$(( ran + 1 )); ( cd "$1" && bun run test ) || rc=1; }
-run_go() { [[ -d $1 ]] || return 0; step "$1 (go test)";     ran=$(( ran + 1 )); ( cd "$1" && go test ./... ) || rc=1; }
+run_py() { [[ -d $1 ]] || return 0; step "$1 (pytest)";      has_tests "$1" || { no_tests_yet "$1"; return 0; }; ran=$(( ran + 1 )); ( require_tools uv && cd "$1" && uv run pytest ) || rc=1; }
+run_rs() { [[ -d $1 ]] || return 0; step "$1 (cargo test)";  ran=$(( ran + 1 )); ( require_tools cargo && cd "$1" && cargo test ) || rc=1; }
+run_js() { [[ -d $1 ]] || return 0; step "$1 (bun run test)"; has_tests "$1" || { no_tests_yet "$1"; return 0; }; ran=$(( ran + 1 )); ( require_tools bun && cd "$1" && bun run test ) || rc=1; }
+run_go() { [[ -d $1 ]] || return 0; step "$1 (go test)";     ran=$(( ran + 1 )); ( require_tools go && cd "$1" && go test ./... ) || rc=1; }
 # [ADAPT] APPS. `all` lists every app the repo can hold; delete the lines for apps the repo dropped.
 # The single-frontend shape is listed beside the group, because a repo keeps one of the two and
 # a default run that never lists the kept one is green for work it never did.

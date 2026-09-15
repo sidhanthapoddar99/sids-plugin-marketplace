@@ -29,3 +29,19 @@ A stage is a unit of the plan that ends in a working state. The tracker defines 
 - Findings are written down where they outlive the reply: the tracker when there is one, otherwise the wrap-up. A finding that lives only in chat is lost at the next session.
 - When a pass finds a class of bug a linter could catch, the fix is the lint rule in `10b_static-checks.md`, so the pass keeps its time for what needs judgement.
 - Mutation testing is not done. It costs hours and finds little that an adversarial review and a frozen-build pass do not.
+
+## Reviewing CTL lifecycle changes
+
+For a setup, storage, process or deployment change, compare the guide with executable behavior. Use `tests/ctl/README.md` for the tooling suite. Report separately what recording shims simulated, what real child processes exercised, and what ran against actual Cargo or Compose; a warm developer machine does not prove a fresh installation works.
+
+| Boundary | Evidence to inspect |
+|---|---|
+| Source discovery | A nested source package is included; dependency, build and vendor decoys are excluded; Cargo workspace members do not trigger duplicate fetches. |
+| Toolchain | A minimal-PATH fixture exposes installed tools only after activation; install, activation and dependency failures return nonzero; one app does not require unrelated runtimes. |
+| Credentials | Only explicitly listed local credentials are generated; supplied values and reruns are stable; required provider blanks fail; logs contain names rather than credential values. |
+| Storage | Relative, absolute and space-containing paths work from another current directory; setup, logs, ownership records and snapshots agree without creating unwanted default directories. |
+| Development | Probe failure, early exit, timeout and interruption clean the invocation's process groups and preserve unrelated processes; a pre-existing listener must prove readiness. |
+| Production | Build failure makes no activation call; selected dependencies are included; successful one-shots and failed long-running services are distinguished; readiness is bounded and failure does not imply rollback. |
+| Runtime dispatch | Current-project container selection, explicit host fallback, argument boundaries, TTY policy and nonzero exit propagation hold. |
+| Restore | Missing or invalid input causes no mutation; archive validation precedes every drop/create; active dependents are refused. Archive listing is not proof that the restore will succeed, and the guard is not a writer lock. |
+| Optional WASM | Only WASM projects install targets and packaging tools; target checks use the selected toolchain; release builds, serialized source watching and compatibility-aware activation follow `06_backend.md`. |

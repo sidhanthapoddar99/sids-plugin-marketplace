@@ -94,12 +94,11 @@ include:
 ## How they combine
 
 ```
-config  ──►  + modifier  ──►  + modifier  ──►  subset  ──►  plan  ──►  confirm  ──►  up
-base         expose_web                       api,web      compose      Run / Back     -d --build
-                                                           config       / Cancel
+config → modifiers → subset → validated plan → confirm → build dependencies → activate → readiness
+base     expose_web   api,web  compose config   Run/Back   no up on failure   --no-build   bounded
 ```
 
-The plan is the real `docker compose config` merge. It validates the combination before anything starts, prints one row per service with ports, network and volumes, and prints the exact `--nqa` line that reproduces the run. An invalid combination fails there, with compose's own message, and nothing has started.
+The plan is the real `docker compose config` merge. It validates the combination before anything starts, prints one row per service with ports, network and volumes, and prints the exact `--nqa` line that reproduces the run. The startup helper first builds with transitive dependencies, then activates without building and waits for the declared readiness contract. `SCHEMA_SVCS` identifies standalone schema one-shots; `service_completed_successfully` also identifies completion-gated dependencies. A zero exit from an ordinary long-running service is a failure. See `09_production.md` for the timeout and recovery boundaries. An invalid combination fails there, with compose's own message, and nothing has started.
 
 Bare `ctl up` in a terminal walks config, modifiers, services, plan, confirm. Anything given on the command line skips its prompt. No terminal and nothing given is the default: `base`, `+expose_web`, every service, and the run refuses without `-y`. `--nqa -y` is the scripted form.
 
@@ -116,7 +115,7 @@ Both run inside the compose network, so no engine port is published for them. Bo
 
 | Situation | What runs | Ports |
 |---|---|---|
-| `ctl dev` | `ctl up preset dev --nqa -y` (the reserved preset: `--config db +expose_db`), then `docker compose wait` on the one-shots (nothing in that config depends on them), then the apps on the host | engines on loopback, so host processes reach them |
+| `ctl dev` | `ctl up preset dev --nqa -y` (the reserved preset: `--config db +expose_db`), which checks engine readiness and one-shot completion within its startup budget, then the apps on the host | engines on loopback, so host processes reach them |
 | `ctl up` | `base`: engines, one-shots, apps | none on the engines; the edge through a modifier |
 | `ctl up --services api` | `postgres`, `redis`, `migrate`, `api` | as above |
 | `ctl db migrate` | `docker compose run --rm --no-deps --build migrate alembic upgrade head`, then `neo4j-init` when `neo4j` is in `DATA_SVCS` and `init.cypher` exists. Both against the `base` file, which includes the db file, so the same containers are found. | none; the engines must already be up |

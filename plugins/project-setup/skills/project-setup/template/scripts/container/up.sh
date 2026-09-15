@@ -32,6 +32,7 @@
 # real fault: not installed · not running · compose plugin missing.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_compose_start.sh"
 
 usage() { print_help "up" "Assemble + start the container stack (interactive, flag-driven, or from a preset)." \
   'up [--config <name>] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list] [-h]
@@ -158,6 +159,7 @@ if [[ $mode == preset ]]; then
 fi
 
 require_env
+resolve_storage_dirs
 require_docker
 
 if (( list )); then
@@ -248,6 +250,7 @@ render_plan() {
   printf '%sreproduce%s  (no prompts)\n' "$C_B" "$C_RESET"
   printf '  %sctl up %s --nqa%s\n'      "$C_DIM" "$repro" "$C_RESET"
   printf '  %sctl up %s --nqa -y%s\n'   "$C_DIM" "$repro" "$C_RESET"
+  printf '  %sbuild:%s   %s build --with-dependencies %s\n' "$C_DIM" "$C_RESET" "${compose_base[*]}" "${services[*]}"
   printf '  %sdocker:%s %s\n'    "$C_DIM" "$C_RESET" "${docker_cmd[*]}"
   hr
 }
@@ -346,8 +349,7 @@ while true; do
     done
   fi
 
-  detach=(-d); (( attach )) && detach=()
-  docker_cmd=("${compose_base[@]}" up "${detach[@]}" --build "${services[@]}")
+  docker_cmd=("${compose_base[@]}" up -d --no-build "${services[@]}")
 
   # the stack shape as one line: what a preset stores, and what the plan prints after `ctl up`
   shape="--config $config"; for m in "${modifiers[@]}"; do shape+=" +$m"; done
@@ -403,10 +405,6 @@ done
 # ── start ── compose orders the chain itself: engines healthy → schema one-shots done → apps.
 # With a subset, only the named services and their depends_on chain come up: an app brings the
 # engines and the schema step with it, an engine alone brings nothing.
-step "${docker_cmd[*]}"
-if (( attach )); then
-  say "${C_DIM}foreground — streaming logs; Ctrl-C stops the stack${C_RESET}"
-  exec "${docker_cmd[@]}"
-fi
-"${docker_cmd[@]}"
+compose_start "$attach" 120 "${services[@]}"
+(( attach )) && exit 0
 ok "stack up  (detached — 'ctl logs -f' to follow, 'ctl down' to stop)"

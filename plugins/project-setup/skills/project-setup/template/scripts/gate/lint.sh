@@ -36,10 +36,10 @@ need_dir()  { [[ -d $1 ]] || die "$1 not found — the target '$target' has no f
 # Each linter reads the app's own config, which the template ships with the complexity floor set
 # (ruff C901, clippy cognitive_complexity, oxlint max-depth/max-lines-per-function, gocyclo).
 # A tool run without its config reports only its defaults, and ruff's default has no complexity rule.
-lint_py()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (ruff)";         ( cd "$1" && uv run ruff check . ) || rc=1; }
-lint_rs()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (fmt + clippy)"; ( cd "$1" && cargo fmt --check && cargo clippy --all-targets -- -D warnings -D clippy::cognitive_complexity ) || rc=1; }
-lint_js()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (bun run lint)"; ( cd "$1" && bun run lint ) || rc=1; }
-lint_go()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (gofmt + golangci-lint)"; ( cd "$1" && test -z "$(gofmt -l .)" && golangci-lint run ./... ) || rc=1; }
+lint_py()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (ruff)";         ( require_tools uv && cd "$1" && uv run ruff check . ) || rc=1; }
+lint_rs()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (fmt + clippy)"; ( require_tools cargo && cd "$1" && cargo fmt --check && cargo clippy --all-targets -- -D warnings -D clippy::cognitive_complexity ) || rc=1; }
+lint_js()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (bun run lint)"; ( require_tools bun && cd "$1" && bun run lint ) || rc=1; }
+lint_go()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (gofmt + golangci-lint)"; ( require_tools go golangci-lint && cd "$1" && formatted=$(gofmt -l .) && test -z "$formatted" && golangci-lint run ./... ) || rc=1; }
 # [ADAPT] APPS. `all` lists every app the repo can hold, the single-frontend shape beside the group;
 # delete the lines for apps the repo dropped. A default run that never lists a kept app is green
 # for work it never did.

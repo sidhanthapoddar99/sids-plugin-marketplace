@@ -7,6 +7,12 @@ services:
   dev-proxy:
     image: nginx:<version>
     network_mode: host
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${DEV_PROXY_PORT}/_ctl/ready >/dev/null || exit 1"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 2s
     volumes:
       - ./apps/example-multi-web-app/nginx/nginx-dev.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ./apps/example-multi-web-app/nginx/nginx-dev-headers.conf:/etc/nginx/nginx-dev-headers.conf:ro

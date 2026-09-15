@@ -25,11 +25,11 @@ esac; done
 failed=() ran=0
 while IFS= read -r d; do [[ -n $d && -d "$d/tests/fuzz" ]] || continue
   step "fuzz $d (hypothesis)"; ran=$((ran+1))
-  ( cd "$d" && uv run pytest tests/fuzz ) || failed+=("$d")
+  ( require_tools uv && cd "$d" && uv run pytest tests/fuzz ) || failed+=("$d")
 done < <(gate_apps pyproject.toml)
 while IFS= read -r d; do [[ -n $d && -d "$d/tests/fuzz" ]] || continue
   step "fuzz $d (fast-check)"; ran=$((ran+1))
-  ( cd "$d" && bun test tests/fuzz ) || failed+=("$d")
+  ( require_tools bun && cd "$d" && bun test tests/fuzz ) || failed+=("$d")
 done < <(gate_apps package.json)
 while IFS= read -r d; do [[ -n $d && -d "$d/fuzz" ]] || continue
   require_tools cargo
