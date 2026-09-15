@@ -9,7 +9,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 ├── apps/                       # every runnable or shared unit, even when there is only one
 │   ├── <backend>/              # one folder per backend service        (api/, engine/)
 │   │   ├── app/                #   Python code lives here. No src/. Rust: crates/ by layer; Go: cmd/ + internal/
-│   │   ├── config.yaml         #   service config. Reads ${VAR} from the root env files
+│   │   ├── config.yaml         #   service config. Reads ${VAR} from the root .env file
 │   │   ├── Dockerfile
 │   │   ├── pyproject.toml
 │   │   └── README.md
@@ -40,9 +40,8 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 │   └── .gitignore              #   same two lines
 ├── docs/                       # only when docs live in this repo
 ├── memory/                     # add-on: agent working rules split out of AGENTS.md once they outgrow it
-├── .env.secrets.template       # every secret, blank. committed. ctl setup → .env.secrets (gitignored)
-├── .env.data.template          # every path. committed. → .env.data
-├── .env.proxy.template         # every host, port, prefix. committed. → .env.proxy
+├── .env.template               # grouped environment contract; blank secrets, committed
+├── .env                        # local values, gitignored; created by ctl setup
 ├── .mise.toml                  # tool version contract
 ├── .gitignore
 ├── .dockerignore
@@ -71,7 +70,7 @@ The root holds config, the brief, and folders. Never loose code. Before creating
 | `logs/` | Produced state: `dev/` logs, `run/` pids, `backups/`, `test_build/` | Everything `ctl` writes that is not data. Self-ignored. |
 | `docs/` | Docs site, built with `agent-ks` | Exists only when this repo is the docs home. One product has one docs home: never an in-repo `docs/` and a docs repo both. To scaffold, tell the user to run `/agent-ks-config`; it is interactive, never chain into it. |
 | `memory/` | Add-on. Agent working rules, one file per rule set | The rules start as a section of `AGENTS.md`. When that section outgrows one screen, they move here and `AGENTS.md` imports each file with `@memory/<file>.md`. |
-| `.env.secrets.template`, `.env.data.template`, `.env.proxy.template` | The env contract in three roles: secrets, paths, routing | Committed. `ctl setup` copies each to `.env.<role>`, gitignored. See `02_env.md`. |
+| `.env.template` / `.env` | One environment contract, grouped by kind with two-line hash headers | Commit the template; `ctl setup` creates the ignored `.env`. See `02_env.md`. |
 | `.mise.toml` | Tool version contract | Its `[env]` block puts the repo root on `PATH` (`_.path = ["{{config_root}}"]`), which is what makes `ctl` run bare. So `ctl` must stay the only executable at the root: a stray script there becomes a bare command. `mise trust` once per clone. |
 | `.gitignore` / `.dockerignore` | Ignore lists | Curated per ecosystem present. Tool config that spans the whole repo (`knip.json`) may sit at root; lint config for one ecosystem sits in the app (`biome.json`, `.oxlintrc.json`, `ruff` in `pyproject.toml`). |
 | `ctl` | The single entrypoint | Thin router into `scripts/`. |
@@ -110,7 +109,7 @@ Root `.gitignore`: curated for the ecosystems present, not a kitchen-sink templa
 
 | Section | Entries |
 |---|---|
-| Env files and local overrides | `.env`, `.env.*`, `!.env.*.template`. `config.local.yaml`. |
+| Env files and local overrides | `.env`, `.env.*`, `!/.env.template`. `config.local.yaml`. |
 | Runtime state | Not here. `data/.gitignore` and `logs/.gitignore` own it. |
 | Ecosystem artifacts | Only for ecosystems present: `__pycache__/`, `.venv/`, `node_modules/`, `dist/`, `target/`, tool caches. |
 | Logs and OS junk | `*.log`, `.DS_Store`. |

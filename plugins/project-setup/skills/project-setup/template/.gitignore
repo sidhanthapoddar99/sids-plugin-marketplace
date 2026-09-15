@@ -3,7 +3,7 @@
 # env files and local overrides. Only the *.template files are committed.
 .env
 .env.*
-!.env.*.template
+!/.env.template
 config.local.yaml
 
 # python

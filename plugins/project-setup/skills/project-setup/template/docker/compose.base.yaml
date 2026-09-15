@@ -1,9 +1,8 @@
 # Config `base`: the whole stack. This IS production, and the default config of `ctl up`.
 # No ports here — a config never publishes a port; modifiers (compose.m.<name>.yaml) add exposure.
 # No env_file. Each service lists exactly the variables it reads under `environment:`.
-#   ${VAR}   — operator decides; interpolated from the three env files ctl passes with --env-file:
-#              .env.secrets (passwords, keys, REGISTRY/TAG) · .env.proxy (ports, prefixes) ·
-#              .env.data (DATA_DIR, used by the included compose.db.yaml)
+#   ${VAR}   — operator decides; interpolated from the root .env file ctl passes with --env-file:
+#              grouped settings, including secrets, service addresses and data paths
 #   literal  — compose decides; service names on the compose network
 # So reading this file tells you everything a container gets. Nothing leaks in by accident.
 # Every app has image: (pull) and build: (ctl build).
@@ -101,12 +100,12 @@ services:
     build:
       context: ./apps                           # needs packages/ too
       dockerfile: example-multi-web-app/Dockerfile
-      args:                                     # build constants = the prefixes, from .env.proxy. No per-frontend .env.
+      args:                                     # build constants = the prefixes, from .env. No per-frontend .env.
         WEB_APP_PREFIX: ${WEB_APP_PREFIX}              #   app   — base of the SPA
         WEB_DOCS_PREFIX: ${WEB_DOCS_PREFIX}            #   docs  — base of the Astro site
         # landing owns / and needs no prefix arg
     environment:
-      # prefixes: the operator's routing table, from .env.proxy
+      # prefixes: the operator's routing table, from .env
       WEB_APP_PREFIX: ${WEB_APP_PREFIX}
       WEB_DOCS_PREFIX: ${WEB_DOCS_PREFIX}
       DASHBOARD_PREFIX: ${DASHBOARD_PREFIX}
@@ -140,7 +139,7 @@ services:
     image: ${REGISTRY}/dashboard:${TAG}
     build:
       context: ./apps/example-dashboard-nextjs
-      args:                                     # the prefix, from .env.proxy
+      args:                                     # the prefix, from .env
         DASHBOARD_PREFIX: ${DASHBOARD_PREFIX}
     environment:                                # server side only
       API_HOST: api

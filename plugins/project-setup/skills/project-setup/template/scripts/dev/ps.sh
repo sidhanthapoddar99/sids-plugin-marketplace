@@ -51,7 +51,7 @@ pid_cwd()  { readlink "/proc/$1/cwd" 2>/dev/null \
 
 gather() {
   ENTRIES=(); local seen=" " p pid cwd desc spec name id svc line hostport ctrport
-  # dev plane — the host dev ports (from .env.proxy, defaults match dev/dev.sh)
+  # dev plane — the host dev ports (from .env, defaults match dev/dev.sh)
   for spec in "api:${API_PORT:-8000}" "engine:${ENGINE_PORT:-8080}" "landing:${WEB_LANDING_PORT:-3001}" \
               "app:${WEB_APP_PORT:-5173}" "docs:${WEB_DOCS_PORT:-4321}" "dashboard:${DASHBOARD_PORT:-3000}" \
               "dev-proxy:${DEV_PROXY_PORT:-3080}"; do

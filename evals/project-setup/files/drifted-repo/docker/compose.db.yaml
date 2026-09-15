@@ -1,5 +1,5 @@
 # Data engines only. Runs alone under `ctl dev`; included by compose.base.yaml under `ctl up`.
-# Passwords come from .env.secrets, ${DATA_DIR} from .env.data. Ports bind to loopback only, so prod never exposes them to the network.
+# Passwords come from .env, ${DATA_DIR} from .env. Ports bind to loopback only, so prod never exposes them to the network.
 # State: bind mounts under ${DATA_DIR}. Committed config: apps/database/.
 # Every engine has a healthcheck: apps depend on it with condition: service_healthy. Started is not ready.
 # Engines get deliberately higher memory limits than apps; never starve the database.
@@ -51,4 +51,3 @@ services:
     deploy:
       resources:
         limits: { memory: 512m }
-

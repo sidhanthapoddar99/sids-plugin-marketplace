@@ -7,8 +7,8 @@ The shape for a product with ONE static frontend. Compare `example-multi-web-app
   This image is the `web` service and the edge — the same role `example-multi-web-app/Dockerfile` plays.
 - Owns `vite.config.ts` with the dev proxy, so `ctl dev` needs no nginx dev proxy: one frontend, one origin already.
 
-Run from here: `ctl dev single` (exports `.env.secrets`, `.env.data`, `.env.proxy`, then `bun dev`).
-No `.env` here. It owns `/`, so no prefix key; ports and proxy targets come from `.env.proxy`. Test: `bun test`, e2e in `e2e/`.
+Run from here: `ctl dev single` (exports `.env`, then `bun dev`).
+No `.env` here. It owns `/`, so no prefix key; ports and proxy targets come from `.env`. Test: `bun test`, e2e in `e2e/`.
 
 ## Using this shape instead of the group
 
@@ -29,4 +29,3 @@ No `.env` here. It owns `/`, so no prefix key; ports and proxy targets come from
       NGINX_ENVSUBST_FILTER: ^(API_PREFIX|ENGINE_PREFIX|API_UPSTREAM|ENGINE_UPSTREAM)$
     depends_on: [api, engine]
 ```
-

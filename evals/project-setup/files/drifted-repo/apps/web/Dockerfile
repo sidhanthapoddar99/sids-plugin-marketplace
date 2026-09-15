@@ -1,6 +1,6 @@
 # The web image for a single-frontend product: build the bundle, serve it with nginx, proxy the backends.
 # Build context is ./apps (needs packages/): compose sets `context: ./apps, dockerfile: web/Dockerfile`.
-# The only build arg is the prefix, interpolated by compose from .env.proxy. No secret is ever a build arg.
+# The only build arg is the prefix, interpolated by compose from .env. No secret is ever a build arg.
 
 # ---- build: Vite → dist/ ----
 FROM oven/bun:3.13 AS build

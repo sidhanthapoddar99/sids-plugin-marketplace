@@ -8,7 +8,7 @@ The language is chosen in `04_stack.md`; the env contract is `02_env.md`; routin
 |---|---|
 | One config loader | `config.py` / `config.rs` / `config.go`. Nothing else reads the environment or a file. `02_env.md`. |
 | `/health` and `/ready` | Two endpoints, two actions: `09_production.md` § Health. |
-| Its own prefix | `<PIECE>_HOST/_PORT/_PREFIX` in `.env.proxy`; it binds `_PORT` and mounts `_PREFIX`. |
+| Its own prefix | `<PIECE>_HOST/_PORT/_PREFIX` in `.env`; it binds `_PORT` and mounts `_PREFIX`. |
 | Rate limiting at the router | Keyed on the user or API key, never the raw IP for authenticated routes. `07_security.md`. |
 | `X-Forwarded-*` trusted from the edge only | Never CORS middleware for our own frontend. |
 | Its own image | Non-root user, multi-stage, pinned base, no dev deps in the runtime stage, no `COPY .env*`. |

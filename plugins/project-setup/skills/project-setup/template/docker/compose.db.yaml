@@ -4,7 +4,7 @@
 # borrows this file — and gets the schema ordering with them.
 # No ports here: a config never publishes a port. +expose_db (compose.m.expose_db.yaml) binds each engine
 # to loopback for host processes; inside compose everything reaches the engines by service name.
-# Passwords come from .env.secrets, ${DATA_DIR} from .env.data.
+# Passwords come from .env, ${DATA_DIR} from .env.
 # State: bind mounts under ${DATA_DIR}. Committed config: apps/database/.
 # Every engine has a healthcheck: apps depend on it with condition: service_healthy. Started is not ready.
 # Engines get deliberately higher memory limits than apps; never starve the database.

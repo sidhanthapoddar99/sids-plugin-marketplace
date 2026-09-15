@@ -1,6 +1,7 @@
 ---
 name: project-setup
-description: Use this skill for how a repo is shaped: bootstrapping a new project, auditing or restructuring one, or a "where does this go" question mid-task in a repo built this way. It owns the tree (apps/, apps/packages/, data/, logs/), the three root env files and config.yaml, single-origin routing (Vite proxy, nginx edge), docker/ compose configs plus modifiers, service subsets and presets, the ctl entrypoint (dev, up, up preset, db migrate, manage, gate), stack choice (FastAPI / Axum / Go; Vite / Next.js / Astro; Postgres / Redis / SQLite / Neo4j), the frontend folder shape (a routing folder, layout/, modules/, components/, lib/, for Vite with TanStack Router and for Next.js), tokens.css and a typography allowlist that beats frontend-design once tokens exist, where migrations live, the security floor (captcha, rate limits), the gate ladder (a four-rung floor, the rest opt-in), the review passes, the add-ons (git hooks, memory/, e2e), and what AGENTS.md records. Trigger on any of those names, or on a second frontend or backend, even mid-task. Skip work inside one file, including a migration's SQL; docs content is agent-ks; instruction wording is instruction-writing; Kubernetes and cloud deploy targets are out of scope.
+description: >-
+  Use this skill to bootstrap, audit or restructure a repo, or answer where code and configuration belong mid-task. It owns apps/, apps/packages/, data/, logs/, one ignored root .env and committed .env.template grouped by kind, backend config.yaml, single-origin routing, Docker Compose configs and modifiers, services and presets, and ctl (dev, up, db migrate, manage, gate). Covers stack choices, frontend and backend folder shapes, tokens.css and typography rules, schema ownership, security, production, the four-rung gate floor, optional add-ons and the AGENTS.md contract. Use when adding a frontend or backend or changing these boundaries. Skip implementation inside one file, migration SQL, docs content (agent-ks), instruction wording (instruction-writing), Kubernetes and cloud deploy targets.
 ---
 
 # project-setup
@@ -36,7 +37,7 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 | Where tests live; the dynamic rungs | `references/10c_dynamic-tests.md` |
 | What holds everywhere; the audit order | `references/11_conventions.md` |
 
-`template/` is the floor of the tree. `ctl`, `scripts/`, `docker/`, the env templates and `AGENTS.md` are real and run. `additional-template/` holds the add-ons at the same relative paths; they are real too, and a repo gets them one at a time on the user's word. The app folders under `apps/` are shape only: each file's comment states what it holds, and the code is written per project. A page may name a file the template does not carry, such as `gunicorn.conf.py`, `lib/theme.ts` or `alembic_helpers.py`. Those are written per project too. `template/ctl --help` is the verb list.
+`template/` is the floor of the tree. `ctl`, `scripts/`, `docker/`, the env template and `AGENTS.md` are real and run. `additional-template/` holds the add-ons at the same relative paths; they are real too, and a repo gets them one at a time on the user's word. The app folders under `apps/` are shape only: each file's comment states what it holds, and the code is written per project. A page may name a file the template does not carry, such as `gunicorn.conf.py`, `lib/theme.ts` or `alembic_helpers.py`. Those are written per project too. `template/ctl --help` is the verb list.
 
 For changes to ctl’s environment loader, run the [ctl tooling tests](tests/ctl/README.md).
 
@@ -47,7 +48,7 @@ The fallback for a question no page covers. Each line points at the page that ow
 1. **One tree for every repo** (`01_layout.md`). A repo with one app and one with five look the same from the root, so nothing is re-decided when the second app arrives.
 2. **One entrypoint, `ctl`** (`08_ctl.md`). A worker is a script under `scripts/` that one verb runs; a rung is one step of `ctl gate`. A rung calls the same worker the dev verb calls, so the check and the loop cannot drift.
 3. **One origin** (`03_routing.md`). The browser sees one host and prefixes separate the pieces, so there is no CORS and no URL in a bundle.
-4. **One value, one file, chosen by what it is** (`02_env.md`). Secret, path, route or backend default each have one file, so a key is found by its kind and `ctl check` can test the file by its key names.
+4. **One environment contract, grouped by kind** (`02_env.md`). Root `.env` settings use the grouped `.env.template` contract; backend defaults live in `config.yaml`. See the page for loading and exposure boundaries.
 5. **Base is prod** (`08a_ctl_docker.md`, `09_production.md`). A config (`compose.<name>.yaml`, `base` is the whole stack) has no ports and modifiers add exposure, because compose lists only union, so exposure can only be added, never removed.
 6. **Promote when shared, never before** (`11_conventions.md`). A thing moves up a scope at its second consumer, because a premature package is a second manifest to keep green for nothing.
 7. **Convergence is the design** (`05_frontend.md`). Tokens and a typography allowlist in `AGENTS.md` override `frontend-design` once they exist, because a bold new look on every page is drift, not design.
@@ -104,7 +105,7 @@ Ask each of these rather than infer it, because each answer changes the tree and
 1. Read `AGENTS.md`. A recorded choice or a recorded deferral is not a finding. An optional rung or add-on the repo never installed is not a finding either; an installed one that drifted is.
 2. Run `./ctl check` from the repo root, on its own line and not through a pipe, because a pipe returns the last command's exit code and not the check's. Put its exit code and every red line in the report. It proves the mechanical rules and nothing else does. A report that says what the check "would" find is not an audit.
 3. Walk the layers in the order `11_conventions.md` § Audit order gives, lowest first. Report every layer. Order the table by layer, so the reader fixes the lowest first. Do not stop at the first failing layer, because a finding hidden behind a lower one sends the reader back for a second audit.
-4. Never read a filled `.env.*` file, because it holds live secrets. Read the `.env.*.template` files.
+4. Read `.env.template` when auditing. Do not read a filled `.env` or other local env file, because it may hold live secrets.
 5. Report a table: file, rule broken, fix. The first row is the `ctl check` result.
 
 ## A single question mid-task

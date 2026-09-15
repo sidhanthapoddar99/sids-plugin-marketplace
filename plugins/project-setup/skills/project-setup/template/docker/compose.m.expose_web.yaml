@@ -1,4 +1,4 @@
-# Modifier. Publishes the edge (web) only, on the _PORT of the piece that owns / (.env.proxy), so
+# Modifier. Publishes the edge (web) only, on the _PORT of the piece that owns / (.env), so
 # http://localhost:<that port> is the product under `ctl up` as it is under `ctl dev`. The default
 # for `ctl up`. Local docker only: a public deployment uses +public (80/443, PUBLIC_URL).
 # The image listens on 8080 as the unprivileged nginx user.

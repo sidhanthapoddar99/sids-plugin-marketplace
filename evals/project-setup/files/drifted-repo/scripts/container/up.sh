@@ -43,7 +43,7 @@ exposure or re-point services; base itself publishes no ports. Migrations run on
 app service starts — never on app boot." \
 "Example:  ctl up                                # interactive
           ctl up +expose_web -y                 # prod default, no prompts
-          ctl up +expose +env_override          # debug ports, services re-pointed from .env.proxy / .env.secrets
+          ctl up +expose +env_override          # debug ports, services re-pointed from .env
           ctl up --services=api,postgres -y     # one backend and its engine only
           ctl up --attach                       # foreground; watch logs, Ctrl-C to stop"; }
 

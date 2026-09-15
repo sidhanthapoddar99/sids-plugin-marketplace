@@ -13,12 +13,9 @@ Rules
   versions  no '<version>' placeholder left in .mise.toml or any app manifest (pyproject.toml,
             package.json, Cargo.toml, rust-toolchain.toml, go.mod) — a placeholder breaks every
             toolchain install, so it is resolved with the user before anything runs
-  env       every \${VAR} in apps/*/config.yaml is a key in one of .env.{secrets,data,proxy}.template ·
-            a key with a _PASSWORD / _KEY / _SECRET segment appears only in .env.secrets.template ·
-            every .env.proxy.template key ends _HOST / _PORT / _PREFIX / _URL (or is PUBLIC_URL,
-            HTTP_PORT, HTTPS_PORT, DEV_PROXY_PORT, COMPOSE_PROJECT_NAME) ·
-            every .env.data.template key ends _DIR ·
-            no .env.* tracked by git except *.template ·
+  env       every \${VAR} in apps/*/config.yaml is a key in .env.template ·
+            .env.template has unique keys and blank secret values ·
+            no root .env or .env.* tracked by git except .env.template ·
             no secret literal in config.yaml (every key/password/secret value is \${VAR}) ·
             no config.local.yaml tracked by git
   layout    no package.json / bun.lock / pnpm-workspace.yaml at the root or directly in apps/ ·
@@ -62,34 +59,29 @@ for cfg in apps/*/config.yaml; do
 done
 git ls-files --error-unmatch '*config.local.yaml' >/dev/null 2>&1 && fail "config.local.yaml is tracked by git"
 # tracked env files: only the templates may be in git
-while IFS= read -r f; do [[ $f == *.template ]] || fail "$f is tracked by git — only .env.*.template may be committed"
+while IFS= read -r f; do [[ $f == .env.template ]] || fail "$f is tracked by git — only .env.template may be committed"
 done < <(git ls-files '.env' '.env.*' 2>/dev/null)
-# template roles
+# template contract
 known=()
 for f in "${ENV_FILES[@]}"; do
   [[ -f $f.template ]] || { fail "$f.template missing"; continue; }
   mapfile -t -O "${#known[@]}" known < <(env_keys "$f.template")
 done
-for f in .env.data.template .env.proxy.template; do
-  [[ -f $f ]] || continue
-  while IFS= read -r k; do [[ $k =~ _(PASSWORD|KEY|SECRET)(_|$) ]] && fail "$f holds $k — secrets live only in .env.secrets.template"; done < <(env_keys "$f")
-done
-[[ -f .env.proxy.template ]] && while IFS= read -r k; do
-  [[ $k =~ _(HOST|PORT|PREFIX|URL)$ || $k =~ ^(PUBLIC_URL|HTTP_PORT|HTTPS_PORT|DEV_PROXY_PORT|COMPOSE_PROJECT_NAME)$ ]] \
-    || fail ".env.proxy.template: $k is not a routing key (_HOST/_PORT/_PREFIX/_URL)"
-done < <(env_keys .env.proxy.template)
-[[ -f .env.data.template ]] && while IFS= read -r k; do
-  [[ $k =~ _DIR$ ]] || fail ".env.data.template: $k is not a path key (_DIR)"
-done < <(env_keys .env.data.template)
-if (( ${#known[@]} )); then
-  for cfg in apps/*/config.yaml; do
-    [[ -f $cfg ]] || continue
-    while IFS= read -r v; do
-      printf '%s\n' "${known[@]}" | grep -qx "$v" || fail "$cfg reads \${$v} — not in any .env.*.template"
-    done < <(sed 's/#.*//' "$cfg" | grep -oE '\$\{[A-Z_][A-Z0-9_]*\}' | tr -d '${}' | sort -u)
-  done
-  pass "config.yaml \${VAR} keys ⊆ the env templates · template roles hold"
+while IFS= read -r key; do fail ".env.template: duplicate key $key"; done < <(printf '%s\n' "${known[@]}" | sort | uniq -d)
+if [[ -f .env.template ]]; then
+  while IFS='=' read -r key value || [[ -n $key ]]; do
+    [[ $key =~ ^[A-Za-z_][A-Za-z0-9_]*$ && $key =~ _(PASSWORD|KEY|SECRET)(_|$) ]] || continue
+    value="${value%$'\r'}"; value="${value%%[[:space:]]#*}"; value="${value%"${value##*[![:space:]]}"}"
+    [[ -z $value ]] || fail ".env.template: $key must be blank"
+  done < .env.template
 fi
+for cfg in apps/*/config.yaml; do
+  [[ -f $cfg ]] || continue
+  while IFS= read -r v; do
+    printf '%s\n' "${known[@]}" | grep -qx "$v" || fail "$cfg reads \${$v} — not in .env.template"
+  done < <(sed 's/#.*//' "$cfg" | grep -oE '\$\{[A-Z_][A-Z0-9_]*\}' | tr -d '${}' | sort -u)
+done
+pass "config.yaml \${VAR} keys ⊆ .env.template · unique keys and blank secrets"
 
 step "layout"
 # The root-manifest exception: an open-source package repo whose root IS the published artifact
@@ -131,8 +123,14 @@ done
 pass "base has no ports · no ../ paths"
 
 have_env=1; for f in "${ENV_FILES[@]}"; do [[ -f $f ]] || have_env=0; done
+if (( have_env )); then
+  step "composed values"
+  load_env_files
+  if expand_env_refs; then pass "every reference in .env resolves"
+  else fail ".env holds an unresolved reference"; fi
+fi
 if [[ "$(docker_state)" == ok ]] && (( have_env )); then
-  step "compose config (the three env files supply \${VAR})"
+  step "compose config (the root .env file supplies \${VAR})"
   combos=("$DB_FILE" "$DEV_FILE" "$BASE")
   while IFS= read -r m; do [[ -n $m ]] && combos+=("$BASE $DOCKER_DIR/compose.m.$m.yaml"); done < <(list_modifiers)
   for c in "${combos[@]}"; do

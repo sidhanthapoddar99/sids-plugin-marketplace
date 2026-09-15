@@ -1,8 +1,7 @@
 # The stack. This IS production. No ports here — modifiers add exposure.
 # No env_file. Each service lists exactly the variables it reads under `environment:`.
-#   ${VAR}   — operator decides; interpolated from the three env files ctl passes with --env-file:
-#              .env.secrets (passwords, keys, REGISTRY/TAG) · .env.proxy (ports, prefixes, PUBLIC_URL) ·
-#              .env.data (DATA_DIR, used by the included compose.db.yaml)
+#   ${VAR}   — operator decides; interpolated from the root .env file ctl passes with --env-file:
+#              grouped settings, including secrets, service addresses and data paths
 #   literal  — compose decides; service names on the compose network
 # So reading this file tells you everything a container gets. Nothing leaks in by accident.
 # Every app has image: (pull) and build: (ctl build).
@@ -70,7 +69,7 @@ services:
       context: ./apps                           # needs packages/ too
       dockerfile: web/Dockerfile
     environment:
-      # prefixes: the operator's routing table, from .env.proxy
+      # prefixes: the operator's routing table, from .env
       API_PREFIX: ${API_PREFIX}
       # upstreams: compose decides the service names, so compose states them. +env_override swaps these.
       API_UPSTREAM: api:8000
@@ -88,4 +87,3 @@ services:
     depends_on:
       api: { condition: service_healthy }
     # ports come from compose.m.expose_web.yaml (the image listens on 8080, unprivileged)
-

@@ -2,7 +2,7 @@
 # which runs nginx with network_mode: host, so every upstream is a dev server on 127.0.0.1.
 # Same locations as prod.conf.template; every one is proxied (nothing is static in dev) and every one
 # carries the websocket upgrade so Vite / Next HMR works through the proxy.
-# All ${VAR} come from .env.proxy via compose.dev.yaml `environment:`.
+# All ${VAR} come from .env via compose.dev.yaml `environment:`.
 
 map $http_upgrade $connection_upgrade { default upgrade; '' close; }
 

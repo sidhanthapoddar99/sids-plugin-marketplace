@@ -12,7 +12,7 @@ usage() { print_help "status" "Config doctor: env, toolchain, docker, deps, data
 "Read-only. Fix installs with \`ctl setup\`; fix rule breaches with \`ctl check\`."; }
 
 is_help "${1:-}" && { usage; exit 0; }
-load_env_soft         # soft, non-clobbering load of the three env files — status must never die
+load_env_soft         # soft, non-clobbering load of the root .env file — status must never die
 rc=0
 LOG_INDENT="  "       # nest every section's lines under its ▸ header
 

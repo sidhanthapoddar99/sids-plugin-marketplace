@@ -30,14 +30,14 @@ The compose healthcheck reads `/health`. A host proxy or load balancer reads `/r
 For central Traefik, Cloudflare Tunnel, ngrok, or direct Nginx HTTP with optional TLS, see [HTTP and TLS deployment options](12_http-and-tls.md). Public port mappings alone do not enable TLS; choose the exposure and certificate setup for your deployment.
 
 1. `ctl build` with an immutable `TAG` (a git sha or a semver) on images named `<product>/<app>` (`acme/api`). Never redeploy a moving `latest`; a tag is never repurposed.
-2. Uncomment `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` in `.env.proxy` (`02_env.md` rule 10), then `ctl up +public -y`, or `ctl up preset public -y`. Compose brings the engines up, runs the schema one-shots once, then the apps, from `depends_on` alone. `ctl up` without a modifier is local docker: the edge on the `/` owner's port, no public origin.
+2. Uncomment `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` in `.env` (`02_env.md` rule 10), then `ctl up +public -y`, or `ctl up preset public -y`. Compose brings the engines up, runs the schema one-shots once, then the apps, from `depends_on` alone. `ctl up` without a modifier is local docker: the edge on the `/` owner's port, no public origin.
 3. Migrations are never inside an app's boot, because a boot-time migration runs once per replica and once per restart, and N replicas racing `upgrade head` corrupt the version table. The step is a one-shot compose service (`migrate` in `compose.db.yaml`, `restart: "no"`) that every app `depends_on` with `condition: service_completed_successfully`, so it runs once per `up` whatever the replica count, inside the compose network, with no engine port published. `ctl db migrate` re-runs it by name. This step is the home of the rule; `06_backend.md` § Migrations points here.
 4. Rollback is the previous `TAG`, or a `ctl build save` snapshot. A rollback path exists before the first deploy, not after the first incident.
 
 ## The host
 
 - `data/` and `logs/` exist on the host with the right owner before the first `up`; `ctl setup` creates them. The container's UID must own the bind-mounted directory. On SELinux hosts the mount takes `:Z`. Never `chmod 777`.
-- `.env.secrets`, `.env.data`, `.env.proxy`: `chmod 600`, owned by the deploy user. Never in the image; `COPY .env*` stays in image history forever.
+- `.env`: `chmod 600`, owned by the deploy user. Never in the image; `COPY .env*` stays in image history forever.
 - TLS terminates at a host proxy in front of the stack (outside this repo); `web` listens on 8080 as a non-root user. `client_max_body_size` and proxy timeouts in `nginx.conf.template`, aligned with the app's `--timeout`. Security headers and compression at the edge (`07_security.md`).
 - Bind mounts, not named volumes: state is visible and backup-friendly. `${DATA_DIR}` moves it to a fast disk or a tmpfs in CI without touching a compose file.
 

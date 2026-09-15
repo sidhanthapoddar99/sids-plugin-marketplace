@@ -159,7 +159,7 @@ def test_a_shape_flag_beside_a_preset_name_is_refused(tmp_path: Path) -> None:
 
 def test_ctl_dev_names_a_missing_dev_preset(tmp_path: Path) -> None:
     scaffold(tmp_path, {"presets.yaml": 'local: "--config base"\n'})
-    for name in (".env.secrets", ".env.data", ".env.proxy"):
+    for name in (".env",):
         (tmp_path / name).write_text("API_PORT=8000\nAPI_HOST=localhost\n")
     result = run_worker(tmp_path, DEV, "api", "--dry-run")
     assert result.returncode == 0, result.stderr

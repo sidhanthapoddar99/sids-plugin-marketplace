@@ -1,8 +1,8 @@
 # The edge for a single-frontend product. Lives next to the app because the app owns the image.
 # Rendered by the nginx image's envsubst at start. Variables come from compose.base.yaml `environment:`:
-#   prefixes   ${API_PREFIX}        → ${VAR} from .env.proxy
+#   prefixes   ${API_PREFIX}        → ${VAR} from .env
 #   upstreams  ${API_UPSTREAM}    → literals in compose (api:8000);
-#              `ctl up +env_override` swaps them for ${API_HOST}:${API_PORT} from .env.proxy
+#              `ctl up +env_override` swaps them for ${API_HOST}:${API_PORT} from .env
 # The location blocks mirror the dev proxy in vite.config.ts, one for one.
 # Listens on 8080: the image runs as the unprivileged nginx user. TLS terminates at the host reverse proxy.
 

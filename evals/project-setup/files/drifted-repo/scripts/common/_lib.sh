@@ -14,16 +14,13 @@
 #   docker/compose.base.yaml   the whole stack; it `include:`s the db file; NO ports
 #   docker/compose.m.<name>.yaml   modifiers, discovered by filename       → `ctl up +<name>`
 # Every compose call passes --project-directory "$CTL_ROOT", so every relative path in the
-# env files and in every compose file resolves from the repo root (compose files say ./apps/…,
+# root .env and in every compose file resolves from the repo root (compose files say ./apps/…,
 # ./data, never ../).
 #
-# ENV MODEL — three files at the root, each with one role and a committed .template:
-#   .env.secrets   passwords, keys, credentials, DB connection values, REGISTRY/TAG
-#   .env.data      DATA_DIR / LOGS_DIR / BACKUP_DIR — every path, root-relative
-#   .env.proxy     <PIECE>_HOST/_PORT/_PREFIX for every piece, ENGINE_URL, PUBLIC_URL, ports
-# Compose reads none of them by itself: every dc call passes --env-file for each (ENV_FILES,
-# in that order; compose ≥ 2.24). `ctl setup` copies template → file. Frontends have no .env:
-# their build constants are compose build args interpolated from .env.proxy.
+# ENV MODEL — one ignored root .env and one committed .env.template, grouped by kind.
+# ctl loads skip-if-set, then hands the environment to child processes. A frontend dev server
+# inherits it too; browser constants must be selected explicitly. Compose receives --env-file
+# for interpolation, while each service declares its runtime keys and public build args.
 #
 # The [ADAPT] knobs, all inline below:
 #   • DATA_SVCS           — the data core; empty = no data core (dev/up/status/setup skip it)
@@ -43,19 +40,19 @@ BASE="$DOCKER_DIR/compose.base.yaml"
 DB_FILE="$DOCKER_DIR/compose.db.yaml"
 DEV_FILE="$DOCKER_DIR/compose.dev.yaml"   # the same-origin dev proxy (nginx on the host network)
 DEFAULT_MODIFIERS=(expose_web)            # what `ctl up` applies when no +modifier is given
-ENV_FILES=(.env.secrets .env.data .env.proxy)   # the three env files, in load order. Templates: <name>.template
+ENV_FILES=(.env)   # the root environment contract; template: .env.template
 
 # [ADAPT] the data core. Empty = no data core — every consumer degrades gracefully.
 read -r -a DATA_SVCS <<< "${DATA_SVCS:-postgres redis}" || true
 
-# [ADAPT] env keys a modifier maps with ${VAR} (across .env.secrets + .env.proxy). `ctl up` refuses
+# [ADAPT] env keys a modifier maps with ${VAR} (from .env). `ctl up` refuses
 # the modifier when any is blank —
 # an unset ${VAR} in compose becomes an empty string and the service breaks silently.
 declare -A MODIFIER_REQUIRES=(
   [env_override]="DATABASE_URL REDIS_URL API_HOST API_PORT"
 )
 
-# Project name: let docker compose decide it from .env.proxy's COMPOSE_PROJECT_NAME (or the repo
+# Project name: let docker compose decide it from .env's COMPOSE_PROJECT_NAME (or the repo
 # directory). Never force a default here — it would override the compose `name:` and make
 # every `dc ps` / health lookup miss.
 [[ -n "${COMPOSE_PROJECT_NAME:-}" ]] && export COMPOSE_PROJECT_NAME || true
@@ -108,7 +105,7 @@ Any extra args forward straight to \`docker compose $1\`." \
 }
 
 # ── docker compose ──
-# Every call is anchored at the repo root and gets the three env files (compose reads no .env on
+# Every call is anchored at the repo root and gets the root .env file (compose reads no .env on
 # its own). `dc` = the whole stack (base), `dc_db` = engines only, `dc_dev` = the dev proxy.
 # env_file_args — one --env-file per ENV_FILES entry that exists; a missing file is simply skipped
 # here (require_env is the guard that dies). Compose precedence: shell env > --env-file, so an
@@ -131,17 +128,17 @@ compose_files() { printf '%s\n' "$BASE"; local m; for m in "$@"; do printf '%s/c
 check_modifier_env() {
   local m="$1" k blank=()
   for k in ${MODIFIER_REQUIRES[$m]:-}; do [[ -n "${!k:-}" ]] || blank+=("$k"); done
-  (( ${#blank[@]} )) && die "modifier '+$m' needs these keys set in .env.secrets / .env.proxy: ${blank[*]}"
+  (( ${#blank[@]} )) && die "modifier '+$m' needs these keys set in .env: ${blank[*]}"
   return 0
 }
 
 # ── guards ──
 # load_env_file [file] — export KEY=value pairs from an env file WITHOUT clobbering variables
-# already set in the real environment (skip-if-set). `set -a; source .env.secrets` would override
+# already set in the real environment (skip-if-set). `set -a; source .env` would override
 # inline runs (`API_PORT=8085 ctl dev`), CI-injected secrets, and secret-store injection.
 # Plain KEY=value lines only — no multi-line values, no command substitution; quotes are kept
-# literally, so write values unquoted. Composed values (${A}:${B}) stay literal here; compose
-# expands them itself, and the config loaders expand them in the apps.
+# literally, so write values unquoted. A composed value (BACKUP_DIR=${LOGS_DIR}/backups) is
+# exported as written; expand_env_refs resolves it once the root .env file is loaded.
 load_env_file() {
   local f="$1" k v
   [[ -f $f ]] || return 0
@@ -152,6 +149,31 @@ load_env_file() {
     [[ -v $k ]] || export "$k=$v"                     # never overwrite a set var
   done < "$f"
 }
+# expand_env_refs — resolve ${NAME} inside every key the root .env file declares, after it is loaded.
+# Compose keeps a value the shell hands it as it is, and an app loader that
+# does not override keeps it too, so an unexpanded `${DATA_DIR}/postgres` reaches compose as a
+# volume name and `${POSTGRES_USER}` reaches the app inside DATABASE_URL. Text substitution
+# only: no eval, no command substitution, and the replacement is spliced as text, so `&` or `\`
+# in a value stays literal. Skip-if-set still holds: the override (`DATA_DIR=/srv ctl up`) is
+# what gets expanded into the keys that reference it. A reference to an unset name, or a cycle,
+# fails naming the key. Returns 1 so a soft caller can go on; require_env exits.
+expand_env_refs() {
+  local f src key value ref n
+  for f in "${ENV_FILES[@]}"; do
+    src="$CTL_ROOT/$f"; [[ -f $src ]] || src="$src.template"; [[ -f $src ]] || continue
+    while IFS= read -r key; do
+      [[ $key =~ ^[A-Za-z_][A-Za-z0-9_]*$ && -v $key ]] || continue
+      value="${!key}"; n=0
+      while [[ $value =~ \$\{([A-Za-z_][A-Za-z0-9_]*)\} ]]; do
+        ref="${BASH_REMATCH[1]}"
+        [[ -v $ref ]] || { err "$f: $key references \${$ref}, which is not set"; return 1; }
+        (( n++ < 32 )) || { err "$f: $key does not resolve — a cycle, or more than 32 references"; return 1; }
+        value="${value%%"\${$ref}"*}${!ref}${value#*"\${$ref}"}"
+      done
+      export "$key=$value"
+    done < <(env_keys "$src")
+  done
+}
 require_env() {
   # STRICT (data core ⇒ real secrets): die naming the first missing env file.
   # [ADAPT] SOFT (defaulted env, no secrets): replace the `die` line with `continue`.
@@ -160,8 +182,10 @@ require_env() {
     [[ -f $f ]] || die "$f missing — run \`ctl setup\` (it copies $f.template)."
     load_env_file "$f"
   done
+  expand_env_refs || exit 1
 }
-load_env_soft() { local f; for f in "${ENV_FILES[@]}"; do load_env_file "$f"; done; }   # diagnostics: never die
+load_env_files() { local f; for f in "${ENV_FILES[@]}"; do load_env_file "$f"; done; }   # skip-if-set; a missing file is skipped
+load_env_soft()  { load_env_files; expand_env_refs || true; }                              # diagnostics: never die
 require_tools() {  # require_tools mise docker …
   local t missing=()
   for t in "$@"; do command -v "$t" >/dev/null 2>&1 || missing+=("$t"); done
@@ -255,7 +279,7 @@ detach_run() {
 
 # ── env schema (used by ctl status and ctl check) ──
 env_keys() { local k; while IFS='=' read -r k _; do [[ -z "$k" || "$k" == \#* ]] || printf '%s\n' "$k"; done < "$1"; }
-check_env_schema() {  # 0 if every .env.X has every key its .env.X.template declares
+check_env_schema() {  # 0 if .env has every key .env.template declares
   local f rc=0 k
   for f in "${ENV_FILES[@]}"; do
     [[ -f $f.template ]] || { err "$f.template missing"; rc=1; continue; }

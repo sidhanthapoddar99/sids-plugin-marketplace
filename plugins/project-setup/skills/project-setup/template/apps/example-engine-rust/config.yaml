@@ -1,4 +1,4 @@
-# ${VAR} from .env.secrets / .env.proxy, must be set. Literals are defaults; override them in config.local.yaml (gitignored).
+# ${VAR} from .env, must be set. Literals are defaults; override them in config.local.yaml (gitignored).
 database:
   url: ${DATABASE_URL}
   pool_size: 8

@@ -9,11 +9,11 @@ This brief is a contract: audits compare the repo against the tables below, not 
 These bind every agent on every change.
 
 - `ctl` is the only way to run, build, migrate or test. Never call docker, alembic, uv or bun directly for those.
-- Secrets live in `.env.secrets`. Paths in `.env.data`. Hosts, ports and prefixes in `.env.proxy`. Read the `.env.*.template` files to learn the contract. Never read the filled files.
+- Keep settings in the ignored root `.env`, grouped by kind with two-line hash headers. Read `.env.template` for the contract; the filled file holds live secrets.
 - Schema changes go through `apps/database/postgres/migrations/`. Never edit a live schema.
 - An app never imports from another app. Shared code is a package under `apps/packages/`.
 - Documentation points at code. A code comment never names a doc page, plan, issue or skill file. `README.md` and `AGENTS.md` are the only exceptions.
-- A frontend has no `.env`. Its prefix is a build arg from `.env.proxy`, because everything in a bundle is public.
+- A frontend has no app-local env file. Its dev server inherits the root environment; expose only selected public constants to browser code, because bundles are public.
 
 When this section outgrows one screen, move it to `memory/` and import each file with `@memory/<file>.md`.
 
@@ -77,7 +77,7 @@ None.
 | Frontend | `<TypeScript, Vite <version>, Tailwind v4, shadcn new-york>` |
 | Data | `<Postgres <version> (+ extensions) · Redis <version> · Neo4j <version>>` |
 | Containers | docker compose; engines in docker for dev, everything in docker for prod |
-| Config | `.env.secrets` / `.env.data` / `.env.proxy` + per-backend `config.yaml` |
+| Config | `.env` + per-backend `config.yaml` |
 | Dev | mise, uv, bun |
 
 Additions to the stack list, with the reason: none.

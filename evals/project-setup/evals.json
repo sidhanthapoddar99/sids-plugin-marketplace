@@ -24,7 +24,7 @@
       "files": [
         "evals/project-setup/files/drifted-repo"
       ],
-      "expected_output": "The audit runs ./ctl check first and reports its exit code. The findings table has the columns file, rule broken, fix. It contains three findings: the hard-coded jwt_signing_key literal in apps/api/config.yaml (config.yaml carries ${VAR} only; secrets live in .env.secrets), the ports: block in docker/compose.base.yaml (base has no ports; a modifier adds exposure), and apps/web/.env with VITE_API_URL (a frontend has no env file; the API is same-origin). Nothing recorded in AGENTS.md is reported as drift.",
+      "expected_output": "The audit runs ./ctl check first and reports its exit code. The findings table has the columns file, rule broken, fix. It contains three findings: the hard-coded jwt_signing_key literal in apps/api/config.yaml (config.yaml carries ${VAR} only; secrets live in .env), the ports: block in docker/compose.base.yaml (base has no ports; a modifier adds exposure), and the presence of apps/web/.env (a frontend has no app-local env file; report its filename without reading its contents). Nothing recorded in AGENTS.md is reported as drift.",
       "expectations": [
         "The transcript shows ./ctl check was run inside the repo before the findings were reported, and the report states its exit code or its red/green result",
         "The report names the hard-coded jwt_signing_key value in apps/api/config.yaml as a finding",
@@ -32,7 +32,7 @@
         "The report names apps/web/.env as a finding, and gives 'a frontend has no env file' or the single-origin rule as the reason broken",
         "The findings are presented as a table whose columns are file, rule broken and fix",
         "No item recorded in the repo's AGENTS.md Recorded choices table (app names, light + dark theme, captcha tier, Alembic migration style) is reported as a finding",
-        "The report does not claim the repo is conformant on the strength of ctl check alone; apps/web/.env is outside ctl check's rules and must come from reading"
+        "The report does not claim the repo is conformant on the strength of ctl check alone; apps/web/.env is outside ctl check's rules and must come from discovering the filename without reading its contents"
       ]
     },
     {
@@ -42,7 +42,9 @@
       "files": [],
       "expected_output": "A repo at ./quotesmith copied from the template, trimmed to one Python backend at apps/api and one Vite frontend at apps/web, with Postgres and Redis only. Every <version> placeholder is replaced with the supplied pins. AGENTS.md is filled with the real names and choices. CLAUDE.md is the one line @AGENTS.md. ctl setup and ctl check were run and their real results reported. No question was asked, because every item the skill must ask about was supplied.",
       "expectations": [
-        "The repo root holds ctl, scripts/, docker/, apps/, data/, logs/, memory/, AGENTS.md, CLAUDE.md and the three .env.*.template files",
+        "The repo root holds ctl, scripts/, docker/, apps/, data/, logs/, memory/, AGENTS.md, CLAUDE.md and one committed .env.template and one ignored .env, grouped by kind with two-line hash headers",
+        "Environment loading preserves process overrides, including empty values, and resolves composed ${VAR} references before launching apps or Compose",
+        "Frontend dev processes may inherit the environment, but browser constants are explicitly selected and Compose services receive only declared runtime keys; the whole environment is never serialized into browser code or passed as a service env_file",
         "CLAUDE.md contains exactly the one line @AGENTS.md",
         "No file anywhere in the created repo still contains the literal placeholder <version>",
         "AGENTS.md Recorded choices, Skeletons and Stack tables are filled with this project's real names and the supplied versions, with no <angle-bracket> placeholders left",

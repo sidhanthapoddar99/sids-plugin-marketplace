@@ -15,11 +15,11 @@ The verb table below is the floor, not the ceiling. A project adds the verbs its
 | Containers | `up [--config c] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | A stack shape (`compose.<config>.yaml`, `base` by default) plus modifiers, every service or a subset. In a terminal: pick a config → pick the modifiers that fit → pick services (all preselected) → plan → confirm. Flags skip their prompt. No TTY: the plan prints and the run refuses without `-y`; `--nqa -y` is the scripted form. Compose orders engines, schema one-shots, apps by itself. `08a_ctl_docker.md`. |
 | | `up preset [<name>] [-y]`, `up preset --list`, `up set-preset [<name>]` | A saved `up` line from `docker/presets.yaml`: run one with no prompts, list them, or walk the pickers and save. `08a_ctl_docker.md` § 4. |
 | | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs against the `base` file. `down` never uses `-v`: state lives in `data/`. |
-| | `build [app…\|cli]` | Compose build. Build args are prefixes interpolated from `.env.proxy`. `cli`: the Go binary. |
+| | `build [app…\|cli]` | Compose build. Build args are prefixes interpolated from `.env`. `cli`: the Go binary. |
 | | `clean [-y]` | Down plus caches. `data/` untouched. |
 | | `health [svc…]` | One-shot health table. |
 | Database | `db migrate [up\|new "<msg>"\|status\|down]` | The `migrate` and `neo4j-init` one-shots from `compose.db.yaml`, run inside the compose network with `docker compose run --rm --no-deps`. The only path that touches schema. The same one-shots run on their own whenever the db config comes up. Needs the engines up. |
-| | `db shell <engine>` | psql, redis-cli, cypher-shell with `.env.secrets` credentials. |
+| | `db shell <engine>` | psql, redis-cli, cypher-shell with `.env` credentials. |
 | | `db backup`, `db restore <dir>` | Dump to `logs/backups/<timestamp>/`; load back. Restore refuses while apps run. |
 | Administration | `manage ops <list\|create\|disable\|enable\|reset-password\|lockout>` | Operator accounts, without the web auth flow. Below. |
 | | `manage settings <list\|get\|set>` | Platform settings, value parsed as JSON. |
@@ -29,7 +29,7 @@ The verb table below is the floor, not the ceiling. A project adds the verbs its
 | | `gate static\|dynamic [-q]` | The listed rungs that read the code, or the ones that run it. Ladder order kept. |
 | | `gate <rung> [-q]` | One rung. `gate lint [app] [--staged]` and `gate typecheck [app]` take a target; the others take none. |
 | | `gate clones\|fuzz\|perf` | By name. Never in the ladder. |
-| Configuration | `setup` | `.env.secrets`, `.env.data`, `.env.proxy` from their templates, secrets generated, `data/*` and `logs/*` dirs, deps installed. |
+| Configuration | `setup` | `.env` from its template, secrets generated, `data/*` and `logs/*` dirs, deps installed. |
 | | `check` | The repo contract. Below. |
 | | `status` | Read-only doctor: env, runtimes, deps, docker, health, stack. Never dies. |
 
@@ -37,7 +37,7 @@ The verb table below is the floor, not the ceiling. A project adds the verbs its
 
 `08a_ctl_docker.md` is the home of this. In one line: a **config** (`compose.<name>.yaml`, one stack shape, `base` is prod and the default) plus **modifiers** (`compose.m.<name>.yaml`, only the ones compose accepts on that config) plus a **service subset** (only those and their `depends_on` chain build and run), saved as a **preset** (`docker/presets.yaml`, one `ctl up` line per name), with **`include:`** as the way one config borrows another file. A config never publishes a port. The plan is the real `docker compose config` merge.
 
-Constants that hold everywhere: root-relative paths with `--project-directory <root>`; the three env files passed with `--env-file`, compose reads no `.env` on its own (compose ≥ 2.24); no profiles, no bare `compose.yaml`, no `compose.override.yaml`; bind mounts under `${DATA_DIR}`, never named volumes; internal ports fixed (`api:8000`), only published host ports vary.
+Constants that hold everywhere: root-relative paths with `--project-directory <root>`; the root .env file passed with `--env-file`, Compose uses the explicitly selected file (compose ≥ 2.24); no profiles, no bare `compose.yaml`, no `compose.override.yaml`; bind mounts under `${DATA_DIR}`, never named volumes; internal ports fixed (`api:8000`), only published host ports vary.
 
 **The docker guard runs first, by name.** Every docker verb calls `require_docker` before its first compose call. It tells three faults apart: not installed, engine not running, compose plugin missing. Compose itself reports a dead engine as a config error, which is how an earlier `up.sh` printed "invalid modifier combination" for "Docker is not running". `ctl status` shows the same three states without dying.
 
@@ -48,12 +48,12 @@ The `scripts/` groups are `common config dev container db admin test gate`. A ga
 Runs directly, and as the `check` rung of the ladder. It runs every rule, prints every failure with its file, and exits 0 only when all of them passed, because a check that stops at the first red hides the second one and a check that prints an ok line under a failure teaches the reader to skip the output. This list is the one home of what it proves; `02_env.md`, `01_layout.md` and `11_conventions.md` point here. Worker: `template/scripts/config/check.sh`.
 
 - versions: no `<version>` placeholder in `.mise.toml` or an app manifest (`pyproject.toml`, `package.json`, `Cargo.toml`, `rust-toolchain.toml`, `go.mod`). A placeholder breaks every toolchain install, so `ctl setup` refuses to install while one remains.
-- env: every `${VAR}` in any `config.yaml` is a key in one of the three `.env.*.template` files; a key with a `_PASSWORD`, `_KEY` or `_SECRET` segment appears only in `.env.secrets.template`; every `.env.proxy.template` key ends `_HOST`, `_PORT`, `_PREFIX` or `_URL` (or is `PUBLIC_URL`, `HTTP_PORT`, `HTTPS_PORT`, `DEV_PROXY_PORT`, `COMPOSE_PROJECT_NAME`); every `.env.data.template` key ends `_DIR`; no secret literal in any `config.yaml`; no tracked `config.local.yaml`; no tracked `.env.*` except the templates.
+- env: `.env.template` exists, has unique keys and blank values for names containing a `_PASSWORD`, `_KEY` or `_SECRET` segment; every `${VAR}` in `apps/*/config.yaml` appears in that template; no secret literal in those config files; no tracked `config.local.yaml`; no tracked root `.env` or `.env.*` except `.env.template`. Grouping, browser exposure and per-service Docker keys require review.
 - layout: no `package.json`, `bun.lock` or `pnpm-workspace.yaml` at the root or directly in `apps/`; no folder under `apps/` that holds a manifest next to child folders with manifests, because that is a workspace. The root half is skipped when `AGENTS.md` records `root-manifest` under `## Exceptions to the standard layout` (`01_layout.md` § Exceptions).
 - brief: `CLAUDE.md` is exactly `@AGENTS.md`.
 - ladder: the `Gate ladder` row in `AGENTS.md` lists the same rungs, in the same order, as `RUNGS` in `scripts/gate/all.sh`, because the audit reads the row and the gate runs the list.
 - lint config: every app ships its linter config beside its manifest (`[tool.ruff]`, `.oxlintrc.json`, `clippy.toml`, `.golangci.yml`), because a linter without its config reports only its defaults.
-- compose: no `ports:` in any config (`compose.<name>.yaml`); no `../` in any compose file; every `${NAME}` inside the three filled env files names a set key, with no cycle, because these are the values `ctl` hands compose and the apps (`02_env.md` rule 6); `docker compose config` validates every config alone, and every modifier fits at least one config, with the fit list printed because that is what `ctl up` offers, with the env loaded and resolved the way `ctl up` loads it. A modifier whose `MODIFIER_REQUIRES` keys are blank (`+public` before the public origin is uncommented) is skipped and named, the way `ctl up` refuses it. The compose validation is skipped, and says so, when docker is down or the env files are absent.
+- compose: no `ports:` in any config (`compose.<name>.yaml`); no `../` in any compose file; every `${NAME}` inside the root .env file names a set key, with no cycle, because these are the values `ctl` hands compose and the apps (`02_env.md` rule 6); `docker compose config` validates every config alone, and every modifier fits at least one config, with the fit list printed because that is what `ctl up` offers, with the env loaded and resolved the way `ctl up` loads it. A modifier whose `MODIFIER_REQUIRES` keys are blank (`+public` before the public origin is uncommented) is skipped and named, the way `ctl up` refuses it. The compose validation is skipped, and says so, when docker is down or the env files are absent.
 
 ## `ctl manage` — the break-glass console
 

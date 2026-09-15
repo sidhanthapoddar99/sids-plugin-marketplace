@@ -1,8 +1,8 @@
-# Applies to every build context. Keeps secrets and state out of every image.
+# Applies to the root build context. Other contexts need their own ignore rules.
 .git
 .env
 .env.*
-!.env.*.template
+!/.env.template
 **/config.local.yaml
 data/
 node_modules/

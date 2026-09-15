@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# config/setup.sh — `ctl setup`. First run on a clone: create the three env files from their
-# templates, sync new keys, generate secrets, create data/logs dirs, install deps.
+# config/setup.sh — `ctl setup`. First run on a clone: create the root .env file from its
+# template, sync new keys, generate secrets, create data/logs dirs, install deps.
 # Idempotent — never overwrites a filled value.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
-usage() { print_help "setup" "Create .env.secrets / .env.data / .env.proxy from templates, generate secrets, create dirs, install deps." \
+usage() { print_help "setup" "Create .env from .env.template, generate secrets, create dirs, install deps." \
   'setup [-h]' \
 "Options
   -h, --help      show this help
 
 Steps
-  1. for each of .env.secrets .env.data .env.proxy: cp <file>.template <file> if missing;
+  1. copy .env.template to .env if missing;
      append keys the template gained since. Never overwrites a value.
-  2. in .env.secrets only: fill every blank key with a _KEY or _SECRET segment with openssl rand -hex 32,
+  2. in .env only: fill every blank key with a _KEY or _SECRET segment with openssl rand -hex 32,
      every blank key with a _PASSWORD segment with a 24-char base64 string
   3. mkdir data/{$(IFS=,; echo "${DATA_SVCS[*]}")} and logs/{dev,run,backups,test_build}  (each folder's .gitignore keeps it out of git)
   4. refuse while any '<version>' placeholder remains in .mise.toml or an app manifest (ctl check names them)
@@ -38,7 +38,7 @@ for f in "${ENV_FILES[@]}"; do
   done < "$f.template"
 done
 
-# generate blank secrets — in .env.secrets only. A key is a secret when its name holds a _PASSWORD,
+# generate blank secrets — in .env only. A key is a secret when its name holds a _PASSWORD,
 # _KEY or _SECRET segment, at the end or followed by more (ENCRYPTION_KEY_PYTHON). The value must be empty.
 step "secrets"
 sed_i() { if sed --version >/dev/null 2>&1; then sed -i "$@"; else sed -i '' "$@"; fi; }   # GNU vs BSD
@@ -47,10 +47,10 @@ while IFS='=' read -r key val; do
   val="${val%%[[:space:]]#*}"; val="${val%"${val##*[![:space:]]}"}"
   [[ -z "$val" ]] || continue
   case "$key" in
-    *_PASSWORD|*_PASSWORD_*)               sed_i "s|^${key}=.*|${key}=$(openssl rand -base64 24 | tr -d '+/=' | head -c 24)|" .env.secrets; ok "generated $key" ;;
-    *_KEY|*_KEY_*|*_SECRET|*_SECRET_*)     sed_i "s|^${key}=.*|${key}=$(openssl rand -hex 32)|" .env.secrets; ok "generated $key" ;;
+    *_PASSWORD|*_PASSWORD_*)               sed_i "s|^${key}=.*|${key}=$(openssl rand -base64 24 | tr -d '+/=' | head -c 24)|" .env; ok "generated $key" ;;
+    *_KEY|*_KEY_*|*_SECRET|*_SECRET_*)     sed_i "s|^${key}=.*|${key}=$(openssl rand -hex 32)|" .env; ok "generated $key" ;;
   esac
-done < .env.secrets
+done < .env
 
 # data dirs — created here, owned by the current user, so bind mounts never appear root-owned.
 step "ensuring data dirs…"

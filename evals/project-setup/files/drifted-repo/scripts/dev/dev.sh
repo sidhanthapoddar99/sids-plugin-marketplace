@@ -17,11 +17,11 @@ set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 # [ADAPT] the host apps — name → port → command. The ONE source for --help, --dry-run, and the run.
-# Emitted as strings so help/dry-run print EXACTLY what runs (ports resolve from .env.proxy once loaded).
+# Emitted as strings so help/dry-run print EXACTLY what runs (ports resolve from .env once loaded).
 app_names() { printf '%s\n' api web; }
 frontends() { printf '%s\n' web; }      # the ones the dev proxy fronts
-# port_of VAR — the value from .env.proxy. Under --help the env may be absent: print the key name instead of dying.
-port_of()   { local v="$1"; if [[ -n "${!v:-}" ]]; then echo "${!v}"; elif [[ "${HELP_MODE:-0}" == 1 ]]; then echo "\$$v"; else die "$v is blank in .env.proxy"; fi; }
+# port_of VAR — the value from .env. Under --help the env may be absent: print the key name instead of dying.
+port_of()   { local v="$1"; if [[ -n "${!v:-}" ]]; then echo "${!v}"; elif [[ "${HELP_MODE:-0}" == 1 ]]; then echo "\$$v"; else die "$v is blank in .env"; fi; }
 app_port()  { case "$1" in
   api)       port_of API_PORT ;;
   web)    port_of WEB_APP_PORT ;;
@@ -86,7 +86,7 @@ require_env
 if (( dry )); then
   step "(dry-run — nothing started)"
   (( ${#DATA_SVCS[@]} && ! no_core )) && say "data core   docker compose --project-directory . -f $DB_FILE up -d ${DATA_SVCS[*]}"
-  (( proxy )) && say "dev proxy   docker compose --project-directory . -f $DEV_FILE up -d   → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env.proxy}"
+  (( proxy )) && say "dev proxy   docker compose --project-directory . -f $DEV_FILE up -d   → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env}"
   for a in "${apps[@]}"; do say "$(printf '%-11s' "$a") $(app_cmd "$a")"; done
   exit 0
 fi
@@ -105,7 +105,7 @@ fi
 # stays up with the apps, and `ctl ps` → k on its port stops the container.
 if (( proxy )); then
   require_docker
-  step "starting dev proxy ($DEV_FILE) → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env.proxy}"
+  step "starting dev proxy ($DEV_FILE) → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env}"
   dc_dev up -d
 fi
 

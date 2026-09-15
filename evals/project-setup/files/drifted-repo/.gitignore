@@ -4,7 +4,7 @@
 .env
 .env.*
 !apps/web/.env
-!.env.*.template
+!/.env.template
 config.local.yaml
 
 # python

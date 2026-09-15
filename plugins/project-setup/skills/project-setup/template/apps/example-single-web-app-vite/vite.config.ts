@@ -22,5 +22,5 @@
 //     },
 //   });
 //
-// A backend on another server: set API_HOST in .env.proxy and use
+// A backend on another server: set API_HOST in .env and use
 //   `https://${need("API_HOST")}:${need("API_PORT")}` as the target. Still no change in the app code.

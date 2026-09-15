@@ -10,7 +10,7 @@ The skill is opinionated on purpose. One repo tree, one entrypoint (`ctl`), one 
 |---|---|
 | `skills/project-setup/SKILL.md` | The workflow for each mode, the page table, and the pointers into the template |
 | `skills/project-setup/references/01_layout.md` to `12_http-and-tls.md` | Fifteen pages. Each owns one question: layout, env, routing, stack, frontend, backend, security, `ctl`, the compose model of `ctl up`, production, review passes, static checks, dynamic tests, conventions and audit order, HTTP and TLS |
-| `skills/project-setup/template/` | The floor of the tree. `ctl`, `scripts/`, `docker/`, the env templates and `AGENTS.md` are real and run. The app folders are shape only |
+| `skills/project-setup/template/` | The floor of the tree. `ctl`, `scripts/`, `docker/`, the env template and `AGENTS.md` are real and run. The app folders are shape only |
 | `skills/project-setup/additional-template/` | The add-ons a repo gains by name: git hooks, `memory/`, a browser suite. Its `README.md` says when each is earned |
 | `../../evals/project-setup/` | The test prompts and fixtures used to check the skill with skill-creator. Kept outside the plugin so installs do not carry them |
 
@@ -19,7 +19,7 @@ The skill is opinionated on purpose. One repo tree, one entrypoint (`ctl`), one 
 - `ctl`: one entrypoint. `ctl setup`, `ctl check`, `ctl dev`, `ctl up [--config c] +modifier`, `ctl up preset <name>`, `ctl db migrate`, `ctl test`, `ctl gate`. Run `template/ctl --help` for the list.
 - `ctl gate`: the ladder. The floor is four rungs, `lint typecheck test check`, each seconds. `dead`, `audit`, `build` and `e2e` are switched on by name when the project earns them. `ctl gate static` and `ctl gate dynamic` run each half.
 - `ctl check`: the repo contract. It runs every rule, prints every failure, and exits 0 only when all of them passed. It is also the `check` rung.
-- Three root env files with committed templates: `.env.secrets`, `.env.data`, `.env.proxy`. A backend reads them through `config.yaml` with `${VAR}`. A frontend has no env file.
+- One ignored root `.env` and committed `.env.template`, grouped by kind with two-line hash headers. Backends select values through `config.yaml`; frontend dev processes inherit the environment, while browser constants and Docker service keys are explicitly selected.
 - `docker/compose.<config>.yaml` stack shapes with no ports, modifiers that add exposure, and `docker/presets.yaml` with one saved `ctl up` line per name. `base` is production; `db` is the engines with the schema one-shots.
 - `AGENTS.md`: the brief. Every chosen variant, exception and deferral is recorded there, and an audit compares the repo against it.
 

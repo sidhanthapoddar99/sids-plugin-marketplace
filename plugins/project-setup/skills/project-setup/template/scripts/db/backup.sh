@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# db/backup.sh — `ctl db backup`. Dump the data core into ${BACKUP_DIR}/<timestamp>/ (.env.data):
+# db/backup.sh — `ctl db backup`. Dump the data core into ${BACKUP_DIR}/<timestamp>/ (.env):
 # postgres → pg_dump (custom format), redis → SAVE + copy dump.rdb, neo4j → cypher export of the
 # constraints/indexes only (a full neo4j dump needs the database stopped — see TODO).
 set -euo pipefail
@@ -11,7 +11,7 @@ usage() { print_help "db backup" "Dump every data engine into a timestamped fold
   -h, --help      show this help
 
 Writes \${BACKUP_DIR}/<YYYYmmdd-HHMMSS>/{postgres.dump, redis.rdb, neo4j-schema.cypher}
-(BACKUP_DIR from .env.data; default ./logs/backups).
+(BACKUP_DIR from .env; default ./logs/backups).
 Restore with: ctl db restore <that folder>." \
 "TODO: a full neo4j dump (neo4j-admin database dump) needs the container stopped; not automated here."; }
 

@@ -40,8 +40,8 @@ A modifier is a partial compose file laid over a config. It adds ports, re-point
 | `+expose_web` | `web` on the `_PORT` of the piece that owns `/` | `base`. The default for local docker. |
 | `+public` | `web` on `${HTTP_PORT}` / `${HTTPS_PORT}`; `PUBLIC_URL` to the apps | `base`. A public deployment. Refused while one of the three keys is blank. |
 | `+expose` | Every app port to the host, each on its own `_PORT` | `base`. Debug. Never prod. |
-| `+expose_db` | Each engine on loopback, on its `_PORT` from `.env.secrets` | `base`, `db`. What `ctl dev` needs so host processes reach the engines. |
-| `+env_override` | Re-points upstreams and URLs to `${VAR}` from `.env.proxy` and `.env.secrets` | `base`. A piece runs outside this compose. |
+| `+expose_db` | Each engine on loopback, on its `_PORT` from `.env` | `base`, `db`. What `ctl dev` needs so host processes reach the engines. |
+| `+env_override` | Re-points upstreams and URLs to `${VAR}` from `.env` | `base`. A piece runs outside this compose. |
 
 **Which modifiers fit a config is computed, never declared.** `ctl up` runs `docker compose config` on the config plus the modifier. Pass means it fits and it is offered. A modifier can patch a service the config does not define. Then the merged service has no image and compose rejects it. `ctl up` hides that modifier. There is no compatibility list in any file to keep in sync. A modifier whose `MODIFIER_REQUIRES` keys are blank cannot be tested, so it is listed on every config and refused by name when picked.
 
@@ -137,6 +137,6 @@ One more limit of the port rule: `ctl check` looks for `ports:` in a config. `ne
 
 - No config publishes a port. Only a modifier does.
 - No `../` in any compose file.
-- Every `${NAME}` in the three env files names a set key, with no cycle.
+- Every `${NAME}` in the root .env file names a set key, with no cycle.
 - Every config validates alone.
 - Every modifier fits at least one config, and the fit list is printed, because that list is what `ctl up` offers. A modifier whose required keys are blank is skipped and named.

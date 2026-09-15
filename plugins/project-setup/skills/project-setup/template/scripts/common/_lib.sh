@@ -19,17 +19,13 @@
 # A config never publishes a port; only a modifier does (ctl check proves it). Which modifiers fit a
 # config is computed, not declared: `docker compose config` on the pair must pass.
 # Every compose call passes --project-directory "$CTL_ROOT", so every relative path in the
-# env files and in every compose file resolves from the repo root (compose files say ./apps/…,
+# root .env and in every compose file resolves from the repo root (compose files say ./apps/…,
 # ./data, never ../).
 #
-# ENV MODEL — three files at the root, each with one role and a committed .template:
-#   .env.secrets   passwords, keys, credentials, DB connection values, REGISTRY/TAG
-#   .env.data      DATA_DIR / LOGS_DIR / BACKUP_DIR — every path, root-relative
-#   .env.proxy     <PIECE>_HOST/_PORT/_PREFIX for every piece, ENGINE_URL, DEV_PROXY_PORT, and the
-#                  optional public origin (PUBLIC_URL, HTTP_PORT, HTTPS_PORT), read only by +public
-# Compose reads none of them by itself: every dc call passes --env-file for each (ENV_FILES,
-# in that order; compose ≥ 2.24). `ctl setup` copies template → file. Frontends have no .env:
-# their build constants are compose build args interpolated from .env.proxy.
+# ENV MODEL — one ignored root .env and one committed .env.template, grouped by kind.
+# ctl loads skip-if-set, then hands the environment to child processes. A frontend dev server
+# inherits it too; browser constants must be selected explicitly. Compose receives --env-file
+# for interpolation, while each service declares its runtime keys and public build args.
 #
 # The [ADAPT] knobs, all inline below:
 #   • DATA_SVCS           — the data core; empty = no data core (dev/up/status/setup skip it)
@@ -51,7 +47,7 @@ DEV_FILE="$DOCKER_DIR/compose.dev.yaml"   # the same-origin dev proxy (nginx on 
 PRESETS_FILE="$DOCKER_DIR/presets.yaml"   # named `ctl up` argument lines; `ctl up set-preset` writes it
 DEFAULT_MODIFIERS=(expose_web)            # what `ctl up` applies on DEFAULT_CONFIG when no +modifier is given; other configs default to none
 DEV_PRESET=dev                            # the reserved preset `ctl dev` starts for its data core; missing = ctl dev refuses
-ENV_FILES=(.env.secrets .env.data .env.proxy)   # the three env files, in load order. Templates: <name>.template
+ENV_FILES=(.env)   # the root environment contract; template: .env.template
 
 # [ADAPT] the data core. Empty = no data core — every consumer degrades gracefully.
 # Overridable from the shell: `DATA_SVCS= ctl dev` (empty is empty, not the default). ctl sources this
@@ -64,17 +60,17 @@ read -r -a DATA_SVCS <<< "$DATA_SVCS_STR" || true
 export SCHEMA_SVCS_STR="${SCHEMA_SVCS_STR-${SCHEMA_SVCS-migrate neo4j-init}}"
 read -r -a SCHEMA_SVCS <<< "$SCHEMA_SVCS_STR" || true
 
-# [ADAPT] env keys a modifier maps with ${VAR} (across .env.secrets + .env.proxy). `ctl up` refuses
+# [ADAPT] env keys a modifier maps with ${VAR} (from .env). `ctl up` refuses
 # the modifier when any is blank, and `ctl check` skips validating it and says so —
 # an unset ${VAR} in compose becomes an empty string and the service breaks silently.
-# +public lists the optional public-origin keys, which ship commented out in .env.proxy.template.
+# +public lists the optional public-origin keys, which ship commented out in .env.template.
 declare -A MODIFIER_REQUIRES=(
   [env_override]="DATABASE_URL REDIS_URL NEO4J_URL API_HOST API_PORT ENGINE_HOST ENGINE_PORT DASHBOARD_HOST DASHBOARD_PORT"
   [public]="PUBLIC_URL HTTP_PORT HTTPS_PORT"
   [expose_db]="POSTGRES_PORT REDIS_PORT NEO4J_BOLT_PORT"   # a blank port would publish a random one
 )
 
-# Project name: let docker compose decide it from .env.proxy's COMPOSE_PROJECT_NAME (or the repo
+# Project name: let docker compose decide it from .env's COMPOSE_PROJECT_NAME (or the repo
 # directory). Never force a default here — it would override the compose `name:` and make
 # every `dc ps` / health lookup miss.
 [[ -n "${COMPOSE_PROJECT_NAME:-}" ]] && export COMPOSE_PROJECT_NAME || true
@@ -127,7 +123,7 @@ Any extra args forward straight to \`docker compose $1\`." \
 }
 
 # ── docker compose ──
-# Every call is anchored at the repo root and gets the three env files (compose reads no .env on
+# Every call is anchored at the repo root and gets the root .env file (compose reads no .env on
 # its own). `dc` = the default config (base, the whole stack), `dc_dev` = the dev proxy.
 # env_file_args — one --env-file per ENV_FILES entry that exists; a missing file is simply skipped
 # here (require_env is the guard that dies). Compose precedence: shell env > --env-file, so an
@@ -194,17 +190,17 @@ modifier_blank_keys() { local k; for k in ${MODIFIER_REQUIRES[$1]:-}; do [[ -n "
 # check_modifier_env <mod> — die when a key the modifier maps is blank in the loaded env.
 check_modifier_env() {
   local m="$1" blank; mapfile -t blank < <(modifier_blank_keys "$m")
-  (( ${#blank[@]} )) && die "modifier '+$m' needs these keys set in .env.secrets / .env.proxy (uncomment them if they are): ${blank[*]}"
+  (( ${#blank[@]} )) && die "modifier '+$m' needs these keys set in .env (uncomment them if they are): ${blank[*]}"
   return 0
 }
 
 # ── guards ──
 # load_env_file [file] — export KEY=value pairs from an env file WITHOUT clobbering variables
-# already set in the real environment (skip-if-set). `set -a; source .env.secrets` would override
+# already set in the real environment (skip-if-set). `set -a; source .env` would override
 # inline runs (`API_PORT=8085 ctl dev`), CI-injected secrets, and secret-store injection.
 # Plain KEY=value lines only — no multi-line values, no command substitution; quotes are kept
 # literally, so write values unquoted. A composed value (BACKUP_DIR=${LOGS_DIR}/backups) is
-# exported as written; expand_env_refs resolves it once all three files are loaded.
+# exported as written; expand_env_refs resolves it once the root .env file is loaded.
 load_env_file() {
   local f="$1" k v
   [[ -f $f ]] || return 0
@@ -215,8 +211,8 @@ load_env_file() {
     [[ -v $k ]] || export "$k=$v"                     # never overwrite a set var
   done < "$f"
 }
-# expand_env_refs — resolve ${NAME} inside every key the three env files declare, after all of
-# them are loaded. Compose keeps a value the shell hands it as it is, and an app loader that
+# expand_env_refs — resolve ${NAME} inside every key the root .env file declares, after it is loaded.
+# Compose keeps a value the shell hands it as it is, and an app loader that
 # does not override keeps it too, so an unexpanded `${DATA_DIR}/postgres` reaches compose as a
 # volume name and `${POSTGRES_USER}` reaches the app inside DATABASE_URL. Text substitution
 # only: no eval, no command substitution, and the replacement is spliced as text, so `&` or `\`
@@ -347,7 +343,7 @@ detach_run() {
 # env_keys <file> — every KEY of a KEY=value line, the same lines load_env_file loads: a key starts
 # at column 0. An indented line is a continuation comment, never a key, whatever it holds.
 env_keys() { local k; while IFS='=' read -r k _; do [[ $k =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && printf '%s\n' "$k"; done < "$1"; }
-check_env_schema() {  # 0 if every .env.X has every key its .env.X.template declares
+check_env_schema() {  # 0 if .env has every key .env.template declares
   local f rc=0 k
   for f in "${ENV_FILES[@]}"; do
     [[ -f $f.template ]] || { err "$f.template missing"; rc=1; continue; }

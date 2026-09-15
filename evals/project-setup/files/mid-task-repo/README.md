@@ -4,7 +4,7 @@ One paragraph: what this product is and which apps make it.
 
 ## Prerequisites
 - `mise install` — installs every toolchain pinned in `.mise.toml`
-- `ctl setup` — creates `.env.secrets`, `.env.data`, `.env.proxy` from their `.template` files, generates secrets, creates `data/*` and `logs/*`
+- `ctl setup` — creates `.env` from `.env.template`, generates secrets, creates `data/*` and `logs/*`
 
 ## Quick start with ctl
 - `ctl dev` — databases in docker, apps on the host (`--proxy` for one origin across frontends)
@@ -34,7 +34,7 @@ Each app's `README.md` shows how to run it from its own folder, the env keys it 
 | Frontend | TypeScript, Vite `3.13`, Next.js `3.13`, Astro `3.13`, Tailwind v4, shadcn |
 | Data | Postgres `3.13` + pgvector · Redis `3.13` · Neo4j `3.13` |
 | Containers | docker compose ≥ 2.24; engines in docker for dev, everything for prod |
-| Config | `.env.secrets` / `.env.data` / `.env.proxy` + per-backend `config.yaml` |
+| Config | `.env` + per-backend `config.yaml` |
 | Dev | mise · uv · bun · lefthook |
 
 ## Documentation
@@ -51,7 +51,7 @@ docker/    compose.db compose.base compose.dev compose.m.*
 scripts/   ctl workers
 data/      actual data: engine mounts, datasets. gitignored
 logs/      produced state: logs, pids, backups, frozen builds. gitignored
-.env.secrets.template  .env.data.template  .env.proxy.template   the env contract (committed); ctl setup makes the real files
+.env.template   the grouped env contract (committed); ctl setup creates the ignored root .env
 memory/    agent rules
 ```
 

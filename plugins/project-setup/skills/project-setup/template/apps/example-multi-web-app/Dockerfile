@@ -1,6 +1,6 @@
 # The web image: every static frontend built, one nginx serving them all and proxying the rest.
 # Build context is ./apps (needs packages/): compose sets `context: ./apps, dockerfile: example-multi-web-app/Dockerfile`.
-# One build stage per frontend. The only build args are the prefixes, interpolated by compose from .env.proxy.
+# One build stage per frontend. The only build args are the prefixes, interpolated by compose from .env.
 # No secret is ever a build arg — an ARG stays in the image history.
 
 # ---- landing: Next.js static export → out/ ----

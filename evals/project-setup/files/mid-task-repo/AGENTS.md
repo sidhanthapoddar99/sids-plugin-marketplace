@@ -58,7 +58,7 @@ None.
 | Frontend | TypeScript, Vite 7, Tailwind v4, shadcn new-york |
 | Data | Postgres 17 · Redis 8 |
 | Containers | docker compose; engines in docker for dev, everything in docker for prod |
-| Config | `.env.secrets` / `.env.data` / `.env.proxy` + per-backend `config.yaml` |
+| Config | `.env` + per-backend `config.yaml` |
 | Dev | mise, uv, bun, lefthook |
 
 Additions to the stack list, with the reason: none.

@@ -6,12 +6,12 @@ Every case below is the same system with a different number of pieces. Read the 
 
 1. **One origin.** The browser sees one host. Every frontend and every backend sits behind it, separated by path prefix. Dev and prod route the same prefixes.
 2. **The edge is the `web` image.** One nginx that holds every static frontend and proxies everything else. Built by the single frontend's own `Dockerfile` (`example-single-web-app-vite/`) or by the group's (`example-multi-web-app/`); both build with context `./apps`. There is no second nginx service. `compose.base.yaml` ships wired to the group; the single shape's README holds the service block to swap in.
-3. **`.env.proxy` defines every piece.** One `<PIECE>_HOST/_PORT/_PREFIX` block per proxied piece, `_PORT/_PREFIX` per static frontend, and the piece that owns `/` has no `_PREFIX`. The service binds `_PORT` and mounts `_PREFIX` from it; nginx and the dev proxy read the same keys to route; a frontend reads its `_PREFIX` as `base` / `basePath` under the same key, no alias, no fallback. Definition and route are one key, so they cannot drift.
-4. **Compose decides service names; `.env.proxy` decides the rest.** A service name is a literal in `compose.base.yaml` (`API_UPSTREAM: api:8000`). A host outside this compose comes from `.env.proxy` through `+env_override`.
-5. **`ctl dev` runs apps on the host, engines in docker. `ctl up` runs everything in docker.** Same three env files, same `config.yaml`, no edit between the two.
-6. **Backends coordinate through the root env files.** Shared secrets are one key in `.env.secrets` (`JWT_SIGNING_KEY`). A backend that calls another reads `<X>_URL` from its `config.yaml` as `${VAR}`; compose sets the literal in docker.
+3. **`.env` defines every piece.** One `<PIECE>_HOST/_PORT/_PREFIX` block per proxied piece, `_PORT/_PREFIX` per static frontend, and the piece that owns `/` has no `_PREFIX`. The service binds `_PORT` and mounts `_PREFIX` from it; nginx and the dev proxy read the same keys to route; a frontend reads its `_PREFIX` as `base` / `basePath` under the same key, no alias, no fallback. Definition and route are one key, so they cannot drift.
+4. **Compose decides service names; `.env` decides the rest.** A service name is a literal in `compose.base.yaml` (`API_UPSTREAM: api:8000`). A host outside this compose comes from `.env` through `+env_override`.
+5. **`ctl dev` runs apps on the host, engines in docker. `ctl up` runs everything in docker.** Same root .env file, same `config.yaml`, no edit between the two.
+6. **Backends coordinate through the root .env file.** Shared secrets are one key in `.env` (`JWT_SIGNING_KEY`). A backend that calls another reads `<X>_URL` from its `config.yaml` as `${VAR}`; compose sets the literal in docker.
 
-The routing table is `template/.env.proxy.template`. Read it there: one block per piece, the piece that owns `/` has no `_PREFIX`, and `DEV_PROXY_PORT` is the one origin in dev. Every path below that starts with `apps/` is a path inside `template/`.
+The routing table is `template/.env.template`. Read it there: one block per piece, the piece that owns `/` has no `_PREFIX`, and `DEV_PROXY_PORT` is the one origin in dev. Every path below that starts with `apps/` is a path inside `template/`.
 
 ## The pair: dev and prod
 
@@ -32,10 +32,10 @@ The common case. Template: `apps/example-single-web-app-vite` + `apps/example-ap
 
 | | Routing |
 |---|---|
-| Dev | `vite.config.ts` proxies `/api → 127.0.0.1:${API_PORT}`. `API_PORT` comes from the process env, which `ctl dev` filled from `.env.proxy`. The frontend calls `/api/…`. |
+| Dev | `vite.config.ts` proxies `/api → 127.0.0.1:${API_PORT}`. `API_PORT` comes from the process env, which `ctl dev` filled from `.env`. The frontend calls `/api/…`. |
 | Prod | `nginx.conf.template`: `location ${API_PREFIX}/ { proxy_pass http://${API_UPSTREAM}; }`. `API_UPSTREAM` is the literal `api:8000` in `compose.base.yaml`. |
 
-Adding a backend: one `<X>_HOST/_PORT/_PREFIX` block in `.env.proxy.template`; one `location` in both nginx templates; one `<X>_UPSTREAM` literal on `web` in `compose.base.yaml`, the name added to `NGINX_ENVSUBST_FILTER` and to `+env_override`; one proxy entry in `vite.config.ts`; one entry in the four `dev.sh` tables (`app_names`, `frontends`, `app_port`, `app_cmd`). Frontend code does not change.
+Adding a backend: one `<X>_HOST/_PORT/_PREFIX` block in `.env.template`; one `location` in both nginx templates; one `<X>_UPSTREAM` literal on `web` in `compose.base.yaml`, the name added to `NGINX_ENVSUBST_FILTER` and to `+env_override`; one proxy entry in `vite.config.ts`; one entry in the four `dev.sh` tables (`app_names`, `frontends`, `app_port`, `app_cmd`). Frontend code does not change.
 
 ## Case 2 — different server or different repo
 
@@ -43,8 +43,8 @@ The backend runs elsewhere: a managed service, another host, another repo. The b
 
 | | Routing |
 |---|---|
-| Dev | `.env.proxy`: `API_HOST=api.example.com`, `API_PORT=443`. The Vite proxy target becomes `https://${API_HOST}:${API_PORT}`, `changeOrigin: true`. Frontend code unchanged. |
-| Prod | `ctl up +env_override`. The modifier re-points every upstream on `web` (`API_UPSTREAM: ${API_HOST}:${API_PORT}` and the rest), `ENGINE_URL` and `REDIS_URL` on `api`, `DATABASE_URL` and `NEO4J_URL` on `engine`, `API_HOST/_PORT` on `dashboard` — from `.env.proxy` and `.env.secrets`. `ctl` refuses the modifier when a key in `MODIFIER_REQUIRES` (`_lib.sh`) is blank. |
+| Dev | `.env`: `API_HOST=api.example.com`, `API_PORT=443`. The Vite proxy target becomes `https://${API_HOST}:${API_PORT}`, `changeOrigin: true`. Frontend code unchanged. |
+| Prod | `ctl up +env_override`. The modifier re-points every upstream on `web` (`API_UPSTREAM: ${API_HOST}:${API_PORT}` and the rest), `ENGINE_URL` and `REDIS_URL` on `api`, `DATABASE_URL` and `NEO4J_URL` on `engine`, `API_HOST/_PORT` on `dashboard` — from `.env`. `ctl` refuses the modifier when a key in `MODIFIER_REQUIRES` (`_lib.sh`) is blank. |
 
 CORS never appears: the edge talks to the remote backend, not the browser. The same holds in reverse, when the frontend is the remote piece: that repo's edge proxies to this backend's public host.
 
@@ -54,7 +54,7 @@ When only the database is elsewhere (managed Postgres), the same modifier re-poi
 
 Two or more frontends must share one origin: shared cookies, one login, links between `/` and `/app`. Template: `apps/example-multi-web-app/{landing,app,docs}` plus `apps/example-dashboard-nextjs`.
 
-**Where they live.** Static frontends under one group folder, `apps/example-multi-web-app/<name>/`. Each owns its manifest, lock, `tsconfig.json`, README. No env file: its prefix arrives from `.env.proxy`. The group owns one `Dockerfile`, the `nginx/` templates and one `README.md`. A server frontend (Next.js SSR) is not in the group: it is `apps/example-dashboard-nextjs/`, its own image and service.
+**Where they live.** Static frontends under one group folder, `apps/example-multi-web-app/<name>/`. Each owns its manifest, lock, `tsconfig.json`, README. No env file: its prefix arrives from `.env`. The group owns one `Dockerfile`, the `nginx/` templates and one `README.md`. A server frontend (Next.js SSR) is not in the group: it is `apps/example-dashboard-nextjs/`, its own image and service.
 
 **Dev.** `ctl dev --proxy`, automatic when two or more frontends are selected. `docker/compose.dev.yaml` runs one nginx on the host network with `nginx-dev.conf.template`: `/ → 127.0.0.1:${WEB_LANDING_PORT}`, `/app → :${WEB_APP_PORT}`, `/docs → :${WEB_DOCS_PORT}`, `/dashboard → :${DASHBOARD_PORT}`, `/api → :${API_PORT}`, `/engine → :${ENGINE_PORT}`. Websocket upgrade on every location, so HMR works through it. Open `http://localhost:${DEV_PROXY_PORT}`. The Vite proxy block stays for single-frontend dev; under the dev proxy it is never hit.
 
@@ -63,9 +63,9 @@ Two or more frontends must share one origin: shared cookies, one login, links be
 1. One build stage per static frontend: `oven/bun:<version>`, `ARG` for that frontend's public keys, `bun install --frozen-lockfile`, `bun run build`.
 2. Final stage `nginx:<version>`: `COPY` each output under its prefix in `/usr/share/nginx/html/`; `COPY nginx/nginx.conf.template` to `/etc/nginx/templates/default.conf.template`. nginx renders it at start from the container environment. Listens on 8080 as the `nginx` user (the Dockerfile chowns the cache and pid first). `+expose_web` publishes `${WEB_LANDING_PORT}:8080`, the port of the piece that owns `/` (`WEB_APP_PORT` in the single shape); `+public` publishes `${HTTP_PORT}:8080` and `${HTTPS_PORT}:8443`; `+expose` publishes every app port for debugging.
 
-Build args are prefixes: compose passes `VITE_BASE_PATH: ${WEB_APP_PREFIX}` and the like, interpolated from `.env.proxy`. No secret is ever a build arg.
+Build args are prefixes: compose passes `VITE_BASE_PATH: ${WEB_APP_PREFIX}` and the like, interpolated from `.env`. No secret is ever a build arg.
 
-**Adding a static frontend:** a folder under `apps/example-multi-web-app/`; one `<X>_PORT/_PREFIX` pair in `.env.proxy.template`; one build stage, one `ARG` and one `COPY --from` in the Dockerfile; one build arg in `compose.base.yaml`; one `location` in both templates and the prefix name in both `NGINX_ENVSUBST_FILTER` lists; one entry in the four `dev.sh` tables.
+**Adding a static frontend:** a folder under `apps/example-multi-web-app/`; one `<X>_PORT/_PREFIX` pair in `.env.template`; one build stage, one `ARG` and one `COPY --from` in the Dockerfile; one build arg in `compose.base.yaml`; one `location` in both templates and the prefix name in both `NGINX_ENVSUBST_FILTER` lists; one entry in the four `dev.sh` tables.
 
 ## Case 4 — Next.js as a server
 
@@ -76,7 +76,7 @@ A frontend that renders on the server, runs its own routes, or must start fast. 
 | Dev | `next.config.ts` rewrites `/api/* → http://127.0.0.1:${API_PORT}/api/*`. Server components fetch the same. |
 | Prod | Container `dashboard` gets `API_HOST: api`, `API_PORT: 8000` from compose `environment:`. Server-side fetches use them. The browser side still calls `/api`, which the `web` edge routes. |
 
-Server-only keys (no `NEXT_PUBLIC_` prefix) are allowed here and only here. Under `ctl dev` they come from `.env.secrets` through the process env. The app has no env file of its own. `output: "standalone"`, own Dockerfile, `basePath` = `DASHBOARD_PREFIX`.
+Server-only keys (no `NEXT_PUBLIC_` prefix) are allowed here and only here. Under `ctl dev` they come from `.env` through the process env. The app has no env file of its own. `output: "standalone"`, own Dockerfile, `basePath` = `DASHBOARD_PREFIX`.
 
 ## Case 5 — several backends
 
@@ -84,8 +84,8 @@ Template: `apps/example-api-python` (Python, identity, writes) and `apps/example
 
 | Concern | Rule |
 |---|---|
-| Shared secret | One key in `.env.secrets`. Both read `JWT_SIGNING_KEY`. Keys not shared are separate: `ENCRYPTION_KEY_PYTHON`, `ENCRYPTION_KEY_RUST`. |
-| One backend calls another | The caller's `config.yaml` has `engine: { url: ${ENGINE_URL} }`. Dev: `.env.proxy` says `http://localhost:8080`. Docker: compose sets `ENGINE_URL: http://engine:8080`. The callee never knows. |
+| Shared secret | One key in `.env`. Both read `JWT_SIGNING_KEY`. Keys not shared are separate: `ENCRYPTION_KEY_PYTHON`, `ENCRYPTION_KEY_RUST`. |
+| One backend calls another | The caller's `config.yaml` has `engine: { url: ${ENGINE_URL} }`. Dev: `.env` says `http://localhost:8080`. Docker: compose sets `ENGINE_URL: http://engine:8080`. The callee never knows. |
 | Shared database | One owner of the schema: `apps/database/`. Migrations are hand-written there (see `06_backend.md`). Both backends read; one writes. No table belongs to two services. |
 | Routing | Each backend has its own prefix and `location`. The edge does not know which language is behind it. |
 | Identity planes | Admin and user APIs are two backends when their auth differs (`api-admin`, `api-platform`), one when it does not. |
@@ -124,5 +124,5 @@ Two cases earn a second origin. Everything else is a prefix.
 - A Dockerfile per static frontend.
 - CORS middleware on a backend to reach a frontend of this product. If CORS is needed, the origin rule was broken.
 - Serving a frontend from a backend (`StaticFiles`). nginx serves static.
-- A backend host typed into compose that compose did not decide. That is `.env.proxy` and `+env_override`.
-- A prefix typed into a framework config. It comes from `.env.proxy` as `base` / `basePath`.
+- A backend host typed into compose that compose did not decide. That is `.env` and `+env_override`.
+- A prefix typed into a framework config. It comes from `.env` as `base` / `basePath`.

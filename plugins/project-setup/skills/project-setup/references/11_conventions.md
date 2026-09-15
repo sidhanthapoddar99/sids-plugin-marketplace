@@ -108,8 +108,8 @@ Each of these means a rule was broken somewhere else. Find that place.
 | CORS middleware for our own frontend | single origin |
 | `source .env*` in a script | skip-if-set loading (`02_env.md`) |
 | `os.environ[...]` outside `config.py` | one loader |
-| a password in `config.yaml` | secrets in `.env.secrets` only |
-| a `VITE_*` key in `.env.proxy`, or an env file inside a frontend | a frontend has no env file; its prefix comes from `.env.proxy` |
+| a password in `config.yaml` | secrets in `.env` only |
+| a `VITE_*` key in `.env`, or an env file inside a frontend | a frontend has no env file; its prefix comes from `.env` |
 | `alembic upgrade` or `create_all()` in a Dockerfile `CMD` or app startup | migrations are an explicit step (`06_backend.md`) |
 | `ports:` in any config `compose.<name>.yaml` | exposure by modifier only (`08a_ctl_docker.md`) |
 | `../` in a compose file | root-relative paths |

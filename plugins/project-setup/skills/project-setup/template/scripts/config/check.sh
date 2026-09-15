@@ -13,12 +13,9 @@ Rules
   versions  no '<version>' placeholder left in .mise.toml or any app manifest (pyproject.toml,
             package.json, Cargo.toml, rust-toolchain.toml, go.mod) — a placeholder breaks every
             toolchain install, so it is resolved with the user before anything runs
-  env       every \${VAR} in apps/*/config.yaml is a key in one of .env.{secrets,data,proxy}.template ·
-            a key with a _PASSWORD / _KEY / _SECRET segment appears only in .env.secrets.template ·
-            every .env.proxy.template key ends _HOST / _PORT / _PREFIX / _URL (or is PUBLIC_URL,
-            HTTP_PORT, HTTPS_PORT, DEV_PROXY_PORT, COMPOSE_PROJECT_NAME) ·
-            every .env.data.template key ends _DIR ·
-            no .env.* tracked by git except *.template ·
+  env       every \${VAR} in apps/*/config.yaml is a key in .env.template ·
+            .env.template has unique keys and blank secret values ·
+            no root .env or .env.* tracked by git except .env.template ·
             no secret literal in config.yaml (every key/password/secret value is \${VAR}) ·
             no config.local.yaml tracked by git
   layout    no package.json / bun.lock / pnpm-workspace.yaml at the root or directly in apps/ ·
@@ -34,7 +31,7 @@ Rules
             a linter run without its config reports only its defaults, and ruff's default has no complexity rule
   compose   no ports: in any config (docker/compose.<name>.yaml) — only a modifier publishes ·
             no ../ in any docker/compose.*.yaml ·
-            every \${NAME} inside the three env files names a set key, no cycle (the values ctl hands
+            every \${NAME} inside the root .env file names a set key, no cycle (the values ctl hands
             compose and the apps) ·
             docker compose config validates every config alone, and every modifier fits at least one
             config (the pair validates) — the fit list is printed, because that is what ctl up offers
@@ -73,34 +70,29 @@ for cfg in apps/*/config.yaml; do
 done
 git ls-files --error-unmatch '*config.local.yaml' >/dev/null 2>&1 && fail "config.local.yaml is tracked by git"
 # tracked env files: only the templates may be in git
-while IFS= read -r f; do [[ $f == *.template ]] || fail "$f is tracked by git — only .env.*.template may be committed"
+while IFS= read -r f; do [[ $f == .env.template ]] || fail "$f is tracked by git — only .env.template may be committed"
 done < <(git ls-files '.env' '.env.*' 2>/dev/null)
-# template roles
+# template contract
 known=()
 for f in "${ENV_FILES[@]}"; do
   [[ -f $f.template ]] || { fail "$f.template missing"; continue; }
   mapfile -t -O "${#known[@]}" known < <(env_keys "$f.template")
 done
-for f in .env.data.template .env.proxy.template; do
-  [[ -f $f ]] || continue
-  while IFS= read -r k; do [[ $k =~ _(PASSWORD|KEY|SECRET)(_|$) ]] && fail "$f holds $k — secrets live only in .env.secrets.template"; done < <(env_keys "$f")
-done
-[[ -f .env.proxy.template ]] && while IFS= read -r k; do
-  [[ $k =~ _(HOST|PORT|PREFIX|URL)$ || $k =~ ^(PUBLIC_URL|HTTP_PORT|HTTPS_PORT|DEV_PROXY_PORT|COMPOSE_PROJECT_NAME)$ ]] \
-    || fail ".env.proxy.template: $k is not a routing key (_HOST/_PORT/_PREFIX/_URL)"
-done < <(env_keys .env.proxy.template)
-[[ -f .env.data.template ]] && while IFS= read -r k; do
-  [[ $k =~ _DIR$ ]] || fail ".env.data.template: $k is not a path key (_DIR)"
-done < <(env_keys .env.data.template)
-if (( ${#known[@]} )); then
-  for cfg in apps/*/config.yaml; do
-    [[ -f $cfg ]] || continue
-    while IFS= read -r v; do
-      printf '%s\n' "${known[@]}" | grep -qx "$v" || fail "$cfg reads \${$v} — not in any .env.*.template"
-    done < <(sed 's/#.*//' "$cfg" | grep -oE '\$\{[A-Z_][A-Z0-9_]*\}' | tr -d '${}' | sort -u)
-  done
-  pass "config.yaml \${VAR} keys ⊆ the env templates · template roles hold"
+while IFS= read -r key; do fail ".env.template: duplicate key $key"; done < <(printf '%s\n' "${known[@]}" | sort | uniq -d)
+if [[ -f .env.template ]]; then
+  while IFS='=' read -r key value || [[ -n $key ]]; do
+    [[ $key =~ ^[A-Za-z_][A-Za-z0-9_]*$ && $key =~ _(PASSWORD|KEY|SECRET)(_|$) ]] || continue
+    value="${value%$'\r'}"; value="${value%%[[:space:]]#*}"; value="${value%"${value##*[![:space:]]}"}"
+    [[ -z $value ]] || fail ".env.template: $key must be blank"
+  done < .env.template
 fi
+for cfg in apps/*/config.yaml; do
+  [[ -f $cfg ]] || continue
+  while IFS= read -r v; do
+    printf '%s\n' "${known[@]}" | grep -qx "$v" || fail "$cfg reads \${$v} — not in .env.template"
+  done < <(sed 's/#.*//' "$cfg" | grep -oE '\$\{[A-Z_][A-Z0-9_]*\}' | tr -d '${}' | sort -u)
+done
+pass "config.yaml \${VAR} keys ⊆ .env.template · unique keys and blank secrets"
 
 step "layout"
 # The root-manifest exception: an open-source package repo whose root IS the published artifact
@@ -183,7 +175,7 @@ if (( have_env )); then
   else fail "an env file holds a reference ctl cannot resolve — ctl up and ctl dev would hand it on as text"; fi
 fi
 if [[ "$(docker_state)" == ok ]] && (( have_env )); then
-  step "compose config (the three env files supply \${VAR}, resolved as ctl up hands them on)"
+  step "compose config (the root .env file supplies \${VAR}, resolved as ctl up hands them on)"
   # every config must stand alone
   mapfile -t cfgs < <(list_configs)
   (( ${#cfgs[@]} )) || fail "no config in $DOCKER_DIR/ (docker/compose.<name>.yaml)"
@@ -196,7 +188,7 @@ if [[ "$(docker_state)" == ok ]] && (( have_env )); then
   # optional public-origin keys uncommented, and a blank ${VAR} would validate as an empty string.
   while IFS= read -r m; do [[ -z $m ]] && continue
     mapfile -t blank < <(modifier_blank_keys "$m")
-    if (( ${#blank[@]} )); then warn "+$m — skipped: needs ${blank[*]} set in .env.proxy / .env.secrets (ctl up refuses it the same way)"; continue; fi
+    if (( ${#blank[@]} )); then warn "+$m — skipped: needs ${blank[*]} set in .env (ctl up refuses it the same way)"; continue; fi
     fits=(); for c in "${cfgs[@]}"; do modifier_fits "$c" "$m" && fits+=("$c"); done
     if (( ${#fits[@]} )); then ok "+$m fits: ${fits[*]}"
     else fail "+$m fits no config — $(compose_cmd -f "$BASE" -f "$(modifier_file "$m")" config -q 2>&1 | head -1)"; fi

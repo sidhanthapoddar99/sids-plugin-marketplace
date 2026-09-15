@@ -1,86 +1,79 @@
-# Env — three env files, `config.yaml`, `config.local.yaml`
+# Env — root `.env`, `config.yaml`, `config.local.yaml`
 
-Configuration lives in five kinds of file. Nothing else stores it. Template: `template/.env.*.template`, `template/apps/example-api-python/config.yaml`.
+Configuration has one root environment file and per-backend settings. Template: `template/.env.template`, `template/apps/example-api-python/config.yaml`.
 
 | File | Where | Holds | Read by | Committed |
 |---|---|---|---|---|
-| `.env.secrets` | root | Every secret: passwords, signing and encryption keys, third-party credentials. The database connection values built from them. `REGISTRY`, `TAG`. | compose, backend loaders | no. `.env.secrets.template` yes, every value blank |
-| `.env.data` | root | Every path: `DATA_DIR`, `LOGS_DIR`, `BACKUP_DIR`, dataset paths. Root-relative. | compose, `ctl`, apps that touch disk | no. `.env.data.template` yes |
-| `.env.proxy` | root | The service definitions. Per proxied piece (backend, server frontend): `<PIECE>_HOST`, `_PORT`, `_PREFIX`; backends add `_URL`. Per static frontend: `_PORT`, `_PREFIX` only (it is built in, never proxied). The piece that owns `/` has no `_PREFIX`. Plus `DEV_PROXY_PORT`, `COMPOSE_PROJECT_NAME`, external service URLs, and the optional public origin (`PUBLIC_URL`, `HTTP_PORT`, `HTTPS_PORT`), commented out until a public deployment needs it. | the service itself (binds `_PORT`, mounts `_PREFIX`), `ctl`, compose, nginx templates, Vite/Next configs, other backends | no. `.env.proxy.template` yes |
-| `config.yaml` | each backend | All settings of that backend. `${VAR}` for secrets and endpoints. Literals for defaults. | the backend's loader | yes |
-| `config.local.yaml` | each backend | A developer's overrides of literals. Never a secret. | the backend's loader | no |
-
-A frontend has no env file. Its prefix reaches it from `.env.proxy` through compose (build arg) or the process env (dev server), under the same key (`WEB_APP_PREFIX`), read directly by the framework config with no `VITE_*` alias and no literal fallback: a missing key throws. A display name is a literal in the framework config.
+| `.env` | root | Debugging, service addresses, data paths, secrets and deployment settings, grouped by kind | `ctl`, Compose interpolation, backend loaders | no; `.env.template` yes |
+| `config.yaml` | each backend | All settings of that backend. `${VAR}` for secrets and endpoints. Literals for defaults. | backend loader | yes |
+| `config.local.yaml` | each backend | Developer overrides of literals. Never a secret. | backend loader | no |
 
 ## Rules
 
-1. **One value, one file, chosen by what it is.** A secret → `.env.secrets`. A path → `.env.data`. A host, port, prefix or URL of a piece the edge routes → `.env.proxy`. A backend default → `config.yaml`. `ctl check` enforces the key-name patterns per file.
-   Database endpoints (`POSTGRES_HOST`, `REDIS_HOST`, `NEO4J_HOST` and their ports and URLs) are connection values, not routes: nothing proxies them and no frontend ever sees them. They live in `.env.secrets` next to the password they pair with. That is also what lets the same file point at a hosted engine (RDS, ElastiCache): change the host and password there, and nothing else in the repo changes.
-2. **Only backends and compose read `.env.secrets`.** A frontend never does. One exception: a Next.js server that proxies or runs its own routes reads server-only keys from it.
-3. **`.env.proxy` defines a service, not only its route.** `<PIECE>_PORT` is the port the service binds on the host (`uvicorn --port ${API_PORT}`, `vite --port $WEB_APP_PORT`); `<PIECE>_PREFIX` is where it mounts its routes (`FastAPI(root_path=settings.server.prefix)`). The edge and the dev proxy read the same keys to route. One key, two readers: a service and its route cannot disagree. Never a port or prefix typed into code or a framework config, and never a literal fallback (`?? "/api"`): a missing key fails. Under docker the internal port is compose's decision (`API_PORT: 8000` as a literal, `api:8000` as the upstream); `.env.proxy` ports are host-side.
-4. **Everything in `.env.proxy` may end up in a bundle.** Treat every key as public. No secret, ever.
-5. **Compose and `ctl` read only the three root files.** Never an app's file. `ctl` passes them as `--env-file secrets, data, proxy` on every compose call; compose reads no `.env` on its own.
-6. **Everything runs from the repo root.** `ctl` calls compose with `--project-directory <root>`. Every path in `.env.data` and in every compose file is root-relative: `./data`, `./apps/…`. Never `../`.
-   A value in any of the three files may build on another key as `${KEY}`: `BACKUP_DIR=${LOGS_DIR}/backups`, `DATABASE_URL=postgresql://${POSTGRES_USER}:…`. `ctl` resolves every such reference once, after it loads the three files and before compose or an app sees the value, because compose and the app loaders keep a value the shell hands them as it is. Resolution is text substitution, never `eval`. A reference to an unset key, or a cycle, fails at load and names the key. `ctl check` proves this on the filled files. Template: `template/scripts/common/_lib.sh`, `expand_env_refs`.
-7. **Backend precedence:** process env > `config.local.yaml` > `config.yaml`. A real environment variable always wins. The loader reads the three files skip-if-set. Two channels reach a literal from the environment: `${VAR}` in `config.yaml` for values the file names, and the nested override `<APP>__<SECTION>__<KEY>` (`API__DATABASE__POOL_SIZE`) for any literal, which is how a container or CI tweaks one setting without a file.
-8. **Two things we do not do, on purpose.** No `config.<env>.yaml` layer (`config.prod.yaml`): an environment differs by its env files, never by a second committed config. No default forms in `${VAR}` (`${VAR:-8000}`, `${VAR:?}`): an unset key fails at startup and names itself; a default is a guess that runs. Two backends with separate databases prefix their keys (`AUTH_DATABASE_URL`, `BILLING_DATABASE_URL`), and the nested override prefix is per service (`API__`, `ENGINE__`) so two backends on one host never collide.
-9. **Templates are the contract.** Every key present, every secret blank, a comment per key naming the reader and how the value is made. `ctl setup` copies template → file and fills the generated secrets. Never read a filled file when auditing, because it holds live secrets and the audit output is a log. Read the templates; they carry every key.
-10. **The public origin is opt-in.** `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` ship commented out in `.env.proxy.template`. Local docker (`ctl up`, the `+expose_web` default) publishes the edge on the `_PORT` of the piece that owns `/`, so the product keeps one origin, the same one its dev server has, and no CORS, with nothing public set. A real public deployment uncomments the three and runs `ctl up +public`; the modifier publishes 80/443 and hands `PUBLIC_URL` to the apps, and refuses to start while one of the three is blank. `PUBLIC_URL` is not a `config.yaml` key, because a `${VAR}` there is required at every start; an app that builds absolute URLs reads it from the process env and treats absence as relative URLs only. Template: `template/docker/compose.m.public.yaml`.
+1. **One environment contract.** Keep every environment key in the root `.env.template`, with blank secrets and useful non-secret defaults, so an operator can find the whole contract in one place. Group keys by kind with two-line hash comment headers, as shown in the template: debugging, service addresses, data paths, secrets and deployment. Within each section, use single-hash service subheadings such as `# Postgres` and `# Redis`, with one blank line between groups. Keep addresses and prefixes in the service-address section and credentials in the secrets section. Put comments above variables rather than on assignment lines so values are easy to scan and edit. Each setting belongs in one group.
+2. **Process inheritance is different from browser exposure.** `ctl` exports the loaded environment to child processes, including frontend dev servers. A dev server can therefore read secrets in its server process. Expose only explicitly selected public constants to browser code. Never serialize or spread `process.env`, use an empty env prefix, or put secrets in `VITE_*`, `NEXT_PUBLIC_*` or `PUBLIC_*` variables that the framework exposes. A root file is not a security boundary between local processes.
+3. **Service addresses define both binding and routing.** Use `<PIECE>_HOST`, `_PORT`, `_PREFIX` for each proxied piece; backends may add `_URL`. Static frontends need `_PORT` and `_PREFIX` only. The piece owning `/` has no `_PREFIX`. The service and proxy read the same keys so their routes agree. Missing required values fail instead of using literal fallbacks. Under Docker, Compose decides internal service names and ports (`api:8000`); root `.env` ports control host exposure.
+4. **Keep credentials out of browser constants and build args.** Addresses in `.env` are not automatically public, and a URL may contain a password. Browser code calls the same-origin backend route for operations requiring credentials. Only a Next.js server's server-side code may use server credentials.
+5. **Load one root file.** `ctl` passes `--env-file <root>/.env` to Compose explicitly. Do not add app env files or depend on Compose discovering one from the current directory, because commands must behave the same from every working directory. Docker services receive declared `environment:` keys, never the whole file via service `env_file:`.
+6. **Resolve values before launching consumers.** Paths are root-relative (`./data`, `./logs`) or absolute deployment paths, never `../`. `ctl` anchors Compose with `--project-directory <root>`. Values may reference other keys with `${KEY}`, including later declarations: `BACKUP_DIR=${LOGS_DIR}/backups`. The loader first loads all keys skip-if-set, then resolves references using the winning environment values. It uses text substitution, never `eval`. An unset reference or a cycle fails naming the key. Template: `template/scripts/common/_lib.sh`, `expand_env_refs`.
+7. **Preserve backend precedence.** Process environment > `config.local.yaml` > `config.yaml`. Load the root file skip-if-set so inline overrides and CI-injected secrets win, including an explicitly empty value. The nested override `<APP>__<SECTION>__<KEY>` (`API__DATABASE__POOL_SIZE`) overrides literals; `${VAR}` names environment values used in YAML.
+8. **Keep defaults in one place.** Do not add `config.<env>.yaml` layers or default forms such as `${VAR:-8000}` in backend settings. An unset reference fails; a literal default belongs in `config.yaml`. Prefix separate databases (`AUTH_DATABASE_URL`, `BILLING_DATABASE_URL`) and nested overrides (`API__`, `ENGINE__`) so services sharing a host do not collide.
+9. **Audit the template.** Read `.env.template`, never a filled `.env`, because audit output is a log and the filled file holds live secrets. `ctl setup` copies the template, appends missing keys without replacing existing values, and generates blank local secret keys. `ctl status` compares key names with the template.
+10. **The public origin is opt-in.** `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` ship commented out. Local Docker publishes the edge on the port of the piece owning `/`. A public deployment enables these three keys and uses `ctl up +public`, which refuses blank values. Keep `PUBLIC_URL` out of required YAML references: an app that creates absolute URLs reads it from the process environment and treats absence as relative URLs only. Template: `template/docker/compose.m.public.yaml`.
 
 ## How a backend reads a value
 
-One module per backend does it all: `config.py`, `config.rs`, `config.go`, `config.ts`. Nothing else reads the environment or a file. Template: `template/apps/example-api-python/app/config.py`, `template/apps/example-engine-rust/crates/common/src/config.rs`.
+One module per backend owns settings: `config.py`, `config.rs`, `config.go` or `config.ts`. Other modules import its typed settings object. Template: `template/apps/example-api-python/app/config.py`, `template/apps/example-engine-rust/crates/common/src/config.rs`.
 
-1. Find the repo root: walk up to the folder that holds `ctl`. Load `.env.secrets`, `.env.data`, `.env.proxy` from it, skip-if-set. Under docker the files are absent; compose already set the environment, so this step does nothing. Skip-if-set is the point: `set -a; source .env` would let a file beat an inline override (`HTTP_PORT=8085 ctl up`) or a CI-injected secret. The price is plain `KEY=value` lines only: no multi-line values, no command substitution.
-2. Read `config.yaml`. Deep-merge `config.local.yaml` over it if present: nested maps merge key by key, arrays replace whole.
-3. Replace every `${VAR}` from the environment. An unset `${VAR}` fails at startup and names the key. The app never runs on a guessed value.
-4. Validate into one typed settings object. The app imports that object.
+1. Find the repo root by walking up to `ctl`. Load raw `.env` values skip-if-set using the parser contract below. Resolve references only after all keys are loaded, with the same semantics as rule 6, so forward references cannot become empty strings during parsing. Under `ctl`, values are already resolved; under Docker, the file is absent and Compose supplies declared keys.
+2. Read `config.yaml`. Deep-merge `config.local.yaml` if present: maps merge by key, arrays replace whole.
+3. Replace `${VAR}` from the environment. Fail on an unset reference. Apply nested environment overrides last so process values win.
+4. Validate into one typed settings object.
 
-`template/apps/example-api-python/config.yaml` shows the form: `${VAR}` for a secret or an endpoint, a literal for a default, and a comment per key naming which env file supplies it. So `config.yaml` names every variable a backend reads, and the three templates name every variable the stack reads. Together they are the full inventory.
+The root loader accepts unquoted `KEY=value` lines only. It tolerates CRLF and trailing whitespace comments. Quotes stay literal; multi-line values and shell commands are unsupported. Do not source the file, because sourcing executes text and overrides existing values.
 
 ## How a frontend reads a value
 
-It has no env file. It needs one value, its prefix, and gets it from `.env.proxy`:
+A frontend has no env file of its own. Its framework config reads selected keys from the process environment; it does not forward that environment to the browser.
 
 | Mode | How |
 |---|---|
-| `ctl dev` | `ctl` exports the three files; `vite.config.ts` reads `process.env.WEB_APP_PREFIX` for `base` and `API_PORT` for the proxy target. Never a `VITE_*` key, never a fallback. |
-| `ctl build` | compose passes `VITE_BASE_PATH: ${WEB_APP_PREFIX}` as a build arg, interpolated from `.env.proxy`. Baked into the bundle. |
-| running container | Nothing for a static build. A Next.js server gets `API_HOST`, `API_PORT` from compose `environment:`. |
+| `ctl dev` | The dev server inherits the root environment. `vite.config.ts` selects `WEB_APP_PREFIX` for `base` and `API_PORT` for its server-side proxy. |
+| `ctl build` | Compose selects public prefixes for build args, for example `VITE_BASE_PATH: ${WEB_APP_PREFIX}`. The prefix is baked into the bundle. |
+| Running container | Static builds read nothing. A Next.js server receives only its declared server keys through Compose `environment:`. |
 
-The API location is never a frontend value. Same origin, `fetch("/api/…")`. A frontend that needs a credential calls the backend that holds it. AI keys: `.env.secrets`, backend only, behind a proxy route.
+Never use a `VITE_API_URL` alias or an API host in the bundle: browser requests use the same origin, such as `fetch("/api/…")`. If a project needs a browser debugging flag, select that one non-secret value explicitly in the framework config.
 
-## How Docker consumes the files
+## How Docker consumes the file
 
 | Way | When read | Used for |
 |---|---|---|
-| Build-time `build.args` | During `ctl build`. Baked into the image. | Prefixes from `.env.proxy`. Nothing from `.env.secrets`, ever: a build arg stays in image history. |
-| Runtime `environment:` | When the container starts. | Backends, the Next.js server, the edge. Every secret. |
+| CLI `--env-file` | Compose model interpolation | Values referenced by the Compose model, overridden by the process environment |
+| `build.args` | Image build | Explicitly selected public constants only; secrets persist in image history if passed here |
+| `environment:` | Container start | Exactly the runtime keys each service declares, including backend credentials |
 
-`compose.base.yaml` has no `env_file`. Each service lists exactly the keys it reads: `${VAR}` when the operator decides the value, a literal when compose decides it (service names: `api`, `postgres`). Read the file and you know everything a container gets.
-
-Under docker, `<PIECE>_HOST` in `.env.proxy` is not consulted: compose sets the service name as a literal. `ctl up +env_override` reverses that for a piece running outside this compose. See `03_routing.md`.
+`template/docker/compose.base.yaml` has no service `env_file:`. Each service declares `${VAR}` when the operator decides the value and a literal when Compose decides it, such as `api` or `postgres`. Under Docker, host-side `<PIECE>_HOST` is unused unless `+env_override` selects it for an external service. See `03_routing.md`.
 
 ## Secret classes
 
 | Class | Generate with | Rotation |
 |---|---|---|
-| Signing key (JWT) | `openssl rand -hex 32` | On leak. Invalidates all tokens. |
-| Encryption key at rest | `openssl rand -hex 32` | Never without a re-encrypt migration. |
-| Service password (Postgres, Redis, Neo4j) | `openssl rand -base64 24 \| tr -d '+/=' \| head -c 24` | Yearly, or on leak. |
-| Third-party credential | The provider's console | On leak. |
+| Signing key (JWT) | `openssl rand -hex 32` | On leak; invalidates all tokens |
+| Encryption key at rest | `openssl rand -hex 32` | Only with a re-encrypt migration |
+| Service password | `openssl rand -base64 24 \| tr -d '+/=' \| head -c 24` | Yearly or on leak |
+| Third-party credential | Provider console | On leak |
 
-A key is a secret when its name holds a `_PASSWORD`, `_KEY` or `_SECRET` segment, at the end (`JWT_SIGNING_KEY`) or followed by more (`ENCRYPTION_KEY_PYTHON`). `ctl setup` generates every blank secret key in `.env.secrets`, and on later runs appends any key the template gained; `ctl status` diffs each file against its template. Third-party credentials stay blank until pasted. A secret that ever reaches git is rotated, not deleted, because history is forever. Every secret class needs a written recovery step, not only a cadence, because a rotation with no written step is done wrong under pressure. The shipped template comments carry the cadence only; write the step beside the key when the project fills the template. Shared keys are one variable (`JWT_SIGNING_KEY` for Python and Rust); keys not shared are separate (`ENCRYPTION_KEY_PYTHON`, `ENCRYPTION_KEY_RUST`).
+`ctl setup` generates a blank key whose name holds a `_PASSWORD`, `_KEY` or `_SECRET` segment, at the end or followed by more (`ENCRYPTION_KEY_PYTHON`). Keep provider-issued credentials commented out until configured; the generator cannot distinguish an active blank provider key from a local generated key. Shared credentials use one key; separate credentials use separate names. Write each secret's recovery procedure beside its template entry when adapting the project, because a rotation needs the service-specific steps. Rotate leaked credentials even after removing them from the working tree, because Git retains history.
 
 ## Template rules
 
-- Every key present. A header names the file's purpose, its readers, and how `ctl setup` turns it into the real file.
-- Every key carries a comment: who reads it, and for a secret how it is generated, and for a host its docker value.
-- Secrets blank. Non-secrets carry the dev default.
-- Composed values use `${VAR}` from leaves (`DATABASE_URL=postgresql://${POSTGRES_USER}:…`), so a host change is one edit.
-- Grouped by piece. A future integration stays as a commented block.
-- `.gitignore`: `.env`, `.env.*`, `!.env.*.template`.
+- Use the two-line hash headers in `template/.env.template` so settings are easy to find by kind.
+- Name each key's reader and generation method in its comment so an operator knows how to fill it.
+- Keep secrets blank so the committed template contains no credentials. Give non-secrets development defaults so setup produces usable local settings.
+- Compose values from leaves (`DATABASE_URL=postgresql://${POSTGRES_USER}:…`) so changing a host requires one edit.
+- Keep optional integrations as commented blocks so setup does not generate provider credentials.
+- Ignore `.env` and `.env.*`; allow only the root `!/.env.template`. Exclude env files from Docker build contexts so secrets cannot enter images.
 
 ## `ctl check` on env
 
-The env rules that `ctl check` proves are listed once, in `08_ctl.md` § `ctl check`. Every rule on this page that names a key pattern is in that list.
+The mechanical checks live in `08_ctl.md` § `ctl check`. Browser exposure and the quality of template comments still require review; a green conformance check does not prove those properties.
