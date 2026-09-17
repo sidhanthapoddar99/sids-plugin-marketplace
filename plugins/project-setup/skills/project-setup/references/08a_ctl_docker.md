@@ -108,7 +108,7 @@ The engines live in the `db` config with no ports. Two one-shot services live be
 
 | Service | Runs | Image |
 |---|---|---|
-| `migrate` | `alembic upgrade head` in `apps/database/postgres/`, bind-mounted at `/work` so `new` writes back | built from `apps/database/postgres/Dockerfile` |
+| `migrate` | `flyway migrate` using SQL copied from `apps/database/postgres/migrations/` | built from `apps/database/postgres/Dockerfile` |
 | `neo4j-init` | `cypher-shell -f init.cypher` | the neo4j image, which ships the shell |
 
 Both run inside the compose network, so no engine port is published for them. Both are idempotent and exit 0 when applied. Every backend waits on them with `condition: service_completed_successfully`; the edge and the server frontend wait on a backend, so they wait too. Compose orders engines, schema, apps by itself. An app never migrates on its own boot. It waits.
@@ -118,11 +118,11 @@ Both run inside the compose network, so no engine port is published for them. Bo
 | `ctl dev` | `ctl up preset dev --nqa -y` (the reserved preset: `--config db +expose_db`), which checks engine readiness and one-shot completion within its startup budget, then the apps on the host | engines on loopback, so host processes reach them |
 | `ctl up` | `base`: engines, one-shots, apps | none on the engines; the edge through a modifier |
 | `ctl up --services api` | `postgres`, `redis`, `migrate`, `api` | as above |
-| `ctl db migrate` | `docker compose run --rm --no-deps --build migrate alembic upgrade head`, then `neo4j-init` when `neo4j` is in `DATA_SVCS` and `init.cypher` exists. Both against the `base` file, which includes the db file, so the same containers are found. | none; the engines must already be up |
-| `ctl db migrate new "<msg>"` | the same container, `alembic revision`, run as your user so the files are yours | none |
+| `ctl db migrate` | build the migration image, then `docker compose run --rm --no-deps migrate migrate` against the base config | none; the engines must already be up |
+| `ctl db migrate new "<msg>"` | the shell worker creates one timestamped SQL migration in the checkout; no container or database needed | none |
 | `ctl manage` | inside the running `api` container under `ctl up`; on the host under `ctl dev` | none published for the container path |
 
-`--no-deps` on `ctl db migrate` matters. `ctl dev` creates the engine containers from `db` plus `+expose_db`. `ctl up` creates them from `base` with no ports. Compose keys a container by service name and recreates it when its spec differs. A switch between `ctl dev` and `ctl up` recreates the engines once. That is acceptable. A `run` that starts its dependencies would recreate them under a live stack. That is not. `ctl db migrate` therefore requires the engines up and never starts them.
+`--no-deps` on `ctl db migrate` matters. `ctl dev` creates the engine containers from `db` plus `+expose_db`. `ctl up` creates them from `base` with no ports. Compose keys a container by service name and recreates it when its spec differs. A switch between `ctl dev` and `ctl up` recreates the engines once. That is acceptable. A `run` that starts its dependencies would recreate them under a live stack. That is not. `ctl db migrate` therefore requires the engine up and never starts it.
 
 Without a data core: `DATA_SVCS=()` and `SCHEMA_SVCS=()` in `_lib.sh`; drop the include and every `depends_on` on an engine or a one-shot from `base`; delete the `db` config, the `dev` preset and `scripts/db/`. `ctl dev` skips the data core when `DATA_SVCS` is empty. `ctl check` then names any `depends_on` left behind, because `base` no longer validates.
 

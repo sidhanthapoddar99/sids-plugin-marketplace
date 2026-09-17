@@ -9,7 +9,7 @@
 # Every engine has a healthcheck: apps depend on it with condition: service_healthy. Started is not ready.
 # Engines get deliberately higher memory limits than apps; never starve the database.
 #
-# Schema: two one-shot services, migrate (Alembic) and neo4j-init (cypher-shell). They run inside the
+# Schema: two one-shot services, migrate (Flyway) and neo4j-init (cypher-shell). They run inside the
 # compose network, so no engine port is ever published for them. exit 0 = applied, and both are
 # idempotent, so they run whenever this config comes up (`ctl dev` and `ctl up` alike). An app waits
 # on them with condition: service_completed_successfully; `ctl db migrate` re-runs them by name.
@@ -37,7 +37,6 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C.UTF-8"   # or collation drifts between machines
     volumes:
       - "${DATA_DIR}/postgres/pgdata:/var/lib/postgresql/data"
-      - "./apps/database/postgres/init:/docker-entrypoint-initdb.d:ro"   # extensions and roles, once, on an empty pgdata
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -91,9 +90,9 @@ services:
     image: ${REGISTRY}/migrate:${TAG}
     build: { context: ./apps/database/postgres }
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-    volumes:
-      - "./apps/database/postgres:/work"         # the revisions come from the checkout; `db migrate new` writes back here
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      FLYWAY_USER: ${POSTGRES_USER}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       postgres: { condition: service_healthy }
 

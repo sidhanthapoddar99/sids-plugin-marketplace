@@ -33,7 +33,7 @@ are a separate suite and are not installed by CTL.
 | | `build [app…\|cli]` | Compose build. Build args are prefixes interpolated from `.env`. `cli`: the Go binary. |
 | | `clean [-y]` | Down plus caches. `data/` untouched. |
 | | `health [svc…]` | One-shot health table. |
-| Database | `db migrate [up\|new "<msg>"\|status\|down]` | The `migrate` and `neo4j-init` one-shots from `compose.db.yaml`, run inside the compose network with `docker compose run --rm --no-deps`. The only path that touches schema. The same one-shots run on their own whenever the db config comes up. Needs the engines up. |
+| Database | `db migrate [up\|new "<msg>"\|status\|check]` | Flyway applies versioned PostgreSQL SQL. The Compose migration service runs Flyway inside Docker. `new` writes a file without connecting. `check` verifies currency. Production orders its migration one-shot before apps. |
 | | `db shell <engine>` | psql, redis-cli, cypher-shell with `.env` credentials. |
 | | `db backup`, `db restore <dir>` | Dump to `${BACKUP_DIR}/<timestamp>/`; load back. Restore validates the PostgreSQL archive before mutation and refuses while configured app containers or recorded host processes run. |
 | Administration | `manage ops <list\|create\|disable\|enable\|reset-password\|lockout>` | Operator accounts, without the web auth flow. Below. |
@@ -143,7 +143,7 @@ The one path to operator identity that does not go through the web. It seeds the
 | A generated password (`--auto-password`) is printed once, alone on its line, and never logged. | It is a secret in transit. |
 | Needs the data core up: `ctl dev`, or `ctl up`. | It talks to the tables directly. |
 
-Adapt `ADMIN_SVC`, `ADMIN_DIR`, `ADMIN_RUNTIME` and the host/container command arrays in `manage.sh`. `auto` selects a running service returned by the current project's Compose query, otherwise the host; `container` refuses host fallback, and `host` selects it explicitly. The container route needs no host manager file or Python environment. `scripts/common/_runtime.sh` preserves argument boundaries and exit status and disables TTY allocation for noninteractive streams. Schema commands continue to use their declared one-shot containers, so Docker mode does not require host Alembic.
+Adapt `ADMIN_SVC`, `ADMIN_DIR`, `ADMIN_RUNTIME` and the host/container command arrays in `manage.sh`. `auto` selects a running service returned by the current project's Compose query, otherwise the host; `container` refuses host fallback, and `host` selects it explicitly. The container route needs no host manager file or Python environment. `scripts/common/_runtime.sh` preserves argument boundaries and exit status and disables TTY allocation for noninteractive streams. Schema commands continue to use their declared one-shot containers, so Docker mode does not require a host migration runtime.
 
 Products without an operator plane delete `scripts/admin/` and `manager.py`.
 

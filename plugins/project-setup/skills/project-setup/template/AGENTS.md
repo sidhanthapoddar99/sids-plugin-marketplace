@@ -8,7 +8,7 @@ This brief is a contract: audits compare the repo against the tables below, not 
 
 These bind every agent on every change.
 
-- `ctl` is the only way to run, build, migrate or test. Never call docker, alembic, uv or bun directly for those.
+- `ctl` is the only way to run, build, migrate or test. Never call docker, flyway, uv or bun directly for those.
 - Keep settings in the ignored root `.env`, grouped by kind with two-line hash headers. Read `.env.template` for the contract; the filled file holds live secrets.
 - Schema changes go through `apps/database/postgres/migrations/`. Never edit a live schema.
 - An app never imports from another app. Shared code is a package under `apps/packages/`.
@@ -24,7 +24,7 @@ When this section outgrows one screen, move it to `memory/` and import each file
 | Frontend shape | `<single frontend · group (apps/example-multi-web-app) + server frontend>` |
 | Backend role | `<one backend · api + engine (identity in Python, data plane in Rust)>` |
 | Identity planes | `<single · admin plane on its own origin (api-admin)>` |
-| Schema owner and migration style | `<Alembic autogenerate in the backend · hand-written SQL in apps/database/postgres · sqlx migrate>` |
+| Schema owner and migration style | `Flyway SQL migrations in apps/database/postgres/migrations` |
 | Theme modes | `<light + dark · light only (marketing)>` |
 | Protection tier | `<none · captcha (Turnstile) · managed WAF>` |
 | Gate ladder | `lint typecheck test check` |

@@ -59,7 +59,7 @@ ctl_help() {
   row "clean [-y]"                      "tear down + wipe caches (asks first)"
   row "health [svc…]"                   "one-shot container health table"
   printf '\n%sDatabase%s\n' "$C_B" "$C_RESET"
-  row 'db migrate [up|new "<msg>"|status|down]' "schema migrations, run inside the compose network (Alembic + neo4j init)"
+  row 'db migrate [up|new "<msg>"|status|check]' "Flyway SQL migrations inside Docker"
   row "db shell <engine>"               "psql · redis-cli · cypher-shell, with .env credentials"
   row "db backup | restore <dir>"       "dump to configured BACKUP_DIR · validate and restore a dump"
   printf '\n%sAdministration%s (break-glass; bypasses web auth — host access is the boundary; needs the data core up)\n' "$C_B" "$C_RESET"
@@ -130,7 +130,7 @@ case "$cmd" in
               backup)  run db/backup  "$@" ;;
               restore) run db/restore "$@" ;;
               help|-h|--help) print_help db "schema, data-core clients and dumps" \
-                'db migrate [up|new "<msg>"|status|down]  ·  db shell <postgres|redis|neo4j>  ·  db backup  ·  db restore <dir>' \
+                'db migrate [up|new "<msg>"|status|check]  ·  db shell <postgres|redis|neo4j>  ·  db backup  ·  db restore <dir>' \
                 $'Subcommands\n  migrate [sub]    apply or create schema migrations — the only path that touches schema\n  shell <engine>   interactive client with .env credentials\n  backup           dump every engine into BACKUP_DIR/<timestamp>/\n  restore <dir>    load a backup back (asks first)\n\nEach subcommand has its own help: ctl db <subcommand> -h.' ;;
               *) err "unknown db subcommand: $sub"; say "run ${C_B}ctl db --help${C_RESET}"; exit 1 ;;
             esac ;;

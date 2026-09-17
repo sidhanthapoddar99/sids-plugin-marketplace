@@ -1,6 +1,6 @@
 # Working rules
 
-- `ctl` is the only way to run, build, migrate or test. Never call docker, alembic, uv or bun directly for those.
+- `ctl` is the only way to run, build, migrate or test. Never call docker, flyway, uv or bun directly for those.
 - Keep settings in the ignored root `.env`, grouped by kind with two-line hash headers. Read `.env.template` for the contract; the filled file holds live secrets.
 - Schema changes go through `apps/database/postgres/migrations/`. Never edit a live schema.
 - An app never imports from another app. Shared code is a package under `apps/packages/`.

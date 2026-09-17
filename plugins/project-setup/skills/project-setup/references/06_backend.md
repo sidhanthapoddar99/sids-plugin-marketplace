@@ -59,34 +59,45 @@ Worker count matches the container's CPU limit (`09_production.md`): nine worker
 
 ## Migrations
 
-Schema changes always go through migrations. Never edit a live schema by hand; never `Base.metadata.create_all()` in production.
+Use Flyway for relational database migrations in every project, regardless of the
+backend language. Keep SQL under `apps/database/postgres/migrations/`. Pin Flyway in the migration Dockerfile so development and
+production use the same runner. The host needs Docker, not a Flyway installation. Flyway owns the history table and checksums;
+do not add another ledger, ORM migration runner or schema fingerprint protocol.
 
-| Way | Where | Use when |
-|---|---|---|
-| Alembic autogenerate | Inside the backend, next to its models | One Python backend owns the database, and the schema needs nothing autogenerate cannot express. Autogenerate, review the diff, commit. |
-| Hand-written SQL | `apps/database/postgres/` | Two or more backends read the same database, or the schema uses what autogenerate handles badly: partial or expression indexes, extensions, triggers, custom types, data backfills, partitions. |
-| The owner's native tool | `apps/database/postgres/` | No Python backend owns the schema: `sqlx migrate` (Rust), `golang-migrate` (Go). Same folder, same `ctl db migrate` verbs. |
+Use `ctl db migrate new "description"` to create a versioned SQL file. Write the
+schema or data changes in that file. Use `ctl db migrate` to apply pending files
+through the Compose migration container. Use `status` to inspect migration state and `check` to validate
+applied files against the current checkout. These commands do not infer SQL from
+application source changes. Applied migrations are immutable; create a new forward
+migration to correct one. Automatic downgrade and destructive clean are disabled.
 
-Both conditions must hold for autogenerate: single consumer, plain schema. If either fails, `apps/database/` owns the migrations. One owner in every case.
+Put required extensions and schema initialization in the first migration so a
+fresh database has one initialization path. An application never migrates during
+its own boot. Production Compose runs the Flyway one-shot after PostgreSQL becomes
+healthy; applications wait for its successful completion. Backup, restore and
+engine lifecycle remain separate CTL commands using the engine's native tools.
 
-Hand-written with Alembic as the runner is three files per revision: a three-line `.py` shim, `.up.sql`, `.down.sql`. The shim calls `run_sql(__file__, ".up.sql")` from an `alembic_helpers.py` the project writes beside `env.py`; the SQL file is the source of truth, readable by a DBA, an operator and `sqlx` alike. `ctl db migrate new "<msg>"` creates the trio; a `.down.sql` left empty says why in a comment.
+A query that needs a new column requires a migration before it can run. Apply that
+migration before preparing or compiling schema-checked queries. Test fresh database
+creation, repeated application, pending changes, checksum mismatch and failure
+rollback against disposable storage. Version records stay inside the database;
+SQL migration files stay in Git. Do not stamp an existing nonempty database as
+current without an explicit adoption plan. Reset only when the user authorizes it.
 
-Rules:
+Flyway does not manage every storage service. Neo4j constraints use the declared
+`neo4j-init` service; Redis uses its config file. Object-store bucket initialization
+is an application storage step, not a SQL migration. Keep those ownership boundaries
+explicit instead of routing unrelated storage through Flyway.
 
-- `ctl db migrate` applies them, `ctl db migrate new` creates one. Never `alembic` by hand, because the worker runs the `migrate` one-shot from `compose.db.yaml` inside the compose network, then the `neo4j-init` one-shot; a bare `alembic` does half the job and needs an engine port the stack does not publish.
-- The apps never migrate on their own boot. They wait on the one-shots with `condition: service_completed_successfully`, so the step runs once per `up`, whatever the replica count. `09_production.md` § The deploy.
-- The consuming language never writes DDL. A Rust query that needs a column: write the migration, run `ctl db migrate`, then `cargo sqlx prepare`, then the query. The gate order is `db migrate → sqlx prepare --check → build`.
-- Never edit an applied migration; write a new one. Two heads (two revisions with the same `down_revision`) are squashed before merging to main; `ctl db migrate status` fails on a branch.
-- Autogenerate needs four things or it silently sees an empty schema and drops every table: `prepend_sys_path = .` in `alembic.ini`; `import app.models` (every model module) in `env.py` so `target_metadata` is populated; `sqlalchemy.url` set from the config loader, never `alembic.ini`; `render_as_batch=True` in both `context.configure` calls when SQLite is a target. Review and edit every generated revision; never mix generated and hand-written DDL in one file.
-- Other engines follow the same verbs: Neo4j constraints in `apps/database/neo4j/init.cypher`, idempotent; Redis config in `apps/database/redis/redis.conf`.
-
-Template: `template/apps/database/README.md`, `template/apps/database/postgres/migrations/versions/0002_indexes.py`.
+Template: `template/apps/database/README.md`,
+`template/apps/database/postgres/migrations/V1__extensions.sql` and
+`template/scripts/db/migrate.sh`.
 
 ## Running the engines well
 
 | Engine | Rules that bite |
 |---|---|
-| Postgres | `POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C.UTF-8"` or collation drifts between machines. Numbered init scripts in `apps/database/postgres/init/` for extensions and roles, run once on an empty `pgdata`. Bind-mount a nested `pgdata/`, not `data/postgres/` itself. `pg_isready` healthcheck; apps `depends_on: service_healthy`. Backups through `ctl db backup` (`pg_dump | gzip`). |
+| Postgres | `POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C.UTF-8"` or collation drifts between machines. Extensions and roles belong in Flyway migrations, following Migrations above. Bind-mount a nested `pgdata/`, not `data/postgres/` itself. `pg_isready` healthcheck; apps `depends_on: service_healthy`. Backups through `ctl db backup` (`pg_dump | gzip`). |
 | Redis | `--requirepass` always, dev included. `--appendonly yes --appendfsync everysec`. Streams need `--maxmemory-policy noeviction` or unread events are silently evicted. One instance, db numbers by use: 0 sessions, 1 cache, 2 rate limits, 3 streams, 4 jobs, 15 tests. Healthcheck `redis-cli -a $$REDIS_PASSWORD ping` (`$$` escapes compose). Backup: `BGSAVE` then copy `dump.rdb`, or rsync `appendonlydir/`; `ctl db backup` does both engines. Never a blob in Redis. |
 | SQLite | Pragmas on every connection: `journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON` (off by default), `synchronous=NORMAL`. One writer at a time; a web app plus a CLI is fine, N gunicorn workers writing is the Postgres signal. The file lives under `data/sqlite/`. Backup with `.backup`, never a raw copy mid-write. |
 | Neo4j | Constraints and indexes in `init.cypher`, idempotent (`IF NOT EXISTS`). Healthcheck a cypher ping. |

@@ -44,7 +44,7 @@ lint_go()   { [[ -d $1 ]] && touched "$1" || return 0; step "lint $1 (gofmt + go
 # delete the lines for apps the repo dropped. A default run that never lists a kept app is green
 # for work it never did.
 case "$target" in
-  all)      lint_py apps/example-api-python; lint_py apps/database/postgres; lint_rs apps/example-engine-rust
+  all)      lint_py apps/example-api-python; lint_rs apps/example-engine-rust
             lint_js apps/example-single-web-app-vite
             lint_js apps/example-multi-web-app/landing; lint_js apps/example-multi-web-app/app; lint_js apps/example-multi-web-app/docs
             lint_js apps/example-dashboard-nextjs; lint_go apps/example-tui-go ;;

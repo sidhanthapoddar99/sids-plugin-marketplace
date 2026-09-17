@@ -210,17 +210,16 @@ def test_runtime_tty_policy(sandbox, tty, command):
     assert all(("-T" in record["args"]) == (not tty) for record in executions)
 
 
-def test_migrations_remain_one_shots_and_preserve_revision_message(sandbox):
+def test_migration_scaffolding_is_offline_and_creates_plain_sql(sandbox):
     result = sandbox.run("db", "migrate", "new", "message with spaces ; $literal")
     assert result.returncode == 0, result.stderr
-    record = sandbox.records()[-1]
-    assert record["action"] == "migration"
-    assert record["args"][-4:] == ["alembic", "revision", "-m", "message with spaces ; $literal"]
-    assert all(flag in record["args"] for flag in ("--rm", "--no-deps", "--build", "--user", "-T"))
-    assert "uv" not in sandbox.actions()
+    files = list((sandbox.root / "apps/database/postgres/migrations").glob("V*__message_with_spaces_literal.sql"))
+    assert len(files) == 1
+    assert "Add forward migration SQL" in files[0].read_text()
+    assert sandbox.actions() == []
 
 
-@pytest.mark.parametrize("command,action", [(("db", "migrate", "status"), "migration"), (("db", "migrate", "new", "a b"), "migration"), (("db", "shell", "postgres"), "exec")])
+@pytest.mark.parametrize("command,action", [(("db", "migrate", "status"), "migration"), (("db", "shell", "postgres"), "exec")])
 def test_schema_and_shell_failures_propagate(sandbox, command, action):
     sandbox.env["FAIL_ACTION"] = action
     assert sandbox.run(*command).returncode == 37
@@ -236,7 +235,7 @@ def test_unrelated_database_does_not_satisfy_runtime_guard(sandbox, command):
     assert "unrelated-inspect" not in sandbox.actions()
 
 
-@pytest.mark.parametrize("subcommand", ["up", "down", "status"])
+@pytest.mark.parametrize("subcommand", ["up", "check", "status"])
 def test_migration_failure_stops_following_one_shots(sandbox, subcommand):
     sandbox.env.update(DATA_SVCS="postgres neo4j", FAIL_ACTION="migration")
     directory = sandbox.root / "apps/database/neo4j"
