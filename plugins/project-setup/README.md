@@ -36,10 +36,14 @@ codex plugin add project-setup@sids-plugin-marketplace
 
 ## Changelog
 
-### 0.9.1 (unreleased)
+### 0.10.0 (unreleased)
 
 - Add `ctl stop` and a read-only `--dry-run`: stop owned host groups and frozen servers before project containers, retaining containers and data.
 - Verify shutdown, allow graceful watcher cleanup, reject unsafe process ownership, and report incomplete host or Docker shutdown.
+- Add shared controller locks and a TypeScript/Watchexec Rust development example.
+- Standardize PostgreSQL migrations on containerized Flyway with startup ordering and CTL commands.
+- Validate development configuration and synchronize dependencies before startup, sharing the setup helpers.
+- Add an optional shared-WASM document-engine example under `references/examples/`.
 
 ## License
 

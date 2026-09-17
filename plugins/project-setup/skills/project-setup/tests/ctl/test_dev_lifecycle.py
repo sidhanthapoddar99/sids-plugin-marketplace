@@ -62,6 +62,7 @@ def project(tmp_path):
     shutil.copytree(TEMPLATE / "scripts", root / "scripts")
     logs = tmp_path / "custom logs"
     (root / ".env").write_text(f"LOGS_DIR={logs}\nDATA_DIR=custom data\n")
+    (root / ".env.template").write_text("LOGS_DIR=./logs\nDATA_DIR=./data\n")
     (root / "server.py").write_text(SERVER)
     library = root / "scripts/common/_lib.sh"
     with library.open("a") as stream:

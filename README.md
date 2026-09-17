@@ -67,7 +67,7 @@ Requires Codex CLI 0.147 or later. Check with `codex --version`.
 
 | Plugin | Description | Status |
 |---|---|---|
-| [`project-setup`](plugins/project-setup) | How a repo is shaped: bootstrap, audit, or a single "where does this go" question. One tree, one `ctl` entrypoint, one origin, one ignored `.env` and committed `.env.template` grouped by kind. Fifteen reference pages and a copyable template with a working `ctl`: dev, stop, up with configs, modifiers and presets, db migrate, check, gate. | v0.9.1 (unreleased) |
+| [`project-setup`](plugins/project-setup) | How a repo is shaped: bootstrap, audit, or a single "where does this go" question. One tree, one `ctl` entrypoint, one origin, one ignored `.env` and committed `.env.template` grouped by kind. Reference pages, optional architecture examples and a copyable template with a working `ctl`: dev, stop, up with configs, modifiers and presets, db migrate, check, gate. | v0.10.0 (unreleased) |
 | [`instruction-writing`](plugins/instruction-writing) | How to write instruction files for AI agents: CLAUDE.md, AGENTS.md, rules files, SKILL.md bodies, references, briefs. Ten rules with their reasons, a review rubric, before-and-after examples. | Released (v0.1.1) |
 | `uvenv` ([repo](https://github.com/sidhanthapoddar99/uvenv)) | Operating manual for `uvenv` — bash/zsh wrapper around mise + uv that gives conda-style named global Python venvs you can activate from anywhere | Released (v0.3.0) |
 | `agent-ks` ([repo](https://github.com/sidhanthapoddar99/agent-knowledge-system)) | Operating manual for the agent-knowledge-system framework — docs, issues, artifacts skills, the `agent-ks` CLI dispatcher, scaffolding commands. Formerly `documentation-guide` | Released (v0.6.0) |

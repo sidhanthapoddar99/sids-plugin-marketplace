@@ -36,6 +36,7 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 | What is green; the ladder; the static rungs | `references/10b_static-checks.md` |
 | Where tests live; the dynamic rungs | `references/10c_dynamic-tests.md` |
 | What holds everywhere; the audit order | `references/11_conventions.md` |
+| Example of a collaborative editor with shared browser/server WASM and intent synchronization | `references/examples/shared-wasm-document-engine.md` (optional example, not a prescribed stack) |
 
 `template/` is the floor of the tree. `ctl`, `scripts/`, `docker/`, the env template and `AGENTS.md` are real and run. `additional-template/` holds the add-ons at the same relative paths; they are real too, and a repo gets them one at a time on the user's word. The app folders under `apps/` are shape only: each file's comment states what it holds, and the code is written per project. A page may name a file the template does not carry, such as `gunicorn.conf.py` or `lib/theme.ts`. Those are written per project too. `template/ctl --help` is the verb list.
 

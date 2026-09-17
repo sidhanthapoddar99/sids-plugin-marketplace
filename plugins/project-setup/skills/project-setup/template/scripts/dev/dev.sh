@@ -41,7 +41,9 @@ Options
 
 With a data core (DATA_SVCS set) it first runs \`ctl up preset $DEV_PRESET --nqa -y\` (the reserved preset in
 $PRESETS_FILE: the engines bound to loopback, the schema one-shots with them), waits for health and
-for the schema step, then starts the host processes."; }
+for the schema step, then starts the host processes.
+Before startup, validate configuration and synchronize source dependencies with locked versions.
+Missing settings point to ctl setup. Help and dry-run do not install anything."; }
 
 # parse: positionals = apps, flags anywhere
 apps=() dry=0 detach=0 no_core=0 proxy=0 nqa=0
@@ -75,6 +77,7 @@ resolve_storage_dirs
 
 if (( dry )); then
   step "(dry-run — nothing started)"
+  say "preflight   validate configuration → synchronize source dependencies"
   (( ${#DATA_SVCS[@]} && ! no_core )) && say "data core   ctl up preset $DEV_PRESET --nqa -y   → ctl up $(preset_args "$DEV_PRESET" || echo "(preset '$DEV_PRESET' missing from $PRESETS_FILE)")"
   (( proxy )) && say "dev proxy   docker compose --project-directory . -f $DEV_FILE up -d   → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env}"
   while IFS= read -r controller; do
@@ -84,6 +87,12 @@ if (( dry )); then
   for a in "${apps[@]}"; do say "$(printf '%-11s' "$a") $(app_cmd "$a")"; done
   exit 0
 fi
+
+source "$CTL_ROOT/scripts/config/_validate-env.sh"
+validate_dev_env
+source "$CTL_ROOT/scripts/config/_discovery.sh"
+step "ensuring configured toolchains and dependencies"
+sync_source_dependencies --locked || die "dependency synchronization failed — resolve the error above; update a stale lockfile with its package manager"
 
 for a in "${apps[@]}"; do
   mapfile -t app_requirements < <(app_tools "$a")

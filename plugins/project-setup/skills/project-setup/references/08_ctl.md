@@ -70,6 +70,25 @@ Remove the watcher declaration when removing the Rust example.
 
 ## Development readiness and ownership
 
+Every normal `ctl dev` launch runs `scripts/config/_validate-env.sh` before installing
+dependencies or starting services, because stale settings should fail at the entrypoint.
+It checks template key coverage, duplicate or malformed assignments, required credentials,
+nonempty defaults, placeholders, ports, URL shape and route prefixes. Blank template values
+remain optional unless declared credentials require them. Add domain-specific checks here
+when adapting the template; these format checks do not prove remote connectivity.
+Missing keys direct the user to `ctl setup`; validation never rewrites supplied values.
+
+Then call the shared discovery/install helper with `--locked`, so package managers
+synchronize installed dependencies directly without a custom freshness database.
+Use `uv sync --locked`, `bun install --frozen-lockfile` and `cargo fetch --locked`.
+Missing or stale lockfiles fail with an instruction to update them explicitly.
+For Go sources, `go list -mod=readonly -deps ./...` checks the module graph; Go can
+still add missing checksum entries to `go.sum`. Setup uses the same helper without
+locked mode to prepare or update dependencies. Toolchain installation and activation
+run before synchronization. Failure in any step prevents launch. `--no-core` skips
+the data stack only; help and dry-run skip installation. Existing credential rules
+live in `02_env.md`.
+
 Adapt `scripts/dev/_apps.sh`: each app declares its command, required tools, readiness probe and timeout. The shipped API and engine probes call their prefixed `/ready` endpoint; frontend probes exercise HTTP. Change a probe when the app needs a stronger condition. A listening port alone never permits a successful skip: a pre-existing listener must pass the same probe, and it is left running if this launch fails.
 
 `scripts/common/_process.sh` installs cleanup before launch and starts each owned command in its own process group. Failed startup, bounded probe timeout, early exit and interruption return nonzero and clean up owned groups, including normal descendants. Detached success requires all selected apps ready; foreground mode monitors owned processes and reports unexpected exits. Readiness is a point-in-time check, not a promise that a dependency stays available.

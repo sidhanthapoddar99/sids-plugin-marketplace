@@ -18,11 +18,13 @@ Run the suite on Linux or WSL with Bash, util-linux (`setsid`, `flock`), GNU cor
 - Optional WASM behavior is guidance in `references/06_backend.md`; no WASM watcher or target is installed or exercised by the base suite.
 - Stop tests use real isolated process groups and a recording Docker shim to check ownership, descendants, graceful cleanup, ordering, repeated calls and failures. They do not stop live project containers.
 
-The controller and Rust watcher tests use Bun and Watchexec:
+The controller, Rust watcher and development preflight tests use Bun (and Watchexec for watching):
 
 ```sh
 bun test plugins/project-setup/skills/project-setup/tests/ctl/*.test.ts
 ```
 
 They use temporary projects and real kernel locks, processes and file watching.
+Preflight tests use package-manager doubles to verify configuration failures,
+locked synchronization and failure-before-launch without installing application dependencies.
 The existing Python authoring suite above remains separate from shipped CTL scripts.

@@ -35,24 +35,8 @@ step "ensuring configured storage dirs"
 for service in "${DATA_SVCS[@]}"; do mkdir -p "$DATA_DIR/$service"; done
 mkdir -p "$LOGS_DIR/dev" "$LOGS_DIR/run" "$LOGS_DIR/test_build" "$BACKUP_DIR"
 
-step "versions"
-manifest_list=$(mktemp) || die "cannot create manifest list"
-trap 'rm -f "$manifest_list"' EXIT
-discover_source_manifests > "$manifest_list" || die "source package discovery failed"
-mapfile -d '' -t manifests < "$manifest_list"
-unresolved=()
-for manifest in "$CTL_ROOT/.mise.toml" "$CTL_ROOT/mise.toml" "${manifests[@]}"; do
-  [[ -f $manifest ]] || continue
-  if grep -qF '<version>' "$manifest"; then unresolved+=("$manifest"); fi
-done
-if (( ${#unresolved[@]} )); then
-  err "these files still hold '<version>' — resolve each before setup installs anything:"
-  printf '%s\n' "${unresolved[@]}"
-  die "setup stopped — env files and dirs are in place, toolchains were not installed"
-fi
 step "installing toolchains + dependencies"
-activate_tools --install || die "setup toolchain activation failed"
-install_source_dependencies "${manifests[@]}" || die "setup dependency installation failed"
+sync_source_dependencies || die "setup dependency installation failed"
 if [[ -f lefthook.yml && -e .git ]]; then
   require_tools lefthook || die "setup requires lefthook"
   lefthook install || die "lefthook install failed"
