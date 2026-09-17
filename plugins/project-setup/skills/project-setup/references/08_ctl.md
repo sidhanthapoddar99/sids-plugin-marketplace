@@ -6,6 +6,20 @@ Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletio
 
 The verb table below is the floor, not the ceiling. A project adds the verbs its work needs (`ctl train`, `ctl sqlx-prepare`, `ctl mobile-api-codegen`, `ctl seed`, `ctl deploy`) the same way every existing verb is built: one worker at `scripts/<group>/<name>.sh` with the preamble, `--help`, and one `run <group>/<name>` line in `ctl`. New groups are fine (`scripts/ml/`, `scripts/admin/`). Two rules hold: logic never lives in `ctl` itself, and every added verb appears in `ctl --help` and in the `AGENTS.md` Commands section. Verbs that stop being used are deleted, not left as residue.
 
+## Scripting languages
+
+Use Bash for CTL entrypoints, command routing, process ownership and locks.
+Use TypeScript with Bun for structured coordination, such as a multi-step Rust build.
+Keep repository-owned CTL automation under `scripts/` in these two languages so
+projects share one scripting toolchain. Do not add Python, Go or other scripting
+implementations there. Calling an application's own Python manager, Rust compiler
+or database tool is allowed; those commands belong to the application or tool.
+Use Bun's test runner for new CTL regression tests. Preserve meaningful lifecycle
+coverage when converting an existing test suite; changing language is not a reason
+to remove a failure check. This rule does not change application implementation or
+test languages. Existing marketplace authoring tests outside the shipped template
+are a separate suite and are not installed by CTL.
+
 ## Verbs
 
 | Group | Verb | Does |
@@ -50,7 +64,9 @@ The `scripts/` groups are `common config dev container db admin test gate`. A ga
 
 `scripts/common/_tools.sh` installs declared mise toolchains during setup, then activates them in the same invocation. It evaluates only the shell environment emitted by mise, never the contents of `.env`. Activation preserves application environment overrides while selecting tool paths. `require_tools` activates without installing and verifies that each requested executable runs. A selected app asks only for its own runtime; missing required tools are errors, not successful skips. Setup's credential declarations are specified in `02_env.md`.
 
-The Rust example declares `cargo:cargo-watch` in `.mise.toml` because its development command uses that executable. Remove its declaration when removing the Rust example; select and pin a replacement if the project chooses another watcher. Explicit `cargo:` tool identifiers use the [mise Cargo backend](https://mise.jdx.dev/dev-tools/backends/cargo).
+The Rust example declares Bun, Cargo and Watchexec in `.mise.toml` because its
+TypeScript coordinator uses those tools. Resolve the watcher version during setup.
+Remove the watcher declaration when removing the Rust example.
 
 ## Development readiness and ownership
 
@@ -61,6 +77,34 @@ Adapt `scripts/dev/_apps.sh`: each app declares its command, required tools, rea
 Ownership records live in `LOGS_DIR/run/<name>.process/`, including a PID and its process-start identity; output lives in `LOGS_DIR/dev/<name>.log`. Identity checks prevent a reused PID from being treated as the old process. Attach, stop and frozen-build commands use the same configured paths. The host-process implementation requires Linux or WSL, Bash, `/proc`, `setsid` and GNU coreutils. Programs that deliberately escape their process group need a project-specific supervisor.
 
 The development proxy has its own readiness endpoint. Reuse a running proxy; on failed startup or interruption stop only the proxy container started by this invocation. Data-core startup uses the bounded production-start helper; it does not continue after failed readiness.
+
+### Controllers and Rust development
+
+`scripts/dev/_controllers.sh` maps selected apps to managed controllers. The shipped
+Rust example selects one engine watcher. Return no names for apps that need none.
+`scripts/common/_controller.sh` checks process ownership and readiness.
+`scripts/common/_controller-lock.sh` supplies the lifetime kernel lock. Reuse these
+helpers so a second launch cannot start a competing controller. Reused controllers
+remain owned by their original launcher; a later failed launch cannot stop them.
+Refuse a held lock whose owner cannot be verified. Recover abandoned metadata only
+under the lock. Owned controllers participate in `ctl stop` and startup cleanup.
+
+`scripts/dev/rust-watch.ts` is the runnable Rust watcher example. Adapt
+`scripts/dev/rust-watch.config.ts` to declare source paths and command argument
+arrays. Watchexec detects edits and debounces them. Bun runs the declared commands
+in order; a failing command prevents later commands from running. The native
+example uses Cargo's development build through `cargo run`. CTL starts this watcher
+once through the controller hooks and reuses its ready listener at the app step.
+Do not start another Cargo watcher for the same engine.
+
+For WASM, add the package's development build command before the native run command.
+Include that package's source and manifest paths. The development profile still
+requires compilation; watching automates compilation rather than interpreting Rust.
+The simple example restarts the development cycle on edits and does not preserve
+in-memory application state. A stateful document host needs project-specific safe
+activation and rollback, as described in `06_backend.md` under Watching and activation.
+Keep that coordinator in TypeScript. Keep ownership and locking in the shared shell
+helpers. Production builds explicitly select release profiles and do not run this watcher.
 
 ## `ctl stop` — project-wide shutdown
 
@@ -113,7 +157,7 @@ Every app's README shows how to run it from its own folder. The root README show
 
 ## When ctl is not enough
 
-`ctl` stays a bash router. Escalate to a compiled orchestrator (Go) only when a verb needs structured state across runs: a plan file, a lock that outlives a shell, a fleet of hosts. Line count alone is not the trigger. The state file is documented and versioned, and the plain compose invariant above still holds.
+`ctl` stays a Bash router. Put structured coordination in a TypeScript helper under the owning script group, following Scripting languages above. Document any persisted state format so commands can validate it. The plain Compose invariant above still holds.
 
 ## The ctl shape, as a check
 

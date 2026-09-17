@@ -13,7 +13,7 @@ app_port()  { case "$1" in
   *)         die "unknown app '$1' — one of: $(app_names | join_sp)" ;; esac; }
 app_cmd()   { case "$1" in
   api)       printf 'uv run --directory apps/example-api-python uvicorn app.main:app --reload --host %q --port %q' "${API_HOST:-localhost}" "$(app_port api)" ;;
-  engine)    printf 'cargo watch -C apps/example-engine-rust -x run' ;;
+  engine)    printf 'bun run scripts/dev/rust-watch.ts' ;;
   landing)   printf 'bun --cwd apps/example-multi-web-app/landing dev --port %q' "$(app_port landing)" ;;
   app)       printf 'bun --cwd apps/example-multi-web-app/app dev --port %q' "$(app_port app)" ;;
   single)    printf 'bun --cwd apps/example-single-web-app-vite dev --port %q' "$(app_port single)" ;;
@@ -23,7 +23,7 @@ app_cmd()   { case "$1" in
 
 app_tools() { case "$1" in
   api) printf '%s\n' uv ;;
-  engine) printf '%s\n' cargo cargo-watch ;;
+  engine) printf '%s\n' cargo bun watchexec ;;
   *) printf '%s\n' bun ;;
 esac; printf '%s\n' curl; }
 

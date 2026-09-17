@@ -17,3 +17,12 @@ Run the suite on Linux or WSL with Bash, util-linux (`setsid`, `flock`), GNU cor
 - Compose rendering tests use the real Docker Compose CLI when available and skip explicitly when it is absent. Cargo availability skips are also reported. These tests validate configuration without starting containers.
 - Optional WASM behavior is guidance in `references/06_backend.md`; no WASM watcher or target is installed or exercised by the base suite.
 - Stop tests use real isolated process groups and a recording Docker shim to check ownership, descendants, graceful cleanup, ordering, repeated calls and failures. They do not stop live project containers.
+
+The controller and Rust watcher tests use Bun and Watchexec:
+
+```sh
+bun test plugins/project-setup/skills/project-setup/tests/ctl/*.test.ts
+```
+
+They use temporary projects and real kernel locks, processes and file watching.
+The existing Python authoring suite above remains separate from shipped CTL scripts.

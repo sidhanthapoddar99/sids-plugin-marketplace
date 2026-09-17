@@ -17,6 +17,7 @@ set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 source "$CTL_ROOT/scripts/dev/_apps.sh"
+source "$CTL_ROOT/scripts/dev/_controllers.sh"
 
 usage() { print_help "dev" "Data core in docker, apps on the host with reload." \
   'dev [app…] [-d|--detach] [--proxy] [--no-core] [--nqa] [--dry-run] [-h]' \
@@ -76,6 +77,10 @@ if (( dry )); then
   step "(dry-run — nothing started)"
   (( ${#DATA_SVCS[@]} && ! no_core )) && say "data core   ctl up preset $DEV_PRESET --nqa -y   → ctl up $(preset_args "$DEV_PRESET" || echo "(preset '$DEV_PRESET' missing from $PRESETS_FILE)")"
   (( proxy )) && say "dev proxy   docker compose --project-directory . -f $DEV_FILE up -d   → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env}"
+  while IFS= read -r controller; do
+    [[ -n $controller ]] || continue
+    say "controller $controller   $(controller_command "$controller")"
+  done < <(controller_names "${apps[@]}")
   for a in "${apps[@]}"; do say "$(printf '%-11s' "$a") $(app_cmd "$a")"; done
   exit 0
 fi
@@ -114,6 +119,12 @@ if (( ${#DATA_SVCS[@]} && ! no_core )); then
   step "ensuring data core (ctl up preset $DEV_PRESET)…"
   bash "$CTL_ROOT/scripts/container/up.sh" preset "$DEV_PRESET" --nqa -y
 fi
+
+controllers=$(controller_names "${apps[@]}") || die "cannot resolve development controllers"
+while IFS= read -r controller; do
+  [[ -n $controller ]] || continue
+  controller_ensure "$controller" || die "controller $controller is not ready; no apps launched"
+done <<< "$controllers"
 
 # dev proxy — one origin across frontends. The foreground loop stops it on Ctrl-C; under --detach it
 # stays up with the apps, and `ctl ps` → k on its port stops the container.

@@ -40,6 +40,7 @@
 
 # ── repo root — set by ctl before sourcing; else derived from this file ──
 : "${CTL_ROOT:=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)}"
+export CTL_ROOT
 DOCKER_DIR="docker"
 DEFAULT_CONFIG=base                       # the config `ctl up` runs when --config is not given
 BASE="$DOCKER_DIR/compose.$DEFAULT_CONFIG.yaml"   # the passthroughs (down · logs · exec · health) read this file
@@ -345,3 +346,5 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_tools.sh"
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_paths.sh"
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_process.sh"
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../config/_discovery.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_controller-lock.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_controller.sh"

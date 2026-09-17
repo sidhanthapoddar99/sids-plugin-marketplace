@@ -82,7 +82,7 @@ def test_app_command_keeps_environment_text_literal(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("app,expected", [("api", ["uv", "curl"]),
-                                         ("engine", ["cargo", "cargo-watch", "curl"]),
+                                         ("engine", ["cargo", "bun", "watchexec", "curl"]),
                                          ("app", ["bun", "curl"])])
 def test_example_app_requirements_are_targeted(app: str, expected: list[str]) -> None:
     result = subprocess.run(

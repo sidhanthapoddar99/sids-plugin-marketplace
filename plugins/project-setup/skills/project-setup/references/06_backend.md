@@ -46,7 +46,7 @@ Providers of one kind (LLMs, payment gateways, storage backends) follow the adap
 
 ## Serving
 
-Dev is one hot-reload process (`uvicorn --reload`, `cargo watch`). Production is not.
+Dev uses one reload workflow per service. Python can use `uvicorn --reload`; the Rust workflow is defined in `08_ctl.md` under Controllers and Rust development. Production does not run development watchers.
 
 | Language | Production model |
 |---|---|

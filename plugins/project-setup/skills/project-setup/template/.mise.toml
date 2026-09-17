@@ -2,7 +2,7 @@
 [tools]
 python = "<version>"
 rust = "stable"
-"cargo:cargo-watch" = "<version>"
+watchexec = "<version>"
 go = "<version>"
 bun = "latest"
 uv = "latest"
