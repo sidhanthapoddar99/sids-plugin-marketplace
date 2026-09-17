@@ -36,7 +36,11 @@ codex plugin add project-setup@sids-plugin-marketplace
 
 ## Changelog
 
-### 0.10.0 (unreleased)
+### 0.10.1
+
+- Configure the Flyway migration directory explicitly and copy SQL files to `/migrations` inside the container, avoiding the default-folder deprecation warning.
+
+### 0.10.0
 
 - Add `ctl stop` and a read-only `--dry-run`: stop owned host groups and frozen servers before project containers, retaining containers and data.
 - Verify shutdown, allow graceful watcher cleanup, reject unsafe process ownership, and report incomplete host or Docker shutdown.
