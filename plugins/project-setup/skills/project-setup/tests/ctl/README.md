@@ -16,3 +16,4 @@ Run the suite on Linux or WSL with Bash, util-linux (`setsid`, `flock`), GNU cor
 - Production startup, administration and restore tests use recording Docker/database shims. They verify ordering, selection and failure propagation without deploying or restoring a live database.
 - Compose rendering tests use the real Docker Compose CLI when available and skip explicitly when it is absent. Cargo availability skips are also reported. These tests validate configuration without starting containers.
 - Optional WASM behavior is guidance in `references/06_backend.md`; no WASM watcher or target is installed or exercised by the base suite.
+- Stop tests use real isolated process groups and a recording Docker shim to check ownership, descendants, graceful cleanup, ordering, repeated calls and failures. They do not stop live project containers.

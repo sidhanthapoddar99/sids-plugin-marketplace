@@ -46,6 +46,7 @@ ctl_help() {
   printf '%sDevelopment%s (host loop)\n' "$C_B" "$C_RESET"
   row "dev [app…] [--proxy] [--detach]" "data core in docker, apps on the host with reload (--proxy: one origin)"
   row "ps [--list | kill [port…]]"      "browse everything running — attach · kill · port map"
+  row "stop [--dry-run]"                "stop owned host processes, then project containers; keep data"
   printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"
   row "up [--config c] [+mod…] [--services a,b]" "assemble + start a stack shape, or a subset — interactive  (ctl up --help)"
   row "up preset [name] | set-preset [name]" "run a saved up line from docker/presets.yaml · save one from the pickers"
@@ -96,6 +97,7 @@ case "$cmd" in
   # ── development ──────────────────────────────────────────
   dev)      run dev/dev       "$@" ;;
   ps)       run dev/ps        "$@" ;;
+  stop)     run dev/stop      "$@" ;;
   # ── containers: substantive workers ──────────────────────
   up)       run container/up     "$@" ;;
   # `build` splits on the subverb: save|start|clean = frozen test builds (test/build.sh);

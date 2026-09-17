@@ -12,6 +12,7 @@ The verb table below is the floor, not the ceiling. A project adds the verbs its
 |---|---|---|
 | Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | The data core through `ctl up preset dev --nqa -y`, the reserved preset (engines on loopback, the schema one-shots with them), then the apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs and ownership records below the configured `LOGS_DIR`. `--no-core`: skip the data core. `--nqa`: skip the app picker. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. |
 | | `ps [--list \| kill [port…]]` | Everything running across three planes: host processes, frozen builds, containers. Attach or kill, plane-aware. |
+| | `stop [--dry-run]` | Stop this project's recorded host groups and frozen servers, then its containers. Keep containers, data and volumes. No prompts. |
 | Containers | `up [--config c] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | A stack shape (`compose.<config>.yaml`, `base` by default) plus modifiers, every service or a subset. In a terminal: pick a config → pick the modifiers that fit → pick services (all preselected) → plan → confirm. Flags skip their prompt. No TTY: the plan prints and the run refuses without `-y`; `--nqa -y` is the scripted form. Compose orders engines, schema one-shots, apps by itself. `08a_ctl_docker.md`. |
 | | `up preset [<name>] [-y]`, `up preset --list`, `up set-preset [<name>]` | A saved `up` line from `docker/presets.yaml`: run one with no prompts, list them, or walk the pickers and save. `08a_ctl_docker.md` § 4. |
 | | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs against the `base` file. `down` never uses `-v`: state lives in `data/`. |
@@ -60,6 +61,16 @@ Adapt `scripts/dev/_apps.sh`: each app declares its command, required tools, rea
 Ownership records live in `LOGS_DIR/run/<name>.process/`, including a PID and its process-start identity; output lives in `LOGS_DIR/dev/<name>.log`. Identity checks prevent a reused PID from being treated as the old process. Attach, stop and frozen-build commands use the same configured paths. The host-process implementation requires Linux or WSL, Bash, `/proc`, `setsid` and GNU coreutils. Programs that deliberately escape their process group need a project-specific supervisor.
 
 The development proxy has its own readiness endpoint. Reuse a running proxy; on failed startup or interruption stop only the proxy container started by this invocation. Data-core startup uses the bounded production-start helper; it does not continue after failed readiness.
+
+## `ctl stop` — project-wide shutdown
+
+Worker: `template/scripts/dev/stop.sh`; lifecycle helper: `template/scripts/common/_process.sh`. Bare `ctl stop` stops foreground and detached managed groups from the configured `LOGS_DIR/run`, including watchers and frozen-build servers. It never selects host processes by port. `--dry-run` lists targets without signals, record cleanup or container changes; Docker queries still run.
+
+Each new record stores the project root, PID and start identity. A live legacy record with a start identity needs a working directory inside this project to establish ownership. Live PID-only records and foreign records fail closed, because they cannot safely identify this project's process. Stale records are cleaned; reused PIDs are not signalled. Keep `LOGS_DIR` project-specific. Processes deliberately detached from the managed group need their own supervisor cleanup.
+
+Shutdown sends TERM and allows up to 20 seconds per group for watcher cleanup before verified KILL. `PROCESS_STOP_TIMEOUT` may set a positive integer grace in seconds. Remaining live groups or signal failures retain their records and return nonzero. A host failure leaves containers running, so databases cannot disappear underneath an unresolved writer.
+
+Docker targets must match both the resolved Compose project name and the exact project working-directory label. This includes the dev proxy and orphaned services from other stack configurations of the same project. Non-data containers stop before the `DATA_SVCS` engines. Update that existing data-service list when adapting the stack, because it defines shutdown order. Failed writer shutdown leaves engines running. Docker checks and stop calls are bounded; missing or unreachable Docker returns nonzero after host cleanup. Repeating a successful stop is safe. Do not launch new project workloads concurrently with shutdown; this command is not a project-wide launch lock.
 
 ## `ctl check` — the repo contract
 

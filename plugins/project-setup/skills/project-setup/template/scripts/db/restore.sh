@@ -42,7 +42,7 @@ for pidfile in "$LOGS_DIR"/run/*.pid; do
   fi
 done
 for record in "$LOGS_DIR"/run/*.process; do
-  if process_valid "$record"; then die "host dev process is running ($record) — stop it before restoring"; fi
+  if process_running "$record"; then die "host dev process is running ($record) — stop it before restoring"; fi
 done
 has() { printf '%s\n' "${DATA_SVCS[@]}" | grep -qx "$1"; }
 u="${POSTGRES_USER:-postgres}"; db="${POSTGRES_DB:-postgres}"

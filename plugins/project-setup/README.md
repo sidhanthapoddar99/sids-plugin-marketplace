@@ -34,6 +34,13 @@ Docs-site content is the `agent-ks` plugin. Training loops, remote GPUs and mode
 codex plugin add project-setup@sids-plugin-marketplace
 ```
 
+## Changelog
+
+### 0.9.1 (unreleased)
+
+- Add `ctl stop` and a read-only `--dry-run`: stop owned host groups and frozen servers before project containers, retaining containers and data.
+- Verify shutdown, allow graceful watcher cleanup, reject unsafe process ownership, and report incomplete host or Docker shutdown.
+
 ## License
 
 [PolyForm Noncommercial License 1.0.0](LICENSE). Any noncommercial use is permitted: personal projects, study, hobby work, education, public research, charitable and public-interest organisations. Commercial use is not permitted. For commercial-use licensing, contact `developer@neuralabs.org`.

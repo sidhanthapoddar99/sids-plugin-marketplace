@@ -8,6 +8,7 @@ One paragraph: what this product is and which apps make it.
 
 ## Quick start with ctl
 - `ctl dev` — databases in docker, apps on the host (`--proxy` for one origin across frontends)
+- `ctl stop` — stop managed host processes and project containers, keeping data (`--dry-run` previews targets)
 - `ctl up` — full stack in docker; `ctl up preset <name>` runs a saved line from `docker/presets.yaml`
 - `ctl db migrate` — apply schema migrations (they also run whenever the engines come up)
 - `ctl gate` — the ladder; green here is the only definition of green
@@ -16,6 +17,7 @@ One paragraph: what this product is and which apps make it.
 | Verb | Does |
 |---|---|
 | `ctl dev [app…] [--proxy]` | engines in docker, the chosen apps on the host with reload |
+| `ctl stop [--dry-run]` | stop recorded dev/watch/build groups, then project containers; retain containers and volumes |
 | `ctl up [--config c] [+modifier…] [--services a,b]` | a stack shape in docker, or a subset; interactive in a terminal |
 | `ctl up preset [<name>]` · `ctl up set-preset` | run a saved `up` line · save one from the pickers |
 | `ctl db migrate [new "<msg>"]` | apply or create a migration |
