@@ -2,7 +2,6 @@
 # [ADAPT] the host apps — name → port → command. The ONE source for --help, --dry-run, and the run.
 # Emitted as strings so help/dry-run print EXACTLY what runs (ports resolve from .env once loaded).
 app_names() { printf '%s\n' api engine landing app docs dashboard single; }   # single = example-single-web-app-vite, the one-frontend shape
-frontends() { printf '%s\n' landing app docs dashboard; }      # the ones the dev proxy fronts
 # port_of VAR — the value from .env. Under --help the env may be absent: print the key name instead of dying.
 port_of()   { local v="$1"; if [[ -n "${!v:-}" ]]; then echo "${!v}"; elif [[ "${HELP_MODE:-0}" == 1 ]]; then echo "\$$v"; else die "$v is blank in .env"; fi; }
 app_port()  { case "$1" in

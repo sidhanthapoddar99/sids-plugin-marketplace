@@ -1,5 +1,7 @@
 # ctl tooling tests
 
+Frontend proxy tests use the installed Vite CLI and Node when available, with real loopback HTTP/WebSocket servers. UI plugins are stubbed; these tests verify routing, HMR delivery, public environment boundaries and production config evaluation, not React rendering. Compose tests render the self-contained base and check the dev preset's service subset and loopback-only exposure without starting containers.
+
 These tests verify the shipped ctl shell library using temporary environment files. They belong to project-setup itself and are not copied into generated applications.
 
 From the marketplace repository root, with Python 3 and pytest installed:

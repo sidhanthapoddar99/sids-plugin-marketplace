@@ -48,7 +48,7 @@ The fallback for a question no page covers. Each line points at the page that ow
 
 1. **One tree for every repo** (`01_layout.md`). A repo with one app and one with five look the same from the root, so nothing is re-decided when the second app arrives.
 2. **One entrypoint, `ctl`** (`08_ctl.md`). A worker is a script under `scripts/` that one verb runs; a rung is one step of `ctl gate`. A rung calls the same worker the dev verb calls, so the check and the loop cannot drift.
-3. **One origin** (`03_routing.md`). The browser sees one host and prefixes separate the pieces, so there is no CORS and no URL in a bundle.
+3. **Same-origin routing** (`03_routing.md`). Production uses one origin. Each frontend's development server proxies backend prefixes, so browser API calls stay relative without CORS. Cross-frontend development flows needing a shared origin require an explicit gateway.
 4. **One environment contract, grouped by kind** (`02_env.md`). Root `.env` settings use the grouped `.env.template` contract; backend defaults live in `config.yaml`. See the page for loading and exposure boundaries.
 5. **Base is prod** (`08a_ctl_docker.md`, `09_production.md`). A config (`compose.<name>.yaml`, `base` is the whole stack) has no ports and modifiers add exposure, because compose lists only union, so exposure can only be added, never removed.
 6. **Promote when shared, never before** (`11_conventions.md`). A thing moves up a scope at its second consumer, because a premature package is a second manifest to keep green for nothing.

@@ -251,44 +251,23 @@ def test_live_record_is_preserved(project):
     assert alive(int(identity.split()[0]))
 
 
-@pytest.mark.parametrize("preexisting", [False, True])
-@pytest.mark.parametrize("interrupt", [False, True])
-def test_proxy_cleanup_preserves_existing(project, preexisting, interrupt):
+def test_removed_proxy_flag_refuses_before_launch(project):
     root, _, run = project
-    binary = root / "fake-bin"
-    binary.mkdir()
-    docker = binary / "docker"
-    docker.write_text('#!/usr/bin/env bash\nprintf "%s\\n" "$*" >> "$CTL_ROOT/docker-calls"\n')
-    docker.chmod(0o755)
-    curl = binary / "curl"
-    curl.write_text('#!/usr/bin/env bash\nexit 0\n')
-    curl.chmod(0o755)
-    if preexisting:
-        (root / "proxy-running").touch()
+    process, _ = run(["healthy"], proxy=True)
+    stdout, stderr = process.communicate(timeout=7)
+    assert process.returncode != 0
+    assert "frontend dev server proxy" in stderr
+    assert not list(root.glob("port-*/child"))
+
+
+def test_multiple_frontends_do_not_start_docker_proxy(project):
+    root, _, run = project
     with (root / "scripts/common/_lib.sh").open("a") as stream:
-        stream.write('''
-export PATH="$CTL_ROOT/fake-bin:$PATH"
-DEV_PROXY_PORT=12345
-require_docker() { :; }
-dc_dev() {
-  case "$1" in
-    ps) [[ ! -f $CTL_ROOT/proxy-running ]] || echo isolated-proxy ;;
-    up) touch "$CTL_ROOT/proxy-running" "$CTL_ROOT/proxy-started" ;;
-  esac
-  return 0
-}
-''')
-    process, ports = run(["timeout" if interrupt else "early"], proxy=True)
-    if interrupt:
-        eventually(lambda: (root / f"port-{ports[0]}/child").exists())
-        process.send_signal(signal.SIGTERM)
+        stream.write('\ndocker() { touch "$CTL_ROOT/docker-called"; return 1; }\n')
+    process, _ = run(["healthy", "healthy"])
     stdout, stderr = process.communicate(timeout=8)
-    assert process.returncode == (143 if interrupt else 23), (stdout, stderr)
-    calls = root / "docker-calls"
-    assert calls.exists() != preexisting
-    assert (root / "proxy-started").exists() != preexisting
-    if calls.exists():
-        assert calls.read_text() == "stop isolated-proxy\n"
+    assert process.returncode == 0, (stdout, stderr)
+    assert not (root / "docker-called").exists()
 
 
 def test_ps_stops_owned_descendants_from_custom_logs(project):
@@ -324,40 +303,3 @@ def test_interrupt_before_pid_capture(project, sig):
     assert process.returncode == 128 + sig
     assert not list(logs.glob("run/*.process"))
     assert not list(root.glob("port-*/child"))
-
-
-@pytest.mark.parametrize("hang,preexisting", [(True, False), (False, False), (False, True)])
-def test_proxy_start_and_readiness_are_bounded(project, hang, preexisting):
-    root, _, run = project
-    binary = root / "fake-bin"
-    binary.mkdir()
-    for name, body in {
-        "curl": "exit 1",
-        "docker": 'printf "%s\\n" "$*" >> "$CTL_ROOT/docker-calls"',
-    }.items():
-        executable = binary / name
-        executable.write_text("#!/usr/bin/env bash\n" + body + "\n")
-        executable.chmod(0o755)
-    if preexisting:
-        (root / "proxy-running").touch()
-    with (root / "scripts/common/_lib.sh").open("a") as stream:
-        stream.write('''
-export PATH="$CTL_ROOT/fake-bin:$PATH"
-DEV_PROXY_PORT=12345
-require_docker() { :; }
-dc_dev() {
-  case "$1" in
-    ps) [[ ! -f $CTL_ROOT/proxy-running ]] || echo isolated-proxy ;;
-    up) touch "$CTL_ROOT/proxy-running"; ''' + ("sleep 90" if hang else ":") + ''' ;;
-  esac
-  return 0
-}
-''')
-    worker = root / "scripts/dev/dev.sh"
-    worker.write_text(worker.read_text().replace("proxy_command 60 up", "proxy_command 1 up")
-                      .replace('process_ready 30 "$proxy_probe"', 'process_ready 1 "$proxy_probe"'))
-    process, _ = run(["healthy"], proxy=True)
-    stdout, stderr = process.communicate(timeout=7)
-    assert process.returncode == 124, (stdout, stderr)
-    assert not list(root.glob("port-*/child"))
-    assert (root / "docker-calls").exists() != preexisting

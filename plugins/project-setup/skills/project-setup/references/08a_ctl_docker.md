@@ -19,8 +19,6 @@ A config is a compose file that stands on its own. `ctl up --config <name>` runs
 | Config | What it is | Run by |
 |---|---|---|
 | `base` | The whole stack. This is prod. The default of `ctl up`. | `ctl up` |
-| `db` | The data engines and the schema one-shots. | `ctl dev`, through the reserved preset `dev` (`--config db +expose_db`) |
-| `dev` | The dev proxy: one nginx on the host network. | `ctl dev --proxy` |
 
 Rules a config obeys, and `ctl check` proves:
 
@@ -40,12 +38,12 @@ A modifier is a partial compose file laid over a config. It adds ports, re-point
 | `+expose_web` | `web` on the `_PORT` of the piece that owns `/` | `base`. The default for local docker. |
 | `+public` | `web` on `${HTTP_PORT}` / `${HTTPS_PORT}`; `PUBLIC_URL` to the apps | `base`. A public deployment. Refused while one of the three keys is blank. |
 | `+expose` | Every app port to the host, each on its own `_PORT` | `base`. Debug. Never prod. |
-| `+expose_db` | Each engine on loopback, on its `_PORT` from `.env` | `base`, `db`. What `ctl dev` needs so host processes reach the engines. |
+| `+expose_db` | Each engine on loopback, on its `_PORT` from `.env` | `base`. The dev preset selects the data core so host processes reach the engines. |
 | `+env_override` | Re-points upstreams and URLs to `${VAR}` from `.env` | `base`. A piece runs outside this compose. |
 
 **Which modifiers fit a config is computed, never declared.** `ctl up` runs `docker compose config` on the config plus the modifier. Pass means it fits and it is offered. A modifier can patch a service the config does not define. Then the merged service has no image and compose rejects it. `ctl up` hides that modifier. There is no compatibility list in any file to keep in sync. A modifier whose `MODIFIER_REQUIRES` keys are blank cannot be tested, so it is listed on every config and refused by name when picked.
 
-`DEFAULT_MODIFIERS` in `_lib.sh` names what applies on `base` when nothing is given. Any other config defaults to none, so `--config db --nqa` gets none. On `base`, a default that compose rejects is an error with compose's message, never a silent drop, because a stack that came up without its expected port would look right.
+`DEFAULT_MODIFIERS` in `_lib.sh` names what applies on `base` when nothing is given. Any additional project-specific config defaults to none. On `base`, a default that compose rejects is an error with compose's message, never a silent drop, because a stack that came up without its expected port would look right.
 
 ### 3. Service subset — build and run only these
 
@@ -61,7 +59,7 @@ The plan still lists every service in the file set and marks the subset, so the 
 `docker/presets.yaml` holds one line per preset:
 
 ```yaml
-dev: "--config db +expose_db"
+dev: "--config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init"
 local: "--config base +expose_web"
 public: "--config base +public"
 ```
@@ -73,23 +71,17 @@ The value is exactly what follows `ctl up` on the command line. It is the reprod
 | `ctl up preset <name> [-y]` | run the stored line; plan, confirm, start. No `--config`, `+modifier` or `--services` beside it: a preset is the whole shape. |
 | `ctl up preset` | pick one in a terminal, then the same |
 | `ctl up preset --list` | the stored presets and their lines. Needs no docker. |
-| `ctl up set-preset [<name>]` | walk the pickers, then Save, Save and run, Back or Cancel. An existing preset's values are preselected, so editing one is re-walking it. Flags given skip their prompt, so `set-preset x --config db +expose_db -y` needs no terminal. Docker must be up, because the plan is the real merge. |
+| `ctl up set-preset [<name>]` | walk the pickers, then Save, Save and run, Back or Cancel. An existing preset's values are preselected, so editing one is re-walking it. Flags given skip their prompt, so `set-preset x --config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init -y` needs no terminal. Docker must be up, because the plan is the real merge. |
 
 A preset stores the stack shape only: `--config`, `+modifier`, `--services`. Give run flags (`-y`, `-a`, `--nqa`) on the command line. `ctl up preset` refuses a preset that stores one and names the flag. A flag in the file would act on every reader. A line without `--config` means `base`. An empty line is an error. A name is letters, digits, `-` and `_`. A duplicated name: the first line wins on read, and `set-preset` collapses it to one line.
 
 The file is committed. It holds names, never values. One name is reserved: `dev` is what `ctl dev` starts for its data core, so editing that line changes what the dev loop brings up. When it is missing, `ctl dev` stops and says which line to add. It never falls back to a hidden default.
 
-### 5. Include — one file, borrowed
+### 5. Include — optional composition
 
-`include:` lets one config pull another whole file in. `base` includes `db`, so the engines and the schema one-shots are defined once and `base` gets them without a copy. A future config that needs the engines includes the db file the same way.
+Compose supports `include:` when a project has independently maintained shared configs. The shipped base is self-contained: engines, migration jobs and application services are defined once in it. Development selects services through its preset rather than including a second stack.
 
-```yaml
-include:
-  - path: ./docker/compose.db.yaml
-    project_directory: .
-```
-
-`project_directory: .` is required. Without it the included file's relative paths resolve against `docker/`, so `${DATA_DIR}/postgres` lands in `docker/data/`. Never define the same service in both files. The compose specification calls that a conflict; compose 5.5 let the including file win without a word in a test. Neither outcome is what you want. Include is for borrowing; a deliberate change is a modifier, where the plan shows it.
+When adding an include, set its `project_directory: .` so paths remain rooted at the repository. Do not define the same service in both files; use a modifier for deliberate overrides.
 
 ## How they combine
 
@@ -104,7 +96,7 @@ Bare `ctl up` in a terminal walks config, modifiers, services, plan, confirm. An
 
 ## Worked example — the database
 
-The engines live in the `db` config with no ports. Two one-shot services live beside them:
+The engines live directly in `base` with no ports. Two one-shot services live beside them:
 
 | Service | Runs | Image |
 |---|---|---|
@@ -115,22 +107,20 @@ Both run inside the compose network, so no engine port is published for them. Bo
 
 | Situation | What runs | Ports |
 |---|---|---|
-| `ctl dev` | `ctl up preset dev --nqa -y` (the reserved preset: `--config db +expose_db`), which checks engine readiness and one-shot completion within its startup budget, then the apps on the host | engines on loopback, so host processes reach them |
+| `ctl dev` | `ctl up preset dev --nqa -y` (the reserved preset: `--config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init`), which checks engine readiness and one-shot completion within its startup budget, then the apps on the host | engines on loopback, so host processes reach them |
 | `ctl up` | `base`: engines, one-shots, apps | none on the engines; the edge through a modifier |
 | `ctl up --services api` | `postgres`, `redis`, `migrate`, `api` | as above |
 | `ctl db migrate` | build the migration image, then `docker compose run --rm --no-deps migrate migrate` against the base config | none; the engines must already be up |
 | `ctl db migrate new "<msg>"` | the shell worker creates one timestamped SQL migration in the checkout; no container or database needed | none |
 | `ctl manage` | inside the running `api` container under `ctl up`; on the host under `ctl dev` | none published for the container path |
 
-`--no-deps` on `ctl db migrate` matters. `ctl dev` creates the engine containers from `db` plus `+expose_db`. `ctl up` creates them from `base` with no ports. Compose keys a container by service name and recreates it when its spec differs. A switch between `ctl dev` and `ctl up` recreates the engines once. That is acceptable. A `run` that starts its dependencies would recreate them under a live stack. That is not. `ctl db migrate` therefore requires the engine up and never starts it.
+`--no-deps` on `ctl db migrate` matters. `ctl dev` creates the engine containers from `base` plus `+expose_db`, selecting only the dev preset's services. `ctl up` creates them from `base` with no ports. Compose keys a container by service name and recreates it when its spec differs. A switch between `ctl dev` and `ctl up` recreates the engines once. That is acceptable. A `run` that starts its dependencies would recreate them under a live stack. That is not. `ctl db migrate` therefore requires the engine up and never starts it.
 
-Without a data core: `DATA_SVCS=()` and `SCHEMA_SVCS=()` in `_lib.sh`; drop the include and every `depends_on` on an engine or a one-shot from `base`; delete the `db` config, the `dev` preset and `scripts/db/`. `ctl dev` skips the data core when `DATA_SVCS` is empty. `ctl check` then names any `depends_on` left behind, because `base` no longer validates.
+Without a data core: `DATA_SVCS=()` and `SCHEMA_SVCS=()` in `_lib.sh`; remove the engine and migration services and their `depends_on` entries from `base`; remove the `dev` preset and `scripts/db/`. `ctl dev` skips the data core when `DATA_SVCS` is empty. `ctl check` then names any `depends_on` left behind, because `base` no longer validates.
 
 ## The passthroughs
 
-`down`, `restart`, `logs`, `exec`, `shell`, `health` run against the `base` file. They act on the services that file defines. A service another config defines and `base` lacks is not reachable through them: `ctl down` leaves the `dev` proxy running today, and `ctl dev` stops it itself on Ctrl-C. Known limit, recorded here, not fixed.
-
-One more limit of the port rule: `ctl check` looks for `ports:` in a config. `network_mode: host`, which the `dev` config uses for the proxy, is exposure the check does not see. It exists for that one service, in dev, and nowhere else.
+`down`, `restart`, `logs`, `exec`, `shell` and `health` run against `base`. The shipped services all live there, so no separate development proxy is left outside that model. Host development processes remain a separate plane; use `ctl stop` to stop both planes while retaining containers and data.
 
 ## What ctl check proves
 

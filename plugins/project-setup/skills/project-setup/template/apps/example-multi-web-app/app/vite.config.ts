@@ -1,26 +1,39 @@
-// Vite config for a static frontend inside the group. One key, read directly: no VITE_ alias, no literal fallback.
-//
-//   import { fileURLToPath, URL } from "node:url";
-//   import { defineConfig } from "vite";
-//   import react from "@vitejs/plugin-react";
-//   import tailwindcss from "@tailwindcss/vite";
-//   import { tanstackRouter } from "@tanstack/router-plugin/vite";   // file routing: src/routes/ → src/routeTree.gen.ts
-//
-//   const need = (k: string) => process.env[k] ?? (() => { throw new Error(`${k} is not set — run through ctl (ctl dev app), which exports .env`); })();
-//
-//   export default defineConfig({
-//     base: need("WEB_APP_PREFIX"),                       // .env → dev: process env; build: compose build arg
-//     plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],   // the router plugin goes first
-//     resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },   // "@/…" = src/, the same map as tsconfig paths
-//     define: { __APP_NAME__: JSON.stringify("<display name>") },   // a display name is a literal, not env
-//     server: {
-//       port: Number(need("WEB_APP_PORT")),
-//       proxy: {                                         // mirrors ../nginx/nginx.conf.template. Never hit under ctl dev --proxy.
-//         [need("API_PREFIX")]:    { target: `http://127.0.0.1:${need("API_PORT")}`,    changeOrigin: true, ws: true },
-//         [need("ENGINE_PREFIX")]: { target: `http://127.0.0.1:${need("ENGINE_PORT")}`, changeOrigin: true, ws: true },
-//       },
-//     },
-//   });
-//
-// Every value comes from .env. A missing one throws, so a bare `bun dev` without the env exported fails
-// at once instead of running on a guessed port. Nothing here reaches the bundle except `base` and `define`.
+import { fileURLToPath, URL } from "node:url";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import { tanstackRouter } from "@tanstack/router-plugin/vite";
+
+const need = (key: string) => {
+  const value = process.env[key];
+  if (!value) throw new Error(`${key} is not set — run through ctl dev`);
+  return value;
+};
+
+const route = (prefix: string) =>
+  `^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:/|$)`;
+
+export default defineConfig(({ command }) => ({
+  envDir: false,
+  base: need("WEB_APP_PREFIX"),
+  plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
+  define: { __APP_NAME__: JSON.stringify("<display name>") },
+  server: command === "serve" ? {
+    host: "127.0.0.1",
+    port: Number(need("WEB_APP_PORT")),
+    strictPort: true,
+    proxy: {
+      [route(need("API_PREFIX"))]: {
+        target: `http://${need("API_HOST")}:${need("API_PORT")}`,
+        changeOrigin: true,
+        ws: true,
+      },
+      [route(need("ENGINE_PREFIX"))]: {
+        target: `http://${need("ENGINE_HOST")}:${need("ENGINE_PORT")}`,
+        changeOrigin: true,
+        ws: true,
+      },
+    },
+  } : undefined,
+}));

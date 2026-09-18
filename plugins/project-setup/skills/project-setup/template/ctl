@@ -20,15 +20,12 @@
 #   Configuration  setup · check · status
 #
 # COMPOSE MODEL. Five things you touch: a CONFIG docker/compose.<name>.yaml (one stack shape; base
-# is the whole stack and the default, db is the engines alone), MODIFIERS docker/compose.m.<name>.yaml
+# is the whole stack and the default), MODIFIERS docker/compose.m.<name>.yaml
 # (overlays, `+name`; only the ones compose accepts on the config are offered), a SERVICE SUBSET
 # (--services a,b; only those and their depends_on chain build and run), PRESETS docker/presets.yaml
-# (one saved `ctl up` line per name: `ctl up preset <name>`), and `include:` (base includes the db
-# file, so the engines are defined once). Bare `ctl up` in a terminal walks config → modifiers →
-# services → plan → confirm; no TTY = the default (base, +expose_web, every service). `ctl dev` runs
-# `ctl up preset dev` (the reserved preset: --config db +expose_db) for the engines and the apps on
-# the host; `ctl dev --proxy` adds docker/compose.dev.yaml, one nginx on the host network so several
-# frontends share one origin.
+# (one saved `ctl up` line per name: `ctl up preset <name>`), and `include:` (base defines the engines and migration jobs directly). Bare `ctl up` in a terminal walks config → modifiers →
+# services → plan → confirm; no TTY = the default stack. The dev preset selects engines and schema jobs
+# from base with +expose_db. Frontend dev servers provide HTTP/WebSocket routing on the host.
 # The schema step (`ctl db migrate`) runs inside the compose network, so no engine port is ever
 # published for it. Every docker verb checks the engine FIRST and names the fault (not installed ·
 # not running · compose plugin missing). Run `ctl <command> --help` for any command.
@@ -44,7 +41,7 @@ run() { local s="$CTL_ROOT/scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s
 ctl_help() {
   printf '%s%s%s — control plane. One entrypoint for dev + containers.\n\n' "$C_B$C_CYN" "ctl" "$C_RESET"
   printf '%sDevelopment%s (host loop)\n' "$C_B" "$C_RESET"
-  row "dev [app…] [--proxy] [--detach]" "data core in docker, apps on the host with reload (--proxy: one origin)"
+  row "dev [app…] [--detach]" "data core in docker, host apps with native frontend proxies"
   row "ps [--list | kill [port…]]"      "browse everything running — attach · kill · port map"
   row "stop [--dry-run]"                "stop owned host processes, then project containers; keep data"
   printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"

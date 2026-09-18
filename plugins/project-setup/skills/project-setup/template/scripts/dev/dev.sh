@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 # dev/dev.sh — `ctl dev [app…]`. The host dev loop: the data core in docker, the apps on the host
-# with reload. The data core is `ctl up preset dev`, a reserved line in docker/presets.yaml (the db
-# config bound to loopback so host processes reach it). Its schema one-shots run with it, so the loop
-# starts on a migrated schema. Edit the preset to change what `ctl dev` starts; a missing one is an error.
+# with reload. The dev preset selects engines and migration jobs from base, with loopback ports.
+# Frontend dev servers own their HTTP/WebSocket proxies; production routing lives in Nginx.
 #
 #   ctl dev                 in a terminal: pick the apps (multi-select, all preselected), then run them
 #                           foreground with prefixed output — Ctrl-C stops all. No TTY or --nqa: every app.
 #   ctl dev api app         only these apps, no prompt
-#   ctl dev --proxy         also run the nginx dev proxy (docker/compose.dev.yaml, host network) so every
-#                           frontend + backend sits on ONE origin: http://localhost:$DEV_PROXY_PORT.
-#                           Turned on automatically when two or more frontends are selected.
 #   ctl dev --detach        background them: logs → logs/dev/dev-<app>.log, pids → logs/run/
 #                           attach with `ctl ps` → a · stop with `ctl ps` → k (or ctl ps kill)
 #   ctl dev --dry-run       print the data-core bring-up + the host commands, run nothing
@@ -20,7 +16,7 @@ source "$CTL_ROOT/scripts/dev/_apps.sh"
 source "$CTL_ROOT/scripts/dev/_controllers.sh"
 
 usage() { print_help "dev" "Data core in docker, apps on the host with reload." \
-  'dev [app…] [-d|--detach] [--proxy] [--no-core] [--nqa] [--dry-run] [-h]' \
+  'dev [app…] [-d|--detach] [--no-core] [--nqa] [--dry-run] [-h]' \
 "Arguments
   app…            which apps to run: $(app_names | join_sp)
                   (none given: interactive pick in a terminal, all preselected; else every app)
@@ -31,27 +27,24 @@ $(for a in $(app_names); do printf '  %-10s %s%s%s\n' "$a" "$C_GRN" "$(app_cmd "
 Options
   -d, --detach    run in the BACKGROUND: logs → logs/dev/dev-<app>.log, pidfiles → logs/run/.
                   Attach with 'ctl ps' → a; stop with 'ctl ps' → k (or ctl ps kill <port>).
-  --proxy         also run the nginx dev proxy ($DEV_FILE, host network): one origin at
-                  http://localhost:\${DEV_PROXY_PORT} routing every prefix to its dev server.
-                  Automatic when two or more frontends ($(frontends | join_sp)) are selected.
   --no-core       don't touch the data core; assume it is reachable
   --nqa           no questions — skip the app picker; no apps named = every app
   --dry-run, -n   print what would run, run nothing
   -h, --help      show this help
 
-With a data core (DATA_SVCS set) it first runs \`ctl up preset $DEV_PRESET --nqa -y\` (the reserved preset in
-$PRESETS_FILE: the engines bound to loopback, the schema one-shots with them), waits for health and
+With a data core (DATA_SVCS set) it first runs \`ctl up preset $DEV_PRESET --nqa -y\` (the service subset in
+$PRESETS_FILE: engines bound to loopback and their schema one-shots, without application containers), waits for health and
 for the schema step, then starts the host processes.
 Before startup, validate configuration and synchronize source dependencies with locked versions.
 Missing settings point to ctl setup. Help and dry-run do not install anything."; }
 
 # parse: positionals = apps, flags anywhere
-apps=() dry=0 detach=0 no_core=0 proxy=0 nqa=0
+apps=() dry=0 detach=0 no_core=0 nqa=0
 while (( $# )); do case "$1" in
   -h|--help)     HELP_MODE=1 usage; exit 0 ;;
   --dry-run|-n)  dry=1; shift ;;
   -d|--detach)   detach=1; shift ;;
-  --proxy)       proxy=1; shift ;;
+  --proxy)       die "--proxy is not supported; use the frontend dev server proxy" ;;
   --no-core)     no_core=1; shift ;;
   --nqa|--no-questions-asked) nqa=1; shift ;;
   -*)            die "unknown flag '$1' (see ctl dev -h)" ;;
@@ -68,10 +61,6 @@ if (( ${#apps[@]} == 0 )); then
     (( ${#apps[@]} )) || die "no app selected — nothing to run"
   else apps=("${ALL_APPS[@]}"); fi
 fi
-# two or more frontends selected → they need one origin → the dev proxy comes up
-n_fe=0; for a in "${apps[@]}"; do frontends | grep -qx "$a" && n_fe=$((n_fe+1)); done
-(( n_fe >= 2 )) && proxy=1
-
 require_env
 resolve_storage_dirs
 
@@ -79,7 +68,7 @@ if (( dry )); then
   step "(dry-run — nothing started)"
   say "preflight   validate configuration → synchronize source dependencies"
   (( ${#DATA_SVCS[@]} && ! no_core )) && say "data core   ctl up preset $DEV_PRESET --nqa -y   → ctl up $(preset_args "$DEV_PRESET" || echo "(preset '$DEV_PRESET' missing from $PRESETS_FILE)")"
-  (( proxy )) && say "dev proxy   docker compose --project-directory . -f $DEV_FILE up -d   → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env}"
+
   while IFS= read -r controller; do
     [[ -n $controller ]] || continue
     say "controller $controller   $(controller_command "$controller")"
@@ -99,32 +88,12 @@ for a in "${apps[@]}"; do
   require_tools "${app_requirements[@]}"
 done
 process_init
-proxy_owned=0
-proxy_before=""
-proxy_command() {
-  local limit="$1"; shift
-  timeout --kill-after=2 "$limit" bash -c '
-    source "$1/scripts/common/_lib.sh"; shift
-    cd "$CTL_ROOT"; require_env; dc_dev "$@"
-  ' bash "$CTL_ROOT" "$@"
-}
-dev_cleanup() {
-  process_cleanup
-  local container
-  if (( proxy_owned )); then
-    for container in $(proxy_command 5 ps -q 2>/dev/null); do
-      [[ " $proxy_before " == *" $container "* ]] && continue
-      timeout --kill-after=1 5 docker stop "$container" >/dev/null 2>&1 || true
-    done
-  fi
-}
-trap 'dev_cleanup' EXIT
 
 # data core — the same worker `ctl up` runs, with the dev line and no prompts. Skipped cleanly when
 # DATA_SVCS is empty (no-data-core projects) or --no-core.
 if (( ${#DATA_SVCS[@]} && ! no_core )); then
   require_docker
-  preset_args "$DEV_PRESET" >/dev/null || die "preset '$DEV_PRESET' missing from $PRESETS_FILE — it is what ctl dev starts. Add:  $DEV_PRESET: \"--config db +expose_db\""
+  preset_args "$DEV_PRESET" >/dev/null || die "preset '$DEV_PRESET' missing from $PRESETS_FILE — it is what ctl dev starts. Add:  $DEV_PRESET: \"--config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init\""
   step "ensuring data core (ctl up preset $DEV_PRESET)…"
   bash "$CTL_ROOT/scripts/container/up.sh" preset "$DEV_PRESET" --nqa -y
 fi
@@ -134,21 +103,6 @@ while IFS= read -r controller; do
   [[ -n $controller ]] || continue
   controller_ensure "$controller" || die "controller $controller is not ready; no apps launched"
 done <<< "$controllers"
-
-# dev proxy — one origin across frontends. The foreground loop stops it on Ctrl-C; under --detach it
-# stays up with the apps, and `ctl ps` → k on its port stops the container.
-if (( proxy )); then
-  require_docker
-  require_tools curl
-  step "starting dev proxy ($DEV_FILE) → http://localhost:${DEV_PROXY_PORT:?DEV_PROXY_PORT is blank in .env}"
-  proxy_before=$(proxy_command 5 ps -q | tr '\n' ' ')
-  if [[ -z $proxy_before ]]; then
-    proxy_owned=1
-    proxy_command 60 up -d
-  fi
-  printf -v proxy_probe 'curl --fail --silent --max-time 1 %q' "http://localhost:${DEV_PROXY_PORT}/_ctl/ready"
-  process_ready 30 "$proxy_probe" || exit $?
-fi
 
 for a in "${apps[@]}"; do
   probe="$(app_ready_cmd "$a")"
@@ -169,7 +123,6 @@ done
 if (( detach )); then
   process_check_all
   process_release
-  proxy_owned=0
   say "attach: ctl ps → a   ·   stop: ctl ps kill <port> -y"
   exit 0
 fi

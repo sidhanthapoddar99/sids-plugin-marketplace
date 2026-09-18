@@ -2,11 +2,13 @@
 
 import json
 import os
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 TEMPLATE = Path(__file__).resolve().parents[2] / "template"
 
@@ -41,7 +43,7 @@ def render(root: Path, *files: str) -> dict:
     return json.loads(result.stdout)
 
 
-@pytest.mark.parametrize("config", ["base", "db", "dev"])
+@pytest.mark.parametrize("config", ["base"])
 def test_configs_render_without_undeclared_secrets(compose_root: Path, config: str) -> None:
     model = render(compose_root, config)
     assert model["services"]
@@ -65,7 +67,7 @@ def test_modifiers_render_and_use_process_overrides(compose_root: Path, modifier
 
 
 @pytest.mark.parametrize("value", ["state", "state with spaces"])
-@pytest.mark.parametrize("config", ["base", "db"])
+@pytest.mark.parametrize("config", ["base"])
 def test_compose_normalizes_bare_relative_storage(compose_root: Path, value: str, config: str) -> None:
     env_file = compose_root / ".env"
     env_file.write_text(env_file.read_text().replace("DATA_DIR=./data", f"DATA_DIR={value}"))
@@ -86,3 +88,28 @@ def test_compose_rejects_blank_storage_before_invoking_docker(tmp_path: Path) ->
     assert result.returncode != 0
     assert "DATA_DIR is blank" in result.stderr
     assert not marker.exists()
+
+
+def test_dev_preset_selects_only_data_core_with_loopback_ports(compose_root: Path) -> None:
+    presets = yaml.safe_load((compose_root / "docker/presets.yaml").read_text())
+    arguments = shlex.split(presets["dev"])
+    assert arguments[arguments.index("--config") + 1] == "base"
+    assert "+expose_db" in arguments
+    selected = set(arguments[arguments.index("--services") + 1].split(","))
+    assert selected == {"postgres", "redis", "neo4j", "migrate", "neo4j-init"}
+    model = render(compose_root, "base", "m.expose_db")
+    dependencies = set(selected)
+    for service in selected:
+        dependencies.update(model["services"][service].get("depends_on", {}))
+    assert dependencies == selected
+    assert not selected.intersection({"api", "engine", "web", "dashboard"})
+    for service in ("postgres", "redis", "neo4j"):
+        assert all(port["host_ip"] == "127.0.0.1" for port in model["services"][service]["ports"])
+
+
+def test_base_is_self_contained_without_development_proxy(compose_root: Path) -> None:
+    model = render(compose_root, "base")
+    assert set(model["services"]) == {"api", "engine", "web", "dashboard", "postgres", "redis", "neo4j", "migrate", "neo4j-init"}
+    assert all(not service.get("ports") and service.get("network_mode") != "host" for service in model["services"].values())
+    assert not (compose_root / "docker/compose.db.yaml").exists()
+    assert not (compose_root / "docker/compose.dev.yaml").exists()

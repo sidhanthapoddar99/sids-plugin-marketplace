@@ -58,7 +58,7 @@ Presets ($PRESETS_FILE — one \`<name>: \"<arguments>\"\` line each)
   preset              pick one in a terminal, then the same
   preset --list       the stored presets and their lines
   set-preset [<name>] walk the pickers (an existing preset's values preselected), then Save / Save and run.
-                      Flags given here skip their prompt, so \`set-preset x --config db +expose_db -y\` needs no TTY.
+                      Flags given here skip their prompt, so \`set-preset x --config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init -y\` needs no TTY.
                       A preset stores the stack shape only: --config, +modifier, --services. Run flags
                       (-a, -y, --nqa) are given at run time and refused inside the file.
 
@@ -66,7 +66,7 @@ A config publishes no port; modifiers add exposure. The schema one-shots (migrat
 before any app because the apps wait on them — never on app boot." \
 "Example:  ctl up                                # interactive
           ctl up -y                             # local docker: base +expose_web, no prompts
-          ctl up --config db +expose_db -y      # the engines alone, bound to loopback (what ctl dev runs)
+          ctl up --config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init -y      # the engines alone, bound to loopback (what ctl dev runs)
           ctl up +public -y                     # public deployment: 80/443 + PUBLIC_URL, uncommented in .env
           ctl up --services=api,postgres -y     # one backend and its chain only
           ctl up preset dev -y               # a stored line, no prompts

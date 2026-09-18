@@ -24,7 +24,7 @@ are a separate suite and are not installed by CTL.
 
 | Group | Verb | Does |
 |---|---|---|
-| Development | `dev [app…] [--proxy] [--detach] [--dry-run]` | The data core through `ctl up preset dev --nqa -y`, the reserved preset (engines on loopback, the schema one-shots with them), then the apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. `--proxy`: the same-origin dev proxy, automatic with two or more frontends. `--detach`: logs and ownership records below the configured `LOGS_DIR`. `--no-core`: skip the data core. `--nqa`: skip the app picker. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. |
+| Development | `dev [app…] [--detach] [--dry-run]` | The data core through `ctl up preset dev --nqa -y`, the reserved preset (engines on loopback, the schema one-shots with them), then the apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. `--detach`: logs and ownership records below the configured `LOGS_DIR`. `--no-core`: skip the data core. `--nqa`: skip the app picker. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. |
 | | `ps [--list \| kill [port…]]` | Everything running across three planes: host processes, frozen builds, containers. Attach or kill, plane-aware. |
 | | `stop [--dry-run]` | Stop this project's recorded host groups and frozen servers, then its containers. Keep containers, data and volumes. No prompts. |
 | Containers | `up [--config c] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | A stack shape (`compose.<config>.yaml`, `base` by default) plus modifiers, every service or a subset. In a terminal: pick a config → pick the modifiers that fit → pick services (all preselected) → plan → confirm. Flags skip their prompt. No TTY: the plan prints and the run refuses without `-y`; `--nqa -y` is the scripted form. Compose orders engines, schema one-shots, apps by itself. `08a_ctl_docker.md`. |
@@ -95,7 +95,7 @@ Adapt `scripts/dev/_apps.sh`: each app declares its command, required tools, rea
 
 Ownership records live in `LOGS_DIR/run/<name>.process/`, including a PID and its process-start identity; output lives in `LOGS_DIR/dev/<name>.log`. Identity checks prevent a reused PID from being treated as the old process. Attach, stop and frozen-build commands use the same configured paths. The host-process implementation requires Linux or WSL, Bash, `/proc`, `setsid` and GNU coreutils. Programs that deliberately escape their process group need a project-specific supervisor.
 
-The development proxy has its own readiness endpoint. Reuse a running proxy; on failed startup or interruption stop only the proxy container started by this invocation. Data-core startup uses the bounded production-start helper; it does not continue after failed readiness.
+Frontend dev servers own routing; there is no development proxy container. Data-core startup uses the bounded production-start helper and never continues after failed readiness.
 
 ### Controllers and Rust development
 
@@ -133,7 +133,7 @@ Each new record stores the project root, PID and start identity. A live legacy r
 
 Shutdown sends TERM and allows up to 20 seconds per group for watcher cleanup before verified KILL. `PROCESS_STOP_TIMEOUT` may set a positive integer grace in seconds. Remaining live groups or signal failures retain their records and return nonzero. A host failure leaves containers running, so databases cannot disappear underneath an unresolved writer.
 
-Docker targets must match both the resolved Compose project name and the exact project working-directory label. This includes the dev proxy and orphaned services from other stack configurations of the same project. Non-data containers stop before the `DATA_SVCS` engines. Update that existing data-service list when adapting the stack, because it defines shutdown order. Failed writer shutdown leaves engines running. Docker checks and stop calls are bounded; missing or unreachable Docker returns nonzero after host cleanup. Repeating a successful stop is safe. Do not launch new project workloads concurrently with shutdown; this command is not a project-wide launch lock.
+Docker targets must match both the resolved Compose project name and the exact project working-directory label. This includes orphaned services from other stack configurations of the same project. Non-data containers stop before the `DATA_SVCS` engines. Update that existing data-service list when adapting the stack, because it defines shutdown order. Failed writer shutdown leaves engines running. Docker checks and stop calls are bounded; missing or unreachable Docker returns nonzero after host cleanup. Repeating a successful stop is safe. Do not launch new project workloads concurrently with shutdown; this command is not a project-wide launch lock.
 
 ## `ctl check` — the repo contract
 
@@ -168,7 +168,7 @@ Products without an operator plane delete `scripts/admin/` and `manager.py`.
 
 ## Without a data core
 
-`DATA_SVCS=()` in `_lib.sh`. `dev`, `up`, `setup`, `status`, `health` skip the engines. `compose.base.yaml` drops the include and the `depends_on`; the `db` config and `scripts/db/` are deleted. `require_env` stays strict only if the apps still read secrets; `status` and `health` point at the app services and their healthchecks instead.
+`DATA_SVCS=()` in `_lib.sh`. Remove unused engines, migration jobs and their `depends_on` entries from `compose.base.yaml`; remove the dev preset and `scripts/db/`. `dev`, `setup` and `status` skip the engines. `require_env` stays strict only if the apps still read secrets; `status` and `health` point at the app services and their healthchecks instead.
 
 ## Without ctl
 

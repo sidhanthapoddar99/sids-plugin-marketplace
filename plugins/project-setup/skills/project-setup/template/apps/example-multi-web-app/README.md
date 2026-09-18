@@ -16,10 +16,7 @@ the edge proxies to it under `DASHBOARD_PREFIX`.
 
 ## The prefix rule
 
-One origin. Every frontend owns one path prefix and nothing else. The prefix is set once in
-`.env` and read by three places: the frontend's own build config (`base` / `basePath`, arriving as a
-compose build arg — there is no per-frontend `.env`),
-`nginx/nginx.conf.template` (prod, copied into the image) and `nginx/nginx-dev.conf.template` (the dev proxy, mounted by `docker/compose.dev.yaml`). Both live here because this group owns the edge.
+Production uses one origin. Each frontend's prefix is set once in `.env` and read by its own build config (`base` / `basePath`, arriving as a Compose build argument) and `nginx/nginx.conf.template`, the production edge. There is no frontend-local env file. Development routing belongs to each frontend's Vite proxy or framework rewrites; these preserve the same backend prefixes on the frontend's own port.
 
 ## Each frontend still owns
 
@@ -31,11 +28,10 @@ No `package.json` directly in `apps/example-multi-web-app/` — `ctl check` fail
 
 1. New folder `apps/example-multi-web-app/<name>/` with its own manifest.
 2. One build stage in `apps/example-multi-web-app/Dockerfile` and one `COPY --from` line into the nginx stage.
-3. One `location` block in both `nginx/nginx.conf.template` and `nginx/nginx-dev.conf.template`.
+3. One production `location` in `nginx/nginx.conf.template`, with matching backend proxy rules in the frontend's development config.
 4. One `WEB_<NAME>_PREFIX` and `WEB_<NAME>_PORT` in `.env.template`, one build arg in `compose.base.yaml`, plus the port in `ctl dev`'s app table.
 
 ## Run
 
 `ctl dev app` — one frontend, its own dev server, the Vite/Next proxy handles `/api`.
-`ctl dev app landing` — two or more: `ctl` also starts the nginx dev proxy (`docker/compose.dev.yaml`) so
-every frontend is reachable on one origin at `http://localhost:${DEV_PROXY_PORT}`.
+`ctl dev app landing` starts both frontend servers on their own ports. Vite handles the app's backend HTTP and WebSocket routes; no extra Nginx container or host networking is needed. Cross-frontend flows requiring a shared origin need an explicit frontend gateway or a production-shaped `ctl up` run.

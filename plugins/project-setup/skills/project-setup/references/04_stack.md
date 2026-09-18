@@ -71,7 +71,7 @@ One backend per responsibility. Several backends: `03_routing.md` case 5. An MCP
 | Neo4j | Graph queries. Or a faster embedded alternative when the graph is local. |
 | Vector DB | Start with `pgvector`. A dedicated engine only when it outgrows Postgres. |
 
-Pick from the requirement, not from habit. Runtime state lives in `data/`, bind-mounted, gitignored. Committed config lives in `apps/database/<engine>/`. How to run each engine well, and migrations: `06_backend.md`. Template: `template/docker/compose.db.yaml`.
+Pick from the requirement, not from habit. Runtime state lives in `data/`, bind-mounted, gitignored. Committed config lives in `apps/database/<engine>/`. How to run each engine well, and migrations: `06_backend.md`. Template: `template/docker/compose.base.yaml`.
 
 ## ML and notebooks
 

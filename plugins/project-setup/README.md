@@ -20,7 +20,7 @@ The skill is opinionated on purpose. One repo tree, one entrypoint (`ctl`), one 
 - `ctl gate`: the ladder. The floor is four rungs, `lint typecheck test check`, each seconds. `dead`, `audit`, `build` and `e2e` are switched on by name when the project earns them. `ctl gate static` and `ctl gate dynamic` run each half.
 - `ctl check`: the repo contract. It runs every rule, prints every failure, and exits 0 only when all of them passed. It is also the `check` rung.
 - One ignored root `.env` and committed `.env.template`, grouped by kind with two-line hash headers. Backends select values through `config.yaml`; frontend dev processes inherit the environment, while browser constants and Docker service keys are explicitly selected.
-- `docker/compose.<config>.yaml` stack shapes with no ports, modifiers that add exposure, and `docker/presets.yaml` with one saved `ctl up` line per name. `base` is production; `db` is the engines with the schema one-shots.
+- `docker/compose.base.yaml` defines the whole stack without published ports. Modifiers add exposure; `docker/presets.yaml` selects saved combinations. The dev preset selects only engines and schema jobs from base with loopback database ports.
 - `AGENTS.md`: the brief. Every chosen variant, exception and deferral is recorded there, and an audit compares the repo against it.
 
 ## What stays out
@@ -35,6 +35,12 @@ codex plugin add project-setup@sids-plugin-marketplace
 ```
 
 ## Changelog
+
+### 0.11.0 (unreleased)
+
+- Consolidate database engines and migration jobs into the base Compose config; select development services through the dev preset with loopback database exposure.
+- Replace development Nginx with native frontend proxies and rewrites; remove the separate db/dev Compose configs and development-proxy settings.
+- Add routing and Compose regressions, including live Vite HTTP, WebSocket and HMR checks.
 
 ### 0.10.1
 

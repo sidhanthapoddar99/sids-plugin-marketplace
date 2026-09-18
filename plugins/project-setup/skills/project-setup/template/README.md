@@ -7,7 +7,7 @@ One paragraph: what this product is and which apps make it.
 - `ctl setup` — creates `.env` from `.env.template`, generates declared local credentials, creates configured data/log/backup directories, installs and activates tools
 
 ## Quick start with ctl
-- `ctl dev` — databases in docker, apps on the host (`--proxy` for one origin across frontends)
+- `ctl dev` — databases in docker, apps on the host; frontend dev servers proxy backend requests
 - `ctl stop` — stop managed host processes and project containers, keeping data (`--dry-run` previews targets)
 - `ctl up` — full stack in docker; `ctl up preset <name>` runs a saved line from `docker/presets.yaml`
 - `ctl db migrate` — apply schema migrations (they also run whenever the engines come up)
@@ -16,7 +16,7 @@ One paragraph: what this product is and which apps make it.
 ## Commands
 | Verb | Does |
 |---|---|
-| `ctl dev [app…] [--proxy]` | engines in docker, the chosen apps on the host with reload |
+| `ctl dev [app…]` | engines in docker, the chosen apps on the host with reload |
 | `ctl stop [--dry-run]` | stop recorded dev/watch/build groups, then project containers; retain containers and volumes |
 | `ctl up [--config c] [+modifier…] [--services a,b]` | a stack shape in docker, or a subset; interactive in a terminal |
 | `ctl up preset [<name>]` · `ctl up set-preset` | run a saved `up` line · save one from the pickers |
@@ -58,7 +58,7 @@ The template ships no `bun.lock`, `uv.lock` or `Cargo.lock`: every dependency is
 ```
 apps/      example-api-python example-engine-rust example-multi-web-app/{landing,app,docs}
            example-single-web-app-vite example-dashboard-nextjs example-tui-go packages database
-docker/    compose.<config> (base db dev) · compose.m.<modifier> · presets.yaml
+docker/    compose.base + modifiers · compose.m.<modifier> · presets.yaml
 scripts/   ctl workers
 data/      actual data: engine mounts, datasets. gitignored
 logs/      produced state: logs, pids, backups, frozen builds. gitignored

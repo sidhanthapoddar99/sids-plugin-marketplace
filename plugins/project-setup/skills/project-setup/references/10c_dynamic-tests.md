@@ -17,7 +17,7 @@ Unit tests are floor work. Writing a test beside non-trivial logic is ordinary w
 | Load, stress, leaks, benchmarks | Performance and load testing | `perf` | By name: a latency or throughput target exists | `ctl gate perf` |
 | Every dynamic rung installed, in order | | `gate dynamic` | Floor | `ctl gate dynamic` |
 
-Runners: pytest, vitest, `cargo test`, `go test`; Playwright for the browser; hypothesis, fast-check and `cargo fuzz` for property tests; k6, `pytest-benchmark` and `cargo bench` for perf. Integration uses the same runners against the real engines from `compose.db.yaml`, with `httpx` or `supertest` against the app.
+Runners: pytest, vitest, `cargo test`, `go test`; Playwright for the browser; hypothesis, fast-check and `cargo fuzz` for property tests; k6, `pytest-benchmark` and `cargo bench` for perf. Integration uses the same runners against the real engines from `compose.base.yaml`, with `httpx` or `supertest` against the app.
 
 ## Where tests live
 

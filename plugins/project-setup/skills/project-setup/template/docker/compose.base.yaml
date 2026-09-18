@@ -1,31 +1,21 @@
-# Config `base`: the whole stack. This IS production, and the default config of `ctl up`.
-# No ports here — a config never publishes a port; modifiers (compose.m.<name>.yaml) add exposure.
-# No env_file. Each service lists exactly the variables it reads under `environment:`.
-#   ${VAR}   — operator decides; interpolated from the root .env file ctl passes with --env-file:
-#              grouped settings, including secrets, service addresses and data paths
-#   literal  — compose decides; service names on the compose network
-# So reading this file tells you everything a container gets. Nothing leaks in by accident.
-# Every app has image: (pull) and build: (ctl build).
-#
-# Production settings every service carries, written once in x-defaults and merged with `<<: *defaults`:
-#   restart            unless-stopped for every long-running service ("no" for the one-shot jobs)
-#   logging            stdout/stderr only, json-file with a cap; the app's level comes from config.yaml
-#   stop_grace_period  ≥ the app's graceful timeout, or every deploy SIGKILLs mid-drain
-# Per service: a readiness healthcheck with a start_period covering boot, depends_on with
-# condition: service_healthy (started is not ready), and a memory limit so a leak restarts one
-# container instead of taking the host down. Engines carry their own in compose.db.yaml.
-#
-# Database section: the engines and the schema one-shots (migrate, neo4j-init) are defined once, in
-# compose.db.yaml, and included here. Every app waits on the one-shots with
-# condition: service_completed_successfully, so compose orders engines → schema → apps by itself,
-# and `ctl up --services api` brings that chain along. Never inside an app's boot: the apps wait, they do not migrate.
-include:
-  - path: ./docker/compose.db.yaml
-    project_directory: .                        # or the included file's ./apps and ${DATA_DIR} resolve against docker/
-
+# Config `base`: the complete production stack, including engines and migration jobs.
+# Ports are added only by modifiers. The dev preset selects just the data-core services.
+# Each service declares its environment explicitly; source paths resolve from the project root.
 x-defaults: &defaults
   restart: unless-stopped
   stop_grace_period: 35s                        # gunicorn --graceful-timeout 30 + margin
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+x-engine: &engine
+  restart: unless-stopped
+  stop_grace_period: 30s
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+x-oneshot: &oneshot
+  restart: "no"
   logging:
     driver: json-file
     options: { max-size: "10m", max-file: "5" }
@@ -156,3 +146,83 @@ services:
         limits: { memory: 512m, cpus: "1" }
     depends_on:
       api: { condition: service_healthy }
+
+  postgres:
+    <<: *engine
+    image: pgvector/pgvector:<version>          # postgres + pgvector extension
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C.UTF-8"   # or collation drifts between machines
+    volumes:
+      - "${DATA_DIR}/postgres/pgdata:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits: { memory: 2g }
+
+  redis:
+    <<: *engine
+    image: redis:<version>
+    command: ["redis-server", "/etc/redis/redis.conf", "--requirepass", "${REDIS_PASSWORD}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}         # read by the healthcheck only
+    volumes:
+      - "${DATA_DIR}/redis:/data"
+      - "./apps/database/redis/redis.conf:/etc/redis/redis.conf:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG"]   # $$ escapes compose interpolation
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits: { memory: 512m }
+
+  neo4j:
+    <<: *engine
+    image: neo4j:<version>
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}         # read by the healthcheck only
+    volumes:
+      - "${DATA_DIR}/neo4j:/data"
+      - "./apps/database/neo4j:/init:ro"       # init.cypher applied by the neo4j-init one-shot below
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p $$NEO4J_PASSWORD 'RETURN 1' >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s                         # the JVM boots slowly
+    deploy:
+      resources:
+        limits: { memory: 2g }
+
+  # ── schema, one-shot ──
+  migrate:
+    <<: *oneshot
+    image: ${REGISTRY}/migrate:${TAG}
+    build: { context: ./apps/database/postgres }
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      FLYWAY_USER: ${POSTGRES_USER}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  neo4j-init:
+    <<: *oneshot
+    image: neo4j:<version>                      # same image as the engine: it ships cypher-shell
+    environment:
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+    volumes:
+      - "./apps/database/neo4j:/init:ro"
+    entrypoint: ["sh", "-c", "cypher-shell -a bolt://neo4j:7687 -u neo4j -p \"$$NEO4J_PASSWORD\" -f /init/init.cypher"]
+    depends_on:
+      neo4j: { condition: service_healthy }

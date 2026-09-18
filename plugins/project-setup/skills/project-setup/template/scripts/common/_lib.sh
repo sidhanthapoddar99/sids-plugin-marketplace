@@ -10,12 +10,10 @@
 #
 # COMPOSE MODEL (a config + stackable modifiers + a service subset; no profiles, no override file):
 #   docker/compose.<name>.yaml     a CONFIG: one stack shape, discovered by filename → `ctl up --config <name>`
-#       base   the whole stack (includes the db file); the default; NO ports — this is prod
-#       db     the data engines alone; what `ctl dev` runs with +expose_db
-#       dev    the nginx dev proxy on the host network             → `ctl dev --proxy`
+#       base   the complete stack, engines and migration jobs included; NO ports — this is prod
 #   docker/compose.m.<name>.yaml   a MODIFIER: an overlay on a config      → `ctl up +<name>`
 #   docker/presets.yaml            named `ctl up` argument lines           → `ctl up preset <name>`
-#   include:                       how one config borrows another file (base includes db)
+#   include:                       optional composition for project-specific additional configs
 # A config never publishes a port; only a modifier does (ctl check proves it). Which modifiers fit a
 # config is computed, not declared: `docker compose config` on the pair must pass.
 # Every compose call passes --project-directory "$CTL_ROOT", so every relative path in the
@@ -44,7 +42,6 @@ export CTL_ROOT
 DOCKER_DIR="docker"
 DEFAULT_CONFIG=base                       # the config `ctl up` runs when --config is not given
 BASE="$DOCKER_DIR/compose.$DEFAULT_CONFIG.yaml"   # the passthroughs (down · logs · exec · health) read this file
-DEV_FILE="$DOCKER_DIR/compose.dev.yaml"   # the same-origin dev proxy (nginx on the host network)
 PRESETS_FILE="$DOCKER_DIR/presets.yaml"   # named `ctl up` argument lines; `ctl up set-preset` writes it
 DEFAULT_MODIFIERS=(expose_web)            # what `ctl up` applies on DEFAULT_CONFIG when no +modifier is given; other configs default to none
 DEV_PRESET=dev                            # the reserved preset `ctl dev` starts for its data core; missing = ctl dev refuses
@@ -56,7 +53,7 @@ ENV_FILES=(.env)   # the root environment contract; template: .env.template
 # in *_STR and re-read by the worker. The default is the *_STR line, not the read line.
 export DATA_SVCS_STR="${DATA_SVCS_STR-${DATA_SVCS-postgres redis neo4j}}"
 read -r -a DATA_SVCS <<< "$DATA_SVCS_STR" || true
-# [ADAPT] the schema one-shots in the db config. `ctl dev` waits on them after the engines, because
+# [ADAPT] the schema one-shots in base. `ctl dev` waits on them after the engines, because
 # nothing in that config depends on them; under `ctl up` the apps do. Empty = no schema step.
 export SCHEMA_SVCS_STR="${SCHEMA_SVCS_STR-${SCHEMA_SVCS-migrate neo4j-init}}"
 read -r -a SCHEMA_SVCS <<< "$SCHEMA_SVCS_STR" || true
@@ -125,7 +122,7 @@ Any extra args forward straight to \`docker compose $1\`." \
 
 # ── docker compose ──
 # Every call is anchored at the repo root and gets the root .env file (compose reads no .env on
-# its own). `dc` = the default config (base, the whole stack), `dc_dev` = the dev proxy.
+# its own). `dc` = the default config (base, the whole stack).
 # env_file_args — one --env-file per ENV_FILES entry that exists; a missing file is simply skipped
 # here (require_env is the guard that dies). Compose precedence: shell env > --env-file, so an
 # exported var (DATA_DIR=… ctl up) still wins over the file. Compose expands ${NAME} only inside
@@ -138,7 +135,6 @@ env_file_args() { local f; for f in "${ENV_FILES[@]}"; do [[ -f "$CTL_ROOT/$f" ]
 compose_argv()  { printf '%s\n' docker compose --project-directory "$CTL_ROOT"; env_file_args; (( $# == 0 )) || printf '%s\n' "$@"; }
 compose_cmd()   { resolve_storage_dirs || return; local -a argv; mapfile -t argv < <(compose_argv "$@"); "${argv[@]}"; }
 dc()     { compose_cmd -f "$BASE" "$@"; }
-dc_dev() { compose_cmd -f "$DEV_FILE" "$@"; }
 # auto-discovery — no hard-coded list.
 #   compose.<name>.yaml   = config <name>   (a name holds no dot, so compose.m.* is never a config)
 #   compose.m.<name>.yaml = modifier <name>

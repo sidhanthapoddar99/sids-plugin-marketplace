@@ -18,7 +18,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 │   │   └── nginx/              #   the edge template lives with the app that owns the image
 │   ├── <frontend-group>/       # every static frontend, one image        (multi-web-app/)
 │   │   ├── Dockerfile          #   one build stage per frontend, ends in nginx: the edge
-│   │   ├── nginx/              #   nginx.conf.template (prod edge), nginx-dev.conf.template + nginx-dev-headers.conf (dev proxy)
+│   │   ├── nginx/              #   nginx.conf.template (production edge)
 │   │   ├── README.md
 │   │   └── <name>/             #   one folder per static frontend         (app/, landing/, docs/)
 │   │       ├── src/
@@ -65,7 +65,7 @@ The root holds config, the brief, and folders. Never loose code. Before creating
 |---|---|---|
 | `apps/` | All code: apps, packages, database, notebooks | One app is still `apps/<name>/`. Same shape in every repo. |
 | `scripts/` | `ctl` workers | Copied from `template/scripts/`. Adapted by deletion. |
-| `docker/` | Compose files | Configs `compose.<name>.yaml` (`base`, `db`, `dev`), modifiers `compose.m.<name>.yaml`, and `presets.yaml`. Compose lives here, never inside an app. `08a_ctl_docker.md`. |
+| `docker/` | Compose files | Self-contained `compose.base.yaml`, modifiers `compose.m.<name>.yaml`, and service-subset presets in `presets.yaml`. Add other configs only for independent stack shapes. Compose lives here, never inside an app. `08a_ctl_docker.md`. |
 | `data/` | Actual data: engine mounts (`postgres/`, `redis/`, `neo4j/`), datasets, uploads, checkpoints | Bind mounts point here. Self-ignored; see `.gitignore` below. |
 | `logs/` | Produced state: `dev/` logs, `run/` pids, `backups/`, `test_build/` | Everything `ctl` writes that is not data. Self-ignored. |
 | `docs/` | Docs site, built with `agent-ks` | Exists only when this repo is the docs home. One product has one docs home: never an in-repo `docs/` and a docs repo both. To scaffold, tell the user to run `/agent-ks-config`; it is interactive, never chain into it. |
@@ -85,7 +85,7 @@ The root holds config, the brief, and folders. Never loose code. Before creating
 | Entry | Holds | Rule |
 |---|---|---|
 | `<backend>/` | One backend service | Python code in `app/`, no `src/`: `main.py`, `config.py`, `db.py`, `core/`, `health/`, one `<domain>/` slice per domain (`models`, `repository`, `service`, `router`). Rust: a workspace of crates by layer (`common`, `data`, `auth`, `api`). Go: `cmd/<name>/` + `internal/`. Owns `README.md`, manifest, `config.yaml`, `Dockerfile`. `config.local.yaml` is the developer's, gitignored. |
-| `<frontend-group>/<name>/` | One static frontend (Vite, Next.js export, Astro) | Code in `src/` in the shape `05_frontend.md` § The folder shape gives: the framework's routing folder, `layout/`, `modules/`, `components/`, `lib/`. `e2e/`, `public/`, extra HTML entrypoints as needed. Owns `README.md`, `package.json`, lock, `tsconfig.json`, its lint config. No env file. The group owns the one `Dockerfile`, `nginx/` (prod template, dev-proxy template and its headers include) and a `README.md`. Exactly one frontend owns `/`; it has no `_PREFIX` key. |
+| `<frontend-group>/<name>/` | One static frontend (Vite, Next.js export, Astro) | Code in `src/` in the shape `05_frontend.md` § The folder shape gives: the framework's routing folder, `layout/`, `modules/`, `components/`, `lib/`. `e2e/`, `public/`, extra HTML entrypoints as needed. Owns `README.md`, `package.json`, lock, `tsconfig.json`, its lint config. No env file. The group owns the one `Dockerfile`, `nginx/` (production template) and a `README.md`. Exactly one frontend owns `/`; it has no `_PREFIX` key. |
 | `<single-frontend>/` | The only static frontend of the product | Code in `src/` in the same shape, with the theme and shadcn components inside it (`src/styles/`, `src/components/ui/`). Owns `README.md`, `package.json`, lock, `tsconfig.json`, `Dockerfile` (build, then nginx), `nginx/` with its edge template. No env file. `vite.config.ts` proxies in dev. Template: `example-single-web-app-vite/`. Switch to the group when a second static frontend arrives. |
 | `<server-frontend>/` | A frontend that is a server (Next.js SSR) | Its own app, own `Dockerfile`, own compose service. Never inside the group. |
 | `<desktop>/`, `<mobile>/`, `<cli>/` | A native surface | Only if the product ships one. Desktop shares `packages/`; mobile shares only the API contract; a Go CLI is `cmd/` + `internal/`, built by `ctl build cli` into `bin/`, gitignored. A PWA is the web frontend plus a manifest, not an app. |
