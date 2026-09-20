@@ -36,7 +36,12 @@ codex plugin add project-setup@sids-plugin-marketplace
 
 ## Changelog
 
-### 0.11.0 (unreleased)
+### 0.11.1 (unreleased)
+
+- Document reusable internal container ports separately from configurable host development ports.
+- Add a commented optional beta API address block and matching web-edge Compose wiring example.
+
+### 0.11.0
 
 - Consolidate database engines and migration jobs into the base Compose config; select development services through the dev preset with loopback database exposure.
 - Replace development Nginx with native frontend proxies and rewrites; remove the separate db/dev Compose configs and development-proxy settings.

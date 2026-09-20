@@ -101,10 +101,14 @@ services:
       DASHBOARD_PREFIX: ${DASHBOARD_PREFIX}
       API_PREFIX: ${API_PREFIX}
       ENGINE_PREFIX: ${ENGINE_PREFIX}
+      # Optional external beta API; uncomment with its .env block.
+      # Also add both beta names to NGINX_ENVSUBST_FILTER and add the /beta location to nginx.conf.template.
+      # BETA_API_PREFIX: ${BETA_API_PREFIX}
       # upstreams: compose decides the service names, so compose states them. +env_override swaps these.
       API_UPSTREAM: api:8000
       ENGINE_UPSTREAM: engine:8080
       DASHBOARD_UPSTREAM: dashboard:3000
+      # BETA_API_UPSTREAM: ${BETA_API_HOST}:${BETA_API_PORT}
       # only these names are substituted into the nginx template; nginx's own $host/$uri stay intact
       NGINX_ENVSUBST_FILTER: ^(WEB_APP_PREFIX|WEB_DOCS_PREFIX|DASHBOARD_PREFIX|API_PREFIX|ENGINE_PREFIX|API_UPSTREAM|ENGINE_UPSTREAM|DASHBOARD_UPSTREAM)$
     healthcheck:

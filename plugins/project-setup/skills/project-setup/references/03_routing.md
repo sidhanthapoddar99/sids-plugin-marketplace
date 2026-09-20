@@ -13,6 +13,19 @@ Every case below is the same system with a different number of pieces. Read the 
 
 The routing table is `template/.env.template`. Read it there: one block per piece, the piece that owns `/` has no `_PREFIX`. Open a frontend's own port in development. Every path below that starts with `apps/` is a path inside `template/`.
 
+## Internal container port selection
+
+Internal ports are fixed image contracts, not host-wide allocations. Separate containers have separate network namespaces, so two backend containers may both listen on `8000` and two frontend containers may both listen on `3000`. A port must be unique only among listeners inside the same container.
+
+| Container role | Preferred internal default | Selection rule |
+|---|---:|---|
+| Backend HTTP service | `8000` | The API and engine containers may both listen on `8000`; each has its own network namespace. |
+| Server-rendered frontend | `3000` | Reuse `3000` in each frontend container unless the image has an established listener contract. |
+| Nginx edge | `8080` | Use an unprivileged internal listener; publish `80` or `443` only at the production edge. |
+| Database or infrastructure service | Protocol default | Keep the service's standard internal port, such as PostgreSQL `5432` or Redis `6379`. |
+
+Native development is different because every process shares the host network. Its `<PIECE>_PORT` values come from the root `.env`, must be unique on that host, and may change to avoid collisions. Do not change a container's internal port merely because a host development port changed.
+
 ## The pair: dev and prod
 
 | | Dev — `ctl dev` | Prod — `ctl up` |
