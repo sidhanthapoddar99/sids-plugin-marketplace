@@ -36,7 +36,12 @@ codex plugin add project-setup@sids-plugin-marketplace
 
 ## Changelog
 
-### 0.11.1 (unreleased)
+### 0.11.2
+
+- Use `AGENTS.md` as the project brief without creating a template `CLAUDE.md`.
+- Guide existing projects to migrate unique `CLAUDE.md` instructions before removal, and flag a root `CLAUDE.md` in `ctl check`.
+
+### 0.11.1
 
 - Document reusable internal container ports separately from configurable host development ports.
 - Add a commented optional beta API address block and matching web-edge Compose wiring example.

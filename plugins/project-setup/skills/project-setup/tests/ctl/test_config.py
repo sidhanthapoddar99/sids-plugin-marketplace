@@ -42,7 +42,6 @@ def scaffold_check(root: Path, body: str) -> None:
     (root / "apps/api/config.yaml").write_text("server:\n  port: ${API_PORT}\n")
     (root / ".env.template").write_text(body)
     (root / "AGENTS.md").write_text("| Gate ladder | `lint typecheck test check` |\n")
-    (root / "CLAUDE.md").write_text("@AGENTS.md\n")
     (root / "scripts/gate").mkdir(parents=True)
     (root / "scripts/gate/all.sh").write_text("RUNGS=(lint typecheck test check)\n")
     subprocess.run(["git", "init", "-q", str(root)], check=True)
@@ -52,6 +51,19 @@ def test_check_accepts_mixed_setting_kinds_and_blank_secrets(tmp_path: Path) -> 
     scaffold_check(tmp_path, "API_PORT=8000\nDEBUG=0\nDATA_DIR=./data\nJWT_SIGNING_KEY=\n")
     result = run_worker(tmp_path, CHECK)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("as_symlink", [False, True])
+def test_check_rejects_root_claude_file(tmp_path: Path, as_symlink: bool) -> None:
+    scaffold_check(tmp_path, "API_PORT=8000\n")
+    claude = tmp_path / "CLAUDE.md"
+    if as_symlink:
+        claude.symlink_to("AGENTS.md")
+    else:
+        claude.write_text("@AGENTS.md\n")
+    result = run_worker(tmp_path, CHECK)
+    assert result.returncode != 0
+    assert "CLAUDE.md exists at the repo root" in result.stderr
 
 
 @pytest.mark.parametrize(

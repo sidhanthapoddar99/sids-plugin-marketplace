@@ -23,7 +23,7 @@ Rules
             folder such as a static-frontend group or packages/ is not a workspace) ·
             the root rule is skipped when AGENTS.md records 'root-manifest' under
             '## Exceptions to the standard layout' (an open-source package repo)
-  brief     CLAUDE.md is exactly '@AGENTS.md'
+  brief     AGENTS.md exists at the repo root; CLAUDE.md does not
   ladder    the 'Gate ladder' row in AGENTS.md lists the same rungs, in the same order, as RUNGS in
             scripts/gate/all.sh — the audit reads the row and the gate runs the list, so they must agree
   lint      every app ships its lint config with the complexity floor: [tool.ruff] in pyproject.toml,
@@ -134,11 +134,9 @@ done
 pass "no workspace at the root, in apps/, or in a group folder"
 
 step "brief"
-if [[ -f CLAUDE.md ]]; then
-  [[ "$(tr -d '[:space:]' < CLAUDE.md)" == "@AGENTS.md" ]] || fail "CLAUDE.md must be exactly '@AGENTS.md'"
-  [[ -f AGENTS.md ]] || fail "AGENTS.md missing"
-  pass "CLAUDE.md → AGENTS.md"
-else fail "CLAUDE.md missing"; fi
+[[ -f AGENTS.md ]] || fail "AGENTS.md missing"
+[[ ! -e CLAUDE.md && ! -L CLAUDE.md ]] || fail "CLAUDE.md exists at the repo root — migrate its unique instructions into AGENTS.md, then remove it"
+pass "AGENTS.md exists; CLAUDE.md absent"
 
 step "ladder"
 # The row is `| Gate ladder | \`lint typecheck test check\` |`: the first backtick span is the list.

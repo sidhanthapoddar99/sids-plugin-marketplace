@@ -47,8 +47,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 ├── .dockerignore
 ├── lefthook.yml                # add-on: git hooks, needs the ladder
 ├── ctl                         # the single entrypoint. Thin router into scripts/
-├── AGENTS.md                   # the agent brief. The real file
-├── CLAUDE.md                   # one line: @AGENTS.md
+├── AGENTS.md                   # the agent brief
 ├── README.md
 └── LICENSE
 ```
@@ -74,7 +73,7 @@ The root holds config, the brief, and folders. Never loose code. Before creating
 | `.mise.toml` | Tool version contract | Its `[env]` block puts the repo root on `PATH` (`_.path = ["{{config_root}}"]`), which is what makes `ctl` run bare. So `ctl` must stay the only executable at the root: a stray script there becomes a bare command. `mise trust` once per clone. |
 | `.gitignore` / `.dockerignore` | Ignore lists | Curated per ecosystem present. Tool config that spans the whole repo (`knip.json`) may sit at root; lint config for one ecosystem sits in the app (`biome.json`, `.oxlintrc.json`, `ruff` in `pyproject.toml`). |
 | `ctl` | The single entrypoint | Thin router into `scripts/`. |
-| `AGENTS.md` | The agent brief | The real file. `CLAUDE.md` holds one line: `@AGENTS.md`. |
+| `AGENTS.md` | The agent brief | Records the repo's choices and working rules. |
 | `lefthook.yml` | Add-on. Git hooks | Every hook calls `ctl` (`ctl gate lint --staged`, `ctl test`), never a tool directly. |
 | `README.md` / `LICENSE` | | |
 

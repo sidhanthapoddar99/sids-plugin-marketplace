@@ -4,7 +4,9 @@ Rules that hold across every file and every change. Each one is an audit finding
 
 ## The agent brief
 
-`AGENTS.md` at the root is the real brief. `CLAUDE.md` is one line: `@AGENTS.md`. Both hosts read the same text. The working rules start as a `Working rules` section of `AGENTS.md`. When that section outgrows one screen, they move to `memory/`, one file per rule set, flat kebab-case, with a `README.md` index, and `AGENTS.md` imports them with `@memory/<file>.md`. Template: `template/AGENTS.md`. Add-on: `additional-template/memory/`.
+`AGENTS.md` at the root is the brief. The working rules start as a `Working rules` section of `AGENTS.md`. When that section outgrows one screen, they move to `memory/`, one file per rule set, flat kebab-case, with a `README.md` index, and `AGENTS.md` imports them with `@memory/<file>.md`. Template: `template/AGENTS.md`. Add-on: `additional-template/memory/`.
+
+For an existing target repo, inspect `CLAUDE.md` at its root and in every directory from the root to each path being worked on. Tell the user which files you found. Treat their contents as migration input rather than project guidance or a file to recreate. Move unique, useful instructions into the applicable `AGENTS.md` before removing each `CLAUDE.md`. Keep local rules in the nearest relevant `AGENTS.md`. If an instruction conflicts with `AGENTS.md`, or its meaning or destination is unclear, ask the user before deleting that file. During a read-only audit or a one-question consultation, report the needed migration without changing files. A project with `CLAUDE.md` may cause Claude Code to overlook `AGENTS.md`, so the template and finished target repos use `AGENTS.md` alone.
 
 The brief is a contract, not a welcome note. Skills are not always loaded; the brief is. Every "record it in `AGENTS.md`" in these pages lands in one of these sections:
 

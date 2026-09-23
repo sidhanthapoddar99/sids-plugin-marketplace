@@ -11,9 +11,10 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 ## Before anything
 
 1. Read `AGENTS.md` at the repo root when it exists. It records the choices this repo has already made, and a recorded choice is never a finding.
-2. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 1,300 lines.
-3. Point at `template/` for the code. A page states a rule and names the template path that shows it. It never repeats the code, so the code has one home.
-4. Treat `additional-template/` as opt-in. It holds the add-ons: git hooks, `memory/`, a browser suite. Its `README.md` says when each is usually earned. Install one only when the user asks. Recommend one with its reason, then wait. The same holds for a ladder rung beyond the four-rung floor.
+2. In an existing target repo, inspect the root and the directory hierarchy of paths in scope for `CLAUDE.md`. Handle any found file under `references/11_conventions.md` § The agent brief.
+3. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 1,300 lines.
+4. Point at `template/` for the code. A page states a rule and names the template path that shows it. It never repeats the code, so the code has one home.
+5. Treat `additional-template/` as opt-in. It holds the add-ons: git hooks, `memory/`, a browser suite. Its `README.md` says when each is usually earned. Install one only when the user asks. Recommend one with its reason, then wait. The same holds for a ladder rung beyond the four-rung floor.
 
 ## The pages
 

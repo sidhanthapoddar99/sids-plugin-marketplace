@@ -23,7 +23,7 @@ Rules
             folder such as a static-frontend group or packages/ is not a workspace) ·
             the root rule is skipped when AGENTS.md records 'root-manifest' under
             '## Exceptions to the standard layout' (an open-source package repo)
-  brief     CLAUDE.md is exactly '@AGENTS.md'
+  brief     AGENTS.md exists at the repo root; CLAUDE.md does not
   compose   no ports: in compose.base.yaml · no ../ in any docker/compose.*.yaml ·
             docker compose config validates: db alone, dev alone, base alone, base + each modifier
 
@@ -108,11 +108,9 @@ done
 pass "no workspace at the root, in apps/, or in a group folder"
 
 step "brief"
-if [[ -f CLAUDE.md ]]; then
-  [[ "$(tr -d '[:space:]' < CLAUDE.md)" == "@AGENTS.md" ]] || fail "CLAUDE.md must be exactly '@AGENTS.md'"
-  [[ -f AGENTS.md ]] || fail "AGENTS.md missing"
-  pass "CLAUDE.md → AGENTS.md"
-else fail "CLAUDE.md missing"; fi
+[[ -f AGENTS.md ]] || fail "AGENTS.md missing"
+[[ ! -e CLAUDE.md && ! -L CLAUDE.md ]] || fail "CLAUDE.md exists at the repo root — migrate its unique instructions into AGENTS.md, then remove it"
+pass "AGENTS.md exists; CLAUDE.md absent"
 
 step "compose files"
 if grep -qE '^\s+ports:' "$BASE" 2>/dev/null; then fail "$BASE publishes ports — exposure belongs in a modifier"; fi
