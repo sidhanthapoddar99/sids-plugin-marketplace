@@ -16,7 +16,7 @@ The skill is opinionated on purpose. One repo tree, one entrypoint (`ctl`), one 
 
 ## What the template gives you
 
-- `ctl`: one entrypoint. `ctl setup`, `ctl check`, `ctl dev`, `ctl up [--config c] +modifier`, `ctl up preset <name>`, `ctl db migrate`, `ctl test`, `ctl gate`. Run `template/ctl --help` for the list.
+- `ctl`: one entrypoint. `ctl setup`, `ctl check`, `ctl dev`, `ctl clean rust`, `ctl up [--config c] +modifier`, `ctl up preset <name>`, `ctl db migrate`, `ctl test`, `ctl gate`. Run `template/ctl --help` for the list.
 - `ctl gate`: the ladder. The floor is four rungs, `lint typecheck test check`, each seconds. `dead`, `audit`, `build` and `e2e` are switched on by name when the project earns them. `ctl gate static` and `ctl gate dynamic` run each half.
 - `ctl check`: the repo contract. It runs every rule, prints every failure, and exits 0 only when all of them passed. It is also the `check` rung.
 - One ignored root `.env` and committed `.env.template`, grouped by kind with two-line hash headers. Backends select values through `config.yaml`; frontend dev processes inherit the environment, while browser constants and Docker service keys are explicitly selected.
@@ -35,6 +35,10 @@ codex plugin add project-setup@sids-plugin-marketplace
 ```
 
 ## Changelog
+
+### 0.12.0
+
+- Add `ctl clean rust [--dry-run]` to remove local Rust debug builds and managed Rust development logs while preserving release builds, lockfiles, data and shared caches.
 
 ### 0.11.2
 

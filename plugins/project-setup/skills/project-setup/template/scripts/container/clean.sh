@@ -11,7 +11,8 @@ usage() { print_help "clean" "Tear down the stack and wipe build caches (data/ i
   -h, --help      show this help
 
 Removes: the containers + network, node_modules/ dist/ .next/ per JS app, target/ per Rust app,
-__pycache__, apps/example-tui-go/bin/. Keeps: data/, logs/, the .env.* files, every lockfile."; }
+__pycache__, apps/example-tui-go/bin/. Keeps: data/, logs/, the .env.* files, every lockfile.
+For Rust debug builds and managed Rust dev logs alone, run \`ctl clean rust\`."; }
 
 is_help "${1:-}" && { usage; exit 0; }
 yes=0; [[ "${1:-}" == -y || "${1:-}" == --yes ]] && yes=1

@@ -36,7 +36,8 @@ With a data core (DATA_SVCS set) it first runs \`ctl up preset $DEV_PRESET --nqa
 $PRESETS_FILE: engines bound to loopback and their schema one-shots, without application containers), waits for health and
 for the schema step, then starts the host processes.
 Before startup, validate configuration and synchronize source dependencies with locked versions.
-Missing settings point to ctl setup. Help and dry-run do not install anything."; }
+Missing settings point to ctl setup. Help and dry-run do not install anything.
+Run \`ctl clean rust\` after stopping the Rust app to remove its debug builds and managed logs."; }
 
 # parse: positionals = apps, flags anywhere
 apps=() dry=0 detach=0 no_core=0 nqa=0

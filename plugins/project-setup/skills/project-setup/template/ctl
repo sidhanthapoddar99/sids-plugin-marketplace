@@ -54,6 +54,7 @@ ctl_help() {
   row "shell <svc>"                     "open a shell in a running container"
   row "build [app|cli]"                 "build the service images (cli: the Go binary)"
   row "clean [-y]"                      "tear down + wipe caches (asks first)"
+  row "clean rust [--dry-run]"          "remove local Rust debug builds and managed Rust dev logs"
   row "health [svc…]"                   "one-shot container health table"
   printf '\n%sDatabase%s\n' "$C_B" "$C_RESET"
   row 'db migrate [up|new "<msg>"|status|check]' "Flyway SQL migrations inside Docker"
@@ -103,7 +104,10 @@ case "$cmd" in
               save|start|clean) run test/build      "$@" ;;
               *)                run container/build "$@" ;;
             esac ;;
-  clean)    run container/clean  "$@" ;;
+  clean)    case "${1:-}" in
+              rust) shift; run dev/clean "$@" ;;
+              *) run container/clean "$@" ;;
+            esac ;;
   health)   run container/health "$@" ;;
   shell)    run container/shell  "$@" ;;
   # ── containers: thin docker compose passthroughs ─────────

@@ -32,6 +32,7 @@ are a separate suite and are not installed by CTL.
 | | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs against the `base` file. `down` never uses `-v`: state lives in `data/`. |
 | | `build [app…\|cli]` | Compose build. Build args are prefixes interpolated from `.env`. `cli`: the Go binary. |
 | | `clean [-y]` | Down plus caches. `data/` untouched. |
+| | `clean rust [--dry-run]` | Remove local `target/debug` directories beside discovered Rust `Cargo.toml` files under `apps/` and the managed Rust app/controller logs in `LOGS_DIR/dev/`. First stop the recorded Rust dev processes. The Rust app names are declared in `scripts/dev/_apps.sh`; adapt them when renaming or adding a Rust app. Keep `target/release`, lockfiles, data, other app logs and external Cargo caches. External `CARGO_TARGET_DIR` values are outside this command. |
 | | `health [svc…]` | One-shot health table. |
 | Database | `db migrate [up\|new "<msg>"\|status\|check]` | Flyway applies versioned PostgreSQL SQL. The Compose migration service runs Flyway inside Docker. `new` writes a file without connecting. `check` verifies currency. Production orders its migration one-shot before apps. |
 | | `db shell <engine>` | psql, redis-cli, cypher-shell with `.env` credentials. |

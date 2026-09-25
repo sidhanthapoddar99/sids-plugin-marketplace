@@ -8,6 +8,7 @@ One paragraph: what this product is and which apps make it.
 
 ## Quick start with ctl
 - `ctl dev` — databases in docker, apps on the host; frontend dev servers proxy backend requests
+- `ctl clean rust` — remove local Rust debug builds and managed Rust dev logs after stopping the Rust app (`--dry-run` lists targets)
 - `ctl stop` — stop managed host processes and project containers, keeping data (`--dry-run` previews targets)
 - `ctl up` — full stack in docker; `ctl up preset <name>` runs a saved line from `docker/presets.yaml`
 - `ctl db migrate` — apply schema migrations (they also run whenever the engines come up)
@@ -17,6 +18,7 @@ One paragraph: what this product is and which apps make it.
 | Verb | Does |
 |---|---|
 | `ctl dev [app…]` | engines in docker, the chosen apps on the host with reload |
+| `ctl clean rust [--dry-run]` | remove Rust `target/debug` and managed Rust dev/controller logs; keep release builds and shared caches |
 | `ctl stop [--dry-run]` | stop recorded dev/watch/build groups, then project containers; retain containers and volumes |
 | `ctl up [--config c] [+modifier…] [--services a,b]` | a stack shape in docker, or a subset; interactive in a terminal |
 | `ctl up preset [<name>]` · `ctl up set-preset` | run a saved `up` line · save one from the pickers |

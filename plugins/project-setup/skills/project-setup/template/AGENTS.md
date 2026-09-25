@@ -84,7 +84,7 @@ Additions to the stack list, with the reason: none.
 
 ## Commands
 
-`ctl --help` is the list. Summary: `ctl setup` · `ctl check` · `ctl status` · `ctl dev [app…]` · `ctl ps` · `ctl up [--config <name>] [+expose_web|+public|+expose|+expose_db|+env_override] [--services a,b]` · `ctl up preset [<name>]` · `ctl up set-preset` · `ctl down` · `ctl restart` · `ctl logs` · `ctl exec` · `ctl shell` · `ctl health` · `ctl clean` · `ctl build [app|cli|save|start|clean]` · `ctl db migrate [new "<msg>"|status]` · `ctl db backup|shell` · `ctl manage ops|settings` · `ctl test [app|e2e]` · `ctl gate [all|static|dynamic|<rung>] [-q]`.
+`ctl --help` is the list. Summary: `ctl setup` · `ctl check` · `ctl status` · `ctl dev [app…]` · `ctl ps` · `ctl up [--config <name>] [+expose_web|+public|+expose|+expose_db|+env_override] [--services a,b]` · `ctl up preset [<name>]` · `ctl up set-preset` · `ctl down` · `ctl restart` · `ctl logs` · `ctl exec` · `ctl shell` · `ctl health` · `ctl clean` · `ctl clean rust` · `ctl build [app|cli|save|start|clean]` · `ctl db migrate [new "<msg>"|status]` · `ctl db backup|shell` · `ctl manage ops|settings` · `ctl test [app|e2e]` · `ctl gate [all|static|dynamic|<rung>] [-q]`.
 
 Use `ctl stop [--dry-run]` for project-wide shutdown without deleting containers or data. See `scripts/dev/stop.sh` for ownership checks and failure handling; unrecorded processes are not stop targets.
 

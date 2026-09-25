@@ -14,6 +14,7 @@ Run the suite on Linux or WSL with Bash, util-linux (`setsid`, `flock`), GNU cor
 
 - Environment, credentials and storage tests execute the real template helpers.
 - Development tests launch isolated processes and HTTP probes to check readiness, interruption and owned-group cleanup.
+- Rust dev cleanup tests use isolated generated build trees and configured log directories to check removal, preservation and refusal of unsafe targets.
 - Setup uses executable doubles for fresh mise installation and activation; the Cargo workspace test also invokes real Cargo offline when available.
 - Production startup, administration and restore tests use recording Docker/database shims. They verify ordering, selection and failure propagation without deploying or restoring a live database.
 - Compose rendering tests use the real Docker Compose CLI when available and skip explicitly when it is absent. Cargo availability skips are also reported. These tests validate configuration without starting containers.
