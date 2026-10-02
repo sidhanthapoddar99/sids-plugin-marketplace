@@ -2,7 +2,54 @@
 
 `ctl` is a thin bash router at the repo root. It sources `scripts/common/_lib.sh` and executes one worker per verb: `scripts/<group>/<name>.sh`. No logic lives in `ctl` itself. Every verb has `--help`. Nobody types `docker compose -f` by hand.
 
-Template: `template/ctl`, `template/scripts/`. Copy them whole; adapt by deletion. The `[ADAPT]` markers name the knobs.
+Template: `template/ctl`, `template/scripts/`.
+
+## Copy and verify
+
+Copy the template files directly. Do not recreate equivalent implementations from
+scratch. The shared helpers carry environment, process ownership, locking and
+failure behavior that a smaller replacement can omit while still passing app tests.
+
+1. Locate `template/ctl` and `template/scripts/` inside the skill folder you loaded.
+   Set `project_setup_skill_dir` to the absolute directory containing that
+   `SKILL.md`, so copying and comparison use the same source.
+2. Copy them whole before editing. For a fresh bootstrap, the whole-tree copy in
+   `SKILL.md` supplies them. To add CTL to a repo that has neither `ctl` nor
+   `scripts/`, run these commands from the target repo root:
+
+   ```sh
+   cp -p -- "$project_setup_skill_dir/template/ctl" ./ctl
+   cp -a -- "$project_setup_skill_dir/template/scripts" ./scripts
+   ```
+
+   In an existing repo with either path, copy the template into a temporary staging
+   directory first. Inspect the local files before merging the copied files into
+   place, because a blind overwrite can erase project-specific commands.
+3. Adapt by deletion and the `[ADAPT]` markers. Keep the shared helpers for retained
+   features. Add project-specific behavior through workers as described below,
+   because the router and the workers need separate responsibilities.
+4. Review the differences against the source before declaring completion:
+
+   ```sh
+   diff -u -- "$project_setup_skill_dir/template/ctl" ./ctl
+   diff -ru -- "$project_setup_skill_dir/template/scripts" ./scripts
+   ```
+
+   Exit 0 means no differences; exit 1 means there are differences to review.
+   Resolve comparison errors before continuing. Account for each changed, added
+   or removed file as an adaptation, an unused feature or a project-specific
+   worker. Restore unrelated rewrites from the copied baseline, because passing
+   tests do not establish template reuse.
+5. Report the source skill path, the copy commands used and the adaptations made.
+   Report command validation separately so a working replacement cannot stand in
+   for evidence that the template was copied. A diff reviews the result; it does
+   not prove the copying step happened.
+
+If the template files are unavailable, stop the CTL work and report the missing
+paths. Ask the user to resolve the source or authorize a different method, because
+an access problem does not authorize a replacement implementation.
+
+## Extending the copied router
 
 The verb table below is the floor, not the ceiling. A project adds the verbs its work needs (`ctl train`, `ctl sqlx-prepare`, `ctl mobile-api-codegen`, `ctl seed`, `ctl deploy`) the same way every existing verb is built: one worker at `scripts/<group>/<name>.sh` with the preamble, `--help`, and one `run <group>/<name>` line in `ctl`. New groups are fine (`scripts/ml/`, `scripts/admin/`). Two rules hold: logic never lives in `ctl` itself, and every added verb appears in `ctl --help` and in the `AGENTS.md` Commands section. Verbs that stop being used are deleted, not left as residue.
 

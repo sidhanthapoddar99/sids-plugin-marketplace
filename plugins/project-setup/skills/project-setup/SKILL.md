@@ -13,7 +13,7 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 1. Read `AGENTS.md` at the repo root when it exists. It records the choices this repo has already made, and a recorded choice is never a finding.
 2. In an existing target repo, inspect the root and the directory hierarchy of paths in scope for `CLAUDE.md`. Handle any found file under `references/11_conventions.md` § The agent brief.
 3. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 1,300 lines.
-4. Point at `template/` for the code. A page states a rule and names the template path that shows it. It never repeats the code, so the code has one home.
+4. Use `template/` as the source of runnable files. Before creating or replacing `ctl` or its workers, read `references/08_ctl.md` § Copy and verify. That section gives the copying procedure and the completion check, because a similar implementation can omit shared behavior.
 5. Treat `additional-template/` as opt-in. It holds the add-ons: git hooks, `memory/`, a browser suite. Its `README.md` says when each is usually earned. Install one only when the user asks. Recommend one with its reason, then wait. The same holds for a ladder rung beyond the four-rung floor.
 
 ## The pages
@@ -93,7 +93,7 @@ Ask each of these rather than infer it, because each answer changes the tree and
 
 **Confirm.** Restate what you heard as 5 to 10 bullets and get a yes. Then:
 
-1. Copy `template/` whole. Copy nothing from `additional-template/`. A bootstrap ships the four-rung ladder and nothing more: no hooks, no `memory/`, no browser suite. The user adds each later by name.
+1. Copy `template/` whole with a filesystem copy. For `ctl` and its workers, follow `08_ctl.md` § Copy and verify. Copy nothing from `additional-template/`. A bootstrap ships the four-rung ladder and nothing more: no hooks, no `memory/`, no browser suite. The user adds each later by name.
 2. Delete the app folders the product does not need. A folder exists only when used.
 3. Rename every `example-*` folder to its role name. `11_conventions.md` § Naming gives the form.
 4. Resolve every `<version>` with the user. `ctl check` lists each file that still holds one. Never fill one from memory.

@@ -36,6 +36,11 @@ codex plugin add project-setup@sids-plugin-marketplace
 
 ## Changelog
 
+### 0.12.1
+
+- Require direct copying of the CTL template instead of recreating equivalent implementations.
+- Add copy commands, safe adaptation guidance for existing repos, and a review of differences against the template before completion.
+
 ### 0.12.0
 
 - Add `ctl clean rust [--dry-run]` to remove local Rust debug builds and managed Rust development logs while preserving release builds, lockfiles, data and shared caches.
