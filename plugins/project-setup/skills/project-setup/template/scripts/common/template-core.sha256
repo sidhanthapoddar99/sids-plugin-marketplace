@@ -1,0 +1,12 @@
+# SHA-256 of each shared helper without its [ADAPT] blocks. ctl check compares them.
+# Replace this file with the template's copy when you update scripts/common/; never edit it by hand.
+5fb6cc1fef23d0ab01ed332229b8bc48d247ff3d97836fad34de2008d724861b  scripts/common/_compose_start.sh
+1cb356c3cdb4360b7f08333987507bee27c0e0d2e82a364c6c9a22a6e71a65bb  scripts/common/_controller-lock.sh
+1ccce206b2efe3802a2bcb883db21f953e63b4302fc4a403a5a672dfa834ec13  scripts/common/_controller.sh
+b9ae971738a00a4d53d645b1f9a9d463a75e372375d7da8dc4385200107ca6fe  scripts/common/_lib.sh
+d53017f903bd03eea7f2d6f97093b5b014967ca60a0131dc2c2177f634764f79  scripts/common/_paths.sh
+33acd48ddb3cb5133cfd029d296803dee194b40792a68e84b27d6ed0a3be06d0  scripts/common/_process.sh
+bab85836a75cc8f674d00f4da3ece3da5a82afa8334e9393c808ba10f92ef871  scripts/common/_runtime.sh
+70a29ca26e56f028bc59204d1ecf52ca8982777e38a68175f3b69aa485d375bb  scripts/common/_select.sh
+b2bd870e543d4f2742b4e570b66aa3f2a5844af8b4676cf92adc005197174e1e  scripts/common/_template-core.sh
+6b9ee534315ea0338ecf5467300f4bf8a1cac449f3a58a5e5f3516e9c686c54c  scripts/common/_tools.sh

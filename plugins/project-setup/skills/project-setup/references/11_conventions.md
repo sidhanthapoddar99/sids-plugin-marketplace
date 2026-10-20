@@ -37,6 +37,10 @@ Why: documentation moves, renumbers and gets deleted; a tracker issue closes; a 
 
 A rule a comment wants to cite is written into the comment itself, in one sentence.
 
+## A missing tool is installed, never coded around
+
+A script that needs a tool, such as `jq`, calls `require_tools jq`, and `.mise.toml` declares the tool so `ctl setup` installs it. When the tool is missing, install it. Never replace it with code that avoids it, such as a hand-written JSON parser or a branch that skips the step when `command -v` fails, because the callers depend on what the tool does and no test notices the loss. A tool that mise cannot provide is listed under Prerequisites in the root `README.md`, with its install command. `scripts/common/_tools.sh` names the install step in every missing-tool message, including a mise shim that has no version for the repo.
+
 ## Scope and decoupling
 
 Code is placed by the scope that needs it, and a scope depends only inward. Same rule on both sides.
@@ -126,6 +130,8 @@ Each of these means a rule was broken somewhere else. Find that place.
 | `uvicorn --reload` in a Dockerfile | production serving (`06_backend.md`) |
 | a tripwire crossed with no deferral in `AGENTS.md` | the brief is the contract |
 | a code comment naming a doc page, plan, issue or skill file | documentation points at code, never the reverse |
+| `command -v <tool>` followed by another way to do the tool's job | a missing tool is installed, never coded around |
+| a `ctl` that does not source `scripts/common/_lib.sh`, or a helper in `scripts/common/` that differs from the template | `ctl` is a copy of the template (`08_ctl.md` § Copy and verify) |
 
 ## Audit order
 

@@ -1,13 +1,15 @@
-# Tool version contract. `mise install` sets up a clone. Never fill a version from memory.
+# Tool version contract. `ctl setup` installs every tool listed here; `mise install` does the same by hand.
+# Never fill a version from memory: `mise ls-remote <tool> | tail -1` shows the newest, and the user
+# confirms it. A tool a script needs is declared here and installed, never worked around in code.
 [tools]
-python = "<version>"
-rust = "stable"
-watchexec = "<version>"
-go = "<version>"
-bun = "latest"
-uv = "latest"
-jq = "<version>"             # Compose dependency selection and readiness contract
+python = "<version>"          # Python apps and their manager.py
+uv = "latest"                 # Python apps: environments, dependencies, runs
+rust = "stable"               # Rust apps
+watchexec = "<version>"       # the Rust dev watcher (scripts/dev/rust-watch.ts)
+bun = "latest"                # TypeScript apps and the Rust dev watcher
+go = "<version>"              # the Go CLI
 golangci-lint = "<version>"   # the Go lint floor: gofmt, go vet, gocyclo through .golangci.yml
+jq = "<version>"              # ctl itself: stack start, controller locks, migrations, stop. Every repo keeps it
 # Add-on tools go here when the add-on is installed: lefthook for git hooks; gitleaks,
 # cargo-audit and govulncheck for `ctl gate audit`. Per-app tools are pinned in the app's own manifest.
 

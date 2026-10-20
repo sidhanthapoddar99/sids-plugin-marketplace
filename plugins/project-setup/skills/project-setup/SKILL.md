@@ -13,8 +13,13 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 1. Read `AGENTS.md` at the repo root when it exists. It records the choices this repo has already made, and a recorded choice is never a finding.
 2. In an existing target repo, inspect the root and the directory hierarchy of paths in scope for `CLAUDE.md`. Handle any found file under `references/11_conventions.md` § The agent brief.
 3. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 1,300 lines.
-4. Use `template/` as the source of runnable files. Before creating or replacing `ctl` or its workers, read `references/08_ctl.md` § Copy and verify. That section gives the copying procedure and the completion check, because a similar implementation can omit shared behavior.
-5. Treat `additional-template/` as opt-in. It holds the add-ons: git hooks, `memory/`, a browser suite. Its `README.md` says when each is usually earned. Install one only when the user asks. Recommend one with its reason, then wait. The same holds for a ladder rung beyond the four-rung floor.
+4. Find the skill folder, the folder that holds this `SKILL.md`, because every runnable file comes from its `template/`, and its `scripts/template.sh` copies and checks them. Below, `<skill folder>` stands for its path. Claude Code prints the folder on the first line of the loaded skill, as `Base directory for this skill: <path>`. Codex lists each skill with the path of its `SKILL.md`. When that path starts with an alias such as `r3/`, replace the alias with the folder the skills catalogue maps it to. On another host, take the folder of the `SKILL.md` file you opened. `test -f <skill folder>/template/ctl` confirms the folder. If you cannot find it, stop and ask the user for the path.
+5. In an existing repo, run `bash <skill folder>/scripts/template.sh verify .` once before you add an app or a verb, or change `ctl` or `scripts/`. A hand-made `ctl` looks like the template's from outside, and each change to it spreads the drift this skill prevents. The first line of the output is the verdict.
+   - `green`: `ctl` and its shared helpers, the files in `scripts/common/`, are the template's. Extend them as `references/08_ctl.md` § Extending the copied router says.
+   - `red — not from the template`: tell the user so in one line. Offer to adopt the template (`references/08_ctl.md` § Adopt an existing repo), and adopt it only when the user says yes. Until then, do the parts of the task that need no change to `ctl`. Ask before you add a verb to the hand-made `ctl`, because each verb added there is one more to port later.
+   - Any other `red`: the repo is a template copy, but its shared helpers differ from this skill's. Report the line, and offer the step that `references/08_ctl.md` § Verify gives for that verdict. Take the step only when the user says yes, because it replaces helpers that every verb runs. Meanwhile, extend the router as § Extending the copied router says.
+6. Get `ctl` and `scripts/` only as a copy of `template/`. Change the copy only by deletion, at an `[ADAPT]` point (a knob the template marks with a `# [ADAPT]` comment), or with a new worker for a new verb. Never write `ctl` or a shared helper yourself, because the helpers carry env loading, process ownership, locks and failure handling, and a smaller rewrite still passes every app test. `ctl check` compares `scripts/common/` with the template, so a rewrite turns the gate red.
+7. Treat `additional-template/` as opt-in. It holds the add-ons: git hooks, `memory/`, a browser suite. Its `README.md` says when each is usually earned. Install one only when the user asks. Recommend one with its reason, then wait. The same holds for a ladder rung beyond the four-rung floor.
 
 ## The pages
 
@@ -60,10 +65,12 @@ The fallback for a question no page covers. Each line points at the page that ow
 
 ## When you run this skill
 
-- Decide and keep going: which page answers, the wording of a finding, the order in which you copy and delete.
-- Decide and record in `AGENTS.md`: a structural choice a page leaves open, and any exception to the tree. An unrecorded choice reads as drift at the next audit.
+- Decide and keep going: which page answers, the wording of a finding, the order in which you delete and rename.
+- Decide and record in `AGENTS.md`: a structural choice a page leaves open, any exception to the tree, and a shared helper you change on purpose. The helper gets a `template-core <path>` line under `## Exceptions to the standard layout`, as `08_ctl.md` § The template core in every repo shows. An unrecorded choice reads as drift at the next audit.
 - Never on your own: an add-on from `additional-template/`, or a ladder rung beyond `lint typecheck test check`. A recommendation is welcome; the install waits for the user's yes.
-- Stop and ask: a bootstrap question below whose answer is not in the prompt, a version, or a change to a recorded choice. Do not guess these, because a wrong guess costs a restructure later. When the prompt already answers every question, do not ask again.
+- Stop and ask: a bootstrap question below whose answer is not in the prompt, a version, a change to a recorded choice, the skill folder when you cannot find it, or a tool that `ctl setup` cannot install. Do not guess these, because a wrong guess costs a restructure later. When the prompt already answers every question, do not ask again.
+
+A missing tool is installed, never coded around (`11_conventions.md` § A missing tool is installed, never coded around, gives the reason). When a worker stops on a missing tool, its message names the install step: declare the tool in `.mise.toml`, resolve its version with the user, then run `ctl setup`. A tool that resolves to a mise shim and cannot run is missing in the same way. When mise cannot provide the tool, give the user the exact install command. Then stop.
 
 ## Bootstrapping
 
@@ -91,16 +98,48 @@ Ask in two batches. Flag the default for each. Confirm before writing anything.
 
 Ask each of these rather than infer it, because each answer changes the tree and a wrong guess costs a restructure later.
 
-**Confirm.** Restate what you heard as 5 to 10 bullets and get a yes. Then:
+**Confirm.** Restate what you heard as 5 to 10 bullets. Add the versions: one line for each toolchain, data engine and framework the answers keep, with the version to pin. Take each default from a live source, because a version from memory is a guess that installs: `mise ls-remote <tool> | tail -1` for a tool in `template/.mise.toml`, the image registry for an engine, the package registry for a package. `jq` is always on the list, because `ctl` itself uses it. Get one yes for all of it, so no later step waits on the user.
 
-1. Copy `template/` whole with a filesystem copy. For `ctl` and its workers, follow `08_ctl.md` § Copy and verify. Copy nothing from `additional-template/`. A bootstrap ships the four-rung ladder and nothing more: no hooks, no `memory/`, no browser suite. The user adds each later by name.
-2. Delete the app folders the product does not need. A folder exists only when used.
-3. Rename every `example-*` folder to its role name. `11_conventions.md` § Naming gives the form.
-4. Resolve every `<version>` with the user. `ctl check` lists each file that still holds one. Never fill one from memory.
-4a. Keep the lint config each app ships (`[tool.ruff]`, `.oxlintrc.json`, `clippy.toml`, `.golangci.yml`); `ctl check` fails an app without one. Change a threshold only with the user, and record it in `AGENTS.md`.
-5. Fill every section of `template/AGENTS.md`. The file is the example: nine sections, each with its table or its one-line placeholder. Replace every `<angle-bracket>` choice with the real one.
-6. Run `ctl setup`, then `ctl gate`. Report each exit code as it is. A red rung is a finding to fix, not a note.
-7. End with `ctl --help` and the manual path in the README. Name the optional rungs and the add-ons in one line, so the user knows they exist, and stop there.
+**When the user asks for no questions.** Use every answer the prompt gives. Ask nothing until the work is done. A missing batch answer still stops you before the copy, because it changes the tree. A missing version does not stop you, because it only fills a placeholder. Leave its `<version>` in place, and run every step below except step 8. Then end with one question in this shape:
+
+```text
+These versions are still <version>. The defaults come from the live sources named.
+- jq: 1.8.1 (mise ls-remote jq)
+- react: 19.2.0 (npm registry)
+Reply yes to pin these, or name other versions. Then I write them and run ./ctl setup and ./ctl gate.
+```
+
+Then run these steps in order:
+
+1. **Copy the template.** This is the first change you make, because every later step edits the copy. From the target repo root, run `bash <skill folder>/scripts/template.sh copy .`. It copies `template/` whole and prints one line. When a file it would write already exists, it copies nothing and names each such file. Rename those files and run it again. Merge their old text into the new files at step 6. When the repo already has `ctl` or `scripts/`, the confirmed bootstrap includes adopting them: follow `08_ctl.md` § Adopt an existing repo instead. Copy nothing from `additional-template/`. A bootstrap ships the four-rung ladder and nothing more: no hooks, no `memory/`, no browser suite. The user adds each later by name.
+2. **Delete what the answers rule out, and nothing else.** Use the table below. Keep every other file, even a verb whose app is not written yet, because a verb deleted now comes back later as a hand-written one. Keep `scripts/common/` whole, because `ctl check` compares it with the template. After you delete an app folder, run `grep -rn 'apps/<folder>' ctl scripts docker .gitignore`. Delete each `[ADAPT]` row it lists.
+3. Rename every `example-*` folder to its role name. Update the rows that name it in the same way. `11_conventions.md` § Naming gives the form.
+4. Write each confirmed version in place of its `<version>`. `./ctl check` lists each file that still holds one. Never fill one from memory.
+5. Keep the lint config each app ships (`[tool.ruff]`, `.oxlintrc.json`, `clippy.toml`, `.golangci.yml`). `ctl check` fails an app without one. Change a threshold only with the user, and record it in `AGENTS.md`.
+6. Fill every section of `template/AGENTS.md`. The file is the example: nine sections, each with its table or its one-line placeholder. Replace every `<angle-bracket>` choice with the real one.
+7. Run `./ctl setup env`, then `./ctl check`. `ctl setup env` writes `.env`, generates the declared credentials and creates the storage folders. It installs nothing, so it runs while a `<version>` remains, and `ctl check` can then test the env contract and the compose files. Fix each red line except an unresolved version.
+8. Run `./ctl setup`, then `./ctl gate`. `ctl setup` installs every tool in `.mise.toml`, `jq` among them. Report each exit code as it is. A red rung is a finding to fix, not a note.
+9. Run `bash <skill folder>/scripts/template.sh verify .`. Report its verdict. Give each difference it lists a reason: a row of the table below, an `[ADAPT]` point, a rename, or a new worker. A red verdict is a finding to fix, because it means a shared helper is not the template's.
+10. End with `ctl --help` and the manual path in the README. Name the optional rungs and the add-ons in one line, so the user knows they exist, and stop there.
+
+**What each answer deletes.** Paths are in the copied repo. A file this table does not name stays.
+
+| Answer | Delete |
+|---|---|
+| No Python backend | `apps/example-api-python/` and `scripts/admin/`; `python` and `uv` in `.mise.toml` |
+| No operator plane (Batch 2, question 2) | `scripts/admin/`, the backend's `manager.py`, and the `manage` lines in `ctl` (`08_ctl.md` § `ctl manage`) |
+| No Rust backend | `apps/example-engine-rust/`, `scripts/dev/rust-watch.ts`, `scripts/dev/rust-watch.config.ts`, `scripts/dev/clean.sh` and the `clean rust` lines in `ctl`; the `engine` entries in `scripts/dev/_apps.sh` and `scripts/dev/_controllers.sh`; `rust` and `watchexec` in `.mise.toml` |
+| No Go CLI | `apps/example-tui-go/`; `go` and `golangci-lint` in `.mise.toml` |
+| One Vite frontend | `apps/example-multi-web-app/` and `apps/example-dashboard-nextjs/` |
+| A group of static frontends | `apps/example-single-web-app-vite/`, and each child of `apps/example-multi-web-app/` the answers do not name (`app/`, `landing/`, `docs/`) |
+| No server frontend | `apps/example-dashboard-nextjs/` |
+| No TypeScript frontend and no Rust backend | `bun` in `.mise.toml` |
+| A package under `apps/packages/` that no kept app links | that package |
+| A data engine the answers drop | its service, and its schema job (`migrate` for Postgres, `neo4j-init` for Neo4j), in `docker/compose.base.yaml` and in the `dev` line of `docker/presets.yaml`; `apps/database/<engine>/`; its name in `DATA_SVCS` and `SCHEMA_SVCS` and its port in `MODIFIER_REQUIRES` in `scripts/common/_lib.sh` (all three are `[ADAPT]` blocks); its keys in `.env.template` |
+| No data engine at all | what `08_ctl.md` § Without a data core lists, `scripts/db/` among it |
+| Private, and no license named | `LICENSE` |
+
+`jq` stays in `.mise.toml` for every answer, because `ctl` itself uses it.
 
 ## Auditing
 

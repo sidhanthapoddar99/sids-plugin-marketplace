@@ -6,48 +6,68 @@ Template: `template/ctl`, `template/scripts/`.
 
 ## Copy and verify
 
-Copy the template files directly. Do not recreate equivalent implementations from
-scratch. The shared helpers carry environment, process ownership, locking and
-failure behavior that a smaller replacement can omit while still passing app tests.
+`SKILL.md` § Before anything, step 6, holds the rule: `ctl` and `scripts/` enter a repo only as a copy of `template/`. This section holds the commands and the checks that enforce it. `scripts/template.sh` in the skill folder does the copy and the comparison. Step 4 of the same section says how to find the skill folder on each host. Below, `$skill` is that folder.
 
-1. Locate `template/ctl` and `template/scripts/` inside the skill folder you loaded.
-   Set `project_setup_skill_dir` to the absolute directory containing that
-   `SKILL.md`, so copying and comparison use the same source.
-2. Copy them whole before editing. For a fresh bootstrap, the whole-tree copy in
-   `SKILL.md` supplies them. To add CTL to a repo that has neither `ctl` nor
-   `scripts/`, run these commands from the target repo root:
+| Situation | Command, from the target repo root |
+|---|---|
+| A bootstrap, or a repo with neither `ctl` nor `scripts/` | `bash "$skill/scripts/template.sh" copy .` |
+| A repo that already has `ctl` or `scripts/` | `bash "$skill/scripts/template.sh" copy "$(mktemp -d)"`, then § Adopt an existing repo |
+| Any repo, before you change `ctl` or `scripts/`, and after every copy | `bash "$skill/scripts/template.sh" verify .` |
 
-   ```sh
-   cp -p -- "$project_setup_skill_dir/template/ctl" ./ctl
-   cp -a -- "$project_setup_skill_dir/template/scripts" ./scripts
-   ```
+`copy` copies `template/` whole and keeps the file modes. It refuses a target that already has `ctl` or `scripts/`. When any other file it would write already exists, it copies nothing and names each such file, because an overwrite loses the owner's text and a skip leaves a stale file that looks copied.
 
-   In an existing repo with either path, copy the template into a temporary staging
-   directory first. Inspect the local files before merging the copied files into
-   place, because a blind overwrite can erase project-specific commands.
-3. Adapt by deletion and the `[ADAPT]` markers. Keep the shared helpers for retained
-   features. Add project-specific behavior through workers as described below,
-   because the router and the workers need separate responsibilities.
-4. Review the differences against the source before declaring completion:
+If the skill folder or its `template/` is unavailable, stop and report the missing path. Ask the user to resolve it, because an access problem does not authorize a replacement.
 
-   ```sh
-   diff -u -- "$project_setup_skill_dir/template/ctl" ./ctl
-   diff -ru -- "$project_setup_skill_dir/template/scripts" ./scripts
-   ```
+A worker that stops on a missing tool keeps its `require_tools` call. Install the tool instead (`11_conventions.md` § A missing tool is installed, never coded around).
 
-   Exit 0 means no differences; exit 1 means there are differences to review.
-   Resolve comparison errors before continuing. Account for each changed, added
-   or removed file as an adaptation, an unused feature or a project-specific
-   worker. Restore unrelated rewrites from the copied baseline, because passing
-   tests do not establish template reuse.
-5. Report the source skill path, the copy commands used and the adaptations made.
-   Report command validation separately so a working replacement cannot stand in
-   for evidence that the template was copied. A diff reviews the result; it does
-   not prove the copying step happened.
+### Verify
 
-If the template files are unavailable, stop the CTL work and report the missing
-paths. Ask the user to resolve the source or authorize a different method, because
-an access problem does not authorize a replacement implementation.
+`verify` prints a verdict on its first line, so a short task reads one line and moves on.
+
+| Verdict | Meaning | Next step |
+|---|---|---|
+| `green` | `ctl` routes through `scripts/common/_lib.sh`, and every shared helper matches this skill's `template-core.sha256` outside its `[ADAPT]` blocks. | Extend the router as § Extending the copied router says. |
+| `red — not from the template` | `ctl` does not route through `scripts/common/_lib.sh`. | `SKILL.md` § Before anything, step 5. |
+| `red — a copy of another template version` | The helpers match the repo's own manifest but not this skill's. | Offer the update. On the user's yes, copy `scripts/common/` whole from `$skill/template/`, reapply each recorded exception, and run `ctl check`. |
+| `red — a template copy older than template-core.sha256` | The repo predates the manifest. | Offer the same update. On the user's yes, also restore or record each local change. |
+| `red — a template copy whose shared helpers were changed` | A helper differs from the template. | Ask the user whether to restore it from `$skill/template/scripts/common/` or record it as an exception (below). |
+
+For a template copy, `verify` then lists each file of `ctl` and `scripts/` that is changed, removed or added. Give each one a reason in the report: a row of the delete table in `SKILL.md` § Bootstrapping, an `[ADAPT]` point, a rename, or a new worker. Restore any other change from the template.
+
+### The template core in every repo
+
+`scripts/common/template-core.sha256` lists each shared helper with the SHA-256 of its text. `ctl check` compares the helpers with it as its `template core` rule, so the `check` rung fails a helper edited after the copy, such as a `jq` call replaced by hand-written parsing. `scripts/common/_template-core.sh` holds the comparison, and `verify` runs the same code against the skill's own manifest.
+
+An `[ADAPT]` block is left out of the digest, so a project sets its knobs freely. A block starts at a line that begins with `# [ADAPT]`. It takes the comment lines under that line and the code lines after them, and ends at the next blank line or the next comment line after its code. An indented `# [ADAPT]` comment, such as the soft mode inside `require_env`, starts no block, so a project that uses it records an exception.
+
+To change a helper on purpose, record it in `AGENTS.md` under the existing heading, one line per helper, with the reason:
+
+```markdown
+## Exceptions to the standard layout
+
+- `template-core scripts/common/_process.sh`: the GPU worker needs 60 seconds to flush its checkpoint, so the stop grace is 60, not 20.
+```
+
+To update the helpers from a newer skill version, copy `scripts/common/` whole, manifest included. Then reapply each recorded exception and run `ctl check`.
+
+### Adopt an existing repo
+
+A repo whose `ctl` is not the template's is adopted only when the user says yes, because adoption renames commands people already type. The result is the template's `ctl` and `scripts/`, the project's own verbs as workers, and no second router.
+
+1. Stage the template: `stage=$(mktemp -d) && bash "$skill/scripts/template.sh" copy "$stage"`.
+2. List every old verb: each name in the old router's `case` statement and in its help text. Map each one by the table below. Keep the map, because the report and `AGENTS.md` both need it.
+
+   | Old verb | Becomes |
+   |---|---|
+   | The same job as a template verb: `setup`, `check`, `status`, `dev`, `test`, `gate`, `up`, `build` and the rest of § Verbs | That template verb. Port only its project-specific commands into the worker's `[ADAPT]` points. |
+   | A project job with no template verb, such as `train` or `notebook` | A new worker `scripts/<group>/<name>.sh` with the preamble and `--help`, plus one `run` line and one help row in `ctl` (§ Extending the copied router). |
+   | A second name for a job that already has one, such as `model-gate` beside `gate` | Deleted. The template name stays. |
+   | A verb that only prints that its work moved or ended | Deleted. |
+
+3. Move the logic out of the old router. An exported variable becomes a key in `.env.template`, or a line in the one worker that needs it. A loop over rungs is `ctl gate`. A script under `scripts/` in another language moves into the app that owns it, or is rewritten in Bash or TypeScript (§ Scripting languages).
+4. Delete the old `ctl` and `scripts/`, because git history keeps them and a second router is drift. Move `ctl` and `scripts/` from the stage into the repo. From the stage, take what the kept workers need: `.mise.toml` and `.env.template`, merged by hand with the repo's values, and `docker/` when the repo runs containers. Then apply the delete table in `SKILL.md` § Bootstrapping for what the repo does not have. A repo with no engines follows § Without a data core.
+5. Add the mapped workers. Record in `AGENTS.md` the new Commands section, each old verb with what it became so people find their commands, and each exception.
+6. Run `./ctl setup env`, `./ctl check`, `./ctl setup`, `./ctl gate`, then `verify`. Report the verb map, the verdict and each exit code.
 
 ## Extending the copied router
 

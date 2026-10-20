@@ -24,6 +24,8 @@ Rules
             the root rule is skipped when AGENTS.md records 'root-manifest' under
             '## Exceptions to the standard layout' (an open-source package repo)
   brief     AGENTS.md exists at the repo root; CLAUDE.md does not
+  template  every shared helper in scripts/common/ matches scripts/common/template-core.sha256 outside
+            its [ADAPT] blocks, unless AGENTS.md records 'template-core <path>' as an exception
   ladder    the 'Gate ladder' row in AGENTS.md lists the same rungs, in the same order, as RUNGS in
             scripts/gate/all.sh — the audit reads the row and the gate runs the list, so they must agree
   lint      every app ships its lint config with the complexity floor: [tool.ruff] in pyproject.toml,
@@ -137,6 +139,11 @@ step "brief"
 [[ -f AGENTS.md ]] || fail "AGENTS.md missing"
 [[ ! -e CLAUDE.md && ! -L CLAUDE.md ]] || fail "CLAUDE.md exists at the repo root — migrate its unique instructions into AGENTS.md, then remove it"
 pass "AGENTS.md exists; CLAUDE.md absent"
+
+step "template core"
+while IFS= read -r problem; do fail "$problem"; done < <(source scripts/common/_template-core.sh 2>/dev/null \
+  || { echo "scripts/common/_template-core.sh is missing — copy scripts/common/ whole from the template"; exit; }; template_core_problems .)
+pass "scripts/common/ matches the template outside its [ADAPT] blocks"
 
 step "ladder"
 # The row is `| Gate ladder | \`lint typecheck test check\` |`: the first backtick span is the list.
