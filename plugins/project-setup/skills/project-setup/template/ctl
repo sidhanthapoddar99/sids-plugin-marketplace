@@ -44,7 +44,9 @@ run() { local s="$CTL_ROOT/scripts/$1.sh"; shift; [[ -f $s ]] || die "missing $s
 ctl_help() {
   printf '%s%s%s — control plane. One entrypoint for dev + containers.\n\n' "$C_B$C_CYN" "ctl" "$C_RESET"
   printf '%sDevelopment%s (host loop)\n' "$C_B" "$C_RESET"
-  row "dev [app…] [--detach]" "data core in docker, host apps with native frontend proxies"
+  row "dev [app…] [--detach] [--all]"   "reuse or start the data core, migrate, then host apps with reload"
+  row "dev db [--detach] | dev db stop" "the data core alone: start it detached and migrate · stop it"
+  row "dev stop [--all]"                "stop the dev apps and keep the data core · --all: stop everything"
   row "ps [--list | kill [port…]]"      "browse everything running — attach · kill · port map"
   row "stop [--dry-run]"                "stop owned host processes, then project containers; keep data"
   printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"
@@ -106,7 +108,12 @@ cmd="${1:-help}"; shift || true
 case "$cmd" in dev|test|gate|build) source "$CTL_ROOT/scripts/worktree/_pool.sh"; worktree_guard "$cmd" "$@" ;; esac
 case "$cmd" in
   # ── development ──────────────────────────────────────────
-  dev)      run dev/dev       "$@" ;;
+  # `dev` splits on the subverb: db = the data core alone; stop = the dev apps; anything else runs apps.
+  dev)      case "${1:-}" in
+              db)   shift; run dev/db       "$@" ;;
+              stop) shift; run dev/dev-stop "$@" ;;
+              *)    run dev/dev "$@" ;;
+            esac ;;
   ps)       run dev/ps        "$@" ;;
   stop)     run dev/stop      "$@" ;;
   # ── containers: substantive workers ──────────────────────

@@ -91,9 +91,11 @@ are a separate suite and are not installed by CTL.
 
 | Group | Verb | Does |
 |---|---|---|
-| Development | `dev [app…] [--detach] [--dry-run]` | The data core through `ctl up preset dev --nqa -y`, the reserved preset (engines on loopback, the schema one-shots with them), then the apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. `--detach`: logs and ownership records below the configured `LOGS_DIR`. `--no-core`: skip the data core. `--nqa`: skip the app picker. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. |
+| Development | `dev [app…] [--detach] [--all] [--no-core] [--nqa] [--dry-run]` | Reuse the running data core or start it, apply migrations, then run the apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. A stopped core: in a terminal `dev` asks first, and Enter means yes; `--all`, `--nqa` and no terminal start it without asking. `--detach`: logs and ownership records below the configured `LOGS_DIR`. `--no-core`: skip the data core. `--nqa`: skip the app picker. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. § The data core below. |
+| | `dev db [--detach] [--dry-run]`, `dev db stop [--dry-run]` | The data core alone: start it detached through the reserved `dev` preset and migrate, or stop it. `dev db stop` refuses while a dev app or an app container runs. |
+| | `dev stop [--all] [--nqa] [--dry-run]` | Stop the host processes `ctl` started for this checkout and keep the data core. In a terminal it asks whether to stop the core too, and Enter keeps it. `--all` runs `ctl stop`. |
 | | `ps [--list \| kill [port…]]` | Everything running across three planes: host processes, frozen builds, containers. Attach or kill, plane-aware. |
-| | `stop [--dry-run]` | Stop this project's recorded host groups and frozen servers, then its containers. Keep containers, data and volumes. No prompts. |
+| | `stop [--dry-run]` | Stop this project's recorded host groups and frozen servers, then its app containers, then the data core. Keep containers, data and volumes. No prompts. |
 | Containers | `up [--config c] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]` | A stack shape (`compose.<config>.yaml`, `base` by default) plus modifiers, every service or a subset. In a terminal: pick a config → pick the modifiers that fit → pick services (all preselected) → plan → confirm. Flags skip their prompt. No TTY: the plan prints and the run refuses without `-y`; `--nqa -y` is the scripted form. Compose orders engines, schema one-shots, apps by itself. `08a_ctl_docker.md`. |
 | | `up preset [<name>] [-y]`, `up preset --list`, `up set-preset [<name>]` | A saved `up` line from `docker/presets.yaml`: run one with no prompts, list them, or walk the pickers and save. `08a_ctl_docker.md` § 4. |
 | | `down`, `restart`, `logs`, `exec`, `shell` | Compose passthroughs against the `base` file. `down` never uses `-v`: state lives in `data/`. |
@@ -170,7 +172,22 @@ Adapt `scripts/dev/_apps.sh`: each app declares its command, required tools, rea
 
 Ownership records live in `LOGS_DIR/run/<name>.process/`, including a PID and its process-start identity; output lives in `LOGS_DIR/dev/<name>.log`. Identity checks prevent a reused PID from being treated as the old process. Attach, stop and frozen-build commands use the same configured paths. The host-process implementation requires Linux or WSL, Bash, `/proc`, `setsid` and GNU coreutils. Programs that deliberately escape their process group need a project-specific supervisor.
 
-Frontend dev servers own routing; there is no development proxy container. Data-core startup uses the bounded production-start helper and never continues after failed readiness.
+Frontend dev servers own routing; there is no development proxy container.
+
+### The data core
+
+The data core is the `DATA_SVCS` engines that the reserved `dev` preset in `docker/presets.yaml` starts: `--config base +expose_db --services postgres,redis,neo4j`, each engine bound to loopback. It runs detached and outlives the host apps, so an app restart never waits for a database. `scripts/dev/_data-core.sh` holds the steps, and `ctl dev` and `ctl dev db` share it, so the two commands cannot drift. When you adapt the preset, publish every `DATA_SVCS` engine on loopback with a `ports:` entry in `docker/compose.m.expose_db.yaml`, because `ctl dev` refuses to reuse an engine without a host port.
+
+| The core when `ctl dev` starts | What `ctl dev` does | Why |
+|---|---|---|
+| Every engine runs and passes its healthcheck | Reuse it as it is. Never start, recreate or rebuild it. | A restart drops every open connection and costs the engines' start time. |
+| An engine runs but publishes no host port | Refuse, and point at `ctl stop`. | Another stack shape, such as `ctl up`, started it. A host app would reach whatever else holds that port. |
+| An engine is down, in a terminal | Ask `The database is not running. Start it with 'ctl dev db --detach'`. Enter means yes. Any other answer stops the launch and names that command. | A start binds the engine ports and takes memory, so a person at the terminal decides. |
+| An engine is down, with `--all`, `--nqa` or no terminal | Start it without asking. | A script or an agent has nobody to answer, and the apps cannot run without the core. |
+
+The start runs `ctl up preset dev --nqa -y --no-build`, which builds no engine image and returns only after every engine passes its healthcheck within the bounded start budget. After the reuse or the start, `ctl dev` runs `ctl db migrate up` every time, because a running core can still lack this checkout's newest migration. A migration failure stops the launch before any app starts. An empty `SCHEMA_SVCS` in `_lib.sh` means the project has no schema step, and `ctl dev` skips it. The migration step builds the migration image from the layer cache, because that image carries the SQL. An unchanged checkout rebuilds nothing. The `dev` preset holds no schema one-shot, because the schema step always runs through `ctl db migrate`.
+
+Ctrl-C, `ctl dev stop` and a failed launch stop only host processes, and the data core keeps running. `ctl dev db stop`, `ctl dev stop --all` and `ctl stop` stop it. § `ctl stop` below shows how the three divide the work. A change to an engine in `docker/`, or to an engine port in `.env`, takes effect at the next core start: run `ctl dev db stop`, then `ctl dev`.
 
 ### Controllers and Rust development
 
@@ -202,7 +219,17 @@ helpers. Production builds explicitly select release profiles and do not run thi
 
 ## `ctl stop` — project-wide shutdown
 
-Worker: `template/scripts/dev/stop.sh`; lifecycle helper: `template/scripts/common/_process.sh`. Bare `ctl stop` stops foreground and detached managed groups from the configured `LOGS_DIR/run`, including watchers and frozen-build servers. It never selects host processes by port. `--dry-run` lists targets without signals, record cleanup or container changes; Docker queries still run.
+Worker: `template/scripts/dev/stop.sh`. Shared stop helper: `template/scripts/dev/_stop.sh`, which `ctl stop`, `ctl dev stop` and `ctl dev db stop` all call, so the three apply one set of ownership and ordering rules. Lifecycle helper: `template/scripts/common/_process.sh`.
+
+| Command | Host processes | App containers | Data core |
+|---|---|---|---|
+| `ctl stop`, and `ctl dev stop --all`, which runs it | stop | stop | stop, after the app containers |
+| `ctl dev stop` | stop | keep | keep. In a terminal, ask; Enter keeps it |
+| `ctl dev db stop` | refuse while one runs | refuse while one runs | stop |
+
+`ctl dev db stop` refuses rather than stopping the writers itself, because the user asked to stop the database, not the apps. It counts a host process record it cannot verify as running. Its `--dry-run` refuses the same way, so the preview matches the real run.
+
+Bare `ctl stop` stops foreground and detached managed groups from the configured `LOGS_DIR/run`, including watchers and frozen-build servers. It never selects host processes by port. `--dry-run` lists targets without signals, record cleanup or container changes; Docker queries still run.
 
 Each new record stores the project root, PID and start identity. A live legacy record with a start identity needs a working directory inside this project to establish ownership. Live PID-only records and foreign records fail closed, because they cannot safely identify this project's process. Stale records are cleaned; reused PIDs are not signalled. Keep `LOGS_DIR` project-specific. Processes deliberately detached from the managed group need their own supervisor cleanup.
 

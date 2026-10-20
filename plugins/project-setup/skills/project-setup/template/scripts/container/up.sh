@@ -7,8 +7,8 @@
 #              named services and their depends_on chain are built and started.
 #   presets    docker/presets.yaml — a name for one argument line. `preset` runs one, `set-preset` writes one.
 #
-# Grammar:  ctl up [--config <name>] [+mod…] [--modifier a,b] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list]
-#           ctl up preset [<name>] [-a] [-y] [--nqa] [--dry-run]     ·  ctl up preset --list
+# Grammar:  ctl up [--config <name>] [+mod…] [--modifier a,b] [--services a,b] [-a] [--nqa] [-y] [--no-build] [--dry-run] [--list]
+#           ctl up preset [<name>] [-a] [-y] [--nqa] [--no-build] [--dry-run]     ·  ctl up preset --list
 #           ctl up set-preset [<name>] [--config <name>] [+mod…] [--services a,b] [-y]
 #
 # Bare `ctl up` in a terminal is interactive (dependency-free TUI from _select.sh):
@@ -18,6 +18,7 @@
 # default (base, +${DEFAULT_MODIFIERS[*]} where it fits, every service). A modifier whose env keys are
 # blank is refused (MODIFIER_REQUIRES).
 #   --nqa  no prompts   ·   -y  skip the confirm   ·   --dry-run  plan only   ·   -a  foreground
+#   --no-build  start the images that exist; `ctl dev db` starts the data core this way
 #
 # `preset <name>` is `ctl up <stored line>` with every prompt skipped: it goes straight to the plan.
 # `set-preset` walks the same pickers and ends on Save / Save and run / Back / Cancel. An existing
@@ -35,8 +36,8 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; 
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_compose_start.sh"
 
 usage() { print_help "up" "Assemble + start the container stack (interactive, flag-driven, or from a preset)." \
-  'up [--config <name>] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--dry-run] [--list] [-h]
-  ctl up preset [<name>] [-a] [-y] [--nqa] [--dry-run] [--list]
+  'up [--config <name>] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--no-build] [--dry-run] [--list] [-h]
+  ctl up preset [<name>] [-a] [-y] [--nqa] [--no-build] [--dry-run] [--list]
   ctl up set-preset [<name>] [--config <name>] [+modifier…] [--services a,b] [-y]' \
 "Arguments
   --config <name>     the stack shape: docker/compose.<name>.yaml — any of: $(list_configs | join_sp | or_none)
@@ -49,6 +50,7 @@ usage() { print_help "up" "Assemble + start the container stack (interactive, fl
   -a, --attach        run in the FOREGROUND (stream logs, Ctrl-C stops); default is detached (-d)
   --nqa               no questions — don't prompt; use flags/defaults
   -y, --yes           skip the final confirmation
+  --no-build          start the images that exist, without the build step (ctl dev db uses it)
   --dry-run, -n       show the plan and exit without running
   --list              list the configs, modifiers, presets and the services the config defines, then exit
   -h, --help          show this help
@@ -58,25 +60,27 @@ Presets ($PRESETS_FILE — one \`<name>: \"<arguments>\"\` line each)
   preset              pick one in a terminal, then the same
   preset --list       the stored presets and their lines
   set-preset [<name>] walk the pickers (an existing preset's values preselected), then Save / Save and run.
-                      Flags given here skip their prompt, so \`set-preset x --config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init -y\` needs no TTY.
+                      Flags given here skip their prompt, so \`set-preset x --config base +expose_db --services postgres,redis,neo4j -y\` needs no TTY.
                       A preset stores the stack shape only: --config, +modifier, --services. Run flags
-                      (-a, -y, --nqa) are given at run time and refused inside the file.
+                      (-a, -y, --nqa, --no-build) are given at run time and refused inside the file.
+                      The dev preset is reserved: it is the data core ctl dev and ctl dev db start.
 
 A config publishes no port; modifiers add exposure. The schema one-shots (migrate, neo4j-init) run
 before any app because the apps wait on them — never on app boot." \
 "Example:  ctl up                                # interactive
           ctl up -y                             # local docker: base +expose_web, no prompts
-          ctl up --config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init -y      # the engines alone, bound to loopback (what ctl dev runs)
+          ctl up preset dev --no-build -y       # the engines alone, bound to loopback (what ctl dev db runs)
           ctl up +public -y                     # public deployment: 80/443 + PUBLIC_URL, uncommented in .env
           ctl up --services=api,postgres -y     # one backend and its chain only
-          ctl up preset dev -y               # a stored line, no prompts
+          ctl up preset local -y                # a stored line, no prompts
           ctl up set-preset staging             # save a new preset from the pickers"; }
 
 preset_usage() { print_help "up preset" "Run a stored \`ctl up\` line from $PRESETS_FILE." \
-  'up preset [<name>] [-a] [-y] [--nqa] [--dry-run] [--list] [-h]' \
+  'up preset [<name>] [-a] [-y] [--nqa] [--no-build] [--dry-run] [--list] [-h]' \
 "Arguments
   <name>          the preset to run (none given: pick in a terminal)
   -a, --attach    foreground   ·   -y  skip the confirm   ·   --dry-run  plan only
+  --no-build      start the images that exist, without the build step
   --list          the stored presets and their lines
   -h, --help      show this help
 
@@ -86,10 +90,11 @@ Stored presets: $(list_presets | join_sp | or_none)" \
 # ── parse ── one parser for the three modes; preset lines are fed back through it
 mode=up
 case "${1:-}" in preset|set-preset) mode="$1"; shift ;; esac
-cfg_cli="" cfg_set=0 mods_cli=() mod_set=0 svcs_cli=() svc_set=0 nqa=0 yes=0 dry=0 attach=0 list=0 name=""
+cfg_cli="" cfg_set=0 mods_cli=() mod_set=0 svcs_cli=() svc_set=0 nqa=0 yes=0 dry=0 attach=0 list=0 no_build=0 name=""
 parse_args() { while (( $# )); do case "$1" in
   --nqa|--no-questions-asked) nqa=1; shift ;;
   -y|--yes)      yes=1; shift ;;
+  --no-build)    no_build=1; shift ;;
   -a|--attach|--no-detach) attach=1; shift ;;
   --list)        list=1; shift ;;
   --dry-run|-n)  dry=1; shift ;;
@@ -250,7 +255,7 @@ render_plan() {
   printf '%sreproduce%s  (no prompts)\n' "$C_B" "$C_RESET"
   printf '  %sctl up %s --nqa%s\n'      "$C_DIM" "$repro" "$C_RESET"
   printf '  %sctl up %s --nqa -y%s\n'   "$C_DIM" "$repro" "$C_RESET"
-  printf '  %sbuild:%s   %s build --with-dependencies %s\n' "$C_DIM" "$C_RESET" "${compose_base[*]}" "${services[*]}"
+  (( no_build )) || printf '  %sbuild:%s   %s build --with-dependencies %s\n' "$C_DIM" "$C_RESET" "${compose_base[*]}" "${services[*]}"
   printf '  %sdocker:%s %s\n'    "$C_DIM" "$C_RESET" "${docker_cmd[*]}"
   hr
 }
@@ -405,6 +410,7 @@ done
 # ── start ── compose orders the chain itself: engines healthy → schema one-shots done → apps.
 # With a subset, only the named services and their depends_on chain come up: an app brings the
 # engines and the schema step with it, an engine alone brings nothing.
-compose_start "$attach" 120 "${services[@]}"
+start_options=(); (( no_build )) && start_options=(--no-build)
+compose_start "${start_options[@]}" "$attach" 120 "${services[@]}"
 (( attach )) && exit 0
 ok "stack up  (detached — 'ctl logs -f' to follow, 'ctl down' to stop)"

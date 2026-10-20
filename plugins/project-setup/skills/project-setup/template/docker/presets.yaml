@@ -2,6 +2,8 @@
 # `ctl up preset <name>` runs one (plan → confirm; -y skips the confirm). `ctl up set-preset` writes one.
 # The value is the reproduce line the plan prints, so a preset is a saved command and nothing else;
 # edit this file by hand if you like. A name is [A-Za-z0-9_-]. Comments and blank lines are ignored.
-dev: "--config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init"
+# `dev` is reserved: it is the data core `ctl dev` and `ctl dev db` start, the DATA_SVCS engines on
+# loopback. The schema step is not in it, because `ctl dev` runs `ctl db migrate` on every launch.
+dev: "--config base +expose_db --services postgres,redis,neo4j"
 local: "--config base +expose_web"
 public: "--config base +public"
