@@ -34,9 +34,9 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 │   └── .dockerignore           # the frontend image builds with context ./apps; root ignores do not apply
 ├── scripts/                    # ctl workers: common/ config/ dev/ container/ db/ admin/ test/ gate/
 ├── docker/                     # compose.<config> (base db dev) · compose.m.<modifier> · presets.yaml
-├── data/                       # actual data: engine mounts, datasets, uploads
+├── data/                       # DATA_DIR, ${BASE_DIR}/data: engine mounts, datasets, uploads
 │   └── .gitignore              #   `**` and `!.gitignore`
-├── logs/                       # produced state: logs, pids, backups, frozen builds
+├── logs/                       # LOGS_DIR, ${BASE_DIR}/logs: logs, pids, backups, frozen builds
 │   └── .gitignore              #   same two lines
 ├── docs/                       # only when docs live in this repo
 ├── memory/                     # add-on: agent working rules split out of AGENTS.md once they outgrow it
@@ -65,8 +65,8 @@ The root holds config, the brief, and folders. Never loose code. Before creating
 | `apps/` | All code: apps, packages, database, notebooks | One app is still `apps/<name>/`. Same shape in every repo. |
 | `scripts/` | `ctl` workers | Copied from `template/scripts/`. Adapted by deletion. |
 | `docker/` | Compose files | Self-contained `compose.base.yaml`, modifiers `compose.m.<name>.yaml`, and service-subset presets in `presets.yaml`. Add other configs only for independent stack shapes. Compose lives here, never inside an app. `08a_ctl_docker.md`. |
-| `data/` | Actual data: engine mounts (`postgres/`, `redis/`, `neo4j/`), datasets, uploads, checkpoints | Bind mounts point here. Self-ignored; see `.gitignore` below. |
-| `logs/` | Produced state: `dev/` logs, `run/` pids, `backups/`, `test_build/` | Everything `ctl` writes that is not data. Self-ignored. |
+| `data/` | Actual data: engine mounts (`postgres/`, `redis/`, `neo4j/`), datasets, uploads, checkpoints | `DATA_DIR`, which `.env.template` derives as `${BASE_DIR}/data`. The default `BASE_DIR=.` puts it here; a deployment host moves it with an absolute `BASE_DIR` (`02_env.md` § Host storage paths). Bind mounts point here. Self-ignored; see `.gitignore` below. |
+| `logs/` | Produced state: `dev/` logs, `run/` pids, `backups/`, `test_build/` | `LOGS_DIR`, derived as `${BASE_DIR}/logs`; `BACKUP_DIR` is `${LOGS_DIR}/backups`. Everything `ctl` writes that is not data. Self-ignored. |
 | `docs/` | Docs site, built with `agent-ks` | Exists only when this repo is the docs home. One product has one docs home: never an in-repo `docs/` and a docs repo both. To scaffold, tell the user to run `/agent-ks-config`; it is interactive, never chain into it. |
 | `memory/` | Add-on. Agent working rules, one file per rule set | The rules start as a section of `AGENTS.md`. When that section outgrows one screen, they move here and `AGENTS.md` imports each file with `@memory/<file>.md`. |
 | `.env.template` / `.env` | One environment contract, grouped by kind with two-line hash headers | Commit the template; `ctl setup` creates the ignored `.env`. See `02_env.md`. |
@@ -113,7 +113,7 @@ Root `.gitignore`: curated for the ecosystems present, not a kitchen-sink templa
 | Ecosystem artifacts | Only for ecosystems present: `__pycache__/`, `.venv/`, `node_modules/`, `dist/`, `target/`, tool caches. |
 | Logs and OS junk | `*.log`, `.DS_Store`. |
 
-`data/.gitignore` and `logs/.gitignore` are two lines each: ignore everything, keep the ignore file. `template/data/.gitignore` is the file. The rule travels with the folder, so no `.gitkeep` and no root negation pattern, because a root pattern breaks the moment the folder moves. `ctl setup` creates `data/<engine>` per engine and `logs/{dev,run,backups,test_build}`. The same two lines work for any other state folder.
+`data/.gitignore` and `logs/.gitignore` are two lines each: ignore everything, keep the ignore file. `template/data/.gitignore` is the file. The rule travels with the folder, so no `.gitkeep` and no root negation pattern, because a root pattern breaks the moment the folder moves. `ctl setup env`, and `ctl setup` with it, creates `<DATA_DIR>/<engine>` per engine, `<LOGS_DIR>/{dev,run,test_build}` and `<BACKUP_DIR>`. The same two lines work for any other state folder.
 
 Not blanket-ignored: `.vscode/` and `.claude/`. Commit the files that carry project config (launch configs, project settings). Ignore the personal ones (`settings.local.json`).
 

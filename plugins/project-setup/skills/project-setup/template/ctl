@@ -17,7 +17,7 @@
 #   Test           test · build save|start|clean (frozen test builds)
 #   Gates          gate [all|static|dynamic] · gate <rung> (lint typecheck dead audit test check build e2e)
 #                  gate clones|fuzz|perf run BY NAME — not in the ladder
-#   Configuration  setup · check · status
+#   Configuration  setup [env] · check · status
 #
 # COMPOSE MODEL. Five things you touch: a CONFIG docker/compose.<name>.yaml (one stack shape; base
 # is the whole stack and the default), MODIFIERS docker/compose.m.<name>.yaml
@@ -81,7 +81,8 @@ ctl_help() {
   row "gate fuzz [--time S]"            "by name · hypothesis · fast-check · cargo fuzz"
   row "gate perf"                       "by name · pytest-benchmark · k6 · cargo bench → logs/perf/"
   printf '\n%sConfiguration%s\n' "$C_B" "$C_RESET"
-  row "setup"                           "create .env, generate declared credentials, prepare configured dirs and dependencies"
+  row "setup"                           "create .env, generate declared credentials, create storage dirs, install toolchains + deps"
+  row "setup env"                       "only .env, generated credentials and storage dirs — installs nothing"
   row "check"                           "the repo contract — layout, env contract, compose validity, brief"
   row "status"                          "config doctor (env · runtimes · deps · health · stack)"
   printf '\n%sup configs%s    %s\n' "$C_DIM" "$C_RESET" "$(list_configs | join_sp | or_none)"
@@ -151,7 +152,7 @@ case "$cmd" in
               *) err "unknown gate: $sub"; say "run ${C_B}ctl gate --help${C_RESET} for the rung list"; exit 1 ;;
             esac ;;
   # ── configuration ────────────────────────────────────────
-  setup)    run config/setup  "$@" ;;
+  setup)    run config/setup  "$@" ;;   # `setup env` too: one worker, one env step
   check)    run config/check  "$@" ;;
   status)   run config/status "$@" ;;
   # ── meta ─────────────────────────────────────────────────

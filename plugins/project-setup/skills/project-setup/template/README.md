@@ -38,7 +38,7 @@ Host process supervision requires Linux or WSL, Bash, `/proc`, util-linux (`sets
 
 Local credential generation is declared in `scripts/config/generated-credentials.conf`. Required supplied credentials are listed in `scripts/config/required-credentials.conf`. Provider credentials are never generated. Preserve the `.env.template` contract when adapting these lists.
 
-`DATA_DIR`, `LOGS_DIR` and `BACKUP_DIR` may be root-relative or absolute. CTL uses those configured paths for setup, process records, logs, backups and frozen builds. Development probes live in `scripts/dev/_apps.sh`; startup fails when they do not become ready. Container startup builds before activation and waits for readiness; runtime failure requires an operator recovery policy.
+`DATA_DIR`, `LOGS_DIR` and `BACKUP_DIR` derive from `BASE_DIR` in `.env`: `.` keeps them in the repo, and an absolute path moves all three. CTL uses those configured paths for setup, process records, logs, backups and frozen builds. Development probes live in `scripts/dev/_apps.sh`; startup fails when they do not become ready. Container startup builds before activation and waits for readiness; runtime failure requires an operator recovery policy.
 
 ## Stack
 | Area | Pick |

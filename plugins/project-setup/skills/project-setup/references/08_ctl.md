@@ -92,7 +92,8 @@ are a separate suite and are not installed by CTL.
 | | `gate static\|dynamic [-q]` | The listed rungs that read the code, or the ones that run it. Ladder order kept. |
 | | `gate <rung> [-q]` | One rung. `gate lint [app] [--staged]` and `gate typecheck [app]` take a target; the others take none. |
 | | `gate clones\|fuzz\|perf` | By name. Never in the ladder. |
-| Configuration | `setup` | `.env` from its template, declared local credentials generated, configured storage dirs created, toolchains installed and activated, source-package dependencies installed. |
+| Configuration | `setup` | The env step of `setup env`, then toolchains installed and activated, then source-package dependencies and hooks installed. |
+| | `setup env` | The env step alone: `.env` from its template, declared local credentials generated and checked, storage folders created under `BASE_DIR`. Installs nothing. `02_env.md` § Setting up `.env`. |
 | | `check` | The repo contract. Below. |
 | | `status` | Read-only doctor: env, runtimes, deps, docker, health, stack. Never dies. |
 
@@ -108,9 +109,11 @@ The `scripts/` groups are `common config dev container db admin test gate`. A ga
 
 ## Setup and tool availability
 
+`ctl setup` runs two steps in one worker, `scripts/config/setup.sh`. The env step writes `.env`, its credentials and the storage folders. `02_env.md` § Setting up `.env` owns what it does. The install step installs the toolchains, the source dependencies and the hooks, as the rest of this section describes. `ctl setup env` runs the env step through the same function and stops, so it needs no toolchain. Use it when only `.env` must change, before the versions are resolved, and on a host that runs prebuilt images. A failed env step stops `ctl setup` before any install.
+
 `scripts/config/_discovery.sh` discovers source manifests below `apps/`, including nested packages, to a maximum depth of 12. It prunes dependency, build, cache, vendor and generated directories and does not follow directory symlinks, so installing a source package cannot recurse into its installed dependencies. Cargo identifies the owning workspace before fetching; one workspace is fetched once, and an excluded independent crate keeps its own fetch. Setup fails on discovery or dependency-install errors. The conformance version scan uses the same source discovery.
 
-`scripts/common/_tools.sh` installs declared mise toolchains during setup, then activates them in the same invocation. It evaluates only the shell environment emitted by mise, never the contents of `.env`. Activation preserves application environment overrides while selecting tool paths. `require_tools` activates without installing and verifies that each requested executable runs. A selected app asks only for its own runtime; missing required tools are errors, not successful skips. Setup's credential declarations are specified in `02_env.md`.
+`scripts/common/_tools.sh` installs declared mise toolchains during setup, then activates them in the same invocation. It evaluates only the shell environment emitted by mise, never the contents of `.env`. Activation preserves application environment overrides while selecting tool paths. `require_tools` activates without installing and verifies that each requested executable runs. A selected app asks only for its own runtime; missing required tools are errors, not successful skips.
 
 The Rust example declares Bun, Cargo and Watchexec in `.mise.toml` because its
 TypeScript coordinator uses those tools. Resolve the watcher version during setup.

@@ -1,5 +1,6 @@
 """Exercise setup and conformance checks in isolated generated repositories."""
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -48,7 +49,7 @@ def scaffold_check(root: Path, body: str) -> None:
 
 
 def test_check_accepts_mixed_setting_kinds_and_blank_secrets(tmp_path: Path) -> None:
-    scaffold_check(tmp_path, "API_PORT=8000\nDEBUG=0\nDATA_DIR=./data\nJWT_SIGNING_KEY=\n")
+    scaffold_check(tmp_path, "API_PORT=8000\nDEBUG=0\nBASE_DIR=.\nDATA_DIR=${BASE_DIR}/data\nJWT_SIGNING_KEY=\n")
     result = run_worker(tmp_path, CHECK)
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -101,3 +102,68 @@ def test_root_template_is_trackable_and_local_env_is_ignored(tmp_path: Path) -> 
         capture_output=True, text=True, check=False,
     )
     assert result.stdout.splitlines() == [".env", ".env.local", "apps/web/.env.template"]
+
+
+STORAGE = "BASE_DIR=.\nDATA_DIR=${BASE_DIR}/data\nLOGS_DIR=${BASE_DIR}/logs\nBACKUP_DIR=${LOGS_DIR}/backups\n"
+
+
+def run_check(root: Path, local_env: str | None = None) -> subprocess.CompletedProcess[str]:
+    """Run ctl check with docker reported as stopped, so only the repo and env rules decide."""
+    if local_env is not None:
+        (root / ".env").write_text(local_env)
+    fake = root.parent / "fake-bin"
+    fake.mkdir(exist_ok=True)
+    (fake / "docker").write_text("#!/bin/sh\nexit 1\n")
+    (fake / "docker").chmod(0o755)
+    (root / "scripts/common").symlink_to(TEMPLATE / "scripts/common", target_is_directory=True)
+    env = {"PATH": f"{fake}:{os.environ['PATH']}", "HOME": str(root), "NO_COLOR": "1", "CTL_ROOT": str(root)}
+    return subprocess.run(["bash", str(CHECK)], env=env, capture_output=True, text=True, check=False)
+
+
+@pytest.mark.parametrize("storage", [
+    STORAGE,
+    "BASE_DIR=/srv/app\nDATA_DIR=${BASE_DIR}\nLOGS_DIR=${BASE_DIR}/logs\nBACKUP_DIR=${BASE_DIR}/backups\n",
+    "",
+], ids=["shipped", "other-derivations", "no-storage-keys"])
+def test_check_accepts_storage_derived_from_base_dir(tmp_path: Path, storage: str) -> None:
+    root = tmp_path / "repo"
+    scaffold_check(root, "API_PORT=8000\n" + storage)
+    result = run_check(root)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "derive from BASE_DIR" in result.stdout
+
+
+@pytest.mark.parametrize(("storage", "failure"), [
+    (STORAGE.replace("${BASE_DIR}/data", "./data"), "DATA_DIR=./data does not derive from ${BASE_DIR}"),
+    (STORAGE.replace("${LOGS_DIR}/backups", "./logs/backups"), "BACKUP_DIR=./logs/backups does not derive"),
+    ("DATA_DIR=${BASE_DIR}/data\nBASE_DIR=.\n", "DATA_DIR reads ${BASE_DIR}, which is not declared above it"),
+    ("BACKUP_DIR=${LOGS_DIR}/backups\nBASE_DIR=.\nLOGS_DIR=${BASE_DIR}/logs\n",
+     "BACKUP_DIR reads ${LOGS_DIR}, which is not declared above it"),
+], ids=["data-literal", "backup-literal", "base-below", "logs-below"])
+def test_check_rejects_a_template_path_that_leaves_base_dir(tmp_path: Path, storage: str, failure: str) -> None:
+    root = tmp_path / "repo"
+    scaffold_check(root, "API_PORT=8000\n" + storage)
+    result = run_check(root)
+    assert result.returncode != 0
+    assert failure in result.stderr
+
+
+@pytest.mark.parametrize(("local", "failure"), [
+    (STORAGE, None),
+    (STORAGE.replace("BASE_DIR=.", "BASE_DIR=/srv/app").replace("${BASE_DIR}/data", "/mnt/fast/data"), None),
+    (STORAGE.replace("BASE_DIR=.", "BASE_DIR=/srv/app").replace("${BASE_DIR}/logs", "./logs"),
+     "LOGS_DIR=./logs resolves to {root}/logs, outside BASE_DIR (/srv/app)"),
+    (STORAGE.replace("BASE_DIR=.", "BASE_DIR=./state").replace("${BASE_DIR}/data", "./data"),
+     "DATA_DIR=./data resolves to {root}/data, outside BASE_DIR ({root}/state)"),
+], ids=["derived", "absolute-is-deliberate", "stale-logs", "stale-data"])
+def test_check_names_a_local_relative_path_left_behind_by_base_dir(
+    tmp_path: Path, local: str, failure: str | None
+) -> None:
+    root = tmp_path / "repo"
+    scaffold_check(root, "API_PORT=8000\n" + STORAGE)
+    result = run_check(root, "API_PORT=8000\n" + local)
+    if failure is None:
+        assert result.returncode == 0, result.stdout + result.stderr
+    else:
+        assert result.returncode != 0
+        assert failure.format(root=root) in result.stderr

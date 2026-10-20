@@ -15,10 +15,10 @@ Configuration has one root environment file and per-backend settings. Template: 
 3. **Service addresses define both binding and routing.** Use `<PIECE>_HOST`, `_PORT`, `_PREFIX` for each proxied piece; backends may add `_URL`. Static frontends need `_PORT` and `_PREFIX` only. The piece owning `/` has no `_PREFIX`. The service and proxy read the same keys so their routes agree. Missing required values fail instead of using literal fallbacks. Under Docker, Compose decides internal service names and ports (`api:8000`); root `.env` ports control host exposure.
 4. **Keep credentials out of browser constants and build args.** Addresses in `.env` are not automatically public, and a URL may contain a password. Browser code calls the same-origin backend route for operations requiring credentials. Only a Next.js server's server-side code may use server credentials.
 5. **Load one root file.** `ctl` passes `--env-file <root>/.env` to Compose explicitly. Do not add app env files or depend on Compose discovering one from the current directory, because commands must behave the same from every working directory. Docker services receive declared `environment:` keys, never the whole file via service `env_file:`.
-6. **Resolve values before launching consumers.** Paths are root-relative (`./data`, `./logs`) or absolute deployment paths, never `../`. `ctl` anchors Compose with `--project-directory <root>`. Values may reference other keys with `${KEY}`, including later declarations: `BACKUP_DIR=${LOGS_DIR}/backups`. The loader first loads all keys skip-if-set, then resolves references using the winning environment values. It uses text substitution, never `eval`. An unset reference or a cycle fails naming the key. Template: `template/scripts/common/_lib.sh`, `expand_env_refs`.
+6. **Resolve values before launching consumers.** Every storage path derives from `BASE_DIR`. § Host storage paths gives the path rules. `ctl` anchors Compose with `--project-directory <root>`, so a relative path means the same to both. Values may reference other keys with `${KEY}`: `BACKUP_DIR=${LOGS_DIR}/backups`. The loader first loads all keys skip-if-set, then resolves references using the winning environment values. It uses text substitution, never `eval`. An unset reference or a cycle fails naming the key. The loader also resolves a reference to a later line, but Compose reading the file without `ctl` leaves that reference blank, so declare each key above the keys that read it. Template: `template/scripts/common/_lib.sh`, `expand_env_refs`.
 7. **Preserve backend precedence.** Process environment > `config.local.yaml` > `config.yaml`. Load the root file skip-if-set so inline overrides and CI-injected secrets win, including an explicitly empty value. The nested override `<APP>__<SECTION>__<KEY>` (`API__DATABASE__POOL_SIZE`) overrides literals; `${VAR}` names environment values used in YAML.
 8. **Keep defaults in one place.** Do not add `config.<env>.yaml` layers or default forms such as `${VAR:-8000}` in backend settings. An unset reference fails; a literal default belongs in `config.yaml`. Prefix separate databases (`AUTH_DATABASE_URL`, `BILLING_DATABASE_URL`) and nested overrides (`API__`, `ENGINE__`) so services sharing a host do not collide.
-9. **Audit the template.** Read `.env.template`, never a filled `.env`, because audit output is a log and the filled file holds live secrets. `ctl setup` copies the template, appends missing keys without replacing existing values, and generates only explicitly declared local credentials. `ctl status` compares key names with the template.
+9. **Audit the template.** Read `.env.template`, never a filled `.env`, because audit output is a log and the filled file holds live secrets. `ctl setup env` writes `.env` from the template, as § Setting up `.env` describes. `ctl status` compares key names with the template.
 10. **The public origin is opt-in.** `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` ship commented out. Local Docker publishes the edge on the port of the piece owning `/`. A public deployment enables these three keys and uses `ctl up +public`, which refuses blank values. Keep `PUBLIC_URL` out of required YAML references: an app that creates absolute URLs reads it from the process environment and treats absence as relative URLs only. Template: `template/docker/compose.m.public.yaml`.
 
 ## How a backend reads a value
@@ -70,17 +70,55 @@ POSTGRES_PASSWORD password24
 JWT_SIGNING_KEY hex32
 ```
 
-Leave provider-issued credentials out of this list, including names ending in `_TOKEN`, `_KEY` or `_SECRET`: those suffixes do not authorize generation. Optional integrations may stay commented out in the template. Setup preserves supplied file values and process overrides, and rerunning it does not rotate a generated credential. It reports key names, never generated values. Template: `template/scripts/config/_credentials.sh`.
+Leave provider-issued credentials out of this list, including names ending in `_TOKEN`, `_KEY` or `_SECRET`: those suffixes do not authorize generation. Optional integrations may stay commented out in the template. The env step (§ Setting up `.env`) preserves supplied file values and process overrides, and a rerun does not rotate a generated credential. It reports key names, never generated values. Template: `template/scripts/config/_credentials.sh`.
 
-List required supplied credentials in `scripts/config/required-credentials.conf`, one name per line, and declare them in `.env.template`. Setup requires their effective values but never generates them. Active generated credentials are already required. An explicitly empty process override remains empty and fails that requirement. Commented or absent template keys are inactive; other blank settings produce a named warning and remain subject to the application's validation. This keeps optional integrations optional without claiming that an unconfigured required provider is ready.
+List required supplied credentials in `scripts/config/required-credentials.conf`, one name per line, and declare them in `.env.template`. The env step requires their effective values but never generates them. Active generated credentials are already required. An explicitly empty process override remains empty and fails that requirement. Commented or absent template keys are inactive; other blank settings produce a named warning and remain subject to the application's validation. This keeps optional integrations optional without claiming that an unconfigured required provider is ready.
 
 Shared credentials use one key; separate credentials use separate names. Write each secret's recovery procedure beside its template entry when adapting the project, because a rotation needs service-specific steps. Rotate leaked credentials even after removing them from the working tree, because Git retains history.
 
+## Setting up `.env`
+
+The env step writes `.env`, its credentials and the storage folders it names. `ctl setup env` runs the env step and stops. `ctl setup` runs the same step first, then installs the toolchains and dependencies (`08_ctl.md` § Setup and tool availability). One function, `setup_env` in `template/scripts/config/setup.sh`, is the env step, so the two commands cannot drift. The step does four things in order:
+
+1. It creates `.env` from `.env.template`, with mode `600`, when `.env` is missing.
+2. It appends each key that the template declares and `.env` lacks, as the template writes it, so an older checkout gains the new keys with their defaults. It keeps every existing line and value, including a value that differs from the template.
+3. It generates the blank declared credentials and requires the active ones, as § Secret classes describes.
+4. It resolves the storage paths, as § Host storage paths describes. Then it creates `DATA_DIR/<service>` for each data-core service that `DATA_SVCS` in `template/scripts/common/_lib.sh` lists, `LOGS_DIR/dev`, `LOGS_DIR/run`, `LOGS_DIR/test_build` and `BACKUP_DIR`.
+
+The step installs nothing, so it runs before the versions are resolved, and on a host that only runs images. A rerun keeps every value and adds only what is missing: keys the template gained, blank declared credentials and storage folders. So a rerun is safe on any checkout. The step never removes a key, so delete a key by hand when the template drops it. The storage folders belong to this step because `.env` names them and creating them installs nothing. Docker would otherwise create a missing bind-mount source owned by root.
+
 ## Host storage paths
 
-`scripts/common/_paths.sh` owns `resolve_storage_dirs`. After environment references have been expanded, it resolves the explicitly named `DATA_DIR`, `LOGS_DIR` and `BACKUP_DIR` for host operations. An absolute value stays absolute; a relative value is anchored at `CTL_ROOT`, not the shell's current directory or the `docker/` directory. It preserves spaces. Reusing an already resolved value does not prefix it again. A supplied blank value fails instead of silently selecting a different directory.
+Every storage path hangs off one root, `BASE_DIR`, so one setting moves them all. This is the DATA PATHS section of `template/.env.template`:
 
-Setup, host launch, process lookup, frozen builds, backups and Compose execution call this helper before using shared paths. Container startup validates them before rendering its model: a bare relative directory becomes an absolute bind-mount source, and an empty directory cannot become an unintended filesystem-root mount. Logs and process records live below `LOGS_DIR`; backups use `BACKUP_DIR`. The default backup location is `LOGS_DIR/backups`. Do not resolve every key ending in `_DIR`: application-specific paths and container destinations belong to their consuming code. Compose still receives its explicit root project directory, including the root override on included files. Backend-specific storage initialization remains project-owned.
+```dotenv
+# Storage
+# Local paths are relative to this repository, or absolute deployment paths.
+# In production it can be /DATA/AppData/<Company-Name>/<Project-name>.
+BASE_DIR=.
+
+DATA_DIR=${BASE_DIR}/data
+
+# Logs and backups
+LOGS_DIR=${BASE_DIR}/logs
+BACKUP_DIR=${LOGS_DIR}/backups
+```
+
+`DATA_DIR` holds actual data: the engine bind mounts (`${DATA_DIR}/postgres` …), datasets and uploads. `LOGS_DIR` holds produced state: dev logs in `dev/`, process records in `run/` and frozen builds in `test_build/`. `ctl db backup` writes `BACKUP_DIR/<timestamp>/`.
+
+Set the root by these rules:
+
+- Keep `BASE_DIR=.` in a checkout. Each checkout, a git worktree included, then keeps its own `data/` and `logs/`, and their own ignore files cover them.
+- If a checkout needs another relative value, start it with `./`, because Compose reading the file without `ctl` takes a bare `state/data` for a named volume. Add the folder it names to `.gitignore`, because no shipped ignore file covers it.
+- On a deployment host, write an absolute `BASE_DIR` in `.env`, such as `/DATA/AppData/<Company-Name>/<Project-name>`. Write it in the file, not only in the shell, because every later `ctl` run and every Compose call read the file.
+- Leave the derived lines as they are, so `BASE_DIR` keeps moving all of them. To place one path elsewhere on purpose, such as data on a fast disk, write an absolute path. A relative path stays at the repo root when `BASE_DIR` moves, and `ctl check` fails on it (`08_ctl.md` § `ctl check`).
+- A changed `BASE_DIR` moves no existing file. Run `ctl stop`, move the folders to the new path, then start again, because the engines start empty at a path that holds no data.
+
+`ctl` loads `.env` skip-if-set, then `expand_env_refs` replaces each `${NAME}` (rule 6). A value set in the shell wins, and every path that derives from it follows: `BASE_DIR=/srv/app ctl up` moves the three derived paths with it. Compose resolves `${BASE_DIR}` inside the `--env-file` the same way, with the shell value first, so `ctl` and Compose without `ctl` mount the same path.
+
+`resolve_storage_dirs` in `template/scripts/common/_paths.sh` then exports `BASE_DIR`, `DATA_DIR`, `LOGS_DIR` and `BACKUP_DIR` as absolute paths. It anchors a relative value at `CTL_ROOT`, not at the shell's current directory or the `docker/` directory, because Compose anchors it at the same `--project-directory`. It keeps an absolute value. It removes `.` segments and doubled or trailing slashes, and it keeps spaces. A second call changes nothing. An unset key takes its template default. It fails naming the key on a blank value, an unexpanded `${NAME}`, or a `..` segment, because each would select a directory nobody configured.
+
+Setup, host launch, process lookup, frozen builds, backups and Compose execution call this helper before they use a storage path. Container startup validates the paths before rendering its model: a bare relative directory becomes an absolute bind-mount source, and an empty directory cannot become an unintended filesystem-root mount. Do not resolve every key ending in `_DIR`, because application-specific paths and container destinations belong to their consuming code. Compose still receives its explicit root project directory, including the root override on included files. Backend-specific storage initialization remains project-owned.
 
 ## Template rules
 

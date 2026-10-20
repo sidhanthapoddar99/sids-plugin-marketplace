@@ -2,7 +2,7 @@
 # Basic environment checks before dev installs or starts anything. Values stay private.
 validate_dev_env() {
   local file key value default rc=0
-  check_env_schema || die "configuration is out of date — run ctl setup"
+  check_env_schema || die "configuration is out of date — run ctl setup env"
   for file in .env.template .env; do
     awk '
       /^[[:space:]]*(#|$)/ { next }
