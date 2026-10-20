@@ -1,3 +1,8 @@
 # Raw skill test runs. The eval prompts live in evals/<plugin>/evals.json at the repo root;
 # the transcripts and outputs from running them are kept here and never committed.
 plugins/*/evals-workspace/
+
+# Local working files, never committed: the session TODO names private projects,
+# and .worktrees/ holds local git worktrees.
+/TODO.md
+/.worktrees/
