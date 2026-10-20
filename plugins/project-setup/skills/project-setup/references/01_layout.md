@@ -42,6 +42,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 ├── memory/                     # add-on: agent working rules split out of AGENTS.md once they outgrow it
 ├── .env.template               # grouped environment contract; blank secrets, committed
 ├── .env                        # local values, gitignored; created by ctl setup
+├── .worktrees/                 # every git worktree: warm slots and branch-named links, gitignored. 13_worktree.md
 ├── .mise.toml                  # tool version contract
 ├── .gitignore
 ├── .dockerignore

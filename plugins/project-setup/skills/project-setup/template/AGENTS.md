@@ -14,6 +14,7 @@ These bind every agent on every change.
 - An app never imports from another app. Shared code is a package under `apps/packages/`.
 - Documentation points at code. A code comment never names a doc page, plan, issue or skill file. `README.md` and `AGENTS.md` are the only exceptions.
 - A frontend has no app-local env file. Its dev server inherits the root environment; expose only selected public constants to browser code, because bundles are public.
+- Every git worktree lives at `.worktrees/<name>` in this repo, and nowhere else, because there it reuses a warm slot's builds and git ignores it. Create one with `ctl worktree create <name>`, not `git worktree add`, because only `ctl` puts it on a slot with its own ports. Free it with `ctl worktree remove <name>` once the main tree has merged its branch, so the next worktree can take the slot. Never move, delete or switch branches inside a `.worktrees/slot-<n>` folder by hand, because each slot must stay on the branch its link names.
 
 When this section outgrows one screen, move it to `memory/` and import each file with `@memory/<file>.md`.
 

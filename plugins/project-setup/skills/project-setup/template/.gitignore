@@ -38,6 +38,9 @@ dist/
 scripts/gate/gate.lock
 .jscpd/
 
+# worktree slots and their named links (ctl worktree); never committed
+/.worktrees/
+
 # logs and OS
 *.log
 .DS_Store
