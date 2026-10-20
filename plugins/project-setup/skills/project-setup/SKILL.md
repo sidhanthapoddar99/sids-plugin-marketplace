@@ -37,6 +37,7 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 | How development runs without sign-in: `AUTH_ENABLED` and the reserved `default` user | `references/14_development-sign-in.md` |
 | What do I type | `references/08_ctl.md` |
 | How `ctl up` assembles a stack: configs, modifiers, services, presets, include | `references/08a_ctl_docker.md` |
+| Where worktrees live; warm slots, `ctl worktree`, a slot's `.env`, the trim, disk wear | `references/13_worktree.md` |
 | What makes it prod | `references/09_production.md` |
 | How HTTP exposure and TLS are configured | `references/12_http-and-tls.md` |
 | What a person reviews by hand | `references/10a_review.md` |

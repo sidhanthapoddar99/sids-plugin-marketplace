@@ -18,6 +18,7 @@
 #   Gates          gate [all|static|dynamic] · gate <rung> (lint typecheck dead audit test check build e2e)
 #                  gate clones|fuzz|perf run BY NAME — not in the ladder
 #   Configuration  setup [env] · check · status
+#   Worktrees      worktree create|list|remove|trim (named worktrees on a pool of warm slots in .worktrees/)
 #
 # COMPOSE MODEL. Five things you touch: a CONFIG docker/compose.<name>.yaml (one stack shape; base
 # is the whole stack and the default), MODIFIERS docker/compose.m.<name>.yaml
@@ -31,7 +32,9 @@
 # not running · compose plugin missing). Run `ctl <command> --help` for any command.
 
 set -euo pipefail
-CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# The physical path (pwd -P): a worktree slot is reached through .worktrees/<name>, a link whose name
+# changes with each branch, and builds, process records and locks must all see the slot's one path.
+CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$CTL_ROOT/scripts/common/_lib.sh"
 cd "$CTL_ROOT"
 
@@ -85,6 +88,11 @@ ctl_help() {
   row "setup env"                       "only .env, generated credentials and storage dirs — installs nothing"
   row "check"                           "the repo contract — layout, env contract, compose validity, brief"
   row "status"                          "config doctor (env · runtimes · deps · health · stack)"
+  printf '\n%sWorktrees%s (work in .worktrees/<name>, a link to a warm slot)\n' "$C_B" "$C_RESET"
+  row "worktree create <name> [--from R]" "put a free slot on branch <name> and link .worktrees/<name> to it"
+  row "worktree list"                   "each slot: name or free · clean or dirty · merged · builds · last use"
+  row "worktree remove <name>"          "free a clean, merged worktree's slot; keep the branch and the builds"
+  row "worktree trim [--days N] [--dry-run]" "delete Cargo outputs no build used for N days, in every slot"
   printf '\n%sup configs%s    %s\n' "$C_DIM" "$C_RESET" "$(list_configs | join_sp | or_none)"
   printf '%sup modifiers%s  %s\n' "$C_DIM" "$C_RESET" "$(list_modifiers | sed 's/^/+/' | join_sp | or_none)"
   printf '%sup presets%s    %s\n' "$C_DIM" "$C_RESET" "$(list_presets | join_sp | or_none)"
@@ -92,6 +100,10 @@ ctl_help() {
 }
 
 cmd="${1:-help}"; shift || true
+# WORKTREE_ONLY=1 keeps the main tree for git, ctl up, ctl setup and ctl worktree: the verbs that write
+# build outputs into a checkout refuse there (worktree_guard). setup is never guarded, because a new
+# checkout must always be able to set itself up.
+case "$cmd" in dev|test|gate|build) source "$CTL_ROOT/scripts/worktree/_pool.sh"; worktree_guard "$cmd" "$@" ;; esac
 case "$cmd" in
   # ── development ──────────────────────────────────────────
   dev)      run dev/dev       "$@" ;;
@@ -155,6 +167,8 @@ case "$cmd" in
   setup)    run config/setup  "$@" ;;   # `setup env` too: one worker, one env step
   check)    run config/check  "$@" ;;
   status)   run config/status "$@" ;;
+  # ── worktrees ────────────────────────────────────────────
+  worktree) run worktree/worktree "$@" ;;
   # ── meta ─────────────────────────────────────────────────
   help|-h|--help) ctl_help ;;
   *)        err "unknown command: $cmd"; say "run ${C_B}ctl --help${C_RESET} for the command list"; exit 1 ;;
