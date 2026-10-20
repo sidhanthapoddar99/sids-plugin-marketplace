@@ -9,8 +9,8 @@
 #
 # THE LADDER lives in all.sh. One file per rung: scripts/gate/<rung>.sh. A rung takes no
 # arguments (gate_reject_args): a gate that quietly ignores one runs something other than what
-# the caller asked for. Narrow a run with the dev verb (`ctl test api`); `gate lint` and `gate typecheck` take a target by name.
-# A rung takes no arguments (gate_reject_args) except lint and typecheck, whose dev verb IS the rung.
+# the caller asked for. lint and typecheck are the exception, because their dev verb IS the rung:
+# they take targets by name (scripts/gate/_targets.sh). Narrow a test run with `ctl test <target>`.
 #
 # Ported from an earlier project, minus that repo's frozen-package guards.
 

@@ -8,11 +8,11 @@ Every repo runs four rungs from day one: `lint`, `typecheck`, `test`, `check`. E
 
 | Check | Industry name | We call it | Do we do it | ctl |
 |---|---|---|---|---|
-| Formatting | Code formatting | part of `lint` | Floor | `ctl gate lint [app] [--staged]` |
+| Formatting | Code formatting | part of `lint` | Floor | `ctl gate lint [app…] [--staged]` |
 | Style and correctness rules | Linting, static analysis | `lint` | Floor | same |
 | Complexity threshold | Cyclomatic and cognitive complexity | a `lint` rule | Floor | same |
 | Layer and import boundaries | Architecture tests, fitness functions | a `lint` config, see below | From the second app | same |
-| Type checking | Static typing | `typecheck` | Floor | `ctl gate typecheck [app]` |
+| Type checking | Static typing | `typecheck` | Floor | `ctl gate typecheck [app…]` |
 | Env keys, placeholders, compose shape, the brief | Repo lint, policy as code | `check` | Floor | `ctl check`, `ctl gate check` |
 | Dead code, unused exports and dependencies | Dead-code detection, dependency hygiene | `dead` | Later: the first dead-code cleanup | `ctl gate dead` |
 | Copy-paste detection | Clone detection | `clones` | By name: a refactor round | `ctl gate clones [--all] [--max N]` |
@@ -43,7 +43,9 @@ Order is cost. Each rung fails cheaper than the next, so a red at the bottom nev
 | `build` | static | every image and bundle | minutes |
 | `e2e` | dynamic | the whole browser suite against the built stack | minutes |
 
-`ctl gate -q` prints one line with counts per green rung and the full output of a red one. Quiet hides nothing that failed. A rung takes no arguments, so a gate means the whole repo. Two exceptions double as the dev verb: `ctl gate lint [app] [--staged]` and `ctl gate typecheck [app]`; tests narrow through `ctl test [app]`. One heavy run at a time: the ladder takes a lock and runs under a memory lid (`--memory 4G`), because two runs at once can take the box down.
+`ctl gate -q` prints one line with counts per green rung and the full output of a red one. Quiet hides nothing that failed. A rung run by name takes no app, so `ctl gate <rung>` checks the whole repo. Two exceptions double as the dev verb: `ctl gate lint [app…] [--staged]` and `ctl gate typecheck [app…]`. Tests narrow through `ctl test [app…]`.
+
+Plain `ctl gate` runs the ladder on what the uncommitted changes reach. `ctl gate --delta <base>` runs it on the changes since a base, and `ctl gate --all` on everything. `10d_test-speed-and-resources.md` owns the modes, the selection rules, the TESTING settings in `.env`, the one-run lock and the memory lid.
 
 Rungs outside the ladder (`fuzz`, `perf`, `clones`) run by name, at a stage close-out or when a round touched their subject. A gate that reports zero every run is a gate people stop reading.
 
@@ -86,15 +88,15 @@ Repo-level rules, the env contract and the compose shape, stay in `ctl check`. T
 
 ## Rules
 
-- Green means `ctl gate` passed. Nothing else does. Which rungs the ladder holds is written twice, in the `Gate ladder` row of `AGENTS.md` and in `RUNGS` in `scripts/gate/all.sh`, and `ctl check` fails when the two differ. `all.sh` refuses a `RUNGS` without the four floor rungs. A rung, once added, is never removed.
+- Green means a `ctl gate` run passed that covered the whole change: a plain `ctl gate` while all of the work is uncommitted, and `ctl gate --delta <base>` once any of it is committed, where `<base>` is the commit the work started from. Nothing else is green, because a plain run on committed work checks only what is still uncommitted. Which rungs the ladder holds is written twice, in the `Gate ladder` row of `AGENTS.md` and in `RUNGS` in `scripts/gate/all.sh`, and `ctl check` fails when the two differ. `all.sh` refuses a `RUNGS` without the four floor rungs. A rung, once added, is never removed.
 - A `test` rung with no test file passes and says so on its own line, "no test file yet", and the closing line says how many suites ran. The suite is found by the names `10c_dynamic-tests.md` mandates; a suite under other names is skipped with the same warning, so the names are the rule.
 - Adding a rung beyond the four is the user's decision. Recommend it with the reason; do not add it unasked, and do not add it during a bootstrap.
 - The audit tools (`gitleaks`, `cargo-audit`, `govulncheck`) join `.mise.toml` when the `audit` rung joins, not before.
-- `lefthook.yml` is an add-on: `ctl gate static --staged` is the shape of a pre-commit hook, `ctl test` of a pre-push hook. A hook never calls a tool directly. `additional-template/lefthook.yml`.
-- CI, when it exists, runs `ctl gate`. Nothing else. PR builds get no secrets.
+- `lefthook.yml` is an add-on: `ctl gate lint --staged` is the shape of a pre-commit hook, `ctl test` of a pre-push hook. A hook never calls a tool directly. `additional-template/lefthook.yml`.
+- CI, when it exists, runs `ctl gate --delta <base>` and nothing else, because a CI checkout has no uncommitted changes for a plain `ctl gate` to check. On a pull request, `<base>` is the target branch as CI fetched it, such as `origin/main`. On a push, `<base>` is the commit the branch held before the push. The checkout needs the history back to `<base>`, because `--delta` stops when it cannot find `<base>` or the merge base. PR builds get no secrets.
 
 ## Verbs
 
-The verbs are listed once, in `08_ctl.md` § Verbs. The ones this page uses: `ctl gate [-q]`, `ctl gate static | dynamic`, `ctl gate <rung>`, `ctl gate clones`, `ctl check`.
+The verbs are listed once, in `08_ctl.md` § Verbs. The ones this page uses: `ctl gate [--changed | --delta <base> | --all] [-q]`, `ctl gate static | dynamic`, `ctl gate <rung>`, `ctl gate clones`, `ctl check`.
 
-Template: `template/scripts/gate/` (`all.sh` = the ladder and its two groups, one file per rung, `_gate.sh` = the rung contract and `--quiet`, `_lock.sh` = one heavy run at a time under a memory lid).
+Template: `template/scripts/gate/` (`all.sh` = the ladder, its two groups and its modes, one file per rung, `_gate.sh` = the rung contract and `--quiet`, `_targets.sh` = the apps lint, typecheck and test check, `_changed.sh` = what a changed-only run selects, `_lock.sh` = one gate run per user under a memory lid).

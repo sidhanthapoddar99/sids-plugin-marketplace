@@ -86,11 +86,12 @@ are a separate suite and are not installed by CTL.
 | | `db backup`, `db restore <dir>` | Dump to `${BACKUP_DIR}/<timestamp>/`; load back. Restore validates the PostgreSQL archive before mutation and refuses while configured app containers or recorded host processes run. |
 | Administration | `manage ops <list\|create\|disable\|enable\|reset-password\|lockout>` | Operator accounts, without the web auth flow. Below. |
 | | `manage settings <list\|get\|set>` | Platform settings, value parsed as JSON. |
-| Test | `test [app\|e2e]` | Each app's own suite. `e2e`: a throwaway stack. See `10c_dynamic-tests.md`. |
+| Test | `test [app…\|e2e]` | Each app's own suite, under the TESTING settings in `.env`. `e2e`: a throwaway stack. See `10c_dynamic-tests.md`. |
 | | `build save\|start\|clean` | Frozen test builds under `${LOGS_DIR}/test_build/`. `09_production.md`. |
-| Gates | `gate [all] [-q] [--memory SIZE]` | The ladder: lint → typecheck → dead → audit → test → check → build → e2e, trimmed to the rungs `AGENTS.md` lists. The floor is `lint typecheck test check`. Stops at the first red, names every rung not reached. One run at a time, under a memory lid. `10b_static-checks.md`. |
+| Gates | `gate [--changed \| --delta <base> \| --all \| all] [--dry-run] [-q]` | The ladder: lint → typecheck → dead → audit → test → check → build → e2e, trimmed to the rungs `AGENTS.md` lists. The floor is `lint typecheck test check`. Plain `gate` checks what the uncommitted changes reach, `--delta <base>` the changes since a branch, a commit or a date-time, and `--all` or `all` everything. `--dry-run` prints the selection and runs nothing; it does not go with `--all`. `check` always runs, and the run names every rung and app it skipped. Stops at the first red, names every rung not reached. One run per user at a time, under a memory lid. `10b_static-checks.md`, `10d_test-speed-and-resources.md`. |
+| | `gate [static\|dynamic] [mode] [--cpus LIST] [--build-jobs N] [--memory SIZE]` | Override the TESTING settings in `.env` for one ladder run. A rung run by name takes none of these flags and reads the shell and `.env`. `10d_test-speed-and-resources.md`. |
 | | `gate static\|dynamic [-q]` | The listed rungs that read the code, or the ones that run it. Ladder order kept. |
-| | `gate <rung> [-q]` | One rung. `gate lint [app] [--staged]` and `gate typecheck [app]` take a target; the others take none. |
+| | `gate <rung> [-q]` | One rung, on the whole repo unless apps are named. `gate lint [app…] [--staged]` and `gate typecheck [app…]` take apps; the others take none. |
 | | `gate clones\|fuzz\|perf` | By name. Never in the ladder. |
 | Configuration | `setup` | `.env` from its template, declared local credentials generated, configured storage dirs created, toolchains installed and activated, source-package dependencies installed. |
 | | `check` | The repo contract. Below. |
