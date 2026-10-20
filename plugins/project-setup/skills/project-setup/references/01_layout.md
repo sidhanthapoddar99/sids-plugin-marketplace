@@ -32,7 +32,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 │   ├── database/               # committed DB config, one folder per engine (postgres/, neo4j/, redis/)
 │   ├── notebooks/              # exploration notebooks. Never imported by an app
 │   └── .dockerignore           # the frontend image builds with context ./apps; root ignores do not apply
-├── scripts/                    # ctl workers: common/ config/ dev/ container/ db/ admin/ test/ gate/
+├── scripts/                    # ctl workers: common/ config/ dev/ container/ db/ admin/ test/ gate/ worktree/
 ├── docker/                     # compose.<config> (base db dev) · compose.m.<modifier> · presets.yaml
 ├── data/                       # DATA_DIR, ${BASE_DIR}/data: engine mounts, datasets, uploads
 │   └── .gitignore              #   `**` and `!.gitignore`
@@ -110,6 +110,7 @@ Root `.gitignore`: curated for the ecosystems present, not a kitchen-sink templa
 | Section | Entries |
 |---|---|
 | Env files and local overrides | `.env`, `.env.*`, `!/.env.template`. `config.local.yaml`. |
+| Worktrees | `/.worktrees/`: the slots and their links that `ctl worktree` makes. `13_worktree.md`. |
 | Runtime state | Not here. `data/.gitignore` and `logs/.gitignore` own it. |
 | Ecosystem artifacts | Only for ecosystems present: `__pycache__/`, `.venv/`, `node_modules/`, `dist/`, `target/`, tool caches. |
 | Logs and OS junk | `*.log`, `.DS_Store`. |

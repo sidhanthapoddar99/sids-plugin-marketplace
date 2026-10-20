@@ -35,7 +35,6 @@ dist/
 .claude/settings.local.json
 
 # gate runtime
-scripts/gate/gate.lock
 .jscpd/
 
 # worktree slots and their named links (ctl worktree); never committed

@@ -141,10 +141,11 @@ test('create and remove refuse while a gate run holds the lock for the slot, and
   writeFileSync(shared, 'pid=1\nverb=gate\n');
   expect(refused(['remove', 'foo'], { GATE_LOCK_FILE: shared })).toContain('a gate run holds the gate lock');
   gate.kill('SIGKILL'); await Bun.sleep(50);
-  // A lock file inside the slot belongs to the slot.
-  const own = join(slot, 'scripts/gate/gate.lock');
+  // A lock file inside the slot belongs to the slot. It sits in logs/, which git ignores, so the
+  // worktree stays clean and only the lock can make remove refuse.
+  const own = join(slot, 'logs/gate.lock');
   gate = await holdLock(own);
-  expect(refused(['remove', 'foo'], { GATE_LOCK_FILE: own })).toContain('a gate run holds the gate lock: scripts/gate/gate.lock');
+  expect(refused(['remove', 'foo'], { GATE_LOCK_FILE: own })).toContain('a gate run holds the gate lock: logs/gate.lock');
   gate.kill('SIGKILL'); await Bun.sleep(50);
   ok(['remove', 'foo'], { GATE_LOCK_FILE: own });
 });
@@ -170,7 +171,7 @@ test('with WORKTREE_ONLY=1 the build verbs refuse in the main tree, and run in a
   ok(['create', 'foo']);
   // Stand-in workers that only say they ran, so the test sees what the guard let through.
   const stub = 'printf "ran %s\\n" "${BASH_SOURCE[0]##*/scripts/}"\n';
-  const workers = ['dev/dev.sh', 'test/test.sh', 'gate/all.sh', 'container/build.sh', 'test/build.sh', 'config/setup.sh'];
+  const workers = ['dev/dev.sh', 'dev/db.sh', 'dev/dev-stop.sh', 'test/test.sh', 'gate/all.sh', 'container/build.sh', 'test/build.sh', 'config/setup.sh'];
   for (const dir of [f.root, W('slot-1')]) for (const worker of workers) writeFileSync(join(dir, 'scripts', worker), stub);
   f.put('.env', mainEnv().replace('WORKTREE_ONLY=\n', 'WORKTREE_ONLY=1\n'));
   for (const args of [['dev'], ['test', 'api'], ['gate'], ['build'], ['build', 'save']]) {
@@ -179,12 +180,15 @@ test('with WORKTREE_ONLY=1 the build verbs refuse in the main tree, and run in a
     expect(run.err).toContain(`ctl ${args[0]} writes build outputs into this checkout, and WORKTREE_ONLY=1 keeps the main tree`);
     expect(run.err).toContain('ctl worktree create <name>');
   }
-  // Help anywhere, a frozen build's start and clean, setup and ctl worktree pass.
-  for (const args of [['gate', '--help'], ['test', 'api', '-h'], ['build', 'start'], ['build', 'clean'], ['setup'], ['worktree', 'list']]) {
+  // Help anywhere, a frozen build's start and clean, the data core alone, stopping the dev apps,
+  // setup and ctl worktree pass.
+  for (const args of [['gate', '--help'], ['test', 'api', '-h'], ['build', 'start'], ['build', 'clean'], ['dev', 'db'], ['dev', 'stop'], ['setup'], ['worktree', 'list']]) {
     const run = f.ctl(args);
     expect(run.code, `${args.join(' ')}: ${run.all}`).toBe(0);
   }
   expect(f.ctl(['setup']).out).toContain('ran config/setup.sh');
+  expect(f.ctl(['dev', 'db']).out).toContain('ran dev/db.sh');
+  expect(f.ctl(['dev', 'stop']).out).toContain('ran dev/dev-stop.sh');
   // The shell wins over .env, including an empty value.
   expect(f.ctl(['gate'], { WORKTREE_ONLY: '' }).out).toContain('ran gate/all.sh');
   // A worktree is never the main tree, whatever its .env says.

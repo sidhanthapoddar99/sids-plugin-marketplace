@@ -137,6 +137,7 @@ The trim covers the slots only. In the main tree, `ctl clean rust` removes the d
 With `WORKTREE_ONLY=1`, `ctl dev`, `ctl test`, `ctl gate` and `ctl build` refuse in the main tree and point at `ctl worktree create`. They write build outputs into the checkout, so the guard keeps the main tree's size flat. The guard lets these through:
 - help, anywhere on the line;
 - `ctl build start`, which only serves a frozen build, and `ctl build clean`, which frees space;
+- `ctl dev db`, which runs the data core in Docker as `ctl up` does, and `ctl dev stop`, which only stops processes, because stopping must always work;
 - `ctl setup`, always, because a new checkout must be able to set itself up, and because `create` refuses a main `.env` that lacks a template port until setup has run there;
 - every other verb, such as `ctl up`, `ctl db` and `ctl worktree`, because the guard covers only the verbs that build the apps into the checkout.
 

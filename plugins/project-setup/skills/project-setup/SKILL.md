@@ -1,18 +1,18 @@
 ---
 name: project-setup
 description: >-
-  Use this skill to bootstrap, audit or restructure a repo, or answer where code and configuration belong mid-task. It owns apps/, apps/packages/, data/, logs/, one ignored root .env and committed .env.template grouped by kind, backend config.yaml, single-origin routing, Docker Compose configs and modifiers, services and presets, and ctl (dev, up, db migrate, manage, gate). Covers stack choices, frontend and backend folder shapes, tokens.css and typography rules, schema ownership, security, production, the four-rung gate floor, optional add-ons and the AGENTS.md contract. Use when adding a frontend or backend or changing these boundaries. Skip implementation inside one file, migration SQL, docs content (agent-ks), instruction wording (instruction-writing), Kubernetes and cloud deploy targets.
+  Use this skill to bootstrap, audit or restructure a repo, or answer where code and configuration belong mid-task. It owns apps/, apps/packages/, data/, logs/, one ignored root .env and committed .env.template grouped by kind, backend config.yaml, single-origin routing, Docker Compose configs and modifiers, services and presets, and ctl (dev, dev db, up, db migrate, manage, gate, worktree), which is copied from the template and never rewritten. Covers stack choices, frontend and backend folder shapes, tokens.css and typography rules, schema ownership, security, development sign-in (AUTH_ENABLED and the reserved default user), production, the four-rung gate floor, gate modes and the TESTING settings, git worktrees in .worktrees/, optional add-ons and the AGENTS.md contract. Use when adding a frontend, a backend or a ctl verb, when changing ctl or scripts/, or when changing these boundaries. Skip implementation inside one file, migration SQL, docs content (agent-ks), instruction wording (instruction-writing), Kubernetes and cloud deploy targets.
 ---
 
 # project-setup
 
-One repo shape, one entrypoint, one origin. This skill decides where things go and how they connect. It answers three kinds of request with the same rules: a bootstrap, an audit, and a single question mid-task. The rules live in the fifteen pages under `references/`. This file is the workflow and the map.
+One repo shape, one entrypoint, one origin. This skill decides where things go and how they connect. It answers three kinds of request with the same rules: a bootstrap, an audit, and a single question mid-task. The rules live in the eighteen pages under `references/`. This file is the workflow and the map.
 
 ## Before anything
 
 1. Read `AGENTS.md` at the repo root when it exists. It records the choices this repo has already made, and a recorded choice is never a finding.
 2. In an existing target repo, inspect the root and the directory hierarchy of paths in scope for `CLAUDE.md`. Handle any found file under `references/11_conventions.md` § The agent brief.
-3. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 1,300 lines.
+3. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 2,200 lines.
 4. Find the skill folder, the folder that holds this `SKILL.md`, because every runnable file comes from its `template/`, and its `scripts/template.sh` copies and checks them. Below, `<skill folder>` stands for its path. Claude Code prints the folder on the first line of the loaded skill, as `Base directory for this skill: <path>`. Codex lists each skill with the path of its `SKILL.md`. When that path starts with an alias such as `r3/`, replace the alias with the folder the skills catalogue maps it to. On another host, take the folder of the `SKILL.md` file you opened. `test -f <skill folder>/template/ctl` confirms the folder. If you cannot find it, stop and ask the user for the path.
 5. In an existing repo, run `bash <skill folder>/scripts/template.sh verify .` once before you add an app or a verb, or change `ctl` or `scripts/`. A hand-made `ctl` looks like the template's from outside, and each change to it spreads the drift this skill prevents. The first line of the output is the verdict.
    - `green`: `ctl` and its shared helpers, the files in `scripts/common/`, are the template's. Extend them as `references/08_ctl.md` § Extending the copied router says.
@@ -121,7 +121,7 @@ Then run these steps in order:
 5. Keep the lint config each app ships (`[tool.ruff]`, `.oxlintrc.json`, `clippy.toml`, `.golangci.yml`). `ctl check` fails an app without one. Change a threshold only with the user, and record it in `AGENTS.md`.
 6. Fill every section of `template/AGENTS.md`. The file is the example: nine sections, each with its table or its one-line placeholder. Replace every `<angle-bracket>` choice with the real one.
 7. Run `./ctl setup env`, then `./ctl check`. `ctl setup env` writes `.env`, generates the declared credentials and creates the storage folders. It installs nothing, so it runs while a `<version>` remains, and `ctl check` can then test the env contract and the compose files. Fix each red line except an unresolved version.
-8. Run `./ctl setup`, then `./ctl gate`. `ctl setup` installs every tool in `.mise.toml`, `jq` among them. Report each exit code as it is. A red rung is a finding to fix, not a note.
+8. Run `./ctl setup`, then `./ctl gate`, before you commit the copy. `ctl setup` installs every tool in `.mise.toml`, `jq` among them. A plain `ctl gate` checks what the uncommitted changes reach, so while the copy is uncommitted it checks every rung on every app. Report each exit code as it is. A red rung is a finding to fix, not a note.
 9. Run `bash <skill folder>/scripts/template.sh verify .`. Report its verdict. Give each difference it lists a reason: a row of the table below, an `[ADAPT]` point, a rename, or a new worker. A red verdict is a finding to fix, because it means a shared helper is not the template's.
 10. End with `ctl --help` and the manual path in the README. Name the optional rungs and the add-ons in one line, so the user knows they exist, and stop there.
 
@@ -147,10 +147,10 @@ Then run these steps in order:
 ## Auditing
 
 1. Read `AGENTS.md`. A recorded choice or a recorded deferral is not a finding. An optional rung or add-on the repo never installed is not a finding either; an installed one that drifted is.
-2. Run `./ctl check` from the repo root, on its own line and not through a pipe, because a pipe returns the last command's exit code and not the check's. Put its exit code and every red line in the report. It proves the mechanical rules and nothing else does. A report that says what the check "would" find is not an audit.
+2. Run `./ctl check` from the repo root, on its own line and not through a pipe, because a pipe returns the last command's exit code and not the check's. Put its exit code and every red line in the report. It proves the mechanical rules and nothing else does. A report that says what the check "would" find is not an audit. Then run `bash <skill folder>/scripts/template.sh verify .`, because `ctl check` compares the helpers with the repo's own manifest and only `verify` compares them with this skill's.
 3. Walk the layers in the order `11_conventions.md` § Audit order gives, lowest first. Report every layer. Order the table by layer, so the reader fixes the lowest first. Do not stop at the first failing layer, because a finding hidden behind a lower one sends the reader back for a second audit.
 4. Read `.env.template` when auditing. Do not read a filled `.env` or other local env file, because it may hold live secrets.
-5. Report a table: file, rule broken, fix. The first row is the `ctl check` result.
+5. Report a table: file, rule broken, fix. The first row is the `ctl check` result, with the `verify` verdict beside it.
 
 ## A single question mid-task
 

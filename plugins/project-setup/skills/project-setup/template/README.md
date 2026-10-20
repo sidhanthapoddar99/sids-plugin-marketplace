@@ -5,27 +5,33 @@ One paragraph: what this product is and which apps make it.
 ## Prerequisites
 - `mise install` — installs every toolchain pinned in `.mise.toml`
 - `ctl setup` — creates `.env` from `.env.template`, generates declared local credentials, creates configured data/log/backup directories, installs and activates tools
+- `ctl setup env` — only `.env`, its generated credentials and the storage directories under `BASE_DIR`; installs nothing
 
 ## Quick start with ctl
-- `ctl dev` — databases in docker, apps on the host; frontend dev servers proxy backend requests
+- `ctl dev` — databases in docker (reused when running, never restarted), apps on the host; frontend dev servers proxy backend requests
+- `ctl dev db` — the database alone, detached; `ctl dev db stop` stops it
+- `ctl dev stop` — stop the dev apps and keep the database (`--all`: everything, like `ctl stop`)
 - `ctl clean rust` — remove local Rust debug builds and managed Rust dev logs after stopping the Rust app (`--dry-run` lists targets)
 - `ctl stop` — stop managed host processes and project containers, keeping data (`--dry-run` previews targets)
 - `ctl up` — full stack in docker; `ctl up preset <name>` runs a saved line from `docker/presets.yaml`
-- `ctl db migrate` — apply schema migrations (they also run whenever the engines come up)
-- `ctl gate` — the ladder; green here is the only definition of green
+- `ctl db migrate` — apply schema migrations (`ctl dev` also runs them on every launch)
+- `ctl gate` — the ladder over what the uncommitted changes reach (`--delta <base>` once work is committed); green here is the only definition of green
+- `ctl worktree create <name>` — a worktree at `.worktrees/<name>` on a warm slot; `ctl worktree remove <name>` frees it once the branch is merged
 
 ## Commands
 | Verb | Does |
 |---|---|
 | `ctl dev [app…]` | engines in docker, the chosen apps on the host with reload |
+| `ctl dev db [stop]` · `ctl dev stop [--all]` | the data core alone · stop the apps and keep the data core |
 | `ctl clean rust [--dry-run]` | remove Rust `target/debug` and managed Rust dev/controller logs; keep release builds and shared caches |
 | `ctl stop [--dry-run]` | stop recorded dev/watch/build groups, then project containers; retain containers and volumes |
 | `ctl up [--config c] [+modifier…] [--services a,b]` | a stack shape in docker, or a subset; interactive in a terminal |
 | `ctl up preset [<name>]` · `ctl up set-preset` | run a saved `up` line · save one from the pickers |
 | `ctl db migrate [new "<msg>"]` | apply or create a migration |
 | `ctl manage ops\|settings` | the break-glass operator console |
-| `ctl test [app\|e2e]` · `ctl gate [static\|dynamic] [-q]` | one suite, or the ladder, or half of it |
-| `ctl setup` · `ctl check` · `ctl status` | create env files and deps · the repo contract · the doctor |
+| `ctl test [app…\|e2e]` · `ctl gate [static\|dynamic] [--changed\|--delta <base>\|--all] [--dry-run] [-q]` | suites, or the ladder over what changed, or half of it |
+| `ctl setup` · `ctl setup env` · `ctl check` · `ctl status` | create env files and deps · only `.env`, credentials and storage dirs · the repo contract · the doctor |
+| `ctl worktree create\|list\|remove\|trim` | named worktrees in `.worktrees/` on a pool of warm slots |
 
 `ctl --help` is the full list and is always current; this table is a summary.
 
@@ -34,7 +40,7 @@ Each app's `README.md` shows how to run it from its own folder, the env keys it 
 
 ## CTL requirements
 
-Host process supervision requires Linux or WSL, Bash, `/proc`, util-linux (`setsid`, `flock`) and GNU coreutils. Container startup also requires Docker Compose with dependency builds and `jq`. `ctl setup` activates declared mise tools before dependency commands; a selected app checks only its own runtime.
+Host process supervision requires Linux or WSL, Bash, `/proc`, util-linux (`setsid`, `flock`, `taskset`) and GNU coreutils. Container startup also requires Docker Compose with dependency builds and `jq`. `ctl gate` caps its memory with `systemd-run --user` when it is available, and `ctl worktree` needs git 2.38 or later. `ctl setup` activates declared mise tools before dependency commands; a selected app checks only its own runtime.
 
 Local credential generation is declared in `scripts/config/generated-credentials.conf`. Required supplied credentials are listed in `scripts/config/required-credentials.conf`. Provider credentials are never generated. Preserve the `.env.template` contract when adapting these lists.
 

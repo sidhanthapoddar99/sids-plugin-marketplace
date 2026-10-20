@@ -52,7 +52,7 @@ every launch, because a running core can still lack this checkout's newest migra
 host processes start. Stopping the apps (Ctrl-C, ctl dev stop) never stops the data core; ctl dev db
 stop, ctl dev stop --all and ctl stop do.
 Before startup, validate configuration and synchronize source dependencies with locked versions.
-Missing settings point to ctl setup. Help and dry-run do not install anything.
+Missing settings point to ctl setup env. Help and dry-run do not install anything.
 Run \`ctl clean rust\` after stopping the Rust app to remove its debug builds and managed logs."; }
 
 # parse: positionals = apps, flags anywhere

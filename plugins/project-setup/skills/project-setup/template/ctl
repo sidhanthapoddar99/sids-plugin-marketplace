@@ -10,7 +10,7 @@
 # one `row` in ctl_help below, one `run <group>/<name>` line in the case. New groups are fine.
 # Logic never lives in this file. Delete verbs that stop being used.
 #
-#   Development    dev · ps
+#   Development    dev · dev db · dev stop · ps · stop
 #   Containers     up [preset|set-preset] · down · restart · logs · exec · shell · build · clean · health
 #   Database       db migrate|shell|backup|restore
 #   Administration manage ops|settings (break-glass console, wraps the backend's manager.py)
@@ -25,8 +25,9 @@
 # (overlays, `+name`; only the ones compose accepts on the config are offered), a SERVICE SUBSET
 # (--services a,b; only those and their depends_on chain build and run), PRESETS docker/presets.yaml
 # (one saved `ctl up` line per name: `ctl up preset <name>`), and `include:` (base defines the engines and migration jobs directly). Bare `ctl up` in a terminal walks config → modifiers →
-# services → plan → confirm; no TTY = the default stack. The dev preset selects engines and schema jobs
-# from base with +expose_db. Frontend dev servers provide HTTP/WebSocket routing on the host.
+# services → plan → confirm; no TTY = the default stack. The dev preset selects the engines from base
+# with +expose_db; ctl dev runs the schema step through ctl db migrate on every launch. Frontend dev
+# servers provide HTTP/WebSocket routing on the host.
 # The schema step (`ctl db migrate`) runs inside the compose network, so no engine port is ever
 # published for it. Every docker verb checks the engine FIRST and names the fault (not installed ·
 # not running · compose plugin missing). Run `ctl <command> --help` for any command.

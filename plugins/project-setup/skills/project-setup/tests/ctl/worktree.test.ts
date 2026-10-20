@@ -44,8 +44,10 @@ test("a slot's first .env is the main tree's with ports + 100 × n and its own s
 });
 
 test('a BASE_DIR storage block is copied as it is and resolves inside the slot; an absolute one is refused', () => {
-  const block = mainEnv().replace('DATA_DIR=./data', 'BASE_DIR=.\nDATA_DIR=${BASE_DIR}/data').replace('LOGS_DIR=./logs', 'LOGS_DIR=${BASE_DIR}/logs');
-  f.put('.env', block.replace('BASE_DIR=.', 'BASE_DIR=/srv/demo'));
+  // The template ships the block: BASE_DIR=., with DATA_DIR, LOGS_DIR and BACKUP_DIR derived from it.
+  const block = mainEnv();
+  expect(block).toContain('\nBASE_DIR=.\n');
+  f.put('.env', block.replace('\nBASE_DIR=.\n', '\nBASE_DIR=/srv/demo\n'));
   expect(refused(['create', 'foo'])).toContain('BASE_DIR is an absolute path, so slot-1 could share the main tree');
   nothingCreated('foo');
   f.put('.env', block);
@@ -65,14 +67,15 @@ test("a main tree .env that would make a slot reach the main tree's services or 
   const cases: [string, string][] = [
     [mainEnv().replace('ENGINE_URL=http://${ENGINE_HOST}:${ENGINE_PORT}', 'ENGINE_URL=http://localhost:8080'),
       'ENGINE_URL names port 8080 as a number; write ${ENGINE_PORT} instead'],
-    [mainEnv().replace('DATA_DIR=./data', 'DATA_DIR=/srv/demo'), 'DATA_DIR is an absolute path'],
-    [mainEnv().replace('LOGS_DIR=./logs', 'LOGS_DIR=../shared-logs'), 'LOGS_DIR has a .. part'],
-    [mainEnv().replace('DATA_DIR=./data', 'DATA_DIR=${HOME}/data'), 'DATA_DIR is built from ${HOME}'],
+    [mainEnv().replace('DATA_DIR=${BASE_DIR}/data', 'DATA_DIR=/srv/demo'), 'DATA_DIR is an absolute path'],
+    [mainEnv().replace('LOGS_DIR=${BASE_DIR}/logs', 'LOGS_DIR=../shared-logs'), 'LOGS_DIR has a .. part'],
+    [mainEnv().replace('DATA_DIR=${BASE_DIR}/data', 'DATA_DIR=${HOME}/data'), 'DATA_DIR is built from ${HOME}'],
     [mainEnv().replace('API_PORT=8000\n', ''), 'it lacks API_PORT, which .env.template declares'],
     [mainEnv().replace('API_PORT=8000', 'API_PORT=eighty'), 'API_PORT is neither a port number nor a ${NAME} reference'],
     [mainEnv().replace('API_PORT=8000', 'API_PORT=65500'), 'API_PORT would be 65600 in slot-1, past the last port'],
   ];
   for (const [env, message] of cases) {
+    expect(env, `the case for "${message}" changes nothing in the template's .env`).not.toBe(mainEnv());
     f.put('.env', env);
     const err = refused(['create', 'foo']);
     expect(err).toContain(message);

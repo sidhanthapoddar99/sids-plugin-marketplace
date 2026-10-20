@@ -38,7 +38,7 @@ For a template copy, `verify` then lists each file of `ctl` and `scripts/` that 
 
 `scripts/common/template-core.sha256` lists each shared helper with the SHA-256 of its text. `ctl check` compares the helpers with it as its `template core` rule, so the `check` rung fails a helper edited after the copy, such as a `jq` call replaced by hand-written parsing. `scripts/common/_template-core.sh` holds the comparison, and `verify` runs the same code against the skill's own manifest.
 
-An `[ADAPT]` block is left out of the digest, so a project sets its knobs freely. A block starts at a line that begins with `# [ADAPT]`. It takes the comment lines under that line and the code lines after them, and ends at the next blank line or the next comment line after its code. An indented `# [ADAPT]` comment, such as the soft mode inside `require_env`, starts no block, so a project that uses it records an exception.
+An `[ADAPT]` block is left out of the digest, so a project sets its knobs freely. A block starts at a line that begins with `# [ADAPT]`. It takes the comment lines under that line and the code lines after them, and ends at the next blank line or the next comment line after its code. An indented `# [ADAPT]` comment starts no block, so a knob belongs at column 0, as `ENV_MISSING` in `_lib.sh` is. A change to any other line is recorded as an exception.
 
 To change a helper on purpose, record it in `AGENTS.md` under the existing heading, one line per helper, with the reason:
 
@@ -132,7 +132,7 @@ Constants that hold everywhere: root-relative paths with `--project-directory <r
 
 **The docker guard runs first, by name.** Every docker verb calls `require_docker` before its first compose call. It tells three faults apart: not installed, engine not running, compose plugin missing. Compose itself reports a dead engine as a config error, which is how an earlier `up.sh` printed "invalid modifier combination" for "Docker is not running". `ctl status` shows the same three states without dying.
 
-The `scripts/` groups are `common config dev container db admin test gate`. A gate rung never holds logic: it calls the same worker its dev verb calls (`gate/test.sh` → `test/test.sh`); lint and typecheck have no separate dev verb, the rung is the worker, so the gate and the loop cannot drift.
+The `scripts/` groups are `common config dev container db admin test gate worktree`. A gate rung never holds logic: it calls the same worker its dev verb calls (`gate/test.sh` → `test/test.sh`); lint and typecheck have no separate dev verb, the rung is the worker, so the gate and the loop cannot drift.
 
 ## Setup and tool availability
 
@@ -154,7 +154,7 @@ It checks template key coverage, duplicate or malformed assignments, required cr
 nonempty defaults, placeholders, ports, URL shape and route prefixes. Blank template values
 remain optional unless declared credentials require them. Add domain-specific checks here
 when adapting the template; these format checks do not prove remote connectivity.
-Missing keys direct the user to `ctl setup`; validation never rewrites supplied values.
+Missing keys direct the user to `ctl setup env`; validation never rewrites supplied values.
 
 Then call the shared discovery/install helper with `--locked`, so package managers
 synchronize installed dependencies directly without a custom freshness database.
@@ -244,8 +244,10 @@ Runs directly, and as the `check` rung of the ladder. It runs every rule, prints
 
 - versions: no `<version>` placeholder in `.mise.toml` or an app manifest (`pyproject.toml`, `package.json`, `Cargo.toml`, `rust-toolchain.toml`, `go.mod`). A placeholder breaks every toolchain install, so `ctl setup` refuses to install while one remains.
 - env: `.env.template` exists, has unique keys and blank values for declared credential names and names containing a `_PASSWORD`, `_KEY` or `_SECRET` segment; every `${VAR}` in `apps/*/config.yaml` appears in that template; no secret literal in those config files; no tracked `config.local.yaml`; no tracked root `.env` or `.env.*` except `.env.template`. Grouping, browser exposure and per-service Docker keys require review.
+- storage: `.env.template` derives a declared `DATA_DIR` and `LOGS_DIR` from `${BASE_DIR}`, and `BACKUP_DIR` from `${LOGS_DIR}` or `${BASE_DIR}`, each below the line it reads, because Compose resolves a reference inside the env file only to an earlier line. In `.env`, no storage path written relative resolves outside `BASE_DIR`, because a relative path stays at the repo root when `BASE_DIR` moves; an absolute path counts as deliberate (`02_env.md` § Host storage paths).
 - layout: no `package.json`, `bun.lock` or `pnpm-workspace.yaml` at the root or directly in `apps/`; no folder under `apps/` that holds a manifest next to child folders with manifests, because that is a workspace. The root half is skipped when `AGENTS.md` records `root-manifest` under `## Exceptions to the standard layout` (`01_layout.md` § Exceptions).
 - brief: `AGENTS.md` exists at the repo root and `CLAUDE.md` does not. Migrate unique instructions before removing an existing file (`11_conventions.md` § The agent brief).
+- template core: every shared helper in `scripts/common/` matches `scripts/common/template-core.sha256` outside its `[ADAPT]` blocks, unless `AGENTS.md` records `template-core <path>` under `## Exceptions to the standard layout` (§ Copy and verify).
 - ladder: the `Gate ladder` row in `AGENTS.md` lists the same rungs, in the same order, as `RUNGS` in `scripts/gate/all.sh`, because the audit reads the row and the gate runs the list.
 - lint config: every app ships its linter config beside its manifest (`[tool.ruff]`, `.oxlintrc.json`, `clippy.toml`, `.golangci.yml`), because a linter without its config reports only its defaults.
 - compose: no `ports:` in any config (`compose.<name>.yaml`); no `../` in any compose file; every `${NAME}` inside the root .env file names a set key, with no cycle, because these are the values `ctl` hands compose and the apps (`02_env.md` rule 6); `docker compose config` validates every config alone, and every modifier fits at least one config, with the fit list printed because that is what `ctl up` offers, with the env loaded and resolved the way `ctl up` loads it. A modifier whose `MODIFIER_REQUIRES` keys are blank (`+public` before the public origin is uncommented) is skipped and named, the way `ctl up` refuses it. The compose validation is skipped, and says so, when docker is down or the env files are absent.

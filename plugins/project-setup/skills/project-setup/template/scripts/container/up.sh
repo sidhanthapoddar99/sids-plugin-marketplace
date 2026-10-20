@@ -232,25 +232,25 @@ render_plan() {
     hr; return 1
   }
   local svc_filter='.services|keys[]'
-  if command -v jq >/dev/null 2>&1 && json=$("${compose_base[@]}" config --format json 2>/dev/null); then
-    printf '%s  %-11s %-18s %-10s %s%s\n' "$C_DIM" "service" "ports host:ctr" "network" "volumes src:dst" "$C_RESET"
-    local svc ports nets vols mark
-    while IFS= read -r svc; do [[ -z $svc ]] && continue
-      # host_ip is printed when set: 127.0.0.1:5432:5432 (loopback) reads differently from 5432:5432 (every interface)
-      ports=$(jq -r --arg s "$svc" '.services[$s].ports // [] | map(select(.published)|(if .host_ip then .host_ip+":" else "" end)+(.published|tostring)+":"+(.target|tostring)) | join(",")' <<<"$json" 2>/dev/null); [[ -n $ports ]] || ports="-"
-      nets=$(jq -r --arg s "$svc" '.services[$s].networks // {} | keys | join(",")' <<<"$json" 2>/dev/null); [[ -n $nets ]] || nets="-"
-      vols=$(jq -r --arg s "$svc" '.services[$s].volumes // [] | map((.source // .type)+":"+.target) | join(",")' <<<"$json" 2>/dev/null); [[ -n $vols ]] || vols="-"
-      vols="${vols//$CTL_ROOT\//}"
-      # a service outside the subset is listed dim, so the plan still shows the whole file set
-      if service_selected "$svc"; then mark="${C_GRN}✓${C_RESET}"; else mark="${C_DIM}·${C_RESET}"; fi
-      printf '  %s %-11s %-18s %-10s %s\n' "$mark" "$svc" "$ports" "$nets" "$vols"
-    done < <(jq -r "$svc_filter" <<<"$json" 2>/dev/null | sort)
-  else
-    warn "jq not installed — service list only"
-    while IFS= read -r svc; do [[ -z $svc ]] && continue
-      if service_selected "$svc"; then printf '  %s✓%s %s\n' "$C_GRN" "$C_RESET" "$svc"; else printf '  %s· %s%s\n' "$C_DIM" "$svc" "$C_RESET"; fi
-    done < <(assembled_services)
-  fi
+  # The plan reads compose's JSON with jq, which every stack start requires too; a missing jq is
+  # installed, never coded around.
+  require_tools jq || { hr; return 1; }
+  json=$("${compose_base[@]}" config --format json 2>/dev/null) || {
+    err "docker compose could not print this combination as JSON"
+    hr; return 1
+  }
+  printf '%s  %-11s %-18s %-10s %s%s\n' "$C_DIM" "service" "ports host:ctr" "network" "volumes src:dst" "$C_RESET"
+  local svc ports nets vols mark
+  while IFS= read -r svc; do [[ -z $svc ]] && continue
+    # host_ip is printed when set: 127.0.0.1:5432:5432 (loopback) reads differently from 5432:5432 (every interface)
+    ports=$(jq -r --arg s "$svc" '.services[$s].ports // [] | map(select(.published)|(if .host_ip then .host_ip+":" else "" end)+(.published|tostring)+":"+(.target|tostring)) | join(",")' <<<"$json" 2>/dev/null); [[ -n $ports ]] || ports="-"
+    nets=$(jq -r --arg s "$svc" '.services[$s].networks // {} | keys | join(",")' <<<"$json" 2>/dev/null); [[ -n $nets ]] || nets="-"
+    vols=$(jq -r --arg s "$svc" '.services[$s].volumes // [] | map((.source // .type)+":"+.target) | join(",")' <<<"$json" 2>/dev/null); [[ -n $vols ]] || vols="-"
+    vols="${vols//$CTL_ROOT\//}"
+    # a service outside the subset is listed dim, so the plan still shows the whole file set
+    if service_selected "$svc"; then mark="${C_GRN}✓${C_RESET}"; else mark="${C_DIM}·${C_RESET}"; fi
+    printf '  %s %-11s %-18s %-10s %s\n' "$mark" "$svc" "$ports" "$nets" "$vols"
+  done < <(jq -r "$svc_filter" <<<"$json" 2>/dev/null | sort)
   hr
   printf '%sreproduce%s  (no prompts)\n' "$C_B" "$C_RESET"
   printf '  %sctl up %s --nqa%s\n'      "$C_DIM" "$repro" "$C_RESET"

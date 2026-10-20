@@ -5,7 +5,7 @@
 # container health, host-process helpers, and prompts. Keeping it here is what lets
 # each worker stay short and look identical.
 #
-# Workers live at `scripts/<group>/<name>.sh`, group ∈ common | config | dev | container | db | admin | test | gate.
+# Workers live at `scripts/<group>/<name>.sh`, group ∈ common | config | dev | container | db | admin | test | gate | worktree.
 # Add a worker with the preamble below, then wire one `run <group>/<name>` line into `ctl`.
 #
 # COMPOSE MODEL (a config + stackable modifiers + a service subset; no profiles, no override file):
@@ -44,8 +44,12 @@ DEFAULT_CONFIG=base                       # the config `ctl up` runs when --conf
 BASE="$DOCKER_DIR/compose.$DEFAULT_CONFIG.yaml"   # the passthroughs (down · logs · exec · health) read this file
 PRESETS_FILE="$DOCKER_DIR/presets.yaml"   # named `ctl up` argument lines; `ctl up set-preset` writes it
 DEFAULT_MODIFIERS=(expose_web)            # what `ctl up` applies on DEFAULT_CONFIG when no +modifier is given; other configs default to none
-DEV_PRESET=dev                            # the reserved preset `ctl dev` starts for its data core; missing = ctl dev refuses
+DEV_PRESET=dev                            # the reserved preset ctl dev and ctl dev db start for the data core; missing = ctl dev refuses
 ENV_FILES=(.env)   # the root environment contract; template: .env.template
+
+# [ADAPT] a missing env file. strict: require_env dies naming it, because a data core needs real
+# secrets. soft: require_env skips it, for a repo whose env holds only defaults and no secrets.
+ENV_MISSING=strict
 
 # [ADAPT] the data core. Empty = no data core — every consumer degrades gracefully.
 # Overridable from the shell: `DATA_SVCS= ctl dev` (empty is empty, not the default). ctl sources this
@@ -53,8 +57,8 @@ ENV_FILES=(.env)   # the root environment contract; template: .env.template
 # in *_STR and re-read by the worker. The default is the *_STR line, not the read line.
 export DATA_SVCS_STR="${DATA_SVCS_STR-${DATA_SVCS-postgres redis neo4j}}"
 read -r -a DATA_SVCS <<< "$DATA_SVCS_STR" || true
-# [ADAPT] the schema one-shots in base. `ctl dev` waits on them after the engines, because
-# nothing in that config depends on them; under `ctl up` the apps do. Empty = no schema step.
+# [ADAPT] the schema one-shots in base. Under `ctl up` the apps wait on them; `ctl dev` runs them
+# through `ctl db migrate up` on every launch. Empty = no schema step, and ctl dev skips it.
 export SCHEMA_SVCS_STR="${SCHEMA_SVCS_STR-${SCHEMA_SVCS-migrate neo4j-init}}"
 read -r -a SCHEMA_SVCS <<< "$SCHEMA_SVCS_STR" || true
 
@@ -235,11 +239,13 @@ expand_env_refs() {
   done
 }
 require_env() {
-  # STRICT (data core ⇒ real secrets): die naming the first missing env file.
-  # [ADAPT] SOFT (defaulted env, no secrets): replace the `die` line with `continue`.
+  # ENV_MISSING (an [ADAPT] knob above) decides a missing env file: strict dies naming it, soft skips it.
   local f
   for f in "${ENV_FILES[@]}"; do
-    [[ -f $f ]] || die "$f missing — run \`ctl setup env\` (it copies $f.template)."
+    if [[ ! -f $f ]]; then
+      [[ $ENV_MISSING == soft ]] && continue
+      die "$f missing — run \`ctl setup env\` (it copies $f.template)."
+    fi
     load_env_file "$f"
   done
   expand_env_refs || exit 1

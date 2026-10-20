@@ -25,13 +25,16 @@ wt_setting() {
 # worktree_guard <command> [args…] — with WORKTREE_ONLY=1, the verbs that write build outputs into a
 # checkout refuse in the main tree, so the main tree stays a checkout for git, ctl up, ctl setup and
 # ctl worktree, and its size stays flat. `build start` only serves a frozen build and `build clean`
-# frees space, so both pass, and help anywhere passes. ctl setup is never guarded, because a new
-# checkout must always be able to set itself up. Only the main tree is guarded, so its own .env is
-# the one read. Outside a git checkout there is no worktree to work in, so nothing is guarded.
+# frees space, so both pass, and help anywhere passes. `dev db` runs the data core in Docker, as
+# ctl up does, and `dev stop` only stops processes, so both pass: stopping must always work. ctl setup
+# is never guarded, because a new checkout must always be able to set itself up. Only the main tree
+# is guarded, so its own .env is the one read. Outside a git checkout there is no worktree to work
+# in, so nothing is guarded.
 worktree_guard() {
   local cmd=$1 arg only; shift
   for arg; do ! is_help "$arg" || return 0; done
   [[ $cmd != build || ( ${1:-} != start && ${1:-} != clean ) ]] || return 0
+  [[ $cmd != dev || ( ${1:-} != db && ${1:-} != stop ) ]] || return 0
   only=$(wt_setting WORKTREE_ONLY "" "$CTL_ROOT/.env")
   case $only in ''|0) return 0 ;; 1) ;; *) die "WORKTREE_ONLY must be empty, 0 or 1 (got: $only)" ;; esac
   wt_in_main_tree "$CTL_ROOT" || return 0
