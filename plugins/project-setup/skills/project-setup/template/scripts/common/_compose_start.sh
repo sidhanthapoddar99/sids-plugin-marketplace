@@ -65,9 +65,14 @@ compose_start_interrupt() {
   exit "$status"
 }
 
+# compose_start [--no-build] <attach 0|1> <timeout-seconds> [service…] — build the selected services
+# and their dependencies, activate them without building, then wait for the readiness contract.
+# --no-build skips the build and starts the images that exist.
 compose_start() (
+  local start_build=1
+  if [[ ${1:-} == --no-build ]]; then start_build=0; shift; fi
   local start_attach="$1" start_timeout="$2"; shift 2
-  local start_child='' start_activated=0 start_deadline model selected start_contract build_help status service
+  local start_child='' start_activated=0 start_deadline model selected start_contract build_help='' status service
   local required oneshot health replicas start_long_running=0
   local -a start_services=() start_pending=()
   local -A start_warned=()
@@ -113,16 +118,20 @@ compose_start() (
       fi
     fi
   done <<< "$start_contract"
-  build_help=$("${compose_base[@]}" build --help) || return $?
-  [[ $build_help == *--with-dependencies* ]] || {
-    err "docker compose build --with-dependencies is required; update Compose"; return 1;
-  }
-  step "${compose_base[*]} build --with-dependencies $*"
-  "${compose_base[@]}" build --with-dependencies "$@" &
-  start_child=$!
-  status=0; wait "$start_child" || status=$?
-  start_child=''
-  (( status == 0 )) || return "$status"
+  if (( start_build )); then
+    build_help=$("${compose_base[@]}" build --help) || return $?
+    [[ $build_help == *--with-dependencies* ]] || {
+      err "docker compose build --with-dependencies is required; update Compose"; return 1;
+    }
+    step "${compose_base[*]} build --with-dependencies $*"
+    "${compose_base[@]}" build --with-dependencies "$@" &
+    start_child=$!
+    status=0; wait "$start_child" || status=$?
+    start_child=''
+    (( status == 0 )) || return "$status"
+  else
+    step "skip image build (--no-build): start the images that exist"
+  fi
 
   start_deadline=$((SECONDS + start_timeout))
   step "${compose_base[*]} up -d --no-build $*"

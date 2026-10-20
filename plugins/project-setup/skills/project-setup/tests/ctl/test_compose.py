@@ -96,14 +96,18 @@ def test_dev_preset_selects_only_data_core_with_loopback_ports(compose_root: Pat
     assert arguments[arguments.index("--config") + 1] == "base"
     assert "+expose_db" in arguments
     selected = set(arguments[arguments.index("--services") + 1].split(","))
-    assert selected == {"postgres", "redis", "neo4j", "migrate", "neo4j-init"}
+    # The data core is the engines alone; ctl dev runs the schema step through ctl db migrate.
+    assert selected == {"postgres", "redis", "neo4j"}
     model = render(compose_root, "base", "m.expose_db")
     dependencies = set(selected)
     for service in selected:
         dependencies.update(model["services"][service].get("depends_on", {}))
     assert dependencies == selected
-    assert not selected.intersection({"api", "engine", "web", "dashboard"})
-    for service in ("postgres", "redis", "neo4j"):
+    assert not selected.intersection({"api", "engine", "web", "dashboard", "migrate", "neo4j-init"})
+    for service in selected:
+        # ctl dev db starts the core with --no-build, so every engine is a pulled image
+        assert "build" not in model["services"][service]
+        assert model["services"][service]["ports"]
         assert all(port["host_ip"] == "127.0.0.1" for port in model["services"][service]["ports"])
 
 

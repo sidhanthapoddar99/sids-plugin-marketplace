@@ -57,7 +57,8 @@ if args[0] == "compose":
 if args[0] == "ps":
     assert "label=com.docker.compose.project=chosen-project" in args
     assert "label=com.docker.compose.project.working_dir=" + str(root) in args
-    print("a1 api\\na2 dev-proxy\\nd1 postgres")
+    assert args[-1] == '{{.ID}} {{.Label "com.docker.compose.service"}} {{.State}}'
+    print("a1 api running\\na2 dev-proxy exited\\nd1 postgres running")
     sys.exit(1 if mode == "list" else 0)
 if args[0] == "stop":
     assert args[1:3] == ["--time", "10"]

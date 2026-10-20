@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # [ADAPT] the host apps — name → port → command. The ONE source for --help, --dry-run, and the run.
 # Emitted as strings so help/dry-run print EXACTLY what runs (ports resolve from .env once loaded).
+# `db` and `stop` are `ctl dev` subcommands, so no app takes either name.
 app_names() { printf '%s\n' api engine landing app docs dashboard single; }   # single = example-single-web-app-vite, the one-frontend shape
 # [ADAPT] Rust host apps whose managed dev logs `ctl clean rust` may remove.
 rust_app_names() { printf '%s\n' engine; }

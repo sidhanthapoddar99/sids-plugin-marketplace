@@ -1,22 +1,31 @@
 #!/usr/bin/env bash
 # dev/dev.sh — `ctl dev [app…]`. The host dev loop: the data core in docker, the apps on the host
-# with reload. The dev preset selects engines and migration jobs from base, with loopback ports.
-# Frontend dev servers own their HTTP/WebSocket proxies; production routing lives in Nginx.
+# with reload. The data core is the reserved dev preset: engines from base, bound to loopback. It
+# runs detached and outlives the apps, so this worker reuses a running core and never restarts it.
+# Migrations run on every launch. Frontend dev servers own their HTTP/WebSocket proxies;
+# production routing lives in Nginx.
 #
 #   ctl dev                 in a terminal: pick the apps (multi-select, all preselected), then run them
-#                           foreground with prefixed output — Ctrl-C stops all. No TTY or --nqa: every app.
+#                           foreground with prefixed output — Ctrl-C stops the apps, never the core.
+#                           No TTY or --nqa: every app.
 #   ctl dev api app         only these apps, no prompt
-#   ctl dev --detach        background them: logs → logs/dev/dev-<app>.log, pids → logs/run/
-#                           attach with `ctl ps` → a · stop with `ctl ps` → k (or ctl ps kill)
-#   ctl dev --dry-run       print the data-core bring-up + the host commands, run nothing
+#   ctl dev --detach        background them: logs → LOGS_DIR/dev/dev-<app>.log, records → LOGS_DIR/run/
+#   ctl dev --all           start the data core without asking, if it is down
+#   ctl dev --dry-run       print the data-core step + the host commands, run nothing
+#   ctl dev db [stop]       the data core alone (dev/db.sh)
+#   ctl dev stop [--all]    stop the apps; ask about the data core (dev/dev-stop.sh)
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 source "$CTL_ROOT/scripts/dev/_apps.sh"
 source "$CTL_ROOT/scripts/dev/_controllers.sh"
+source "$CTL_ROOT/scripts/dev/_stop.sh"
+source "$CTL_ROOT/scripts/dev/_data-core.sh"
 
 usage() { print_help "dev" "Data core in docker, apps on the host with reload." \
-  'dev [app…] [-d|--detach] [--no-core] [--nqa] [--dry-run] [-h]' \
+  'dev [app…] [-d|--detach] [--all] [--no-core] [--nqa] [--dry-run] [-h]
+  ctl dev db [--detach] | ctl dev db stop    the data core alone (ctl dev db -h)
+  ctl dev stop [--all] [--nqa]               stop the apps, optionally the data core (ctl dev stop -h)' \
 "Arguments
   app…            which apps to run: $(app_names | join_sp)
                   (none given: interactive pick in a terminal, all preselected; else every app)
@@ -25,26 +34,34 @@ Direct  (the host command each app runs — what --dry-run prints; copy to run w
 $(for a in $(app_names); do printf '  %-10s %s%s%s\n' "$a" "$C_GRN" "$(app_cmd "$a")" "$C_RESET"; done)
 
 Options
-  -d, --detach    run in the BACKGROUND: logs → logs/dev/dev-<app>.log, pidfiles → logs/run/.
-                  Attach with 'ctl ps' → a; stop with 'ctl ps' → k (or ctl ps kill <port>).
+  -d, --detach    run in the BACKGROUND: logs → LOGS_DIR/dev/dev-<app>.log, records → LOGS_DIR/run/.
+                  Attach with 'ctl ps' → a; stop with ctl dev stop.
+  --all           start the data core without asking when it is down
   --no-core       don't touch the data core; assume it is reachable
-  --nqa           no questions — skip the app picker; no apps named = every app
+  --nqa           no questions — skip the app picker and start a stopped data core;
+                  no apps named = every app
   --dry-run, -n   print what would run, run nothing
   -h, --help      show this help
 
-With a data core (DATA_SVCS set) it first runs \`ctl up preset $DEV_PRESET --nqa -y\` (the service subset in
-$PRESETS_FILE: engines bound to loopback and their schema one-shots, without application containers), waits for health and
-for the schema step, then starts the host processes.
+With a data core (DATA_SVCS set) it checks that the engines of the reserved preset
+$DEV_PRESET in $PRESETS_FILE are running and healthy. A running core is reused as it is and never
+restarted. When the core is down it asks \"The database is not running. Start it with
+'ctl dev db --detach'\"; Enter means yes. --all, --nqa and no terminal start it without asking.
+The start is detached and builds no engine image. Migrations then run (ctl db migrate up) on
+every launch, because a running core can still lack this checkout's newest migration. Then the
+host processes start. Stopping the apps (Ctrl-C, ctl dev stop) never stops the data core; ctl dev db
+stop, ctl dev stop --all and ctl stop do.
 Before startup, validate configuration and synchronize source dependencies with locked versions.
 Missing settings point to ctl setup. Help and dry-run do not install anything.
 Run \`ctl clean rust\` after stopping the Rust app to remove its debug builds and managed logs."; }
 
 # parse: positionals = apps, flags anywhere
-apps=() dry=0 detach=0 no_core=0 nqa=0
+apps=() dry=0 detach=0 no_core=0 nqa=0 all=0
 while (( $# )); do case "$1" in
   -h|--help)     HELP_MODE=1 usage; exit 0 ;;
   --dry-run|-n)  dry=1; shift ;;
   -d|--detach)   detach=1; shift ;;
+  --all)         all=1; shift ;;
   --proxy)       die "--proxy is not supported; use the frontend dev server proxy" ;;
   --no-core)     no_core=1; shift ;;
   --nqa|--no-questions-asked) nqa=1; shift ;;
@@ -68,7 +85,7 @@ resolve_storage_dirs
 if (( dry )); then
   step "(dry-run — nothing started)"
   say "preflight   validate configuration → synchronize source dependencies"
-  (( ${#DATA_SVCS[@]} && ! no_core )) && say "data core   ctl up preset $DEV_PRESET --nqa -y   → ctl up $(preset_args "$DEV_PRESET" || echo "(preset '$DEV_PRESET' missing from $PRESETS_FILE)")"
+  if (( ${#DATA_SVCS[@]} && ! no_core )); then data_core_plan; fi
 
   while IFS= read -r controller; do
     [[ -n $controller ]] || continue
@@ -90,13 +107,11 @@ for a in "${apps[@]}"; do
 done
 process_init
 
-# data core — the same worker `ctl up` runs, with the dev line and no prompts. Skipped cleanly when
-# DATA_SVCS is empty (no-data-core projects) or --no-core.
+# data core — reused when it is already up; otherwise `ctl dev db --detach`, after asking. Skipped
+# cleanly when DATA_SVCS is empty (no-data-core projects) or --no-core.
 if (( ${#DATA_SVCS[@]} && ! no_core )); then
-  require_docker
-  preset_args "$DEV_PRESET" >/dev/null || die "preset '$DEV_PRESET' missing from $PRESETS_FILE — it is what ctl dev starts. Add:  $DEV_PRESET: \"--config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init\""
-  step "ensuring data core (ctl up preset $DEV_PRESET)…"
-  bash "$CTL_ROOT/scripts/container/up.sh" preset "$DEV_PRESET" --nqa -y
+  ask=0; if (( ! all )) && can_ask "$nqa"; then ask=1; fi
+  ensure_data_core "$ask"
 fi
 
 controllers=$(controller_names "${apps[@]}") || die "cannot resolve development controllers"
@@ -124,10 +139,10 @@ done
 if (( detach )); then
   process_check_all
   process_release
-  say "attach: ctl ps → a   ·   stop: ctl ps kill <port> -y"
+  say "attach: ctl ps → a   ·   stop the apps: ctl dev stop (the data core keeps running)"
   exit 0
 fi
 
 (( ${#PROCESS_RECORDS[@]} )) || exit 0
-step "host processes ready — Ctrl-C stops this launch"
+step "host processes ready — Ctrl-C stops this launch; the data core keeps running"
 process_monitor

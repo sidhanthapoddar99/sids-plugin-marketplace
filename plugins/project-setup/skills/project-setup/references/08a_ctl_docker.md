@@ -59,7 +59,7 @@ The plan still lists every service in the file set and marks the subset, so the 
 `docker/presets.yaml` holds one line per preset:
 
 ```yaml
-dev: "--config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init"
+dev: "--config base +expose_db --services postgres,redis,neo4j"
 local: "--config base +expose_web"
 public: "--config base +public"
 ```
@@ -68,14 +68,14 @@ The value is exactly what follows `ctl up` on the command line. It is the reprod
 
 | Verb | Does |
 |---|---|
-| `ctl up preset <name> [-y]` | run the stored line; plan, confirm, start. No `--config`, `+modifier` or `--services` beside it: a preset is the whole shape. |
+| `ctl up preset <name> [-y] [--no-build]` | run the stored line; plan, confirm, start. No `--config`, `+modifier` or `--services` beside it: a preset is the whole shape. `--no-build` starts the images that exist and skips the build step. |
 | `ctl up preset` | pick one in a terminal, then the same |
 | `ctl up preset --list` | the stored presets and their lines. Needs no docker. |
-| `ctl up set-preset [<name>]` | walk the pickers, then Save, Save and run, Back or Cancel. An existing preset's values are preselected, so editing one is re-walking it. Flags given skip their prompt, so `set-preset x --config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init -y` needs no terminal. Docker must be up, because the plan is the real merge. |
+| `ctl up set-preset [<name>]` | walk the pickers, then Save, Save and run, Back or Cancel. An existing preset's values are preselected, so editing one is re-walking it. Flags given skip their prompt, so `set-preset x --config base +expose_db --services postgres,redis,neo4j -y` needs no terminal. Docker must be up, because the plan is the real merge. |
 
-A preset stores the stack shape only: `--config`, `+modifier`, `--services`. Give run flags (`-y`, `-a`, `--nqa`) on the command line. `ctl up preset` refuses a preset that stores one and names the flag. A flag in the file would act on every reader. A line without `--config` means `base`. An empty line is an error. A name is letters, digits, `-` and `_`. A duplicated name: the first line wins on read, and `set-preset` collapses it to one line.
+A preset stores the stack shape only: `--config`, `+modifier`, `--services`. Give run flags (`-y`, `-a`, `--nqa`, `--no-build`) on the command line. `ctl up preset` refuses a preset that stores one and names the flag. A flag in the file would act on every reader. A line without `--config` means `base`. An empty line is an error. A name is letters, digits, `-` and `_`. A duplicated name: the first line wins on read, and `set-preset` collapses it to one line.
 
-The file is committed. It holds names, never values. One name is reserved: `dev` is what `ctl dev` starts for its data core, so editing that line changes what the dev loop brings up. When it is missing, `ctl dev` stops and says which line to add. It never falls back to a hidden default.
+The file is committed. It holds names, never values. One name is reserved: `dev` is the data core that `ctl dev` and `ctl dev db` start, so editing that line changes what the dev loop brings up. It lists the `DATA_SVCS` engines and no schema one-shot, because `ctl dev` applies migrations through `ctl db migrate` on every launch (`08_ctl.md` § The data core). When the line is missing, `ctl dev` stops and says which line to add. It never falls back to a hidden default.
 
 ### 5. Include — optional composition
 
@@ -90,7 +90,7 @@ config → modifiers → subset → validated plan → confirm → build depende
 base     expose_web   api,web  compose config   Run/Back   no up on failure   --no-build   bounded
 ```
 
-The plan is the real `docker compose config` merge. It validates the combination before anything starts, prints one row per service with ports, network and volumes, and prints the exact `--nqa` line that reproduces the run. The startup helper first builds with transitive dependencies, then activates without building and waits for the declared readiness contract. `SCHEMA_SVCS` identifies standalone schema one-shots; `service_completed_successfully` also identifies completion-gated dependencies. A zero exit from an ordinary long-running service is a failure. See `09_production.md` for the timeout and recovery boundaries. An invalid combination fails there, with compose's own message, and nothing has started.
+The plan is the real `docker compose config` merge. It validates the combination before anything starts, prints one row per service with ports, network and volumes, and prints the exact `--nqa` line that reproduces the run. The startup helper first builds with transitive dependencies, then activates without building and waits for the declared readiness contract. `ctl up --no-build` skips the build step and starts the images that exist; `ctl dev db` starts the data core this way, so a core start never waits for an image build. `SCHEMA_SVCS` identifies standalone schema one-shots; `service_completed_successfully` also identifies completion-gated dependencies. A zero exit from an ordinary long-running service is a failure. See `09_production.md` for the timeout and recovery boundaries. An invalid combination fails there, with compose's own message, and nothing has started.
 
 Bare `ctl up` in a terminal walks config, modifiers, services, plan, confirm. Anything given on the command line skips its prompt. No terminal and nothing given is the default: `base`, `+expose_web`, every service, and the run refuses without `-y`. `--nqa -y` is the scripted form.
 
@@ -107,14 +107,16 @@ Both run inside the compose network, so no engine port is published for them. Bo
 
 | Situation | What runs | Ports |
 |---|---|---|
-| `ctl dev` | `ctl up preset dev --nqa -y` (the reserved preset: `--config base +expose_db --services postgres,redis,neo4j,migrate,neo4j-init`), which checks engine readiness and one-shot completion within its startup budget, then the apps on the host | engines on loopback, so host processes reach them |
+| `ctl dev` | a running core as it is; a stopped one through `ctl up preset dev --nqa -y --no-build` (the reserved preset: `--config base +expose_db --services postgres,redis,neo4j`), which waits for engine readiness within its startup budget. Then `ctl db migrate up`, then the apps on the host | engines on loopback, so host processes reach them |
 | `ctl up` | `base`: engines, one-shots, apps | none on the engines; the edge through a modifier |
 | `ctl up --services api` | `postgres`, `redis`, `migrate`, `api` | as above |
 | `ctl db migrate` | build the migration image, then `docker compose run --rm --no-deps migrate migrate` against the base config | none; the engines must already be up |
 | `ctl db migrate new "<msg>"` | the shell worker creates one timestamped SQL migration in the checkout; no container or database needed | none |
 | `ctl manage` | inside the running `api` container under `ctl up`; on the host under `ctl dev` | none published for the container path |
 
-`--no-deps` on `ctl db migrate` matters. `ctl dev` creates the engine containers from `base` plus `+expose_db`, selecting only the dev preset's services. `ctl up` creates them from `base` with no ports. Compose keys a container by service name and recreates it when its spec differs. A switch between `ctl dev` and `ctl up` recreates the engines once. That is acceptable. A `run` that starts its dependencies would recreate them under a live stack. That is not. `ctl db migrate` therefore requires the engine up and never starts it.
+`--no-deps` on `ctl db migrate` matters. `ctl dev` creates the engine containers from `base` plus `+expose_db`, selecting only the dev preset's services. `ctl up` creates them from `base` with no ports. Compose keys a container by service name and recreates it when its spec differs. A `run` that starts its dependencies would recreate the engines under a live stack, and `ctl dev` runs the migration under the running core on every launch. `ctl db migrate` therefore requires the engine up and never starts it.
+
+A switch from `ctl up` to `ctl dev` meets engines without loopback ports. `ctl dev` never restarts a running core, so it refuses and points at `ctl stop`. The next `ctl dev` then recreates the engines once, with their ports.
 
 Without a data core: `DATA_SVCS=()` and `SCHEMA_SVCS=()` in `_lib.sh`; remove the engine and migration services and their `depends_on` entries from `base`; remove the `dev` preset and `scripts/db/`. `ctl dev` skips the data core when `DATA_SVCS` is empty. `ctl check` then names any `depends_on` left behind, because `base` no longer validates.
 

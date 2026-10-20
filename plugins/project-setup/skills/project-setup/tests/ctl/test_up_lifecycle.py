@@ -93,14 +93,14 @@ def fixture_env(root: Path, services: dict, *, declared_checks: bool = True, **o
     }
 
 
-def command(*services: str, attach: int = 0, timeout: int = 3, schema: str = "") -> list[str]:
+def command(*services: str, attach: int = 0, timeout: int = 3, schema: str = "", build: bool = True) -> list[str]:
     return [
         "bash", "-c",
         'set -euo pipefail; source "$1/_lib.sh"; source "$1/_compose_start.sh"; '
         'read -r -a SCHEMA_SVCS <<< "$2" || true; '
         'mapfile -t compose_base < <(compose_argv -f docker/compose.fixture.yaml); '
         'shift 2; compose_start "$@"',
-        "bash", str(COMMON), schema, str(attach), str(timeout), *services,
+        "bash", str(COMMON), schema, *([] if build else ["--no-build"]), str(attach), str(timeout), *services,
     ]
 
 
@@ -341,4 +341,33 @@ def test_up_rejects_blank_storage_before_any_docker_call(tmp_path: Path) -> None
                             env=env, text=True, capture_output=True, timeout=5)
     assert result.returncode != 0
     assert "DATA_DIR is blank" in result.stderr
+    assert not (tmp_path / "calls.jsonl").exists()
+
+
+def test_no_build_start_makes_no_build_call(tmp_path: Path) -> None:
+    env = fixture_env(tmp_path, {"api": {"build": "."}, "db": {}}, build_exit=17, build_supported=False)
+    result = run(env, "api", "db", build=False)
+    assert result.returncode == 0, result.stderr
+    recorded = [json.loads(line) for line in (tmp_path / "calls.jsonl").read_text().splitlines()]
+    assert not [entry for entry in recorded if "build" in entry]
+    assert calls(tmp_path, "up")[0][-5:] == ["up", "-d", "--no-build", "api", "db"]
+
+
+def test_up_no_build_starts_without_building(tmp_path: Path) -> None:
+    env = fixture_env(tmp_path, {"api": {}}, build_exit=17)
+    result = subprocess.run(["bash", str(UP), "--config", "fixture", "--nqa", "-y", "--no-build"],
+                            env=env, text=True, capture_output=True, timeout=5)
+    assert result.returncode == 0, result.stderr
+    assert not calls(tmp_path, "build")
+    assert calls(tmp_path, "up")
+    assert "build --with-dependencies" not in result.stdout
+
+
+def test_a_stored_no_build_flag_is_refused(tmp_path: Path) -> None:
+    env = fixture_env(tmp_path, {"api": {}})
+    (tmp_path / "docker/presets.yaml").write_text('fast: "--config fixture --no-build"\n')
+    result = subprocess.run(["bash", str(UP), "preset", "fast", "-y"],
+                            env=env, text=True, capture_output=True, timeout=5)
+    assert result.returncode != 0
+    assert "'--no-build'" in result.stderr
     assert not (tmp_path / "calls.jsonl").exists()
