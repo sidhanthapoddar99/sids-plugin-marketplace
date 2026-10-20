@@ -57,7 +57,7 @@ wt_refuse_busy() {
   reasons=$(slot_busy "$WT_DIR/slot-$1") || return 0
   err "slot-$1${2:+ (.worktrees/$2)} is in use, so ctl worktree changed nothing:"
   while IFS= read -r line; do printf '  - %s\n' "$line" >&2; done <<< "$reasons"
-  die "stop it there first (ctl stop, ctl down, or let the gate finish), then run the command again"
+  die "stop it there first with ctl stop, which stops its dev apps and its containers, the data core included, or let the gate finish; then run the command again"
 }
 
 # wt_auto_trim — the weekly trim that create and remove run, so nobody has to remember it. Its

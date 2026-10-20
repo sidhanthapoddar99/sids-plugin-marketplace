@@ -7,24 +7,32 @@
 # checkout and every project made from this template shares it, worktrees included.
 #
 # TWO GUARDS.
-#   THE LOCK   a kernel flock on GATE_LOCK_FILE, ${XDG_RUNTIME_DIR:-/tmp}/ctl-gate-<uid>.lock. The
-#              holder writes its checkout, pid, verb, start time and current step into the file. A
-#              second run prints what is running and WAITS until the holder exits. The kernel drops
-#              the lock when the last process holding it ends, so there is never a stale lock.
+#   THE LOCK   a kernel flock on GATE_LOCK_FILE, /run/user/<uid>/ctl-gate-<uid>.lock, or under /tmp
+#              when the user has no /run/user folder. The holder writes its checkout, pid, verb,
+#              start time and current step into the file. A second run prints what is running and
+#              WAITS until the holder exits. The kernel drops the lock when the last process holding
+#              it ends, so there is never a stale lock. Every run, waiting included, also holds a
+#              shared flock on ctl-gate.lock in its checkout's git folder, so ctl worktree can tell
+#              that a gate waits or runs in a checkout.
 #   THE LID    the whole run — every worker, compiler and browser — inside one memory-capped scope:
 #              the memory budget of the TESTING settings (--memory, else TEST_MEMORY, else 80 % of
 #              what is available at the start). Reach the lid and the RUN is killed, never the
 #              machine. Swap is off inside the lid. It needs `systemd-run --user` (cgroup v2);
 #              without it the run goes bare and says so once.
 #
-# OTHER READERS. scripts/worktree/_busy.sh tests this lock with a shared flock that never waits and
-# never writes, and reads the `checkout=` line to learn which checkout holds it. Keep the path
-# variable GATE_LOCK_FILE, a holder's exclusive flock and the `checkout=` line stable, because that
-# reader relies on them.
+# OTHER READERS. scripts/worktree/_busy.sh tests the checkout's ctl-gate.lock with an exclusive flock
+# that never waits. For a branch whose scripts predate that file, it tests this lock with a shared
+# flock that never waits and never writes, and reads the `checkout=` line to learn which checkout
+# holds it. Keep both file names, the path variable GATE_LOCK_FILE, a holder's exclusive flock and
+# the `checkout=` line stable, because that reader relies on them.
 #
 # Exit codes: 137 = killed at the lid.
 
-GATE_LOCK_FILE="${GATE_LOCK_FILE:-${XDG_RUNTIME_DIR:-/tmp}/ctl-gate-$EUID.lock}"
+# The default is one file for every shell of the user. XDG_RUNTIME_DIR is not read, because a shell
+# without it would pick another file and let a second run start beside the first.
+_gl_dir=/tmp
+if [[ -d /run/user/$EUID && -O /run/user/$EUID ]]; then _gl_dir=/run/user/$EUID; fi
+GATE_LOCK_FILE="${GATE_LOCK_FILE:-$_gl_dir/ctl-gate-$EUID.lock}"
 
 _gl_say()   { printf '%s\n' "$*" >&2; }
 _gl_get()   { local key value; [[ -f $GATE_LOCK_FILE ]] || return 0
@@ -45,11 +53,17 @@ gate_lock_open() {
 # gate_lock_take <verb> [args…] — hold the lock for the rest of this process and its children,
 # waiting while another run holds it.
 gate_lock_take() {
-  local verb="$1" started step line held
+  local verb="$1" started step line held own
   shift
   [[ -z ${GATE_LID:-} ]] || return 0     # the inner half of a lidded run holds it through its parent
   command -v flock >/dev/null 2>&1 || die "the gate lock needs flock (util-linux)"
   gate_lock_open
+  # The checkout's own lock, held from before the wait to the end of the run. It lives in the git
+  # folder, where git status never sees it. Outside a git checkout no worktree needs it.
+  if own=$(git -C "$CTL_ROOT" rev-parse --absolute-git-dir 2>/dev/null); then
+    exec {GATE_CHECKOUT_FD}>>"$own/ctl-gate.lock" || die "cannot open the checkout's gate lock $own/ctl-gate.lock"
+    flock -s "$GATE_CHECKOUT_FD" || die "could not take the checkout's gate lock $own/ctl-gate.lock"
+  fi
   if ! flock -n "$GATE_LOCK_FD"; then
     started="$(_gl_get started)"; step="$(_gl_get step)"; held="$(_gl_get verb) $(_gl_get args)"
     _gl_say "· another gate run holds the lock: ${held% } in $(_gl_get checkout) (pid $(_gl_get pid))"

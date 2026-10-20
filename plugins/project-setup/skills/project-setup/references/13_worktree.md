@@ -21,7 +21,7 @@ Template: `template/scripts/worktree/` (`worktree.sh` and its helpers), the guar
 ├── .gitignore                     # holds /.worktrees/, so git never sees a slot or a link
 └── .worktrees/
     ├── slot-1/                    # a git worktree, taken: on branch feat/login
-    │   ├── .env                   # written on its first use: ports + 100, COMPOSE_PROJECT_NAME <name>-slot-1
+    │   ├── .env                   # written on its first use: ports + 100, COMPOSE_PROJECT_NAME and TAG end in -slot-1
     │   ├── apps/<engine>/target/  # its build folders stay across branches: target/, node_modules/, .venv/
     │   ├── data/                  # its own engine data, from the relative BASE_DIR or DATA_DIR
     │   └── logs/                  # its own process records, logs and backups
@@ -38,9 +38,13 @@ A typical round, from the main tree:
 cd "$(ctl worktree create feat/login)"   # create prints only the path, .worktrees/feat/login
 ctl setup                                # only on a new slot's first use: installs its dependencies
 ctl dev                                  # work, test and commit here, as in any checkout
-cd <repo> && git merge feat/login        # merge in the main tree
+git merge main && ctl gate --delta main  # bring the branch up to date, then gate it here
+ctl stop                                 # stop the slot's dev apps and its containers
+cd <repo> && git merge --ff-only feat/login   # the main tree gets exactly the gated tree
 ctl worktree remove feat/login           # frees slot-1; the branch and the builds stay
 ```
+
+The gate runs in the slot, because a gate writes build outputs, and with `WORKTREE_ONLY=1` the main tree runs none. `remove` refuses while the slot's containers run, so `ctl stop` comes first: the data core outlives `ctl dev` on purpose.
 
 ## The commands
 
@@ -49,7 +53,7 @@ ctl worktree remove feat/login           # frees slot-1; the branch and the buil
 | `ctl worktree create <name> [--from <ref>]` | Takes the lowest free slot, or adds one up to `WORKTREE_SLOTS`. Puts it on branch `<name>`: the existing branch, or a new one from `<ref>`, by default the main tree's HEAD. Links `.worktrees/<name>` to it and prints that path. On a slot's first use, writes its `.env` (§ A slot's `.env`). | The name is taken, is no valid branch name, or starts with `slot-`. `--from` names an existing branch. The branch is checked out elsewhere. The lowest free slot has changes or is busy. Every slot is taken. The slot's `.env` cannot be made safe. Git does not ignore `.worktrees/`. |
 | `ctl worktree list` | Shows each slot: its name or `free`, clean or dirty, merged into the main tree or not, the size of its builds, and its last checkout or commit. Warns about a worktree outside `.worktrees/`. | Never refuses. It exits 1 when the pool breaks the state rule below. |
 | `ctl worktree remove <name>` | Detaches the slot's HEAD and deletes the link, so the slot is free. Keeps the branch, the slot and its builds. | The worktree has uncommitted changes or untracked files git does not ignore. The branch's work is not in the main tree's HEAD. The slot is busy. |
-| `ctl worktree trim [--days N] [--dry-run]` | In every slot, deletes Cargo outputs that no build used for N days (§ The trim). `--dry-run` only counts. | Never refuses a slot. It skips a busy slot, and a profile Cargo is building in, and names each. |
+| `ctl worktree trim [--days N] [--dry-run]` | In every slot, deletes Cargo outputs that no build used for N days (§ The trim). `--dry-run` only counts. | Never refuses a slot. It skips a slot where a process `ctl` started or a gate still runs, and a profile Cargo is building in, and names each. |
 
 `remove` has no force option, because a freed slot goes to the next `create`, so its work must already be in the main tree. `remove` keeps the branch, because deleting a branch stays a person's call.
 
@@ -99,9 +103,10 @@ Each slot keeps its own build folders. Three ways to share builds between slots 
 
 ## A slot's `.env`
 
-A slot's first use writes its `.env` from the main tree's `.env`, mode 600, with two changes:
+A slot's first use writes its `.env` from the main tree's `.env`, mode 600, with three changes:
 - Every `*_PORT` key that holds a number gets + 100 × the slot number. A step of 100 keeps each port's last two digits, so a port stays recognisable in every slot. A step of 1 collides at once with a neighbouring service's port.
 - `COMPOSE_PROJECT_NAME` gets `-slot-<n>`, so each slot runs its own stack. An empty name starts from the main tree's folder name, as compose would read it.
+- `TAG` gets `-slot-<n>`, so each slot builds and runs its own images. With one shared tag, two slots that start `ctl dev` together race on one migration image, and one slot's migrations can run against the other slot's database.
 
 `BASE_DIR` and the storage paths are copied as they are. Relative paths resolve inside the slot, so each slot keeps its own `data/` and `logs/`. The storage contract itself is in `02_env.md`. Later uses of a slot keep its `.env`, and `ctl worktree` never rewrites one, so a hand edit stays.
 
@@ -109,17 +114,21 @@ A slot's first use writes its `.env` from the main tree's `.env`, mode 600, with
 - a port written as a number inside another value, such as a URL: write `${API_PORT}`, so the offset reaches it;
 - a `*_PORT` that is neither a number nor a `${NAME}` reference, or one that would pass 65535;
 - `BASE_DIR`, `DATA_DIR`, `LOGS_DIR` or `BACKUP_DIR` that is absolute, has a `..` part, or is built from another key than these four, because two checkouts would then share one database;
-- a `*_PORT` that `.env.template` declares and the main tree's `.env` lacks, because `ctl setup` would later add it to the slot without the offset;
+- a `*_PORT` that `.env.template` declares and the main tree's `.env` lacks, because the slot would lack it too;
 - a port that the main tree's `.env`, another slot's `.env` or `PORT_PRESETS` already uses.
 
 An absolute storage path is legal in the main tree, for example on a deployment host. That host runs no slots.
 
+`ctl setup` in a slot never adds a port number, because it cannot know the slot's offset, and the main tree's port would let the slot's apps reach the main tree's. When a branch adds a `*_PORT` key with a number to `.env.template`, `ctl setup` in the slot stops, names the key and changes nothing. Add the key by hand at the slot's offset, which the first line of the slot's `.env` names, then run `ctl setup` again. For the same reason, `ctl setup` in a slot without a `.env` stops instead of copying `.env.template`.
+
 ## Busy slots
 
-`create` and `remove` refuse a busy slot, and the trim skips it, because switching a branch or deleting outputs under a running stack, dev loop or gate breaks it. One shared function, `slot_busy` in `_busy.sh`, judges three things by `ctl`'s own records:
-- **Processes.** A live process recorded under the slot's `LOGS_DIR/run/`, the records `ctl dev` and `ctl build start` write and `ctl stop` reads. It reads the slot's own `.env` with the caller's storage keys unset, because a caller that `ctl` started elsewhere exports its own absolute paths.
-- **The gate.** The gate lock that the slot's `scripts/gate/_lock.sh` names, tested with a shared `flock` that never waits and never writes. A held lock counts when it lies inside the slot, when its `checkout=` line names the slot, or when it has no `checkout=` line, because then `ctl` cannot tell whose it is.
+`create` and `remove` refuse a busy slot, because switching a branch under a running stack, dev loop or gate breaks it. One shared function, `slot_busy` in `_busy.sh`, judges three things by `ctl`'s own records:
+- **Processes.** A process recorded under the slot's `LOGS_DIR/run/` that may still run: the records `ctl dev` and `ctl build start` write and `ctl stop` reads. A record `ctl` cannot verify counts too: a link, a record that names another checkout, or a live PID with no start time. `ctl dev db stop` refuses on the same check, `process_live_records` in `scripts/common/_process.sh`. The busy check reads the slot's own `.env` with the caller's storage keys unset, because a caller that `ctl` started elsewhere exports its own absolute paths.
+- **The gate.** A gate that waits or runs in the slot. Every gate run holds `ctl-gate.lock` in its checkout's git folder from before its wait to its end, and the busy check tests it with an exclusive `flock` that never waits. A waiting gate counts, because a branch switch before it starts would make it check the wrong branch. For a branch whose scripts predate that file, the check falls back to the gate lock that the slot's `scripts/gate/_lock.sh` names, tested with a shared `flock` that never waits and never writes. A held lock counts when it lies inside the slot, when its `checkout=` line names the slot, or when it has no `checkout=` line, because then `ctl` cannot tell whose it is.
 - **Containers.** Running containers of the slot's compose project. When Docker is missing or stopped, no container can run. Any other Docker failure counts as busy, because `ctl` cannot tell.
+
+The trim skips a slot only for its processes and its gate, because those read and write build outputs. A container runs from an image and reads no build output, and the data core outlives `ctl dev` on purpose, so a running data core never holds a slot's trim back.
 
 ## The trim
 
@@ -127,7 +136,7 @@ Cargo never deletes an old output, so a slot that lives for good keeps every bui
 - **Where.** Only the entries of `deps/`, `build/`, `.fingerprint/` and `incremental/` inside a Cargo profile folder, `<target>/<profile>` or `<target>/<triple>/<profile>`, beside the `CACHEDIR.TAG` that Cargo writes. Never sources, `.env`, `data/`, `logs/`, `node_modules/` or `.venv/`, and never a profile's own files, such as an uplifted binary.
 - **What counts as used.** An entry goes when the newest read and the newest write of everything in it are older than `WORKTREE_TRIM_DAYS`. A folder counts only its writes, because walking it, as `du` or `ctl worktree list` does, sets its read time. On a disk mounted with `noatime`, reads are never recorded, so only writes count. That costs extra rebuilds, never a wrong result.
 - **When.** By hand, or on its own: `create` and `remove` run it when the last trim is more than 7 days old, so nobody has to remember it and no system timer is installed. A failed weekly trim never undoes the command that ran it.
-- **Safety.** A busy slot is skipped whole. A profile whose `.cargo-lock` a running Cargo holds is skipped too, because a build outside `ctl`, such as an editor's `cargo check`, may be writing there. The trim holds that lock while it deletes, so no Cargo build starts there halfway.
+- **Safety.** A slot where a process `ctl` started or a gate still runs is skipped whole, and its containers do not count (§ Busy slots). A profile whose `.cargo-lock` a running Cargo holds is skipped too, because a build outside `ctl`, such as an editor's `cargo check`, may be writing there. The trim holds that lock while it deletes, so no Cargo build starts there halfway.
 - **Cost.** Cargo rebuilds a unit whose output or fingerprint is missing, so a trimmed entry costs one rebuild and nothing else.
 
 The trim covers the slots only. In the main tree, `ctl clean rust` removes the debug builds.
@@ -169,7 +178,6 @@ A gate can pass on stale paths and break later on the first rung that reaches th
 ## Known limits
 
 - A slot keeps its ignored files across branches, `data/` included, so a new branch inherits the last branch's development database. When a branch needs an empty one, stop the slot's stack with `ctl stop` in the slot, then reset the slot's own `data/` the way the project resets its development database.
-- A `*_PORT` key that a branch adds to `.env.template` reaches the slot's `.env` through `ctl setup`, without the offset. Add the offset by hand.
 - A port or storage path exported in the shell wins over a slot's `.env`, as everywhere in `ctl`. Run `ctl` in a slot from a plain shell, not from a process that another checkout's `ctl` started.
 - The busy check sees what `ctl` started. A process started by hand in a slot is not seen, except a Cargo build, which the trim's lock check catches.
 - The scripts need Linux or WSL, git, `flock`, `/proc`, and GNU `find`, `du`, `numfmt` and `timeout`. `ctl worktree` names a missing tool.

@@ -57,6 +57,32 @@ process_owned() {
   fi
 }
 
+# process_live_records — print each record under LOGS_DIR/run whose process may still run, one line
+# each with its path below CTL_ROOT, and return 0 when there is any. A record ctl cannot verify
+# counts as live: a link, a record another checkout wrote, or a live PID with no start time.
+process_live_records() {
+  local record pid birth found=1
+  for record in "$LOGS_DIR"/run/*.process; do
+    [[ -e $record || -L $record ]] || continue
+    if [[ -L $record ]] || ! process_owned "$record" "$CTL_ROOT"; then
+      printf 'a process record ctl cannot verify: %s\n' "${record#"$CTL_ROOT"/}"; found=0
+    elif process_running "$record"; then
+      printf 'a process ctl started still runs: %s\n' "${record#"$CTL_ROOT"/}"; found=0
+    elif [[ -f $record/pid ]] && read -r pid birth < "$record/pid" && [[ -z ${birth:-} && -n $(process_identity "$pid") ]]; then
+      printf 'a process record ctl cannot verify: %s\n' "${record#"$CTL_ROOT"/}"; found=0
+    fi
+  done
+  for record in "$LOGS_DIR"/run/*.pid; do
+    [[ -e $record || -L $record ]] || continue
+    if [[ -L $record || ! -f $record ]]; then
+      printf 'a process record ctl cannot verify: %s\n' "${record#"$CTL_ROOT"/}"; found=0
+    elif read -r pid < "$record" && [[ -n $(process_identity "$pid") ]]; then
+      printf 'a process with a PID-only record still runs: %s\n' "${record#"$CTL_ROOT"/}"; found=0
+    fi
+  done
+  return "$found"
+}
+
 process_stop() (
   local record="$1" pid birth process_lock member identity attempt active deadline
   local grace="${PROCESS_STOP_TIMEOUT:-20}"

@@ -1,12 +1,28 @@
 #!/usr/bin/env bash
 
 sync_env_template() {
-  local file key line
+  local file key line value slot="" ports=()
+  # A slot's ports carry the offset ctl worktree gave it, which this step cannot know. A port number
+  # added here would be the main tree's port, and the slot's apps would reach the main tree's.
+  [[ $CTL_ROOT =~ /\.worktrees/(slot-[0-9]+)$ ]] && slot=${BASH_REMATCH[1]}
   for file in "${ENV_FILES[@]}"; do
     [[ -f "$file.template" ]] || { err "no $file.template to create $file from"; return 1; }
     if [[ ! -f $file ]]; then
+      [[ -z $slot ]] || { err "$slot has no $file. A copy of $file.template would hold the main tree's ports; ctl worktree create writes a slot's own $file when it takes a free slot"; return 1; }
       (umask 077; cp "$file.template" "$file"; chmod 600 "$file") || return 1
       ok "created $file from $file.template"
+    fi
+    if [[ -n $slot ]]; then
+      ports=()
+      while IFS= read -r line || [[ -n $line ]]; do
+        key=${line%%=*} value=${line#*=}; value=${value%$'\r'}; value=${value%%[[:space:]]#*}
+        [[ $line == *=* && $key =~ ^[A-Za-z_][A-Za-z0-9_]*_PORT$ && ${value%"${value##*[![:space:]]}"} =~ ^[0-9]+$ ]] || continue
+        grep -q "^${key}=" "$file" || ports+=("$key")
+      done < "$file.template"
+      if (( ${#ports[@]} )); then
+        err "$file lacks ${ports[*]}, a port $file.template declares. In $slot, add each one by hand with the slot's offset, which the first line of $file names, then run this again. Nothing was changed"
+        return 1
+      fi
     fi
     while IFS= read -r line || [[ -n $line ]]; do
       key=${line%%=*}
@@ -70,8 +86,24 @@ generate_local_credentials() {
   for key in "${!generated[@]}"; do ok "generated $key"; done
 }
 
+# blank_by_design_keys <template> — each key whose comment line right above it says what an empty
+# value means, such as "empty: every core" or "Empty or 0: off". Such a key is blank on purpose.
+blank_by_design_keys() {
+  local line note=0 pattern='empty( or [^:]*)?:'
+  while IFS= read -r line || [[ -n $line ]]; do
+    if [[ $line == \#* ]]; then
+      if [[ ${line,,} =~ $pattern ]]; then note=1; else note=0; fi
+    elif (( note )) && [[ $line =~ ^([A-Za-z_][A-Za-z0-9_]*)= ]]; then
+      printf '%s\n' "${BASH_REMATCH[1]}"; note=0
+    else
+      note=0
+    fi
+  done < "$1"
+}
+
 validate_setup_credentials() {
   local declarations=$1 required=$2 key generator extra
+  local -A by_design=()
   while read -r key generator extra || [[ -n $key ]]; do
     [[ -z $key || $key == \#* ]] && continue
     if ! grep -q "^${key}=" .env.template; then
@@ -87,8 +119,9 @@ validate_setup_credentials() {
     grep -q "^${key}=" .env.template || { err "required credential is absent from .env.template: $key"; return 1; }
     [[ -v $key && -n ${!key} ]] || { err "required supplied credential is blank: $key"; return 1; }
   done < "$required"
+  while IFS= read -r key; do by_design["$key"]=1; done < <(blank_by_design_keys .env.template)
   while IFS= read -r key; do
-    [[ -v $key && -z ${!key} ]] || continue
+    [[ -v $key && -z ${!key} && ! -v by_design["$key"] ]] || continue
     warn "blank setting: $key (not required by setup; application requirements still apply)"
   done < <(env_keys .env.template)
 }

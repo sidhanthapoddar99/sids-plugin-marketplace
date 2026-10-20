@@ -15,7 +15,8 @@
 # time. A file with another hard link frees nothing. Cargo rebuilds a unit whose output or fingerprint
 # is missing, so a trimmed entry costs one rebuild and nothing else.
 #
-# SAFETY. A slot where something ctl started still runs is skipped whole (slot_busy). A profile whose
+# SAFETY. A slot where a process ctl started or a gate still runs is skipped whole (slot_busy with
+# builds). Its containers do not hold it back, because they read no build output. A profile whose
 # .cargo-lock a running Cargo holds is skipped too, because a build outside ctl, such as an editor's
 # cargo check, may be writing there. The trim holds that lock while it deletes, so no Cargo build
 # starts there halfway.
@@ -87,8 +88,8 @@ wt_trim() {
   for n in ${WT_SLOTS[@]+"${WT_SLOTS[@]}"}; do
     slot="$WT_DIR/slot-$n"
     [[ -d $slot ]] || continue
-    # A build, stack or gate running there could lose outputs halfway, so a slot in use waits.
-    if reasons=$(slot_busy "$slot"); then warn "trim skipped slot-$n, which is in use: ${reasons//$'\n'/; }"; continue; fi
+    # A dev loop, build or gate running there could lose outputs halfway, so a slot in use waits.
+    if reasons=$(slot_busy "$slot" builds); then warn "trim skipped slot-$n, which is in use: ${reasons//$'\n'/; }"; continue; fi
     while IFS= read -r profile; do
       [[ -z $profile ]] || wt_trim_profile "slot-$n/${profile#"$slot"/}" "$profile" "$cutoff" "$dry"
     done < <(wt_cargo_profiles "$slot")

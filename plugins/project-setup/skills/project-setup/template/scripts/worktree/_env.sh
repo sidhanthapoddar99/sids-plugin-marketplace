@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # scripts/worktree/_env.sh — the .env a slot gets on its first use. SOURCE it after _pool.sh.
 #
-# It is the main tree's .env with two changes, so the stacks and dev servers of two slots never
-# collide with each other or with the main tree:
+# It is the main tree's .env with three changes, so the stacks, images and dev servers of two slots
+# never collide with each other or with the main tree:
 #   every KEY_PORT that holds a number   + WT_PORT_STEP × the slot number (+ 100 for slot-1)
 #   COMPOSE_PROJECT_NAME                 <name>-slot-<n>; an empty one starts from the main tree's
 #                                        folder name, as compose names the main tree's stack
+#   TAG                                  <tag>-slot-<n>, so each slot builds and runs its own
+#                                        images: with one shared tag, one slot's migration image
+#                                        could migrate another slot's database
 # BASE_DIR and the storage paths are copied as they are. They must be relative, so each slot keeps
 # its own data/ and logs/. Later uses of a slot keep its .env; ctl worktree never rewrites one.
 #
@@ -15,8 +18,8 @@
 #   - a KEY_PORT that is neither a number nor a ${NAME} reference, or one that would pass 65535
 #   - BASE_DIR, DATA_DIR, LOGS_DIR or BACKUP_DIR that is absolute, has a .. part, or is built from
 #     another key than these four: two checkouts could then share one database
-#   - a KEY_PORT that .env.template declares and the main tree's .env lacks: ctl setup would later
-#     add it to the slot without the offset
+#   - a KEY_PORT that .env.template declares and the main tree's .env lacks: the slot would lack it
+#     too, and ctl setup never adds a port number to a slot, because it cannot know the offset
 #   - a port that the main tree's .env, another slot's .env or PORT_PRESETS already uses
 # Messages name keys and ports only, because a value may hold a credential.
 
@@ -71,12 +74,12 @@ wt_env_render() {
   if [[ -f $WT_MAIN/.env.template ]]; then
     while IFS= read -r key; do
       [[ $key != *_PORT || -n ${present[$key]:-} ]] \
-        || problems+=("it lacks $key, which .env.template declares, so ctl setup would later add it to slot-$n without the offset; run ctl setup in the main tree first")
+        || problems+=("it lacks $key, which .env.template declares, so slot-$n would lack it too, and ctl setup there would stop on it; run ctl setup in the main tree first")
     done < <(env_keys "$WT_MAIN/.env.template")
   fi
   base=$(wt_compose_name "$(basename -- "$WT_MAIN")")
   printf '# Written by ctl worktree for slot-%s from the main tree'\''s .env: ports + %s, and COMPOSE_PROJECT_NAME\n' "$n" "$(( WT_PORT_STEP * n ))"
-  printf '# ends in -slot-%s. Later uses of the slot keep this file.\n' "$n"
+  printf '# and TAG end in -slot-%s. Later uses of the slot keep this file.\n' "$n"
   while IFS= read -r line || [[ -n $line ]]; do
     if wt_env_split "$line"; then
       case $WT_KEY in
@@ -90,6 +93,8 @@ wt_env_render() {
           fi ;;
         COMPOSE_PROJECT_NAME)
           line="COMPOSE_PROJECT_NAME=${WT_VALUE:-$base}-slot-$n"; found=1 ;;
+        TAG)
+          [[ -z $WT_VALUE ]] || line="TAG=$WT_VALUE-slot-$n" ;;
         BASE_DIR|DATA_DIR|LOGS_DIR|BACKUP_DIR)
           problem=$(_wt_storage_problem "$WT_KEY" "$WT_VALUE")
           [[ -z $problem ]] || problems+=("$problem, so slot-$n could share the main tree's data; make it relative, like ./data") ;;
@@ -157,5 +162,5 @@ wt_env_install() {
   if [[ -e $dest || -L $dest ]]; then rm -f -- "$WT_ENV_TMP"; WT_ENV_TMP=""; say "· slot-$1 already has a .env; kept it" >&2; return 0; fi
   chmod 600 -- "$WT_ENV_TMP"
   mv -T -- "$WT_ENV_TMP" "$dest"; WT_ENV_TMP=""
-  say "· wrote slot-$1/.env from the main tree's .env: ports + $(( WT_PORT_STEP * $1 )), COMPOSE_PROJECT_NAME …-slot-$1 (mode 600)" >&2
+  say "· wrote slot-$1/.env from the main tree's .env: ports + $(( WT_PORT_STEP * $1 )), COMPOSE_PROJECT_NAME and TAG …-slot-$1 (mode 600)" >&2
 }

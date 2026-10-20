@@ -39,7 +39,7 @@ AUTH_ENABLED=FALSE
 - The row comes from a plain `INSERT`, with no `ON CONFLICT`. An existing account with that id or username fails the migration, so it never adopts, renames or resets an ordinary account.
 - Backends read the row and never write it, because the migration is its one source, so every database holds the same row.
 - Under `FALSE`, the api's `/ready` checks that the row exists, and names the migration when the row is missing. A missing row otherwise fails much later, at the first foreign key.
-- The practice covers the user plane only. An operator plane (`07_security.md` § Operator identity) gets no reserved user, because operators come only from `ctl manage`.
+- The practice covers the user plane only. An operator plane (`07_security.md` § The floor, the Operator identity row) gets no reserved user, because operators come only from `ctl manage`.
 
 ## What each backend enforces
 
@@ -64,6 +64,8 @@ Under `FALSE`, the backend logs one warning at startup, so the mode shows in eve
 | `Sec-Fetch-Site` | The header is absent, or is not `cross-site`. | The same, for a request without `Origin`, such as an image tag. |
 
 No check can see a proxy on the same host that adds no forwarding header and sends a loopback `Host`. That is why a deployed backend runs `TRUE`, inside a container or not (`09_production.md` § Checklist).
+
+A frontend dev server is such a proxy. It turns a request from any address it listens on into a loopback request, and Next.js copies the client's own `Host` into `X-Forwarded-Host`, so a device on the network that sends `Host: localhost` passes every check. So every dev server binds loopback only: the Vite configs set `server.host` to `127.0.0.1`, and the Next.js apps run `next dev --hostname 127.0.0.1`. A dev server that listens on every interface gives the reserved user to anyone on the network.
 
 The checks live in one framework-free function per backend: `authenticate` in `app/core/auth.py` and `identity::authenticate` in the auth crate. A unit test can then prove them without a server. The framework glue gathers the peer, the header pairs and the token check, calls the function, and answers a refusal with 401. The opening comment of `auth.py` shows the FastAPI dependency. The opening comment of `identity.rs` describes the axum extractor. Pass every header pair to the function, duplicates included, because a duplicate `Host` or `X-Forwarded-Host` can hide a second value.
 

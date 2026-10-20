@@ -100,6 +100,10 @@ test('create and remove refuse while a process ctl recorded in the slot still ru
   writeFileSync(W('slot-1/logs/run/api.process/pid'), `${live.pid} 1\n`);
   writeFileSync(W('slot-1/logs/run/old.pid'), `${live.pid}\n`);
   expect(refused(['remove', 'foo'])).toContain('a process with a PID-only record still runs: logs/run/old.pid');
+  // A record that names another checkout cannot be verified, so it counts as running.
+  writeFileSync(W('slot-1/logs/run/api.process/project'), '/elsewhere\n');
+  expect(refused(['remove', 'foo'])).toContain('a process record ctl cannot verify: logs/run/api.process');
+  rmSync(W('slot-1/logs/run/api.process/project'));
   live.child.kill('SIGKILL'); await Bun.sleep(100);
   ok(['remove', 'foo']);
 });
@@ -150,13 +154,31 @@ test('create and remove refuse while a gate run holds the lock for the slot, and
   ok(['remove', 'foo'], { GATE_LOCK_FILE: own });
 });
 
-test('the trim, by hand and weekly, skips a slot that is in use and says so', () => {
+test('create and remove refuse while a gate waits or runs in the slot, by the lock in its git folder', async () => {
+  ok(['create', 'foo']);
+  const gitDir = Bun.spawnSync(['git', '-C', W('slot-1'), 'rev-parse', '--absolute-git-dir']).stdout.toString().trim();
+  const own = join(gitDir, 'ctl-gate.lock');
+  writeFileSync(own, '');
+  // A waiting gate holds this lock as a running one does, while the user's gate lock is someone else's.
+  const gate = await holdLock(own);
+  expect(refused(['remove', 'foo'])).toContain(`a gate run waits or runs there: ${own} is held`);
+  gate.kill('SIGKILL'); await Bun.sleep(50);
+  ok(['remove', 'foo']);
+});
+
+test('the trim, by hand and weekly, skips a slot whose process still runs and says so, and ignores containers', () => {
   ok(['create', 'busy']); ok(['create', 'idle']);
   const busy = cargoProfile(W('slot-1/apps/example-engine-rust/target/debug'));
   const idle = cargoProfile(W('slot-2/apps/example-engine-rust/target/debug'));
-  writeFileSync(join(f.base, 'docker-running'), 'demo-slot-1\n');
+  const live = liveProcess();
+  mkdirSync(W('slot-1/logs/run/api.process'), { recursive: true });
+  writeFileSync(W('slot-1/logs/run/api.process/pid'), `${live.pid} ${live.birth}\n`);
+  // Both slots run containers, such as a data core. A container reads no build output, so it holds no trim back.
+  writeFileSync(join(f.base, 'docker-running'), 'demo-slot-1\ndemo-slot-2\n');
   const run = ok(['trim', '--days', '7']);
-  expect(run.err).toContain('trim skipped slot-1, which is in use: 1 container(s) of compose project demo-slot-1 run');
+  expect(run.err).toContain('trim skipped slot-1, which is in use: a process ctl started still runs: logs/run/api.process');
+  expect(run.err).not.toContain('container');
+  expect(run.err).not.toContain('trim skipped slot-2');
   busy.old.forEach(path => expect(existsSync(path), path).toBe(true));
   idle.old.forEach(path => expect(existsSync(path), path).toBe(false));
   // The weekly trim that create runs skips it the same way.

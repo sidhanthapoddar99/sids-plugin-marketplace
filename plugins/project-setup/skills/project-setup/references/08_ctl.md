@@ -91,7 +91,7 @@ are a separate suite and are not installed by CTL.
 
 | Group | Verb | Does |
 |---|---|---|
-| Development | `dev [app…] [--detach] [--all] [--no-core] [--nqa] [--dry-run]` | Reuse the running data core or start it, apply migrations, then run the apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. A stopped core: in a terminal `dev` asks first, and Enter means yes; `--all`, `--nqa` and no terminal start it without asking. `--detach`: logs and ownership records below the configured `LOGS_DIR`. `--no-core`: skip the data core. `--nqa`: skip the app picker. `dev` guards and instructs (`run ctl setup`); it never edits config mid-launch. § The data core below. |
+| Development | `dev [app…] [--detach] [--all] [--no-core] [--nqa] [--dry-run]` | Reuse the running data core or start it, apply migrations, then run the apps on the host with reload. Apps run on the host because a debugger attaches and file events are native; source is never bind-mounted into a dev container. A stopped core: in a terminal `dev` asks first, and Enter means yes; `--all`, `--nqa` and no terminal start it without asking. `--detach`: logs and ownership records below the configured `LOGS_DIR`. `--no-core`: skip the data core. `--nqa`: skip the app picker. `dev` guards and instructs (`run ctl setup env`); it never edits config mid-launch. § The data core below. |
 | | `dev db [--detach] [--dry-run]`, `dev db stop [--dry-run]` | The data core alone: start it detached through the reserved `dev` preset and migrate, or stop it. `dev db stop` refuses while a dev app or an app container runs. |
 | | `dev stop [--all] [--nqa] [--dry-run]` | Stop the host processes `ctl` started for this checkout and keep the data core. In a terminal it asks whether to stop the core too, and Enter keeps it. `--all` runs `ctl stop`. |
 | | `ps [--list \| kill [port…]]` | Everything running across three planes: host processes, frozen builds, containers. Attach or kill, plane-aware. |
@@ -273,7 +273,7 @@ Products without an operator plane delete `scripts/admin/` and `manager.py`.
 
 ## Without a data core
 
-`DATA_SVCS=()` in `_lib.sh`. Remove unused engines, migration jobs and their `depends_on` entries from `compose.base.yaml`; remove the dev preset and `scripts/db/`. `dev`, `setup` and `status` skip the engines. `require_env` stays strict only if the apps still read secrets; `status` and `health` point at the app services and their healthchecks instead.
+Empty the default on the `DATA_SVCS_STR` line in `_lib.sh`, so the line ends in `${DATA_SVCS-}}"`, and empty the `SCHEMA_SVCS_STR` line's default the same way. Edit those lines, not the arrays, because the `read` line below each one fills its array from it, in `ctl` and again in every worker. Remove unused engines, migration jobs and their `depends_on` entries from `compose.base.yaml`; remove the dev preset and `scripts/db/`. `dev`, `setup` and `status` skip the engines. `require_env` stays strict only if the apps still read secrets; `status` and `health` point at the app services and their healthchecks instead.
 
 ## Without ctl
 

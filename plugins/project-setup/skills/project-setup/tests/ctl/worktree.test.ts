@@ -26,13 +26,16 @@ test('create puts slot-1 on a new branch, links the nested name to it, and print
   expect(f.git('status', '--porcelain')).toBe('');
 });
 
-test("a slot's first .env is the main tree's with ports + 100 × n and its own stack name, mode 600", () => {
+test("a slot's first .env is the main tree's with ports + 100 × n and its own stack name and image tag, mode 600", () => {
   ok(['create', 'foo']);
   const env = readFileSync(W('slot-1/.env'), 'utf8');
   expect(line(env, 'API_PORT')).toBe('API_PORT=8100');
   expect(line(env, 'POSTGRES_PORT')).toBe('POSTGRES_PORT=5532');
   expect(line(env, 'WEB_APP_PORT')).toBe('WEB_APP_PORT=5273');
   expect(line(env, 'COMPOSE_PROJECT_NAME')).toBe('COMPOSE_PROJECT_NAME=demo-slot-1');
+  // Its own tag, so one slot's migration image never migrates another slot's database.
+  expect(line(mainEnv(), 'TAG')).toBe('TAG=dev');
+  expect(line(env, 'TAG')).toBe('TAG=dev-slot-1');
   expect(line(env, 'ENGINE_URL')).toBe('ENGINE_URL=http://${ENGINE_HOST}:${ENGINE_PORT}');
   expect(line(env, 'BACKUP_DIR')).toBe('BACKUP_DIR=${LOGS_DIR}/backups');
   expect(lstatSync(W('slot-1/.env')).mode & 0o777).toBe(0o600);

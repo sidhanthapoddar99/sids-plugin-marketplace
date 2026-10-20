@@ -118,7 +118,7 @@ Both run inside the compose network, so no engine port is published for them. Bo
 
 A switch from `ctl up` to `ctl dev` meets engines without loopback ports. `ctl dev` never restarts a running core, so it refuses and points at `ctl stop`. The next `ctl dev` then recreates the engines once, with their ports.
 
-Without a data core: `DATA_SVCS=()` and `SCHEMA_SVCS=()` in `_lib.sh`; remove the engine and migration services and their `depends_on` entries from `base`; remove the `dev` preset and `scripts/db/`. `ctl dev` skips the data core when `DATA_SVCS` is empty. `ctl check` then names any `depends_on` left behind, because `base` no longer validates.
+Without a data core, follow `08_ctl.md` § Without a data core. `ctl dev` skips the data core when `DATA_SVCS` is empty. `ctl check` then names any `depends_on` left behind, because `base` no longer validates.
 
 ## The passthroughs
 

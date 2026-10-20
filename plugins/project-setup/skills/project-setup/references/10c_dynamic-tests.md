@@ -36,7 +36,7 @@ No root `tests/` folder. Each app owns its suite and its `test` script (`bun tes
 ## Rules
 
 - A backend suite runs against real engines, not mocks of them. SQLite in tests only when the app ships on SQLite.
-- E2E runs against a built stack on a throwaway `DATA_DIR`, never against dev servers, never against `data/`.
+- E2E runs against a built stack on a throwaway `DATA_DIR`, never against dev servers, never against `data/`. The stack runs as its own compose project, `<name>-e2e`, because under the project's own name it would recreate the running dev data core on the throwaway data and its teardown would remove it.
 - `go test -race` always. Concurrency bugs are cheapest here.
 - The browser suite is its own rung. A browser bolted onto the fast gate makes agents stop running the gate.
 - A test that cannot reach its engine dies by name. It never skips itself green.

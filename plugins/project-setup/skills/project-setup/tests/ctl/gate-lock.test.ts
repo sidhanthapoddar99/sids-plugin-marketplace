@@ -42,6 +42,22 @@ test('a second gate waits for the first, names it, and runs once the first ends'
   expect(holder(a, a.lock)).toBe('');
 });
 
+test("a waiting gate already holds its checkout's own lock, which ctl worktree tests", async () => {
+  const hold = join(a.base, 'release');
+  const first = a.start(['gate'], { HOLD_FILE: hold });
+  await until('the first run to reach lint', () => a.rungs().length > 0);
+  b.git('init', '-q');
+  const own = join(b.git('rev-parse', '--absolute-git-dir').trim(), 'ctl-gate.lock');
+  // An exclusive flock that never waits, as scripts/worktree/_busy.sh takes it: 1 while a gate holds the lock.
+  const probe = () => b.bash('exec {fd}<"$OWN" || exit 2; flock -n -x "$fd"', { OWN: own }).code;
+  const second = b.start(['gate'], { GATE_LOCK_FILE: a.lock });
+  await until('the second run to wait', () => second.output().includes('waiting for it to finish'));
+  expect(probe()).toBe(1);
+  writeFileSync(hold, '');
+  await Promise.all([first.done, second.done]);
+  expect(probe()).toBe(0);
+});
+
 test('a finished or killed run leaves no lock behind', async () => {
   const hold = join(a.base, 'release');
   const run = a.start(['gate'], { HOLD_FILE: hold });

@@ -37,26 +37,6 @@ stop_host_processes() {
   return "$result"
 }
 
-# host_writers_running — 0 when a recorded host process of this project may still be alive. A record
-# that cannot be verified counts as alive, because a writer nobody can see must not lose its database.
-host_writers_running() {
-  local record pid birth
-  for record in "$LOGS_DIR"/run/*.process; do
-    [[ -e $record || -L $record ]] || continue
-    if [[ -L $record ]] || ! process_owned "$record" "$CTL_ROOT"; then return 0; fi
-    process_running "$record" && return 0
-    if [[ -f $record/pid ]] && read -r pid birth < "$record/pid" && [[ -z ${birth:-} && -n $(process_identity "$pid") ]]; then
-      return 0
-    fi
-  done
-  for record in "$LOGS_DIR"/run/*.pid; do
-    [[ -e $record || -L $record ]] || continue
-    [[ -L $record || ! -f $record ]] && return 0
-    if read -r pid < "$record" && [[ -n $(process_identity "$pid") ]]; then return 0; fi
-  done
-  return 1
-}
-
 # project_containers — this project's containers, one "<id> <service> <plane> <state>" line each.
 # plane is data for a DATA_SVCS service and apps for everything else. A container belongs to the
 # project only when both its Compose project label and its working-directory label match, which

@@ -33,7 +33,7 @@ Native development is different because every process shares the host network. I
 | Engines | the `dev` preset: a service subset of base plus `+expose_db`, loopback ports | defined directly in `compose.base.yaml`, no ports |
 | Backends | on the host, `localhost:<port>`, reload | containers, service names |
 | Static frontends | dev servers on their ports | built into the `web` image |
-| Server frontend | `next dev` | `dashboard` container |
+| Server frontend | `next dev --hostname 127.0.0.1` | `dashboard` container |
 | The edge | each frontend's native proxy: Vite or framework rewrites | nginx in `web`, published by `+expose_web` on the `_PORT` of the piece that owns `/` (local), or by `+public` on 80/443. TLS and domains: a host proxy outside this repo. |
 | Edge config | frontend `vite.config.ts` or `next.config.ts` | `apps/example-multi-web-app/nginx/nginx.conf.template`, copied into the image as `templates/default.conf.template` |
 
@@ -61,7 +61,7 @@ The backend runs elsewhere: a managed service, another host, another repo. The b
 
 CORS never appears: the edge talks to the remote backend, not the browser. The same holds in reverse, when the frontend is the remote piece: that repo's edge proxies to this backend's public host.
 
-When only the database is elsewhere (managed Postgres), the same modifier re-points `DATABASE_URL`. Local database services are then not started: empty the `DATA_SVCS` default in `_lib.sh`, or export `DATA_SVCS=`, and remove the unused local engine and migration services from `base` (`08a_ctl_docker.md` § Worked example).
+When only the database is elsewhere (managed Postgres), the same modifier re-points `DATABASE_URL`. Local database services are then not started: take them out of the default on the `DATA_SVCS_STR` line in `_lib.sh`, or export `DATA_SVCS=`, and remove the unused local engine and migration services from `base` (`08a_ctl_docker.md` § Worked example).
 
 ## Case 3 — several frontends
 
@@ -107,7 +107,7 @@ Core vs BFF: a "backend for frontend" that only reshapes a core API is not a sec
 
 ## Case 6 — one static frontend, no backend
 
-A landing page, a docs site. The single shape (`example-single-web-app-vite/`, or the same with Next.js export or Astro) with the proxied locations deleted from its `nginx.conf.template`. `DATA_SVCS=()`. `compose.base.yaml` keeps only `web`. `ctl dev` runs one dev server.
+A landing page, a docs site. The single shape (`example-single-web-app-vite/`, or the same with Next.js export or Astro) with the proxied locations deleted from its `nginx.conf.template`. No data core (`08_ctl.md` § Without a data core). `compose.base.yaml` keeps only `web`. `ctl dev` runs one dev server.
 
 ## Case 7 — a second origin
 

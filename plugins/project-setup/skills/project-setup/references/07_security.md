@@ -56,5 +56,6 @@ Any flow that feeds user-supplied content to a model that can call tools is an i
 | `AUTH_ENABLED: ${AUTH_ENABLED}` in a compose service, or `FALSE` on a deployed backend | containers and production run `TRUE` |
 | a token, session or password for the reserved `default` user | the reserved user has no credential |
 | the development identity given to a forwarded or cross-site request | local requests only |
+| a frontend dev server that listens on every interface, such as a bare `next dev` | dev servers bind loopback (`14_development-sign-in.md`) |
 | a frontend setting or a request header that turns sign-in off | the backend owns the switch |
 | `ON CONFLICT` or an `UPDATE` on the reserved row in a migration | a collision fails the migration |

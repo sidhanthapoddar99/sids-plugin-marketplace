@@ -5,6 +5,7 @@ The example backends cannot run their own suites in place, because their manifes
 auth rules into a scratch folder and runs its tests there, with no application dependency.
 """
 
+import json
 import os
 import re
 import shutil
@@ -71,6 +72,20 @@ def test_compose_states_the_switch_as_a_literal() -> None:
     assert [line for line in lines if line.startswith("AUTH_ENABLED")] == ['AUTH_ENABLED: "TRUE"'] * 2
     for modifier in (TEMPLATE / "docker").glob("compose.m.*.yaml"):
         assert "AUTH_ENABLED" not in modifier.read_text(), modifier.name
+
+
+def test_every_frontend_dev_server_binds_loopback() -> None:
+    # A dev server's proxy turns a request from any address it listens on into a loopback request,
+    # which a backend under FALSE would give the reserved user.
+    vite = sorted(TEMPLATE.glob("apps/**/vite.config.ts"))
+    for config in vite:
+        assert re.search(r'host:\s*"127\.0\.0\.1"', config.read_text()), config
+    scripts = [(path, json.loads(path.read_text()).get("scripts", {}).get("dev", ""))
+               for path in sorted(TEMPLATE.glob("apps/**/package.json"))]
+    nextjs = [(path, dev) for path, dev in scripts if dev.startswith("next dev")]
+    for path, dev in nextjs:
+        assert "--hostname 127.0.0.1" in dev, path
+    assert vite and nextjs
 
 
 def test_migrations_are_flyway_versions_in_order() -> None:

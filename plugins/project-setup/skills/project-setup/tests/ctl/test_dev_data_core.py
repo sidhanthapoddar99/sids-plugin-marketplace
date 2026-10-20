@@ -463,6 +463,26 @@ def test_ctl_stop_still_stops_everything(project: Project) -> None:
     assert project.stopped_ids() == [IDS["api"], *[IDS[name] for name in ENGINES]]
 
 
+def test_e2e_runs_as_its_own_compose_project_and_leaves_the_core_running(project: Project) -> None:
+    project.core("running")
+    (project.root / "apps/example-single-web-app-vite/e2e").mkdir(parents=True)
+    # Stand-ins: the stack start records the project and data folder it gets; bun records the suite run.
+    (project.root / "scripts/container/up.sh").write_text(
+        '#!/usr/bin/env bash\nprintf "%s\\n%s\\n" "$COMPOSE_PROJECT_NAME" "$DATA_DIR" > "$TEST_ROOT/e2e.stack"\n')
+    bun = project.root.parent / "bin/bun"
+    bun.write_text('#!/bin/sh\npwd > "$TEST_ROOT/e2e.suite"\n')
+    bun.chmod(0o755)
+    result = project.ctl("test", "e2e")
+    assert result.returncode == 0, result.stdout + result.stderr
+    name, data = (project.root / "e2e.stack").read_text().splitlines()
+    assert name == "fixture-project-e2e"
+    assert not Path(data).is_relative_to(project.root)
+    assert (project.root / "e2e.suite").read_text().strip().endswith("apps/example-single-web-app-vite")
+    assert project.compose("down"), "the e2e stack is torn down"
+    assert not project.stopped_ids()
+    assert all(project.state()[name]["state"] == "running" for name in ENGINES)
+
+
 # ── ctl dev db ──
 
 def test_dev_db_starts_the_core_detached_without_a_build(project: Project) -> None:
@@ -495,6 +515,7 @@ def test_dev_db_stop_refuses_while_a_dev_app_runs(project: Project) -> None:
     result = project.ctl("dev", "db", "stop")
     assert result.returncode != 0
     assert "ctl dev stop --all" in result.stderr
+    assert "a process ctl started still runs: logs/run/dev-app0.process" in result.stderr
     assert alive(project.app_pid())
     assert_core_untouched(project)
 

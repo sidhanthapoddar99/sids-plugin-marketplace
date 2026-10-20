@@ -32,7 +32,7 @@ function fixture() {
   writeFileSync(join(base, 'bin/docker'), standInDocker(base), { mode: 0o755 });
   writeFileSync(join(base, 'gitconfig'), '');
   const env: Record<string, string> = {
-    PATH: `${join(base, 'bin')}:${process.env.PATH}`, HOME: base, NO_COLOR: '1', XDG_RUNTIME_DIR: base,
+    PATH: `${join(base, 'bin')}:${process.env.PATH}`, HOME: base, NO_COLOR: '1', GATE_LOCK_FILE: join(base, 'gate.lock'),
     GIT_CONFIG_GLOBAL: join(base, 'gitconfig'), GIT_CONFIG_NOSYSTEM: '1',
     GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 'test@example.com', GIT_COMMITTER_NAME: 'Test', GIT_COMMITTER_EMAIL: 'test@example.com',
   };

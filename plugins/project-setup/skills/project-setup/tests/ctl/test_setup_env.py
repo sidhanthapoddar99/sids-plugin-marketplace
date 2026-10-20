@@ -59,6 +59,46 @@ def test_setup_env_installs_nothing(tmp_path: Path) -> None:
     assert {"uv", "bun", "go", "lefthook"} <= tools
 
 
+def test_a_key_whose_comment_names_its_empty_default_gets_no_blank_warning(tmp_path: Path) -> None:
+    scaffold(tmp_path, ENV + "# cores the tests use\n# empty: every core\nTEST_CPUS=\n"
+             "# Empty or 0: off\nWORKTREE_ONLY=\n\n# the address support mail goes to\nSUPPORT_EMAIL=\n")
+    result = run(tmp_path, "env")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "blank setting: TEST_CPUS" not in result.stderr
+    assert "blank setting: WORKTREE_ONLY" not in result.stderr
+    assert "blank setting: SUPPORT_EMAIL" in result.stderr
+
+
+def test_in_a_slot_setup_env_adds_no_port_number_and_changes_nothing(tmp_path: Path) -> None:
+    slot = tmp_path / ".worktrees/slot-1"
+    slot.mkdir(parents=True)
+    scaffold(slot, ENV + "METRICS_PORT=9100\nMETRICS_URL=http://localhost:${METRICS_PORT}\n# BETA_PORT=9300\n")
+    # A copy of the template would hold the main tree's ports, so a slot without .env gets none.
+    result = run(slot, "env")
+    assert result.returncode != 0
+    assert "slot-1 has no .env" in result.stderr
+    assert not (slot / ".env").exists()
+    (slot / ".env").write_text(ENV)
+    result = run(slot, "env")
+    assert result.returncode != 0
+    assert ".env lacks METRICS_PORT, a port .env.template declares. In slot-1" in result.stderr
+    assert (slot / ".env").read_text() == ENV
+    # With the port added by hand, at the slot's offset, the rest is added as in any checkout.
+    (slot / ".env").write_text(ENV + "METRICS_PORT=9200\n")
+    result = run(slot, "env")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert values(slot)["METRICS_PORT"] == "9200"
+    assert values(slot)["METRICS_URL"] == "http://localhost:${METRICS_PORT}"
+
+
+def test_the_template_names_the_empty_default_of_every_testing_and_worktree_key() -> None:
+    blank = re.findall(r"^((?:TEST|WORKTREE)_[A-Z_]+)=$", (TEMPLATE / ".env.template").read_text(), re.M)
+    script = 'source "$1"; blank_by_design_keys "$2"'
+    listed = subprocess.run(["bash", "-c", script, "bash", str(TEMPLATE / "scripts/config/_credentials.sh"),
+                             str(TEMPLATE / ".env.template")], capture_output=True, text=True, check=True).stdout.split()
+    assert blank and set(blank) <= set(listed), set(blank) - set(listed)
+
+
 def test_setup_env_runs_before_the_versions_are_resolved(tmp_path: Path) -> None:
     scaffold(tmp_path)
     (tmp_path / ".mise.toml").write_text('[tools]\nbun = "<version>"\n')

@@ -83,11 +83,12 @@ ensure_data_core() {
 }
 
 # stop_data_core <dry> — stop the engines and nothing else. Refused while a recorded host process or
-# an app container still runs, because a database must never stop under a live writer.
+# an app container still runs, because a database must never stop under a live writer. A record ctl
+# cannot verify counts as live, because a writer nobody can see must not lose its database.
 stop_data_core() {
-  local dry=$1
-  if host_writers_running; then
-    err "ctl dev apps still run on the data core — stop them first with ctl dev stop, or stop both with ctl dev stop --all"
+  local dry=$1 live
+  if live=$(process_live_records); then
+    err "ctl dev apps still run on the data core (${live//$'\n'/; }) — stop them first with ctl dev stop, or stop both with ctl dev stop --all"
     return 1
   fi
   stop_containers "$dry" data
