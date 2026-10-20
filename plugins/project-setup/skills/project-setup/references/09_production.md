@@ -88,5 +88,7 @@ Walk this before the first public deploy, and again when a new service joins. Th
 - [ ] immutable `TAG`; a rollback path
 - [ ] TLS at the host proxy; body size and timeouts aligned; security headers
 - [ ] env files `chmod 600`; no `COPY .env*`; non-root user in every image
+- [ ] every backend runs with `AUTH_ENABLED=TRUE`: compose states it as a literal, and a backend run outside a container gets it from `.env`, because the request checks cannot see a host proxy that adds no forwarding header (`14_development-sign-in.md`)
+- [ ] no token, session or password exists for the reserved `default` user, and no migration updates its row
 - [ ] `BASE_DIR` absolute in the host's `.env`; `DATA_DIR`, `LOGS_DIR` and `BACKUP_DIR` derived from it, or absolute on purpose; `ctl check` green
 - [ ] `ctl setup env` run on the host; the data, logs and backup directories owned by the container's UID

@@ -10,6 +10,7 @@ The language is chosen in `04_stack.md`; the env contract is `02_env.md`; routin
 | `/health` and `/ready` | Two endpoints, two actions: `09_production.md` § Health. |
 | Its own prefix | `<PIECE>_HOST/_PORT/_PREFIX` in `.env`; it binds `_PORT` and mounts `_PREFIX`. |
 | Rate limiting at the router | Keyed on the user or API key, never the raw IP for authenticated routes. `07_security.md`. |
+| One auth dependency | Every route that needs a user takes it, so the `AUTH_ENABLED` rules run in one place. The loader reads the switch. The dependency calls the framework-free rules. `14_development-sign-in.md`. |
 | `X-Forwarded-*` trusted from the edge only | Never CORS middleware for our own frontend. |
 | Its own image | Non-root user, multi-stage, pinned base, no dev deps in the runtime stage, no `COPY .env*`. |
 | Its own suite | Unit tests beside the file, integration in `tests/` beside `app/`. `10c_dynamic-tests.md`. Layer rules are lint config: `10b_static-checks.md`. |
@@ -91,7 +92,9 @@ explicit instead of routing unrelated storage through Flyway.
 
 Template: `template/apps/database/README.md`,
 `template/apps/database/postgres/migrations/V1__extensions.sql` and
-`template/scripts/db/migrate.sh`.
+`template/scripts/db/migrate.sh`. `V2__users.sql` and `V3__development_identity.sql`
+create the users table and the reserved `default` user. `14_development-sign-in.md`
+owns their rules.
 
 ## Running the engines well
 

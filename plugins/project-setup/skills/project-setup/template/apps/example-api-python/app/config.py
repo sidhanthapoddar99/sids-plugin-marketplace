@@ -10,3 +10,6 @@
 # 4. apply the nested override channel: an env var `API__<SECTION>__<KEY>` (pydantic env_nested_delimiter="__",
 #    env_prefix="API__") overrides that one literal. This is how a container or CI tweaks pool_size without a file.
 # 5. validate into a pydantic Settings model; export `settings`.
+# 6. auth.enabled comes from app.core.auth.parse_auth_enabled, not pydantic's bool, which also reads
+#    1, yes and on. Then call check_listener(enabled, server.host, os.environ.get("PUBLIC_URL")),
+#    so AUTH_ENABLED=FALSE with a non-loopback listener or public origin stops the start.

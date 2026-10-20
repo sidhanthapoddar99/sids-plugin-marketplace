@@ -37,6 +37,7 @@ services:
       API_PORT: 8000
       API_PREFIX: ${API_PREFIX}
       ENGINE_URL: http://engine:8080             # api calls engine by service name
+      AUTH_ENABLED: "TRUE"                       # a literal: the container listens on 0.0.0.0, so FALSE never applies
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
       ENCRYPTION_KEY_PYTHON: ${ENCRYPTION_KEY_PYTHON}
       # PUBLIC_URL arrives only with +public (compose.m.public.yaml); absent = relative URLs only
@@ -65,6 +66,7 @@ services:
       ENGINE_HOST: 0.0.0.0
       ENGINE_PORT: 8080
       ENGINE_PREFIX: ${ENGINE_PREFIX}
+      AUTH_ENABLED: "TRUE"                       # a literal: the container listens on 0.0.0.0, so FALSE never applies
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY}
       ENCRYPTION_KEY_RUST: ${ENCRYPTION_KEY_RUST}
     healthcheck:

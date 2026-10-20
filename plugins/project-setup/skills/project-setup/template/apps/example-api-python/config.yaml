@@ -13,6 +13,7 @@ server:
 engine:
   url: ${ENGINE_URL}         # http://localhost:8080 under ctl dev; http://engine:8080 under docker
 auth:
+  enabled: ${AUTH_ENABLED}   # TRUE or FALSE; FALSE is development sign-in, loopback only
   jwt_signing_key: ${JWT_SIGNING_KEY}
   encryption_key: ${ENCRYPTION_KEY_PYTHON}
   token_ttl_minutes: 60
