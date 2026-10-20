@@ -40,10 +40,11 @@ For projects using Rust/WASM, follow `06_backend.md` § Rust and WASM: productio
 
 ## The host
 
-- The configured data, log and backup directories exist on the host with the right owner before the first `up`; `ctl setup` creates them through the path contract in `02_env.md`. The container's UID must own the bind-mounted directory. On SELinux hosts the mount takes `:Z`. Never `chmod 777`.
+- `BASE_DIR` in `.env` is an absolute path on the host, such as `/DATA/AppData/<Company-Name>/<Project-name>`, so data, logs and backups live outside the checkout and survive a fresh clone (`02_env.md` § Host storage paths).
+- The configured data, log and backup directories exist on the host with the right owner before the first `up`. `ctl setup env` creates them without installing a toolchain, because a host that only runs images needs none. The container's UID must own the bind-mounted directory. On SELinux hosts the mount takes `:Z`. Never `chmod 777`.
 - `.env`: `chmod 600`, owned by the deploy user. Never in the image; `COPY .env*` stays in image history forever.
 - TLS terminates at a host proxy in front of the stack (outside this repo); `web` listens on 8080 as a non-root user. `client_max_body_size` and proxy timeouts in `nginx.conf.template`, aligned with the app's `--timeout`. Security headers and compression at the edge (`07_security.md`).
-- Bind mounts, not named volumes: state is visible and backup-friendly. `${DATA_DIR}` moves it to a fast disk or a tmpfs in CI without touching a compose file.
+- Bind mounts, not named volumes: state is visible and backup-friendly. `BASE_DIR` moves all of it, and an absolute `DATA_DIR` moves the data alone to a fast disk or a tmpfs in CI, without touching a compose file.
 
 ## Reading a sick stack
 
@@ -87,4 +88,5 @@ Walk this before the first public deploy, and again when a new service joins. Th
 - [ ] immutable `TAG`; a rollback path
 - [ ] TLS at the host proxy; body size and timeouts aligned; security headers
 - [ ] env files `chmod 600`; no `COPY .env*`; non-root user in every image
-- [ ] `data/` and `logs/` owned by the container's UID
+- [ ] `BASE_DIR` absolute in the host's `.env`; `DATA_DIR`, `LOGS_DIR` and `BACKUP_DIR` derived from it, or absolute on purpose; `ctl check` green
+- [ ] `ctl setup env` run on the host; the data, logs and backup directories owned by the container's UID

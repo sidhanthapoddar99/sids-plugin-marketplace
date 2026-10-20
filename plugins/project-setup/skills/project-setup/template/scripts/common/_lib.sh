@@ -213,8 +213,9 @@ load_env_file() {
 # does not override keeps it too, so an unexpanded `${DATA_DIR}/postgres` reaches compose as a
 # volume name and `${POSTGRES_USER}` reaches the app inside DATABASE_URL. Text substitution
 # only: no eval, no command substitution, and the replacement is spliced as text, so `&` or `\`
-# in a value stays literal. Skip-if-set still holds: the override (`DATA_DIR=/srv ctl up`) is
-# what gets expanded into the keys that reference it. A reference to an unset name, or a cycle,
+# in a value stays literal. Skip-if-set still holds: the override (`BASE_DIR=/srv/app ctl up`) is
+# what gets expanded into the keys that reference it, the way compose expands it inside the
+# --env-file, so DATA_DIR, LOGS_DIR and BACKUP_DIR follow it. A reference to an unset name, or a cycle,
 # fails naming the key. Returns 1 so a soft caller can go on; require_env exits.
 expand_env_refs() {
   local f src key value ref n
@@ -238,7 +239,7 @@ require_env() {
   # [ADAPT] SOFT (defaulted env, no secrets): replace the `die` line with `continue`.
   local f
   for f in "${ENV_FILES[@]}"; do
-    [[ -f $f ]] || die "$f missing — run \`ctl setup\` (it copies $f.template)."
+    [[ -f $f ]] || die "$f missing — run \`ctl setup env\` (it copies $f.template)."
     load_env_file "$f"
   done
   expand_env_refs || exit 1
@@ -322,7 +323,7 @@ check_env_schema() {  # 0 if .env has every key .env.template declares
   local f rc=0 k
   for f in "${ENV_FILES[@]}"; do
     [[ -f $f.template ]] || { err "$f.template missing"; rc=1; continue; }
-    [[ -f $f ]] || { err "$f missing (run ctl setup)"; rc=1; continue; }
+    [[ -f $f ]] || { err "$f missing (run ctl setup env)"; rc=1; continue; }
     declare -A have=(); local missing=()
     while IFS= read -r k; do have["$k"]=1; done < <(env_keys "$f")
     while IFS= read -r k; do [[ -v have[$k] ]] || missing+=("$k"); done < <(env_keys "$f.template")

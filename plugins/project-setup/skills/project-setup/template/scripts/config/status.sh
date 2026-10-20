@@ -9,7 +9,7 @@ usage() { print_help "status" "Config doctor: env, toolchain, docker, deps, data
   'status [-h]' \
 "Options
   -h, --help      show this help" \
-"Read-only. Fix installs with \`ctl setup\`; fix rule breaches with \`ctl check\`."; }
+"Read-only. Fix .env with \`ctl setup env\` and installs with \`ctl setup\`; fix rule breaches with \`ctl check\`."; }
 
 is_help "${1:-}" && { usage; exit 0; }
 load_env_soft         # soft, non-clobbering load of the root .env file — status must never die
@@ -19,7 +19,7 @@ LOG_INDENT="  "       # nest every section's lines under its ▸ header
 
 step "env files"
 for f in "${ENV_FILES[@]}"; do
-  if [[ -f $f ]]; then ok "$f present"; else warn "$f missing (ctl setup copies $f.template)"; rc=1; fi
+  if [[ -f $f ]]; then ok "$f present"; else warn "$f missing (ctl setup env copies $f.template)"; rc=1; fi
 done
 check_env_schema || rc=1
 
@@ -44,6 +44,7 @@ case "$(docker_state)" in
   no-compose) warn "docker compose plugin missing (docker-compose-plugin ≥ 2.24)" ;;
 esac
 printf '  %s%-9s%s %s\n' "$C_DIM" "project"  "$C_RESET" "${COMPOSE_PROJECT_NAME:-$(basename "$CTL_ROOT")}"
+printf '  %s%-9s%s %s\n' "$C_DIM" "base dir" "$C_RESET" "${BASE_DIR-<unresolved>}"
 printf '  %s%-9s%s %s\n' "$C_DIM" "data dir" "$C_RESET" "${DATA_DIR-<unresolved>}"
 printf '  %s%-9s%s %s\n' "$C_DIM" "logs dir" "$C_RESET" "${LOGS_DIR-<unresolved>}"
 printf '  %s%-9s%s %s\n' "$C_DIM" "backup dir" "$C_RESET" "${BACKUP_DIR-<unresolved>}"

@@ -27,13 +27,17 @@ def compose_root(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def render(root: Path, *files: str) -> dict:
-    env = {
+def render_env(root: Path) -> dict[str, str]:
+    return {
         "PATH": os.environ["PATH"], "HOME": str(root), "CTL_ROOT": str(root), "NO_COLOR": "1",
         "COMPOSE_PROJECT_NAME": "env-contract-test", "REGISTRY": "ghcr.io/example", "TAG": "test",
         "POSTGRES_PASSWORD": "synthetic-password", "WEB_LANDING_PORT": "4301",
         "PUBLIC_URL": "https://example.test", "HTTP_PORT": "8085", "HTTPS_PORT": "8445",
     }
+
+
+def render(root: Path, *files: str, **overrides: str) -> dict:
+    env = {**render_env(root), **overrides}
     command = 'source "$1"; shift; cd "$CTL_ROOT"; require_env; compose_cmd "$@" config --format json'
     args = ["bash", "-c", command, "bash", str(TEMPLATE / "scripts/common/_lib.sh")]
     for name in files:
@@ -70,11 +74,30 @@ def test_modifiers_render_and_use_process_overrides(compose_root: Path, modifier
 @pytest.mark.parametrize("config", ["base"])
 def test_compose_normalizes_bare_relative_storage(compose_root: Path, value: str, config: str) -> None:
     env_file = compose_root / ".env"
-    env_file.write_text(env_file.read_text().replace("DATA_DIR=./data", f"DATA_DIR={value}"))
+    env_file.write_text(env_file.read_text().replace("DATA_DIR=${BASE_DIR}/data", f"DATA_DIR={value}"))
     model = render(compose_root, config)
     mount = model["services"]["postgres"]["volumes"][0]
     assert mount["type"] == "bind"
     assert mount["source"] == str(compose_root / value / "postgres/pgdata")
+
+
+@pytest.mark.parametrize(("base", "shell"), [(".", None), ("./state", None), ("/srv/app", None),
+                                             (".", "/srv/override")])
+def test_ctl_and_raw_compose_mount_the_same_storage(compose_root: Path, base: str, shell: str | None) -> None:
+    """Compose expands ${BASE_DIR} inside the --env-file itself; ctl expands it in the shell first."""
+    env_file = compose_root / ".env"
+    env_file.write_text(env_file.read_text().replace("\nBASE_DIR=.\n", f"\nBASE_DIR={base}\n"))
+    overrides = {"BASE_DIR": shell} if shell else {}
+    through_ctl = render(compose_root, "base", **overrides)["services"]["postgres"]["volumes"][0]["source"]
+    raw = subprocess.run(
+        ["docker", "compose", "--project-directory", str(compose_root), "--env-file", str(env_file),
+         "-f", "docker/compose.base.yaml", "config", "--format", "json"],
+        cwd=compose_root, env={**render_env(compose_root), **overrides}, capture_output=True, text=True, check=False,
+    )
+    assert raw.returncode == 0, raw.stderr
+    direct = json.loads(raw.stdout)["services"]["postgres"]["volumes"][0]["source"]
+    home = Path(shell or base) if (shell or base).startswith("/") else compose_root / base
+    assert through_ctl == direct == str(Path(os.path.normpath(home)) / "data/postgres/pgdata")
 
 
 def test_compose_rejects_blank_storage_before_invoking_docker(tmp_path: Path) -> None:

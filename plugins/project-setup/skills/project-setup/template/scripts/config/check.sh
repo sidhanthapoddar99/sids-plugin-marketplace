@@ -18,6 +18,9 @@ Rules
             no root .env or .env.* tracked by git except .env.template ·
             no secret literal in config.yaml (every key/password/secret value is \${VAR}) ·
             no config.local.yaml tracked by git
+  storage   .env.template derives DATA_DIR and LOGS_DIR from \${BASE_DIR}, and BACKUP_DIR from
+            \${LOGS_DIR} or \${BASE_DIR}, each below the line it reads ·
+            in .env, no relative storage path resolves outside BASE_DIR (an absolute one is deliberate)
   layout    no package.json / bun.lock / pnpm-workspace.yaml at the root or directly in apps/ ·
             no folder under apps/ that holds a manifest and child folders with manifests (a group
             folder such as a static-frontend group or packages/ is not a workspace) ·
@@ -187,6 +190,52 @@ if (( have_env )); then
   if expand_env_refs; then pass "every \${NAME} in the env files resolves"
   else fail "an env file holds a reference ctl cannot resolve — ctl up and ctl dev would hand it on as text"; fi
 fi
+
+# check_storage_paths — every storage path hangs off BASE_DIR, so one setting moves them all.
+# Template: a declared DATA_DIR or LOGS_DIR starts with ${BASE_DIR}, BACKUP_DIR with ${LOGS_DIR} or
+# ${BASE_DIR}, and the referenced key sits on an earlier line, because compose resolves a reference
+# inside the --env-file only to an earlier line and leaves a later one blank. Local .env: a relative
+# path resolves against the repo root, not against BASE_DIR, so it stays behind when BASE_DIR moves.
+# An absolute path there is taken as deliberate (a fast disk, a CI tmpfs). Runs before compose_cmd,
+# because compose_cmd makes every storage path absolute.
+check_storage_paths() {
+  local n=0 line key parent parents derived value base
+  local -A at=() raw=()
+  step "storage paths (every one hangs off BASE_DIR)"
+  if [[ -f .env.template ]]; then
+    while IFS= read -r line || [[ -n $line ]]; do
+      (( ++n ))
+      [[ $line =~ ^(BASE_DIR|DATA_DIR|LOGS_DIR|BACKUP_DIR)=(.*)$ ]] || continue
+      value="${BASH_REMATCH[2]%$'\r'}"; value="${value%%[[:space:]]#*}"
+      at[${BASH_REMATCH[1]}]=$n; raw[${BASH_REMATCH[1]}]="${value%"${value##*[![:space:]]}"}"
+    done < .env.template
+    for key in DATA_DIR LOGS_DIR BACKUP_DIR; do
+      [[ -v at[$key] ]] || continue
+      parents=BASE_DIR; [[ $key == BACKUP_DIR ]] && parents="LOGS_DIR BASE_DIR"
+      derived=0
+      for parent in $parents; do
+        [[ ${raw[$key]} == "\${$parent}" || ${raw[$key]} == "\${$parent}/"* ]] || continue
+        derived=1
+        [[ -v at[$parent] ]] && (( at[$parent] < at[$key] )) \
+          || fail ".env.template: $key reads \${$parent}, which is not declared above it — compose resolves only earlier lines"
+      done
+      (( derived )) || fail ".env.template: $key=${raw[$key]} does not derive from \${BASE_DIR} — moving BASE_DIR would leave it behind"
+    done
+  fi
+  if [[ -f .env ]]; then
+    load_env_files; expand_env_refs 2>/dev/null || true
+    storage_path base "${BASE_DIR-.}"
+    for key in DATA_DIR LOGS_DIR BACKUP_DIR; do
+      [[ -v $key && ${!key} != /* && ${!key} != *'${'* ]] || continue
+      storage_path value "${!key}"
+      [[ $value == "$base" || $value == "$base"/* ]] \
+        || fail ".env: $key=${!key} resolves to $value, outside BASE_DIR ($base) — derive it from \${BASE_DIR}, or write an absolute path if it lives elsewhere on purpose"
+    done
+  fi
+  pass "DATA_DIR, LOGS_DIR and BACKUP_DIR derive from BASE_DIR"
+}
+check_storage_paths
+
 if [[ "$(docker_state)" == ok ]] && (( have_env )); then
   step "compose config (the root .env file supplies \${VAR}, resolved as ctl up hands them on)"
   # every config must stand alone

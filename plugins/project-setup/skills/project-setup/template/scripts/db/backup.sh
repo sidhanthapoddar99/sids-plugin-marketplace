@@ -12,14 +12,14 @@ usage() { print_help "db backup" "Dump every data engine into a timestamped fold
   -h, --help      show this help
 
 Writes \${BACKUP_DIR}/<YYYYmmdd-HHMMSS>/{postgres.dump, redis.rdb, neo4j-schema.cypher}
-(BACKUP_DIR from .env; default ./logs/backups).
+(BACKUP_DIR from .env; the template derives it as \${LOGS_DIR}/backups under BASE_DIR).
 Restore with: ctl db restore <that folder>." \
 "TODO: a full neo4j dump (neo4j-admin database dump) needs the container stopped; not automated here."; }
 
 is_help "${1:-}" && { usage; exit 0; }
 require_env; require_docker
 resolve_storage_dirs
-dest="${BACKUP_DIR:-./logs/backups}/$(date +%Y%m%d-%H%M%S)"; mkdir -p "$dest"
+dest="$BACKUP_DIR/$(date +%Y%m%d-%H%M%S)"; mkdir -p -- "$dest"
 has() { printf '%s\n' "${DATA_SVCS[@]}" | grep -qx "$1"; }
 
 if has postgres; then
