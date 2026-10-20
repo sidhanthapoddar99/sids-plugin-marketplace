@@ -24,6 +24,7 @@ When this section outgrows one screen, move it to `memory/` and import each file
 | Frontend shape | `<single frontend · group (apps/example-multi-web-app) + server frontend>` |
 | Backend role | `<one backend · api + engine (identity in Python, data plane in Rust)>` |
 | Identity planes | `<single · admin plane on its own origin (api-admin)>` |
+| Development sign-in | `<AUTH_ENABLED: FALSE acts as the reserved default user on loopback, TRUE in containers and production · none, no user accounts>` |
 | Schema owner and migration style | `Flyway SQL migrations in apps/database/postgres/migrations` |
 | Theme modes | `<light + dark · light only (marketing)>` |
 | Protection tier | `<none · captcha (Turnstile) · managed WAF>` |

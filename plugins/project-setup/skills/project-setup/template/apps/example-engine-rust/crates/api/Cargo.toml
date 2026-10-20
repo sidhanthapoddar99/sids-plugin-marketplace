@@ -1,5 +1,7 @@
 [package]
 name = "api"
+version.workspace = true
+edition.workspace = true
 [dependencies]
 common = { path = "../common" }
 data = { path = "../data" }

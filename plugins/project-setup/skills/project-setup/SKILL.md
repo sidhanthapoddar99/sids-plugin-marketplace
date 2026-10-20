@@ -29,6 +29,7 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 | How is a frontend built | `references/05_frontend.md` |
 | How is a backend built | `references/06_backend.md` |
 | What must be safe | `references/07_security.md` |
+| How development runs without sign-in: `AUTH_ENABLED` and the reserved `default` user | `references/14_development-sign-in.md` |
 | What do I type | `references/08_ctl.md` |
 | How `ctl up` assembles a stack: configs, modifiers, services, presets, include | `references/08a_ctl_docker.md` |
 | What makes it prod | `references/09_production.md` |
