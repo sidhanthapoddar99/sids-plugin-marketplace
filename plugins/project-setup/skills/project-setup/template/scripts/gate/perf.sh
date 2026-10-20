@@ -6,6 +6,7 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 source "$CTL_ROOT/scripts/gate/_gate.sh"
+source "$CTL_ROOT/scripts/common/_test-settings.sh"
 
 usage() { print_help "gate perf" "benchmarks and load tests, by name (never in the ladder)" \
   'gate perf [-h]' \
@@ -18,8 +19,7 @@ exit code — this gate prints numbers and fails only when a target cannot run."
 is_help "${1:-}" && { usage; exit 0; }
 (( $# == 0 )) || die "ctl gate perf takes no arguments (got: $*)"
 
-load_env_files
-expand_env_refs || exit 1
+test_settings_init   # loads .env; cargo bench compiles under the cores and compiler jobs of TESTING
 resolve_storage_dirs || exit 1
 mkdir -p "$LOGS_DIR/perf"; stamp="$(date +%Y%m%d-%H%M%S)"
 failed=() ran=0

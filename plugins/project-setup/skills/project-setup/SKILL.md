@@ -43,6 +43,7 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 | What a person reviews by hand | `references/10a_review.md` |
 | What is green; the ladder; the static rungs | `references/10b_static-checks.md` |
 | Where tests live; the dynamic rungs | `references/10c_dynamic-tests.md` |
+| How fast a test run is, and what it may use: TESTING settings, gate modes, the one-run lock, Rust debug info | `references/10d_test-speed-and-resources.md` |
 | What holds everywhere; the audit order | `references/11_conventions.md` |
 | Example of a collaborative editor with shared browser/server WASM and intent synchronization | `references/examples/shared-wasm-document-engine.md` (optional example, not a prescribed stack) |
 
@@ -61,7 +62,7 @@ The fallback for a question no page covers. Each line points at the page that ow
 5. **Base is prod** (`08a_ctl_docker.md`, `09_production.md`). A config (`compose.<name>.yaml`, `base` is the whole stack) has no ports and modifiers add exposure, because compose lists only union, so exposure can only be added, never removed.
 6. **Promote when shared, never before** (`11_conventions.md`). A thing moves up a scope at its second consumer, because a premature package is a second manifest to keep green for nothing.
 7. **Convergence is the design** (`05_frontend.md`). Tokens and a typography allowlist in `AGENTS.md` override `frontend-design` once they exist, because a bold new look on every page is drift, not design.
-8. **Green means `ctl gate` passed** (`10b_static-checks.md`). A check exits 0 only when the rule was proved, so green never means "nothing ran". The floor is four rungs that cost seconds; every further rung, hook and suite is the user's call, because a prototype pays for each on every commit.
+8. **Green means a `ctl gate` run passed over the whole change** (`10b_static-checks.md`, `10d_test-speed-and-resources.md`). A check exits 0 only when the rule was proved, so green never means "nothing ran". A run that cannot tell what a change reaches checks everything. The floor is four rungs that cost seconds; every further rung, hook and suite is the user's call, because a prototype pays for each on every commit.
 9. **Versions are `<version>` until resolved with the user** (`04_stack.md`). A version from memory is a guess that installs, so `ctl check` names every placeholder and `ctl setup` refuses to install while one remains.
 10. **The brief is the contract** (`11_conventions.md`). Every chosen variant, exception and deferral is recorded in `AGENTS.md`, because the skill is not always loaded and the brief is, and an audit compares against the brief.
 

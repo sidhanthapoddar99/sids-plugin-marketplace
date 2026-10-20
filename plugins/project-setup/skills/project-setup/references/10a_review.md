@@ -25,6 +25,7 @@ A stage is a unit of the plan that ends in a working state. The tracker defines 
 ## Rules
 
 - A pass runs against a frozen state: a commit, a frozen build, a tagged image. A working tree that is still changing gives findings nobody can reproduce.
+- Before a pass starts, the author checks out the commit under review and runs `ctl gate --delta <base>` there, where `<base>` is the commit the change started from. A frozen build or a tagged image counts through the commit it was built from. A plain `ctl gate` on that clean checkout would run only `check`, so its green would say nothing about the change. `10b_static-checks.md` § Rules defines green, and `10d_test-speed-and-resources.md` explains the modes.
 - A finding names the file and the line, the same as a rung, because "the auth code looks off" cannot be fixed or closed.
 - Findings are written down where they outlive the reply: the tracker when there is one, otherwise the wrap-up. A finding that lives only in chat is lost at the next session.
 - When a pass finds a class of bug a linter could catch, the fix is the lint rule in `10b_static-checks.md`, so the pass keeps its time for what needs judgement.
@@ -44,4 +45,7 @@ For a setup, storage, process or deployment change, compare the guide with execu
 | Production | Build failure makes no activation call; selected dependencies are included; successful one-shots and failed long-running services are distinguished; readiness is bounded and failure does not imply rollback. |
 | Runtime dispatch | Current-project container selection, explicit host fallback, argument boundaries, TTY policy and nonzero exit propagation hold. |
 | Restore | Missing or invalid input causes no mutation; archive validation precedes every drop/create; active dependents are refused. Archive listing is not proof that the restore will succeed, and the guard is not a writer lock. |
+| Test settings | The precedence holds: a flag over the shell, the shell over `.env`, `.env` over the derived default. The test runner inside the gate prints the same values. A bad value or a repeated core stops the run before any rung, and the message names its source. `10d_test-speed-and-resources.md` § The TESTING settings. |
+| Change selection | An unmapped path widens the run to every target. Deleted and renamed paths count. A repository with no commit widens, and a folder outside git widens plain `ctl gate` and stops `--delta` by name. The plan names each skipped rung, and a partial run's closing line names each skipped rung and target. `10d_test-speed-and-resources.md` § What a gate run checks. |
+| Gate lock | A second run from another checkout waits and names the holder. A killed holder releases the lock with nothing to clean up. A symlinked lock file is refused. `10d_test-speed-and-resources.md` § One run at a time. |
 | Optional WASM | Only WASM projects install targets and packaging tools; target checks use the selected toolchain; release builds, serialized source watching and compatibility-aware activation follow `06_backend.md`. |

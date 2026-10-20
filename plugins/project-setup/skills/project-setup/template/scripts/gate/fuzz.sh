@@ -6,6 +6,7 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 source "$CTL_ROOT/scripts/gate/_gate.sh"
+source "$CTL_ROOT/scripts/common/_test-settings.sh"
 
 usage() { print_help "gate fuzz" "property-based and fuzz tests, by name (never in the ladder)" \
   'gate fuzz [--time <seconds>] [-h]' \
@@ -21,6 +22,7 @@ while (( $# )); do case "$1" in
   --time) TIME="${2:-}"; [[ $TIME =~ ^[0-9]+$ ]] || die "--time wants seconds"; shift 2 ;;
   *) die "unknown argument: $1 (see \`ctl gate fuzz -h\`)" ;;
 esac; done
+test_settings_init   # cargo fuzz compiles: the cores and compiler jobs of .env TESTING
 
 failed=() ran=0
 while IFS= read -r d; do [[ -n $d && -d "$d/tests/fuzz" ]] || continue

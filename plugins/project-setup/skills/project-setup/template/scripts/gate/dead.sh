@@ -16,6 +16,7 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 source "$CTL_ROOT/scripts/gate/_gate.sh"
+source "$CTL_ROOT/scripts/common/_test-settings.sh"
 
 usage() { gate_usage dead "find code, files and dependencies nothing reaches" \
 "Two knip censuses at the root (knip.json, knip.production.json), deptry per Python app, cargo udeps
@@ -25,6 +26,7 @@ entry in the tool's config with the reason written beside it." \
 gate_quiet_reexec "$@"
 is_help "${1:-}" && { usage; exit 0; }
 gate_reject_args "gate dead" "run one census by hand with the tool's own CLI" "$@"
+test_settings_init   # cargo udeps compiles: the cores and compiler jobs of .env TESTING
 
 failed=() ran=0
 census() {  # census <label> <cmd…> — exit 0 = clean, 1 = findings, other = could not run (dies)
