@@ -100,19 +100,88 @@ die()  { err "$*"; exit 1; }
 hr()   { printf '%s────────────────────────────────%s\n' "$C_DIM" "$C_RESET"; }
 section() { printf '%s%s%s\n' "$C_B" "$*" "$C_RESET"; hr; }   # bold title + rule line
 # row <name> <desc> [width] — two-column help row padded by DISPLAY width (char count,
-# UTF-8-aware via ${#n}), so multibyte glyphs (…, ·) don't throw off alignment.
-row()  { local n="$1" d="$2" w="${3:-36}" pad; pad=$(( w - ${#n} )); (( pad < 1 )) && pad=1
+# UTF-8-aware via ${#n}), so multibyte glyphs (…, ·) don't throw off alignment. The gap is at
+# least two spaces, because help_wrap finds a row's description column by that gap.
+row()  { local n="$1" d="$2" w="${3:-36}" pad; pad=$(( w - ${#n} )); (( pad < 2 )) && pad=2
          printf '  %s%*s%s\n' "$n" "$pad" '' "$d"; }
 
 # ── help ──
 is_help() { [[ "${1:-}" == -h || "${1:-}" == --help ]]; }
 # print_help <cmd> <summary> <usage> <body> [dim-note]
 print_help() {
-  printf '%s%s%s — %s\n\n' "$C_B$C_CYN" "ctl $1" "$C_RESET" "$2"
-  printf '%sUsage%s\n  ctl %s\n\n' "$C_B" "$C_RESET" "$3"
-  printf '%s\n' "$4"
-  [[ -n "${5:-}" ]] && printf '\n%s%s%s\n' "$C_DIM" "$5" "$C_RESET"
-  return 0
+  {
+    printf '%s%s%s — %s\n\n' "$C_B$C_CYN" "ctl $1" "$C_RESET" "$2"
+    printf '%sUsage%s\n  ctl %s\n\n' "$C_B" "$C_RESET" "$3"
+    printf '%s\n' "$4"
+    if [[ -n "${5:-}" ]]; then printf '\n%s%s%s\n' "$C_DIM" "$5" "$C_RESET"; fi
+  } | help_wrap
+}
+# help_wrap — a filter that folds each help line wider than the terminal at spaces, so a narrow
+# window keeps the columns instead of wrapping lines back to column 0. A row (`  term  text`)
+# continues under its text. A row whose text column leaves under 20 columns puts its text on its
+# own lines, 4 columns deeper than the term. Any line whose indent leaves under 20 columns moves
+# the same way: to 4 columns deeper than the last line that left more. A line indented 1 or 2
+# columns continues 2 deeper, so it doesn't read as a new item; any other line continues at its
+# own indent. Output that is not a terminal, or a terminal of unknown width or under 40 columns,
+# gets the text as written, so pipes, tests and grep see one line per row.
+help_wrap() {
+  local rows="" cols="" line
+  [[ -t 1 ]] && read -r rows cols < <(stty size </dev/tty 2>/dev/null) || true
+  [[ $cols =~ ^[1-9][0-9]*$ ]] || cols="${COLUMNS:-}"
+  if [[ ! -t 1 || ! $cols =~ ^[1-9][0-9]*$ ]] || (( cols < 40 )); then cat; return; fi
+  _HELP_BASE=0 _HELP_BLOCK=-1
+  while IFS= read -r line || [[ -n $line ]]; do _help_fold "$line" "$cols"; done
+}
+# _help_fold's state across lines: the indent of the last line that left 20 columns, and the
+# indent of the first line after it that left fewer (-1 until one comes)
+_HELP_BASE=0 _HELP_BLOCK=-1
+# _help_len <text> — sets _HELP_LEN to the columns <text> takes, color codes excluded
+_help_len() {
+  local s="$1" sgr=$'\e''\[[0-9;]*m'
+  while [[ $s =~ $sgr ]]; do s="${s//"${BASH_REMATCH[0]}"/}"; done
+  _HELP_LEN=${#s}
+}
+# _help_fold <line> <cols> — print <line> folded to <cols> columns (help_wrap above)
+_help_fold() {
+  local line="$1" cols="$2" lead body term gap desc head text indent cur width word fresh=1
+  # a row: a term (words joined by single spaces), a gap of 2+ spaces, then its text
+  local row_re='^([^ ]+( [^ ]+)*)(  +)([^ ].*)$' word_re='^( *)([^ ]+)(.*)$'
+  lead="${line%%[! ]*}"; body="${line#"$lead"}"
+  # a line whose indent leaves under 20 columns moves to 4 columns deeper than the last line that
+  # left more, keeping any indent it has beyond the first such line; blank lines change nothing
+  if [[ -n $body ]]; then
+    if (( ${#lead} + 20 <= cols )); then _HELP_BASE=${#lead} _HELP_BLOCK=-1
+    else
+      (( _HELP_BLOCK >= 0 )) || _HELP_BLOCK=${#lead}
+      printf -v lead '%*s' $(( _HELP_BASE + 4 + (${#lead} > _HELP_BLOCK ? ${#lead} - _HELP_BLOCK : 0) )) ''
+    fi
+  fi
+  head="$lead"; text="$body"; indent=$(( ${#lead} == 1 || ${#lead} == 2 ? ${#lead} + 2 : ${#lead} ))
+  # an indented row: its text continues under its column, or moves to its own lines when the
+  # column leaves under 20 columns. A "term" too wide for one line is prose with a double space
+  # inside, and folds as plain text.
+  if (( ${#lead} >= 2 )) && [[ $body =~ $row_re ]]; then
+    term="$lead${BASH_REMATCH[1]}"; gap="${BASH_REMATCH[3]}"; desc="${BASH_REMATCH[4]}"   # _help_len resets BASH_REMATCH
+    _help_len "$term$gap"
+    if (( _HELP_LEN + 20 <= cols )); then head="$term$gap"; text="$desc"; indent=$_HELP_LEN
+    else
+      _help_len "$term"
+      if (( _HELP_LEN <= cols )); then
+        printf '%s\n' "$term"; indent=$(( ${#lead} + 4 )); printf -v head '%*s' "$indent" ''; text="$desc"
+      fi
+    fi
+  fi
+  _help_len "$head$text"; (( _HELP_LEN <= cols )) && { printf '%s\n' "$head$text"; return; }
+  cur="$head"; _help_len "$head"; width=$_HELP_LEN
+  while [[ $text =~ $word_re ]]; do
+    gap="${BASH_REMATCH[1]}"; word="${BASH_REMATCH[2]}"; text="${BASH_REMATCH[3]}"
+    _help_len "$word"
+    if (( fresh )); then cur+="$word"; (( width += _HELP_LEN )); fresh=0
+    elif (( width + ${#gap} + _HELP_LEN <= cols )); then cur+="$gap$word"; (( width += ${#gap} + _HELP_LEN ))
+    else printf '%s\n' "$cur"; printf -v cur '%*s%s' "$indent" '' "$word"; width=$(( indent + _HELP_LEN ))
+    fi
+  done
+  printf '%s\n' "$cur"
 }
 # passthrough_help <verb> <summary> — for thin `docker compose` forwards
 passthrough_help() {

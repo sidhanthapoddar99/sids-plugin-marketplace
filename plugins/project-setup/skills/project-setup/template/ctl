@@ -183,6 +183,6 @@ case "$cmd" in
   # ── worktrees ────────────────────────────────────────────
   worktree) run worktree/worktree "$@" ;;
   # ── meta ─────────────────────────────────────────────────
-  help|-h|--help) ctl_help ;;
+  help|-h|--help) ctl_help | help_wrap ;;
   *)        err "unknown command: $cmd"; say "run ${C_B}ctl --help${C_RESET} for the command list"; exit 1 ;;
 esac

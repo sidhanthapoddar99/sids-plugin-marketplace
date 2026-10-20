@@ -73,6 +73,8 @@ A repo whose `ctl` is not the template's is adopted only when the user says yes,
 
 The verb table below is the floor, not the ceiling. A project adds the verbs its work needs (`ctl train`, `ctl sqlx-prepare`, `ctl mobile-api-codegen`, `ctl seed`, `ctl deploy`) the same way every existing verb is built: one worker at `scripts/<group>/<name>.sh` with the preamble, `--help`, and one `run <group>/<name>` line in `ctl`. New groups are fine (`scripts/ml/`, `scripts/admin/`). Two rules hold: logic never lives in `ctl` itself, and every added verb appears in `ctl --help` and in the `AGENTS.md` Commands section. Verbs that stop being used are deleted, not left as residue.
 
+A worker prints its help with `print_help`, and a help row in `ctl` uses `row`. Both pass through `help_wrap` in `_lib.sh`. In a terminal, it folds each line wider than the window at a space, and a row's text continues under the row's text column. A pipe gets the text as written, one line per row, so `grep` and the tests read it whole. Separate a row's term from its text by two or more spaces, because that gap is how `help_wrap` finds the column. A help printed with `cat` or `echo` gets neither behavior.
+
 ## Scripting languages
 
 Use Bash for CTL entrypoints, command routing, process ownership and locks.
