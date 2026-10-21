@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.0
+
+- `.env.template` gains a RUST section. `CTL_RUST_DEBUG` sets the debug info of the dev and test builds of the repo's own crates. `require_env` and the test settings hand it to Cargo as `CARGO_PROFILE_DEV_DEBUG`, which the test profile inherits, so `ctl dev`, `ctl test` and `ctl gate` all build at that level. A `CARGO_PROFILE_DEV_DEBUG` set in the shell wins, and an empty value leaves `Cargo.toml` to decide. `rust_env_apply` refuses a value Cargo would refuse, naming the key and the values Cargo accepts, and `ctl check` gains the same rule. The key isn't named `CARGO_*`, because `ctl` exports every `.env` key to every process it starts.
+
 ## 0.13.1
 
 - Help fits the terminal. `print_help` and `ctl --help` pass through `help_wrap`, which folds each line wider than the window at a space, so a narrow window no longer wraps lines back to column 0. A row's text continues under its own column. A row whose column leaves under 20 columns puts its text on its own lines, and any line indented that deep moves the same way, so a description block stays together. A pipe, or a terminal of unknown width or under 40 columns, gets the text as written. `row` keeps at least two spaces between a term and its text, because that gap marks the column.

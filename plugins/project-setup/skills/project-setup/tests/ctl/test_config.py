@@ -167,3 +167,19 @@ def test_check_names_a_local_relative_path_left_behind_by_base_dir(
     else:
         assert result.returncode != 0
         assert failure.format(root=root) in result.stderr
+
+
+@pytest.mark.parametrize(("local", "failure"), [
+    ("CTL_RUST_DEBUG=line-tables-only\n", None),
+    ("CTL_RUST_DEBUG=\n", None),
+    ("CTL_RUST_DEBUG=maximum\n", "CTL_RUST_DEBUG=maximum is not a debug level Cargo accepts"),
+], ids=["a-level", "empty", "refused"])
+def test_check_names_a_rust_debug_level_cargo_would_refuse(tmp_path: Path, local: str, failure: str | None) -> None:
+    root = tmp_path / "repo"
+    scaffold_check(root, "API_PORT=8000\n" + STORAGE + "CTL_RUST_DEBUG=\n")
+    result = run_check(root, "API_PORT=8000\n" + STORAGE + local)
+    if failure is None:
+        assert result.returncode == 0, result.stdout + result.stderr
+    else:
+        assert result.returncode != 0
+        assert failure in result.stderr

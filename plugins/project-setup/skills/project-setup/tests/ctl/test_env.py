@@ -162,3 +162,51 @@ def test_missing_root_env_fails_with_setup_instruction(tmp_path: Path) -> None:
     assert result.returncode != 0
     assert ".env missing" in result.stderr
     assert "ctl setup" in result.stderr
+
+
+# The RUST section: ctl hands CTL_RUST_DEBUG to Cargo as CARGO_PROFILE_DEV_DEBUG, which the test
+# profile inherits. Both loaders that come before a Cargo command apply it: require_env (ctl dev)
+# and the test settings (ctl test, ctl gate). "unset" means Cargo.toml decides.
+SETTINGS = LIB.parent / "_test-settings.sh"
+RUST_LOADERS = {
+    "require_env": 'source "$1"; cd "$CTL_ROOT"; require_env',
+    "test_settings_load": 'source "$1"; source "$2"; cd "$CTL_ROOT"; test_settings_load',
+}
+
+
+def rust_debug(
+    root: Path, loader: str, env_file: str, shell: Values | None = None
+) -> subprocess.CompletedProcess[str]:
+    (root / ".env").write_text(env_file)
+    env = {"PATH": os.environ["PATH"], "HOME": os.environ.get("HOME", str(root)), "NO_COLOR": "1"}
+    env.update(shell or {})
+    env["CTL_ROOT"] = str(root)
+    script = RUST_LOADERS[loader] + '; printf "%s\\n" "${CARGO_PROFILE_DEV_DEBUG-unset}"'
+    return subprocess.run(
+        ["bash", "-c", script, "bash", str(LIB), str(SETTINGS)],
+        env=env, capture_output=True, text=True, check=False,
+    )
+
+
+@pytest.mark.parametrize("loader", RUST_LOADERS)
+@pytest.mark.parametrize(("env_file", "shell", "expected"), [
+    ("CTL_RUST_DEBUG=full\n", {}, "full"),
+    ("CTL_RUST_DEBUG=\n", {}, "unset"),
+    ("", {}, "unset"),
+    ("CTL_RUST_DEBUG=full\n", {"CARGO_PROFILE_DEV_DEBUG": "0"}, "0"),
+    ("CTL_RUST_DEBUG=full\n", {"CTL_RUST_DEBUG": "limited"}, "limited"),
+], ids=["from-the-file", "empty", "absent", "shell-cargo-variable-wins", "shell-key-wins"])
+def test_the_rust_section_reaches_cargo_and_the_shell_wins(
+    tmp_path: Path, loader: str, env_file: str, shell: Values, expected: str
+) -> None:
+    result = rust_debug(tmp_path, loader, env_file, shell)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines()[-1] == expected
+
+
+@pytest.mark.parametrize("loader", RUST_LOADERS)
+def test_a_debug_level_cargo_refuses_stops_naming_the_key_and_the_values(tmp_path: Path, loader: str) -> None:
+    result = rust_debug(tmp_path, loader, "CTL_RUST_DEBUG=maximum\n")
+    assert result.returncode != 0
+    assert "CTL_RUST_DEBUG=maximum" in result.stderr
+    assert "line-tables-only" in result.stderr

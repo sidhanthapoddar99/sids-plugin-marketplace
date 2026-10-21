@@ -196,6 +196,9 @@ if (( have_env )); then
   load_env_files
   if expand_env_refs; then pass "every \${NAME} in the env files resolves"
   else fail "an env file holds a reference ctl cannot resolve — ctl up and ctl dev would hand it on as text"; fi
+  step "Rust settings (the RUST section holds values Cargo accepts)"
+  if rust_env_apply; then pass "CTL_RUST_DEBUG is ${CTL_RUST_DEBUG:-empty, so Cargo.toml decides}"
+  else fail "ctl dev, ctl test and ctl gate would stop on CTL_RUST_DEBUG (named above)"; fi
 fi
 
 # check_storage_paths — every storage path hangs off BASE_DIR, so one setting moves them all.

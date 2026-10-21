@@ -50,6 +50,7 @@ test_settings_load() {
   _TS_SHELL_JOBS="${CARGO_BUILD_JOBS:-}"
   load_env_files
   expand_env_refs || die "the root .env holds a \${NAME} that does not resolve (named above)"
+  rust_env_apply || exit 1
 }
 
 # test_size_mib <size> <where it came from> — "8G", "512M", "8GB" or a bare number (GB) in MiB.

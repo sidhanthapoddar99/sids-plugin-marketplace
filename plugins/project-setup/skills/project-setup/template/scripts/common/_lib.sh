@@ -318,6 +318,23 @@ require_env() {
     load_env_file "$f"
   done
   expand_env_refs || exit 1
+  rust_env_apply || exit 1
+}
+# rust_env_apply — hand the RUST section of the root .env to Cargo. require_env and the test
+# settings call it, because ctl dev, ctl test and ctl gate start the Cargo commands ctl runs.
+# CTL_RUST_DEBUG becomes CARGO_PROFILE_DEV_DEBUG, which the test profile inherits. A
+# CARGO_PROFILE_DEV_DEBUG set in the shell wins, and an empty value leaves Cargo.toml to decide.
+# A value Cargo would refuse fails here, naming the key, because Cargo's own error names only its
+# variable and not the values it accepts.
+rust_env_apply() {
+  local level="${CTL_RUST_DEBUG:-}"
+  [[ -n $level ]] || return 0
+  case "$level" in
+    0|1|2|true|false|none|line-directives-only|line-tables-only|limited|full) ;;
+    *) err "CTL_RUST_DEBUG=$level is not a debug level Cargo accepts: 0, line-tables-only, limited or full (also none, 1, 2, true, false, line-directives-only)"
+       return 1 ;;
+  esac
+  [[ -v CARGO_PROFILE_DEV_DEBUG ]] || export CARGO_PROFILE_DEV_DEBUG="$level"
 }
 load_env_files() { local f; for f in "${ENV_FILES[@]}"; do load_env_file "$f"; done; }   # skip-if-set; a missing file is skipped
 load_env_soft()  { load_env_files; expand_env_refs || true; }                              # diagnostics: never die

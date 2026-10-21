@@ -10,8 +10,8 @@ edition = "<version>"
 # so a panic or a backtrace still names the file and line, and no debug info for dependencies. Each
 # test binary is rewritten whole after an edit, and full debug info made most of it: on a measured
 # Rust workspace, one edit wrote 4.3 GB instead of 15.1 GB, and a cold test build 7.6 GB instead of
-# 25.1 GB. For a debugger session, CARGO_PROFILE_DEV_DEBUG=full restores full debug info for this
-# workspace's crates. Leave CARGO_INCREMENTAL on: after a one-line edit, a test build took 15.7 s
+# 25.1 GB. For a debugger session, CTL_RUST_DEBUG=full in the RUST section of .env restores full
+# debug info for this workspace's crates in every build ctl starts. Leave CARGO_INCREMENTAL on: after a one-line edit, a test build took 15.7 s
 # with it and 56 s without.
 [profile.dev]
 debug = "line-tables-only"
