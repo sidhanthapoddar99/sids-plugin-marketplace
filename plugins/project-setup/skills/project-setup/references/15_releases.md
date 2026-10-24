@@ -41,7 +41,7 @@ Why one command instead of steps in `AGENTS.md`:
 
 ## The version step
 
-`template/scripts/release/versions.sh` sets the product's one version. Its `[ADAPT]` list `VERSION_FILES` names the manifests that carry it, such as `apps/web/package.json` or a Rust workspace's `Cargo.toml` (`[workspace.package] version`). An empty list means the product has no version yet, and the step sets none.
+`template/scripts/release/versions.sh` sets the product's one version. Its `[ADAPT]` list `VERSION_FILES` names the manifests that carry it, such as `apps/web/package.json` or a Rust workspace's `Cargo.toml` (`[workspace.package] version`). An empty list means the product has no version yet, and the step sets none. For a `Cargo.toml` it also runs `cargo update --workspace --offline` beside it, because `Cargo.lock` records each member's version and a `--locked` build refuses a lock that disagrees.
 
 A project with parts that carry their own version extends this step and records the extension in `AGENTS.md` § Exceptions. The shape Studio uses for its document engines:
 

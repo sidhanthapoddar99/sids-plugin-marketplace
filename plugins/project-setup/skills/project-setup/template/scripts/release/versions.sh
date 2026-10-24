@@ -63,6 +63,12 @@ if (( write )); then
     # Only the first version line changes, so a dependency's version stays as it is.
     awk -v from="$current" -v to="$next" '!done && /^[[:space:]]*"?version"?[[:space:]]*[:=]/ && index($0, "\"" from "\"") { sub("\"" from "\"", "\"" to "\""); done=1 } { print }' "$f" > "$f.tmp"
     mv "$f.tmp" "$f"
+    # Cargo.lock records each workspace member's version, and a --locked build refuses a lock that
+    # disagrees with the manifest, so the lock moves with it. --offline changes no dependency.
+    if [[ $(basename "$f") == Cargo.toml && -f "$(dirname "$f")/Cargo.lock" ]]; then
+      require_tools cargo
+      (cd "$(dirname "$f")" && cargo update --workspace --offline --quiet) || die "cargo could not update $(dirname "$f")/Cargo.lock to $next"
+    fi
   done
 fi
 echo "product $current → $next"
