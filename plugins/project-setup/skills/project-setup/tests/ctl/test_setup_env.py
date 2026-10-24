@@ -194,11 +194,11 @@ def test_ctl_help_lists_setup_env(tmp_path: Path, args: tuple[str, ...]) -> None
 
 
 @pytest.mark.parametrize(("args", "code", "text"), [
-    (("setup", "--help"), 0, "env             the environment only"),
+    (("setup", "--help"), 0, "env                  the environment only"),
     (("setup", "env", "--help"), 0, "ctl setup env — Set up the environment only"),
     (("setup", "env", "-h"), 0, "Installs no toolchain and no dependency"),
-    (("setup", "env", "extra"), 1, "usage: ctl setup env [-h]"),
-    (("setup", "extra"), 1, "usage: ctl setup [env] [-h]"),
+    (("setup", "env", "extra"), 1, "usage: ctl setup env [--remove-unlisted] [-h]"),
+    (("setup", "extra"), 1, "usage: ctl setup [env] [--remove-unlisted] [-h]"),
 ])
 def test_setup_help_and_usage_have_no_side_effects(tmp_path: Path, args: tuple[str, ...], code: int, text: str) -> None:
     ctl = router(tmp_path)

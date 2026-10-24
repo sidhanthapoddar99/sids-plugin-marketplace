@@ -1,40 +1,6 @@
 #!/usr/bin/env bash
 
-sync_env_template() {
-  local file key line value slot="" ports=()
-  # A slot's ports carry the offset ctl worktree gave it, which this step cannot know. A port number
-  # added here would be the main tree's port, and the slot's apps would reach the main tree's.
-  [[ $CTL_ROOT =~ /\.worktrees/(slot-[0-9]+)$ ]] && slot=${BASH_REMATCH[1]}
-  for file in "${ENV_FILES[@]}"; do
-    [[ -f "$file.template" ]] || { err "no $file.template to create $file from"; return 1; }
-    if [[ ! -f $file ]]; then
-      [[ -z $slot ]] || { err "$slot has no $file. A copy of $file.template would hold the main tree's ports; ctl worktree create writes a slot's own $file when it takes a free slot"; return 1; }
-      (umask 077; cp "$file.template" "$file"; chmod 600 "$file") || return 1
-      ok "created $file from $file.template"
-    fi
-    if [[ -n $slot ]]; then
-      ports=()
-      while IFS= read -r line || [[ -n $line ]]; do
-        key=${line%%=*} value=${line#*=}; value=${value%$'\r'}; value=${value%%[[:space:]]#*}
-        [[ $line == *=* && $key =~ ^[A-Za-z_][A-Za-z0-9_]*_PORT$ && ${value%"${value##*[![:space:]]}"} =~ ^[0-9]+$ ]] || continue
-        grep -q "^${key}=" "$file" || ports+=("$key")
-      done < "$file.template"
-      if (( ${#ports[@]} )); then
-        err "$file lacks ${ports[*]}, a port $file.template declares. In $slot, add each one by hand with the slot's offset, which the first line of $file names, then run this again. Nothing was changed"
-        return 1
-      fi
-    fi
-    while IFS= read -r line || [[ -n $line ]]; do
-      key=${line%%=*}
-      [[ $line == *=* && $key =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
-      if ! grep -q "^${key}=" "$file"; then
-        if [[ -s $file && -n $(tail -c 1 "$file") ]]; then printf '\n' >> "$file"; fi
-        printf '%s\n' "$line" >> "$file" || return 1
-        ok "$file: added missing key $key"
-      fi
-    done < "$file.template"
-  done
-}
+# sync_env_template, step 1 of the env step, lives in _env-merge.sh.
 
 generate_credential() {
   local generator=$1 value='' chunk

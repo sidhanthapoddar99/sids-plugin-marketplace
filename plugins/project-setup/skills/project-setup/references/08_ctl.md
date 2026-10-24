@@ -117,8 +117,8 @@ are a separate suite and are not installed by CTL.
 | | `gate static\|dynamic [-q]` | The listed rungs that read the code, or the ones that run it. Ladder order kept. |
 | | `gate <rung> [-q]` | One rung, on the whole repo unless apps are named. `gate lint [app…] [--staged]` and `gate typecheck [app…]` take apps; the others take none. |
 | | `gate clones\|fuzz\|perf` | By name. Never in the ladder. |
-| Configuration | `setup` | The env step of `setup env`, then toolchains installed and activated, then source-package dependencies and hooks installed. |
-| | `setup env` | The env step alone: `.env` from its template, declared local credentials generated and checked, storage folders created under `BASE_DIR`. Installs nothing. `02_env.md` § Setting up `.env`. |
+| Configuration | `setup [--remove-unlisted]` | The env step of `setup env`, then toolchains installed and activated, then source-package dependencies and hooks installed. |
+| | `setup env [--remove-unlisted]` | The env step alone: `.env` created from its template or rebuilt in its shape with every value kept, declared local credentials generated and checked, storage folders created under `BASE_DIR`. Installs nothing. A key the template lacks is removed only on a yes in a terminal or with `--remove-unlisted`. `02_env.md` § Setting up `.env`. |
 | | `check` | The repo contract. Below. |
 | | `status` | Read-only doctor: env, runtimes, deps, docker, health, stack. Never dies. |
 | Worktrees | `worktree create <name> [--from <ref>]` | Puts a free slot, a git worktree at `.worktrees/slot-<n>` whose builds stay warm, on branch `<name>`, and links `.worktrees/<name>` to it. A slot's first use writes its `.env` with every port + 100 × n. `13_worktree.md`. |

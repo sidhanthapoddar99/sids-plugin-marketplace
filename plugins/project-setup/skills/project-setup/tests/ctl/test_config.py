@@ -20,7 +20,8 @@ def test_setup_creates_one_file_and_preserves_values_on_rerun(tmp_path: Path) ->
     first = run_worker(tmp_path, SETUP)
     assert first.returncode == 1
     assert "toolchains were not installed" in first.stderr
-    assert sorted(path.name for path in tmp_path.glob(".env*")) == [".env", ".env.template"]
+    # .env.template.synced records the template .env matched, so the next run can tell its comments apart.
+    assert sorted(path.name for path in tmp_path.glob(".env*")) == [".env", ".env.template", ".env.template.synced"]
     original = (tmp_path / ".env").read_text()
     assert "POSTGRES_PASSWORD= " not in original
     assert "JWT_SIGNING_KEY= " not in original

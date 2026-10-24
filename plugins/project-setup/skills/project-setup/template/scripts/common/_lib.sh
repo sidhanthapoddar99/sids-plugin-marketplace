@@ -426,6 +426,19 @@ check_env_schema() {  # 0 if .env has every key .env.template declares
 }
 
 # ── prompts ──
+# can_ask <nqa> — a person can answer a prompt: a terminal, and --nqa not given (pass 0 when the
+# command has no --nqa).
+can_ask() { [[ -t 1 && -r /dev/tty && $1 -eq 0 ]]; }
+# ask_yes <question> <default y|n> — [Y/n] or [y/N] on the terminal; Enter takes the default. A
+# terminal that cannot be read answers the default, so a prompt never hangs. `ctl dev` and
+# `ctl setup` share it.
+ask_yes() {
+  local answer hint='[y/N]'; [[ $2 == y ]] && hint='[Y/n]'
+  printf '%s?%s %s %s ' "$C_YEL" "$C_RESET" "$1" "$hint"
+  IFS= read -r answer < /dev/tty || answer=""
+  [[ -n $answer ]] || answer=$2
+  [[ ${answer,,} == y || ${answer,,} == yes ]]
+}
 confirm() { local a; printf '%s?%s %s [y/N] ' "$C_YEL" "$C_RESET" "$*"; read -r a; [[ "${a,,}" == y || "${a,,}" == yes ]]; }
 # split a comma-list into the global array __SPLIT (trims whitespace, drops blanks)
 split_csv() { __SPLIT=(); local raw tok s; IFS=',' read -r -a raw <<< "$1"

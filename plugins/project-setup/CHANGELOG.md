@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.0
+
+- `ctl setup` and `ctl setup env` merge `.env` with `.env.template` instead of appending missing keys at the end. The result has the template's sections, comments, blank lines and key order, so a new key lands in its section under its comment. Every value `.env` holds is kept byte for byte, and a key `.env` sets where the template shows it commented out takes that line's place. A comment written in `.env` stays with its key. `.env.template.synced`, a copy of the template from the last run, tells a template comment from a local one, so a reworded template comment shows its new text. A key set twice stops the step.
+- A key only `.env` has goes to a last section, `# Not in .env.template (kept by ctl setup)`, with its comments. Setup names it and, in a terminal, asks once for the whole list whether to remove the keys; anything but yes keeps them. With no terminal it never asks and never removes. `--remove-unlisted` removes them without asking. Output names keys only, never values.
+- The step writes only when the result differs: a temporary file, mode 600, then a rename, after keeping the previous file as `.env.bak`, so a failure leaves `.env` whole. A `.env` that is a link stops the step instead of being replaced.
+- `can_ask` and `ask_yes` move from `scripts/dev/_data-core.sh` to `scripts/common/_lib.sh`, because `ctl setup` asks too. `template-core.sha256` changes with it.
+
 ## 0.14.0
 
 - `.env.template` gains a RUST section. `CTL_RUST_DEBUG` sets the debug info of the dev and test builds of the repo's own crates. `require_env` and the test settings hand it to Cargo as `CARGO_PROFILE_DEV_DEBUG`, which the test profile inherits, so `ctl dev`, `ctl test` and `ctl gate` all build at that level. A `CARGO_PROFILE_DEV_DEBUG` set in the shell wins, and an empty value leaves `Cargo.toml` to decide. `rust_env_apply` refuses a value Cargo would refuse, naming the key and the values Cargo accepts, and `ctl check` gains the same rule. The key isn't named `CARGO_*`, because `ctl` exports every `.env` key to every process it starts.

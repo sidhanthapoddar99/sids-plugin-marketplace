@@ -22,7 +22,7 @@ Configuration has one root environment file and per-backend settings. Template: 
 6. **Resolve values before launching consumers.** Every storage path derives from `BASE_DIR`. § Host storage paths gives the path rules. `ctl` anchors Compose with `--project-directory <root>`, so a relative path means the same to both. Values may reference other keys with `${KEY}`: `BACKUP_DIR=${LOGS_DIR}/backups`. The loader first loads all keys skip-if-set, then resolves references using the winning environment values. It uses text substitution, never `eval`. An unset reference or a cycle fails naming the key. The loader also resolves a reference to a later line, but Compose reading the file without `ctl` leaves that reference blank, so declare each key above the keys that read it. Template: `template/scripts/common/_lib.sh`, `expand_env_refs`.
 7. **Preserve backend precedence.** Process environment > `config.local.yaml` > `config.yaml`. Load the root file skip-if-set so inline overrides and CI-injected secrets win, including an explicitly empty value. The nested override `<APP>__<SECTION>__<KEY>` (`API__DATABASE__POOL_SIZE`) overrides literals; `${VAR}` names environment values used in YAML.
 8. **Keep defaults in one place.** Do not add `config.<env>.yaml` layers or default forms such as `${VAR:-8000}` in backend settings. An unset reference fails; a literal default belongs in `config.yaml`. Prefix separate databases (`AUTH_DATABASE_URL`, `BILLING_DATABASE_URL`) and nested overrides (`API__`, `ENGINE__`) so services sharing a host do not collide.
-9. **Audit the template.** Read `.env.template`, never a filled `.env`, because audit output is a log and the filled file holds live secrets. `ctl setup env` writes `.env` from the template, as § Setting up `.env` describes. `ctl status` compares key names with the template.
+9. **Audit the template.** Read `.env.template`, never a filled `.env`, because audit output is a log and the filled file holds live secrets. `ctl setup env` writes `.env` from the template, as § Merging `.env` with its template describes. `ctl status` compares key names with the template.
 10. **The public origin is opt-in.** `PUBLIC_URL`, `HTTP_PORT` and `HTTPS_PORT` ship commented out. Local Docker publishes the edge on the port of the piece owning `/`. A public deployment enables these three keys and uses `ctl up +public`, which refuses blank values. Keep `PUBLIC_URL` out of required YAML references: an app that creates absolute URLs reads it from the process environment and treats absence as relative URLs only. Template: `template/docker/compose.m.public.yaml`.
 
 ## How a backend reads a value
@@ -82,14 +82,51 @@ Shared credentials use one key; separate credentials use separate names. Write e
 
 ## Setting up `.env`
 
-The env step writes `.env`, its credentials and the storage folders it names. `ctl setup env` runs the env step and stops. `ctl setup` runs the same step first, then installs the toolchains and dependencies (`08_ctl.md` § Setup and tool availability). One function, `setup_env` in `template/scripts/config/setup.sh`, is the env step, so the two commands cannot drift. The step does four things in order:
+The env step writes `.env`, its credentials and the storage folders it names. `ctl setup env` runs the env step and stops. `ctl setup` runs the same step first, then installs the toolchains and dependencies (`08_ctl.md` § Setup and tool availability). One function, `setup_env` in `template/scripts/config/setup.sh`, is the env step, so the two commands cannot drift. The step does three things in order:
 
-1. It creates `.env` from `.env.template`, with mode `600`, when `.env` is missing.
-2. It appends each key that the template declares and `.env` lacks, as the template writes it, so an older checkout gains the new keys with their defaults. It keeps every existing line and value, including a value that differs from the template.
-3. It generates the blank declared credentials and requires the active ones, as § Secret classes describes.
-4. It resolves the storage paths, as § Host storage paths describes. Then it creates `DATA_DIR/<service>` for each data-core service that `DATA_SVCS` in `template/scripts/common/_lib.sh` lists, `LOGS_DIR/dev`, `LOGS_DIR/run`, `LOGS_DIR/test_build` and `BACKUP_DIR`.
+1. It creates `.env` from `.env.template` when `.env` is missing, with mode `600`. Otherwise it rebuilds `.env` in the template's shape and keeps every value, as § Merging `.env` with its template describes.
+2. It generates the blank declared credentials and requires the active ones, as § Secret classes describes.
+3. It resolves the storage paths, as § Host storage paths describes. Then it creates `DATA_DIR/<service>` for each data-core service that `DATA_SVCS` in `template/scripts/common/_lib.sh` lists, `LOGS_DIR/dev`, `LOGS_DIR/run`, `LOGS_DIR/test_build` and `BACKUP_DIR`.
 
-The step installs nothing, so it runs before the versions are resolved, and on a host that only runs images. A rerun keeps every value and adds only what is missing: keys the template gained, blank declared credentials and storage folders. So a rerun is safe on any checkout. The step never removes a key, so delete a key by hand when the template drops it. The storage folders belong to this step because `.env` names them and creating them installs nothing. Docker would otherwise create a missing bind-mount source owned by root.
+The step installs nothing, so it runs before the versions are resolved, and on a host that only runs images. A rerun adds only what is missing: keys the template gained, blank declared credentials and storage folders. It changes or removes no value without a yes, so a rerun is safe on any checkout. The storage folders belong to this step because `.env` names them and creating them installs nothing. Docker would otherwise create a missing bind-mount source owned by root.
+
+## Merging `.env` with its template
+
+`sync_env_template` in `template/scripts/config/_env-merge.sh` merges each file of `ENV_FILES` with its template. The result has the template's sections, comments, blank lines and key order, so a key the template gains lands in its section, under its comment. Each value `.env` holds is kept byte for byte, because the step copies the whole line: quotes, an `=` inside the value, a trailing comment and an empty value included. A key line is a line that starts, at column 0, with a name and `=`, the same lines the loader reads.
+
+| `.env` holds | The merged file holds |
+|---|---|
+| a key the template declares | the `.env` line, where the template has the key |
+| no line for a key the template declares | the template's line, named under "added from the template" |
+| a key the template shows commented out, such as `# BETA_API_PORT=` | the `.env` line, in place of the commented line |
+| a key the template lacks | the `.env` line, in a last section headed `# Not in .env.template (kept by ctl setup)`, until you agree to remove it (below) |
+| a template comment, current or from the last run's template | the template's current text, so a reworded comment shows its new wording once |
+| a comment line the template never had, a local comment | that line, kept with its key by the rules below |
+| a blank line | nothing. Blank lines come from the template |
+| the same key twice | nothing changes. The step stops and names the key and both lines, because which value wins would be a guess |
+
+**Local comments.** A comment line in `.env` is local when neither the template nor `.env.template.synced` holds it. Any other line that is neither blank nor a key line, such as an indented line, counts as a comment line, so no line is lost. `.env.template.synced` is a copy of the template from the last run, which the step writes beside `.env` after every run. It exists because a template comment that was reworded or deleted would otherwise look like a comment a person wrote, and it would stay in `.env` for ever. A local comment goes to the first place that fits:
+
+1. A key line below it, with no blank line between: directly above that key, below the key's template comment.
+2. No key line above it in `.env`: at the top of the file. A note above the file's header stays there.
+3. Otherwise: at the end of the paragraph that holds the nearest key line above it. A note at the end of a section stays at the end of that section.
+
+Each rule puts a comment where the same rule finds it on the next run, so a second run changes nothing. A local comment goes with its key, into the last section too, and it is removed with its key. The rules keep a comment next to its key, not its exact line: a comment written above a key's template comment moves below it on the first run, and the blank lines inside a block of local comments go.
+
+A checkout from before this rule has no `.env.template.synced`. Its first run keeps every comment line the template lacks, old template text included, and says so, because a dropped comment cannot come back. Delete the stale lines once; from then on the record tells the two kinds apart.
+
+**Keys the template lacks.** The step never removes a value without a yes, because a dropped secret is lost. When `.env` has keys the template lacks, a terminal sees one list of key names and one question for the whole list:
+
+```text
+These keys are in .env but not in .env.template:
+  OLD_FEATURE_FLAG
+  LEGACY_S3_BUCKET
+? Remove them from .env? [y/N]
+```
+
+Anything but `y` or `yes` keeps them in the last section, and the step names them. With no terminal, as in CI or a pipe, the step never asks and never removes; it keeps the keys and names them. `ctl setup --remove-unlisted` or `ctl setup env --remove-unlisted` removes them without asking, for a script. To keep one key and remove the others, answer no and delete the others by hand, or add the key to the template. The output names keys only, never a value or a comment, because `.env` holds secrets and a screen or a log may be read by someone else.
+
+**The write.** The step writes only when the merged file differs from `.env`. It writes a temporary file beside `.env`, mode `600`, keeps the previous file as `.env.bak`, mode `600`, and then renames the temporary file over `.env`. So a failure at any point leaves `.env` whole, and `.env.bak` undoes a merge or a removal. `.env.bak` and `.env.template.synced` are ignored by the `.env.*` lines of `.gitignore` and `.dockerignore`. When `.env` is a symbolic link and must change, the step stops and changes nothing, because the rename would replace the link with a file. The output then lists the keys added, the number of local comment lines kept, and the keys kept or removed.
 
 ## Host storage paths
 

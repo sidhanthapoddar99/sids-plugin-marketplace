@@ -5,17 +5,7 @@
 # core and never stops, recreates or rebuilds it. Only `ctl dev db stop`, `ctl dev stop --all`
 # and `ctl stop` stop it.
 
-# can_ask <nqa> — a person can answer a prompt: a terminal, and --nqa not given.
-can_ask() { [[ -t 1 && -r /dev/tty && $1 -eq 0 ]]; }
-
-# ask_yes <question> <default y|n> — [Y/n] or [y/N] on the terminal; Enter takes the default.
-ask_yes() {
-  local answer hint='[y/N]'; [[ $2 == y ]] && hint='[Y/n]'
-  printf '%s?%s %s %s ' "$C_YEL" "$C_RESET" "$1" "$hint"
-  IFS= read -r answer < /dev/tty || answer=""
-  [[ -n $answer ]] || answer=$2
-  [[ ${answer,,} == y || ${answer,,} == yes ]]
-}
+# can_ask and ask_yes, the terminal prompt, live in _lib.sh, because ctl setup asks too.
 
 # data_core_up — every DATA_SVCS engine runs and passes its healthcheck.
 data_core_up() {
