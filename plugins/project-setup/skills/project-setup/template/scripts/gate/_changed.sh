@@ -15,7 +15,8 @@
 #   everything   ctl and scripts/, the toolchain file, a shared package under apps/packages/, root
 #                config such as .env.template, and any path no rule names. Every rung runs on every
 #                target.
-#   check        docker/ and the docs at the root, which only the check rung reads.
+#   check        docker/ and documentation no suite reads: AGENTS.md, CLAUDE.md and README.md
+#                anywhere, and any other Markdown outside apps/. Only the check rung reads them.
 #   a target     a path inside a folder of GATE_TARGETS (_targets.sh), plus the targets that
 #                GATE_REACHES adds for it.
 # A skipped check that looks green is a wrong answer that looks right, so a path with no rule
@@ -37,10 +38,14 @@ changed_owner() {
     .mise.toml|mise.toml)    echo "everything|the toolchains"; return ;;
     apps/packages/*)         echo "everything|a shared package; every app that imports it"; return ;;
   esac
+  case "$1" in
+    AGENTS.md|CLAUDE.md|README.md|*/AGENTS.md|*/CLAUDE.md|*/README.md|LICENSE)
+                             echo "check|documentation; only the check rung reads it"; return ;;
+  esac
   target=$(gate_target_of "$1")
   [[ -z $target ]] || { echo "$target|"; return; }
   case "$1" in
-    docker/*|AGENTS.md|README.md|CHANGELOG.md|LICENSE) echo "check|only the check rung reads it" ;;
+    docker/*|*.md)           echo "check|only the check rung reads it" ;;
     */*)                     echo "everything|no rule names it" ;;
     *)                       echo "everything|root config" ;;
   esac
@@ -109,9 +114,10 @@ gate_reaches_check() {
 #   CHANGED_COUNT    how many paths changed
 #   CHANGED_SCOPE    the change set in words; CHANGED_NONE its words when it is empty
 #   CHANGED_WHY      why the run widened, when CHANGED_FULL is 1
+#   CHANGED_BASE     the commit the change set counts from, empty outside git
 gate_changed_select() {
   local asked="${1:-}" list_all="${2:-}" commit base list path line owner reason target name extra shown=0 wide_shown=0
-  CHANGED_NONE="" CHANGED_WHY=""
+  CHANGED_NONE="" CHANGED_WHY="" CHANGED_BASE=""
   gate_reaches_check
   if ! command -v git >/dev/null 2>&1 || [[ $(git rev-parse --is-inside-work-tree 2>/dev/null) != true ]]; then
     [[ -z $asked ]] || die "--delta needs a git checkout to find the changes since $asked"
@@ -134,6 +140,7 @@ gate_changed_select() {
     CHANGED_SCOPE="every file, because the repository has no commit yet" CHANGED_NONE="no file yet"
     step "no commit yet, so every file counts as changed"
   fi
+  CHANGED_BASE=$base
   list=$(mktemp) || die "cannot create a temporary file"
   { git diff --name-only --no-renames --relative -z "$base" -- . && git ls-files --others --exclude-standard -z -- .; } >"$list" \
     || { rm -f "$list"; die "git could not list the changed files"; }

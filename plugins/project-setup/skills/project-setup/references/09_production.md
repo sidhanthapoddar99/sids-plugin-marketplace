@@ -80,6 +80,8 @@ Walk this before the first public deploy, and again when a new service joins. Th
 - [ ] the security review has been walked and its answers recorded (`10a_review.md`, `07_security.md`)
 - [ ] git hooks are installed when more than one person commits (`additional-template/README.md`)
 - [ ] production `CMD` (gunicorn, one process for Rust/Go/Node); worker count matches the CPU limit; recycling with jitter on Python
+- [ ] the product has a version in the files `scripts/release/versions.sh` lists, and branches land through `ctl merge` (`15_releases.md`)
+- [ ] every Rust or WASM image walks `16_rust-production.md` § Checklist: the release profile, `wasm-opt`, pinned tools, parallel stages, bounded caches
 - [ ] `/health` and `/ready` exist; compose healthcheck with `start_period`; `depends_on: service_healthy`
 - [ ] graceful shutdown: lifespan cleanup, `stop_grace_period` ≥ graceful timeout
 - [ ] memory and CPU limits on every service; `restart: unless-stopped`

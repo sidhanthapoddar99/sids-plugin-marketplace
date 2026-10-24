@@ -26,7 +26,9 @@ Rules
             folder such as a static-frontend group or packages/ is not a workspace) ·
             the root rule is skipped when AGENTS.md records 'root-manifest' under
             '## Exceptions to the standard layout' (an open-source package repo)
-  brief     AGENTS.md exists at the repo root; CLAUDE.md does not
+  brief     AGENTS.md exists at the repo root · every AGENTS.md has a CLAUDE.md beside it that is
+            exactly '@AGENTS.md', and every CLAUDE.md has an AGENTS.md · each AGENTS.md is at most
+            200 lines, all of them together at most 32 KiB, and none holds a date (YYYY-MM-DD)
   template  every shared helper in scripts/common/ matches scripts/common/template-core.sha256 outside
             its [ADAPT] blocks, unless AGENTS.md records 'template-core <path>' as an exception
   ladder    the 'Gate ladder' row in AGENTS.md lists the same rungs, in the same order, as RUNGS in
@@ -139,9 +141,39 @@ done
 pass "no workspace at the root, in apps/, or in a group folder"
 
 step "brief"
+# AGENTS.md holds the instructions; the CLAUDE.md beside each one only imports it, because Claude Code
+# reads CLAUDE.md and Codex reads AGENTS.md, and one text cannot drift. The limits keep the files short
+# enough to be followed: Claude Code's guidance is under 200 lines a file, and Codex stops reading once
+# all AGENTS.md files together pass 32 KiB. A date marks history, and the files state current rules.
+BRIEF_MAX_LINES=200 BRIEF_MAX_BYTES=32768
+# brief_files <name> — every file of that name git sees, or, outside git, every one below the root.
+brief_files() {
+  if [[ $(git rev-parse --is-inside-work-tree 2>/dev/null) == true ]]; then
+    git ls-files -co --exclude-standard -- "$1" "*/$1" | sort -u
+  else
+    find . \( -name node_modules -o -name .git -o -name .worktrees -o -name target -o -name .venv \) -prune -o -name "$1" -print \
+      | sed 's|^\./||' | sort
+  fi
+}
 [[ -f AGENTS.md ]] || fail "AGENTS.md missing"
-[[ ! -e CLAUDE.md && ! -L CLAUDE.md ]] || fail "CLAUDE.md exists at the repo root — migrate its unique instructions into AGENTS.md, then remove it"
-pass "AGENTS.md exists; CLAUDE.md absent"
+brief_bytes=0 brief_count=0
+while IFS= read -r f; do
+  [[ -f $f ]] || continue
+  brief_count=$(( brief_count + 1 ))
+  dir=$(dirname "$f"); if [[ $dir == . ]]; then claude=CLAUDE.md; else claude="$dir/CLAUDE.md"; fi
+  if [[ -L $claude || ! -f $claude ]]; then fail "$claude missing — write it as the one line '@AGENTS.md'"
+  elif [[ "$(tr -d '[:space:]' < "$claude")" != "@AGENTS.md" ]]; then fail "$claude must be exactly '@AGENTS.md'"; fi
+  lines=$(wc -l < "$f"); (( lines <= BRIEF_MAX_LINES )) || fail "$f has $lines lines; the limit is $BRIEF_MAX_LINES — move detail to a README the file points at"
+  brief_bytes=$(( brief_bytes + $(wc -c < "$f") ))
+  while IFS= read -r hit; do fail "$f:$hit holds a date — state the current rule, and keep its history in git and the tracker"; done \
+    < <(grep -nE '(^|[^0-9])20[0-9]{2}-[0-9]{2}-[0-9]{2}([^0-9]|$)' "$f" | cut -d: -f1)
+done < <(brief_files AGENTS.md)
+while IFS= read -r f; do
+  [[ -e $f ]] || continue
+  [[ -f "$(dirname "$f")/AGENTS.md" ]] || fail "$f has no AGENTS.md beside it — a CLAUDE.md only imports one"
+done < <(brief_files CLAUDE.md)
+(( brief_bytes <= BRIEF_MAX_BYTES )) || fail "the AGENTS.md files hold $brief_bytes bytes together; the limit is $BRIEF_MAX_BYTES — cut them, because Codex reads no further"
+pass "$brief_count AGENTS.md file(s), $brief_bytes bytes, each with CLAUDE.md → AGENTS.md"
 
 step "template core"
 while IFS= read -r problem; do fail "$problem"; done < <(source scripts/common/_template-core.sh 2>/dev/null \

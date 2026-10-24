@@ -38,13 +38,12 @@ A typical round, from the main tree:
 cd "$(ctl worktree create feat/login)"   # create prints only the path, .worktrees/feat/login
 ctl setup                                # only on a new slot's first use: installs its dependencies
 ctl dev                                  # work, test and commit here, as in any checkout
-git merge main && ctl gate --delta main  # bring the branch up to date, then gate it here
 ctl stop                                 # stop the slot's dev apps and its containers
-cd <repo> && git merge --ff-only feat/login   # the main tree gets exactly the gated tree
+ctl merge feat/login                     # merge main in, set versions, one gate here, fast-forward main
 ctl worktree remove feat/login           # frees slot-1; the branch and the builds stay
 ```
 
-The gate runs in the slot, because a gate writes build outputs, and with `WORKTREE_ONLY=1` the main tree runs none. `remove` refuses while the slot's containers run, so `ctl stop` comes first: the data core outlives `ctl dev` on purpose.
+`ctl merge` runs its gate in the slot, because a gate writes build outputs, and with `WORKTREE_ONLY=1` the main tree runs none. It then fast-forwards the main tree, so the main tree gets exactly the gated tree (`15_releases.md`). `remove` refuses while the slot's containers run, so `ctl stop` comes first: the data core outlives `ctl dev` on purpose.
 
 ## The commands
 

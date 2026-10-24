@@ -4,9 +4,19 @@ Rules that hold across every file and every change. Each one is an audit finding
 
 ## The agent brief
 
-`AGENTS.md` at the root is the brief. The working rules start as a `Working rules` section of `AGENTS.md`. When that section outgrows one screen, they move to `memory/`, one file per rule set, flat kebab-case, with a `README.md` index, and `AGENTS.md` imports them with `@memory/<file>.md`. Template: `template/AGENTS.md`. Add-on: `additional-template/memory/`.
+`AGENTS.md` at the root is the brief. The working rules are its `Working rules` section. Template: `template/AGENTS.md`. Add-on: `additional-template/memory/`, for a project whose rule sets the user wants as separate files.
 
-For an existing target repo, inspect `CLAUDE.md` at its root and in every directory from the root to each path being worked on. Tell the user which files you found. Treat their contents as migration input rather than project guidance or a file to recreate. Move unique, useful instructions into the applicable `AGENTS.md` before removing each `CLAUDE.md`. Keep local rules in the nearest relevant `AGENTS.md`. If an instruction conflicts with `AGENTS.md`, or its meaning or destination is unclear, ask the user before deleting that file. During a read-only audit or a one-question consultation, report the needed migration without changing files. A project with `CLAUDE.md` may cause Claude Code to overlook `AGENTS.md`, so the template and finished target repos use `AGENTS.md` alone.
+Every `AGENTS.md` has a `CLAUDE.md` beside it whose whole content is `@AGENTS.md`, because Claude Code reads `CLAUDE.md` and loads `AGENTS.md` only through that import, while Codex reads `AGENTS.md`. The import gives both hosts one text. A `CLAUDE.md` is a plain file, not a symlink, because a symlink breaks on a checkout that does not keep links.
+
+What a brief holds, so it stays short enough to be read whole on every session:
+
+- Current facts only: what to do and why. The history of a rule is in git, and a plan, a deferral or a known gap is in the tracker, because a brief loads every turn and old text costs every turn.
+- A rule once. A rule that holds in every folder lives in the root brief. A nested `AGENTS.md` exists only for a folder whose rules differ, and holds only those rules. Detail a task needs only sometimes goes in the folder's `README.md`, which the agent opens when it works there.
+- A rule a check can enforce goes into `ctl check` or a test, and the brief keeps one line that names the check. A rule an agent must remember drifts; a rule `ctl` runs does not.
+
+`ctl check` enforces the size: under 200 lines per brief, at most 32 KiB for all briefs together (Codex stops reading past that), no `YYYY-MM-DD` date in a brief, and the `CLAUDE.md` beside each one (`08_ctl.md` § `ctl check`).
+
+For an existing target repo, inspect `CLAUDE.md` at its root and in every directory from the root to each path being worked on. Tell the user which files you found. A file that holds only `@AGENTS.md` is already right. Move any other content into the `AGENTS.md` beside it, under the rules above, then write the `CLAUDE.md` as `@AGENTS.md`. If an instruction conflicts with `AGENTS.md`, or its meaning or destination is unclear, ask the user before replacing that file. During a read-only audit or a one-question consultation, report the needed migration without changing files.
 
 The brief is a contract, not a welcome note. Skills are not always loaded; the brief is. Every "record it in `AGENTS.md`" in these pages lands in one of these sections:
 
@@ -14,7 +24,7 @@ The brief is a contract, not a welcome note. Skills are not always loaded; the b
 |---|---|
 | Recorded choices | One table: layout shape (single frontend / group), backend role, identity planes, migration style, theme modes, protection tier, ladder rungs, source-only or published. Audits compare the repo against this table, not against the canon. A chosen variant is not drift. |
 | Skeletons | The resolved tree for this repo: which domains, which modules, which packages. Names, not placeholders. |
-| Tripwires | The numbers below, plus any this repo tightened. Crossing one obligates the restructure **or a one-line recorded deferral here** (what, until when). Silent growth past a tripwire is the failure this section exists to catch. |
+| Tripwires | The numbers below, plus any this repo tightened. Crossing one obligates the restructure **or a deferral recorded in the tracker** (what, until when). Silent growth past a tripwire is the failure this section exists to catch. |
 | Styling | The typography allowlist and the emphasis weight, resolved; the precedence rule over `frontend-design` (`05_frontend.md`). |
 | Exceptions | Every departure from the standard layout, with its reason. An unrecorded exception is a defect. |
 | Stack | The table of picks with versions, and the reason for any addition to `04_stack.md`. |
@@ -128,7 +138,8 @@ Each of these means a rule was broken somewhere else. Find that place.
 | `src/features/`, `src/pages/` in a Vite app, a module importing a sibling | the folder shape (`05_frontend.md`) |
 | a domain named `build/`, `sync/`, `ingest/` | ownership nouns (`06_backend.md`) |
 | `uvicorn --reload` in a Dockerfile | production serving (`06_backend.md`) |
-| a tripwire crossed with no deferral in `AGENTS.md` | the brief is the contract |
+| a tripwire crossed with no deferral in the tracker | the brief is the contract |
+| a brief that tells the history of a rule, or a nested `AGENTS.md` that repeats the root one | the brief holds current facts, once |
 | a code comment naming a doc page, plan, issue or skill file | documentation points at code, never the reverse |
 | `command -v <tool>` followed by another way to do the tool's job | a missing tool is installed, never coded around |
 | a `ctl` that does not source `scripts/common/_lib.sh`, or a helper in `scripts/common/` that differs from the template | `ctl` is a copy of the template (`08_ctl.md` § Copy and verify) |

@@ -1,18 +1,31 @@
 ---
 name: project-setup
 description: >-
-  Use this skill to bootstrap, audit or restructure a repo, or answer where code and configuration belong mid-task. It owns apps/, apps/packages/, data/, logs/, one ignored root .env and committed .env.template grouped by kind, backend config.yaml, single-origin routing, Docker Compose configs and modifiers, services and presets, and ctl (dev, up, db migrate, manage, gate, worktree), copied from the template, never rewritten. Covers stack choices, frontend and backend folder shapes, tokens.css and typography rules, schema ownership, security, development sign-in (AUTH_ENABLED), production, the four-rung gate floor, gate modes and TESTING settings, worktrees in .worktrees/, optional add-ons and the AGENTS.md contract. Use when adding a frontend, a backend or a ctl verb, or changing ctl, scripts/ or these boundaries. Skip implementation inside one file, migration SQL, docs content (agent-ks), instruction wording (instruction-writing), Kubernetes and cloud deploy targets.
+  Use this skill to bootstrap, audit or restructure a repo, to grow it into a production line, or to answer where code and configuration belong mid-task. It owns apps/, apps/packages/, data/, logs/, one ignored root .env and committed .env.template grouped by kind, backend config.yaml, single-origin routing, Docker Compose configs and modifiers, services and presets, and ctl (dev, up, db migrate, manage, gate, merge, worktree), copied from the template, never rewritten. Covers stack choices, frontend and backend folder shapes, tokens.css and typography rules, schema ownership, security, development sign-in (AUTH_ENABLED), production, the four-rung gate floor, gate modes, gate receipts and TESTING settings, versions and releases set at merge, Rust and WASM release builds (profile, wasm-opt, image caches, binary size), worktrees in .worktrees/, optional add-ons and the AGENTS.md and CLAUDE.md contract. Use when adding a frontend, a backend or a ctl verb, changing ctl, scripts/ or these boundaries, when tests or merges feel slow, or when shipping, versioning or slimming a build. Skip implementation inside one file, migration SQL, docs content (agent-ks), instruction wording (instruction-writing), Kubernetes and cloud deploy targets.
 ---
 
 # project-setup
 
-One repo shape, one entrypoint, one origin. This skill decides where things go and how they connect. It answers three kinds of request with the same rules: a bootstrap, an audit, and a single question mid-task. The rules live in the eighteen pages under `references/`. This file is the workflow and the map.
+One repo shape, one entrypoint, one origin. This skill decides where things go and how they connect, from the first commit to a production line that ships releases. It answers three kinds of request with the same rules: a bootstrap, an audit, and a single question mid-task. The rules live in the twenty pages under `references/`. This file is the workflow and the map.
+
+## Stages
+
+A repo meets the pages in this order. Each stage adds to the one before and replaces nothing.
+
+| Stage | What joins | Pages |
+|---|---|---|
+| Prototype | the template copy, the four-rung gate, `ctl dev` | `01`–`08`, `10b`, `11` |
+| Parallel work | worktrees on warm slots, gate receipts, `ctl merge` | `13`, `10d`, `15` |
+| First deploy | the production checklist, the security review, the `audit` and `build` rungs | `09`, `07`, `10a`, `12` |
+| Production line | versions set at merge, a version log, release builds that are small and fast | `15`, `16` |
+
+The process lives in `ctl`, not in the brief. When a habit keeps coming back, such as a gate run three times or a version raised in every commit, the fix is a `ctl` step or a `ctl check` rule, because a rule an agent must remember drifts and a rule `ctl` runs does not.
 
 ## Before anything
 
 1. Read `AGENTS.md` at the repo root when it exists. It records the choices this repo has already made, and a recorded choice is never a finding.
 2. In an existing target repo, inspect the root and the directory hierarchy of paths in scope for `CLAUDE.md`. Handle any found file under `references/11_conventions.md` § The agent brief.
-3. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 2,200 lines.
+3. Find the page that owns the question in the table below. Read that page, not the set, because each page owns one question and the set is about 2,500 lines.
 4. Find the skill folder, the folder that holds this `SKILL.md`, because every runnable file comes from its `template/`, and its `scripts/template.sh` copies and checks them. Below, `<skill folder>` stands for its path. Claude Code prints the folder on the first line of the loaded skill, as `Base directory for this skill: <path>`. Codex lists each skill with the path of its `SKILL.md`. When that path starts with an alias such as `r3/`, replace the alias with the folder the skills catalogue maps it to. On another host, take the folder of the `SKILL.md` file you opened. `test -f <skill folder>/template/ctl` confirms the folder. If you cannot find it, stop and ask the user for the path.
 5. In an existing repo, run `bash <skill folder>/scripts/template.sh verify .` once before you add an app or a verb, or change `ctl` or `scripts/`. A hand-made `ctl` looks like the template's from outside, and each change to it spreads the drift this skill prevents. The first line of the output is the verdict.
    - `green`: `ctl` and its shared helpers, the files in `scripts/common/`, are the template's. Extend them as `references/08_ctl.md` § Extending the copied router says.
@@ -43,7 +56,9 @@ One repo shape, one entrypoint, one origin. This skill decides where things go a
 | What a person reviews by hand | `references/10a_review.md` |
 | What is green; the ladder; the static rungs | `references/10b_static-checks.md` |
 | Where tests live; the dynamic rungs | `references/10c_dynamic-tests.md` |
-| How fast a test run is, and what it may use: TESTING settings, gate modes, the one-run lock, Rust debug info | `references/10d_test-speed-and-resources.md` |
+| How fast a test run is, and what it may use: TESTING settings, gate modes, gate receipts, the one-run lock, Rust debug info | `references/10d_test-speed-and-resources.md` |
+| How versions move and work lands: numbering, `ctl merge`, the version step, packages, the version log | `references/15_releases.md` |
+| How a Rust server or WASM module ships small and fast: the release profile, `wasm-opt`, image stages and caches, disk wear | `references/16_rust-production.md` |
 | What holds everywhere; the audit order | `references/11_conventions.md` |
 | Example of a collaborative editor with shared browser/server WASM and intent synchronization | `references/examples/shared-wasm-document-engine.md` (optional example, not a prescribed stack) |
 
@@ -62,9 +77,10 @@ The fallback for a question no page covers. Each line points at the page that ow
 5. **Base is prod** (`08a_ctl_docker.md`, `09_production.md`). A config (`compose.<name>.yaml`, `base` is the whole stack) has no ports and modifiers add exposure, because compose lists only union, so exposure can only be added, never removed.
 6. **Promote when shared, never before** (`11_conventions.md`). A thing moves up a scope at its second consumer, because a premature package is a second manifest to keep green for nothing.
 7. **Convergence is the design** (`05_frontend.md`). Tokens and a typography allowlist in `AGENTS.md` override `frontend-design` once they exist, because a bold new look on every page is drift, not design.
-8. **Green means a `ctl gate` run passed over the whole change** (`10b_static-checks.md`, `10d_test-speed-and-resources.md`). A check exits 0 only when the rule was proved, so green never means "nothing ran". A run that cannot tell what a change reaches checks everything. The floor is four rungs that cost seconds; every further rung, hook and suite is the user's call, because a prototype pays for each on every commit.
-9. **Versions are `<version>` until resolved with the user** (`04_stack.md`). A version from memory is a guess that installs, so `ctl check` names every placeholder and `ctl setup` refuses to install while one remains.
-10. **The brief is the contract** (`11_conventions.md`). Every chosen variant, exception and deferral is recorded in `AGENTS.md`, because the skill is not always loaded and the brief is, and an audit compares against the brief.
+8. **Green means a `ctl gate` run passed over the whole change** (`10b_static-checks.md`, `10d_test-speed-and-resources.md`). A check exits 0 only when the rule was proved, so green never means "nothing ran". A run that cannot tell what a change reaches checks everything. A tree that already passed is green without a second run. The floor is four rungs that cost seconds; every further rung, hook and suite is the user's call, because a prototype pays for each on every commit.
+9. **Tool versions are `<version>` until resolved with the user** (`04_stack.md`). A version from memory is a guess that installs, so `ctl check` names every placeholder and `ctl setup` refuses to install while one remains.
+10. **The brief is the contract** (`11_conventions.md`). Every chosen variant and exception is recorded in `AGENTS.md`, because the skill is not always loaded and the brief is, and an audit compares against the brief. The brief holds current facts only, under the size `ctl check` enforces; plans and deferrals go in the tracker. `CLAUDE.md` beside it holds `@AGENTS.md`, so Claude Code and Codex read one text.
+11. **One gate per merge, versions at merge** (`15_releases.md`). `ctl merge` lands a branch: it sets the versions the branch changed, gates the merged tree once and fast-forwards. A branch commit leaves versions alone, because people receive a merge, not a commit.
 
 ## When you run this skill
 
@@ -119,7 +135,7 @@ Then run these steps in order:
 3. Rename every `example-*` folder to its role name. Update the rows that name it in the same way. `11_conventions.md` § Naming gives the form.
 4. Write each confirmed version in place of its `<version>`. `./ctl check` lists each file that still holds one. Never fill one from memory.
 5. Keep the lint config each app ships (`[tool.ruff]`, `.oxlintrc.json`, `clippy.toml`, `.golangci.yml`). `ctl check` fails an app without one. Change a threshold only with the user, and record it in `AGENTS.md`.
-6. Fill every section of `template/AGENTS.md`. The file is the example: twelve sections, each with its table or its one-line placeholder. Replace every `<angle-bracket>` choice with the real one.
+6. Fill every section of `template/AGENTS.md`. The file is the example: twelve sections, each with its table or its one-line placeholder. Replace every `<angle-bracket>` choice with the real one. Keep the copied `CLAUDE.md`, which holds `@AGENTS.md`. When the product has a version, list its manifests in `VERSION_FILES` in `scripts/release/versions.sh`.
 7. Run `./ctl setup env`, then `./ctl check`. `ctl setup env` writes `.env`, generates the declared credentials and creates the storage folders. It installs nothing, so it runs while a `<version>` remains, and `ctl check` can then test the env contract and the compose files. Fix each red line except an unresolved version.
 8. Run `./ctl setup`, then `./ctl gate`, before you commit the copy. `ctl setup` installs every tool in `.mise.toml`, `jq` among them. A plain `ctl gate` checks what the uncommitted changes reach, so while the copy is uncommitted it checks every rung on every app. Report each exit code as it is. A red rung is a finding to fix, not a note.
 9. Run `bash <skill folder>/scripts/template.sh verify .`. Report its verdict. Give each difference it lists a reason: a row of the table below, an `[ADAPT]` point, a rename, or a new worker. A red verdict is a finding to fix, because it means a shared helper is not the template's.
@@ -147,7 +163,7 @@ Then run these steps in order:
 
 ## Auditing
 
-1. Read `AGENTS.md`. A recorded choice or a recorded deferral is not a finding. An optional rung or add-on the repo never installed is not a finding either; an installed one that drifted is.
+1. Read `AGENTS.md`. A recorded choice, or a deferral recorded in the tracker, is not a finding. An optional rung or add-on the repo never installed is not a finding either; an installed one that drifted is.
 2. Run `./ctl check` from the repo root, on its own line and not through a pipe, because a pipe returns the last command's exit code and not the check's. Put its exit code and every red line in the report. It proves the mechanical rules and nothing else does. A report that says what the check "would" find is not an audit. Then run `bash <skill folder>/scripts/template.sh verify .`, because `ctl check` compares the helpers with the repo's own manifest and only `verify` compares them with this skill's.
 3. Walk the layers in the order `11_conventions.md` § Audit order gives, lowest first. Report every layer. Order the table by layer, so the reader fixes the lowest first. Do not stop at the first failing layer, because a finding hidden behind a lower one sends the reader back for a second audit.
 4. Read `.env.template` when auditing. Do not read a filled `.env` or other local env file, because it may hold live secrets.

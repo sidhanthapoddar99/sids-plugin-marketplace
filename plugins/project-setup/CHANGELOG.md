@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.16.0
+
+- `ctl gate` records each green run in a receipt named by the working tree's git hash, the base tree and the group (`scripts/gate/_receipt.sh`). A run on the same tree and base prints `already green` and runs nothing; `--rerun` runs it again. A run writes its receipt only when the tree did not change while it ran.
+- `ctl merge <branch>` lands a branch: in its worktree it merges the default branch in, runs the version step (`scripts/release/versions.sh`, an `[ADAPT]` list of version files) and commits it as `Release: …`, runs `ctl gate --delta <default>` once with `CTL_MERGE=1`, and fast-forwards the main tree. It never pushes. `--minor`, `--major` and `--dry-run`.
+- Documentation reaches only the check rung: `AGENTS.md`, `CLAUDE.md` and `README.md` in any folder, `LICENSE`, and other Markdown outside a target's folder.
+- The template ships `CLAUDE.md` holding `@AGENTS.md`. `ctl check`'s brief rule needs a plain `CLAUDE.md` with exactly that line beside every `AGENTS.md`, an `AGENTS.md` beside every `CLAUDE.md`, under 200 lines per brief, at most 32 KiB in total, and no `YYYY-MM-DD` date.
+- New pages: `15_releases.md` (numbering, `ctl merge`, the version step, packages, the version log) and `16_rust-production.md` (the release profile, `wasm-opt` and a pinned binaryen, parallel image stages, bounded caches, image pruning, measured numbers). `SKILL.md` gains a stage map from prototype to production line, and principle 11.
+- The template brief and the pages drop the gate before and after a merge, the rung that can never be removed, and deferrals recorded in the brief; deferrals go in the tracker.
+- The template's Rust engine carries the release profile.
+
 ## 0.15.0
 
 - `ctl setup` and `ctl setup env` merge `.env` with `.env.template` instead of appending missing keys at the end. The result has the template's sections, comments, blank lines and key order, so a new key lands in its section under its comment. Every value `.env` holds is kept byte for byte, and a key `.env` sets where the template shows it commented out takes that line's place. A comment written in `.env` stays with its key. `.env.template.synced`, a copy of the template from the last run, tells a template comment from a local one, so a reworded template comment shows its new text. A key set twice stops the step.

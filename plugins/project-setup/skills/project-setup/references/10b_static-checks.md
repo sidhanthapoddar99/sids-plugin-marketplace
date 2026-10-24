@@ -4,7 +4,7 @@ This page owns the ladder, the rung contract, and every static rung. `10c_dynami
 
 ## The floor and the rest
 
-Every repo runs four rungs from day one: `lint`, `typecheck`, `test`, `check`. Each costs seconds, needs no extra tooling, and catches the cheapest class of bug at the moment it is typed. The other rungs join by name when their trigger fires, on the user's word. This skill may recommend a rung and say why; it never adds one on its own. A rung, once added, is never removed.
+Every repo runs four rungs from day one: `lint`, `typecheck`, `test`, `check`. Each costs seconds, needs no extra tooling, and catches the cheapest class of bug at the moment it is typed. The other rungs join by name when their trigger fires, on the user's word. This skill may recommend a rung and say why; it never adds one on its own. A rung leaves the ladder the same way, on the user's word, when it costs more than it catches.
 
 | Check | Industry name | We call it | Do we do it | ctl |
 |---|---|---|---|---|
@@ -88,7 +88,7 @@ Repo-level rules, the env contract and the compose shape, stay in `ctl check`. T
 
 ## Rules
 
-- Green means a `ctl gate` run passed that covered the whole change: a plain `ctl gate` while all of the work is uncommitted, and `ctl gate --delta <base>` once any of it is committed, where `<base>` is the commit the work started from. Nothing else is green, because a plain run on committed work checks only what is still uncommitted. Which rungs the ladder holds is written twice, in the `Gate ladder` row of `AGENTS.md` and in `RUNGS` in `scripts/gate/all.sh`, and `ctl check` fails when the two differ. `all.sh` refuses a `RUNGS` without the four floor rungs. A rung, once added, is never removed.
+- Green means a `ctl gate` run passed that covered the whole change: a plain `ctl gate` while all of the work is uncommitted, and `ctl gate --delta <base>` once any of it is committed, where `<base>` is the commit the work started from. Nothing else is green, because a plain run on committed work checks only what is still uncommitted. Which rungs the ladder holds is written twice, in the `Gate ladder` row of `AGENTS.md` and in `RUNGS` in `scripts/gate/all.sh`, and `ctl check` fails when the two differ. `all.sh` refuses a `RUNGS` without the four floor rungs. A run on a tree that already passed is green without running again (`10d_test-speed-and-resources.md` § One run per tree).
 - A `test` rung with no test file passes and says so on its own line, "no test file yet", and the closing line says how many suites ran. The suite is found by the names `10c_dynamic-tests.md` mandates; a suite under other names is skipped with the same warning, so the names are the rule.
 - Adding a rung beyond the four is the user's decision. Recommend it with the reason; do not add it unasked, and do not add it during a bootstrap.
 - The audit tools (`gitleaks`, `cargo-audit`, `govulncheck`) join `.mise.toml` when the `audit` rung joins, not before.

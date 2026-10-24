@@ -62,8 +62,9 @@ How the selection works, in `scripts/gate/_changed.sh`:
 | `ctl`, `scripts/` | everything | They drive every rung. |
 | `.mise.toml` | everything | It sets the toolchains. |
 | `apps/packages/` | everything | A shared package reaches every app that imports it. |
+| `AGENTS.md`, `CLAUDE.md`, `README.md` in any folder, and `LICENSE` | `check` | Documentation: no suite reads it, so a docs edit costs one check run. |
 | a path inside a target's folder | that target, plus the targets `GATE_REACHES` adds | The template ships `database` reaching `api` and `engine`, because the backends' integration tests run against the migrated schema. |
-| `docker/`, `AGENTS.md`, `README.md`, `CHANGELOG.md`, `LICENSE` | `check` | Only the check rung reads them. |
+| `docker/`, and any other `*.md` outside a target's folder | `check` | Only the check rung reads them. |
 | any other path, such as `.env.template` or `.gitignore` | everything | No rule names it. |
 
 The selection fails toward running more. A path no rule names widens the run to every rung on every target, because a skipped check that looks green is a wrong answer that looks right. A missing rule costs time; a wrong rule lets a bug through. Add a narrower rule only for a dependency you know. Record it as a row of `AGENTS.md` § Recorded choices, because the next audit compares the repo against the brief. The same holds when the change set cannot be read: a repository with no commit yet counts every file, and a plain `ctl gate` outside git widens to everything. `--delta` outside git stops by name, because it has no history to count from.
@@ -74,10 +75,18 @@ How to use the modes:
 
 - While you work, run the focused check first: `ctl gate lint <app>`, `ctl gate typecheck <app>` or `ctl test <app>`, because a focused check takes seconds and does not wait for the lock. Each takes several apps.
 - Before you hand the work over, run the gate once over the whole change. Run a plain `ctl gate` when all of the work is uncommitted. Run `ctl gate --delta <the commit you started from>` once any of it is committed, because a plain run sees only the uncommitted rest.
-- To check a branch before it merges, run `ctl gate --delta <the branch it merges into>` on the branch. To check a merge right after `git merge`, run `ctl gate --delta ORIG_HEAD`. `ORIG_HEAD` is the commit the target branch held before the merge, so the run covers everything the merge brought in.
-- With `WORKTREE_ONLY=1`, the main tree runs no gate (`13_worktree.md` § The main-tree guard). Merge the target into the branch in its worktree, run `ctl gate --delta <target>` there, then fast-forward the main tree with `git merge --ff-only <branch>`. The gated tree is then exactly the tree the main tree gets.
+- Land the branch with `ctl merge <branch>` (`15_releases.md`). It runs the one gate on the merged tree and fast-forwards, so the default branch gets exactly the tree that passed. A gate before the merge and another after it check the same thing twice.
 - Run `--all` only when the selection itself is in doubt, such as when you suspect an owner rule is wrong, because the selection already widens on every path it cannot place.
 - Read the closing line. It says whether the run was full, widened and why, partial and what it skipped, or had nothing to run.
+
+## One run per tree
+
+A green ladder run writes a receipt: a one-line file under `ctl-gate-green/` in the repository's git folder, named by the hash of the working tree it checked, the tree of the base it counted from (`all` for `--all`), and its group: `all`, `static` or `dynamic` (`scripts/gate/_receipt.sh`). The tree hash is git's own: the run copies the index, adds every file `git status` would show, and writes the tree, so two checkouts with the same files get the same hash. A later run with the same key prints `already green on this tree`, with the earlier run's summary, and runs nothing. A run of the whole ladder covers a `static` or `dynamic` run on the same base, and an `--all` run covers every base. `--rerun` runs it anyway, for a check whose result depends on something outside the tree, such as a flaky service.
+
+- The receipt is written only when the tree is the same at the end of the run as at the start, because an edit made during the run was not checked.
+- Every checkout of a repository shares the receipts, because they live in the common git folder. A worktree whose branch already passed costs no second run when `ctl merge` gates the same tree.
+- Receipts older than 30 days are deleted at the next run.
+- This is the input-keyed caching that Bazel, Nx and Turborepo do per target, at the size a four-rung ladder needs: one key for the whole run.
 
 ## One run at a time, under a memory lid
 
@@ -135,6 +144,8 @@ These hold for any project, and for every runner a project adds. The order of th
 - Measure one variable at a time. Say which build was cold and which was warm, because a cold build, a warm build and a build after one edit answer different questions, and a time with no cache state cannot be compared.
 - Run each check once for each set of inputs. When a later step, such as a review checklist, asks for a check that already passed on the same files, do not run it again, because its result cannot change.
 - Wait for `ctl gate` to exit. Then read its closing line, instead of polling its output, because each poll spends context on partial output and only the closing line is the verdict.
+- Keep the default suite of each app under about a minute warm. A test that needs more, such as a large corpus or a long fuzz, goes behind an opt-in switch, because the default suite runs on every change that reaches the app and its cost is paid each time.
+- Test the contract, not old bytes. A test asserts what the code promises: an output's shape, a round trip, a refusal by name. A test that compares a new build's output byte for byte with an old release's output fails on every intended change, and someone then spends a run proving the change was intended.
 - Follow the suite rules in `10c_dynamic-tests.md` § Rules: one setup per suite, disposable resources the run owns, waits on an exact state, and heavy tests behind an opt-in switch.
 
 ## Template
@@ -142,6 +153,7 @@ These hold for any project, and for every runner a project adds. The order of th
 - `scripts/common/_test-settings.sh`: the TESTING settings, their checks and their defaults.
 - `scripts/gate/all.sh`: the modes, the plan and the closing line.
 - `scripts/gate/_changed.sh`: the change set, the owner rules and `GATE_REACHES`.
+- `scripts/gate/_receipt.sh`: the tree hash and the receipts.
 - `scripts/gate/_targets.sh`: the targets of lint, typecheck and test.
 - `scripts/gate/_lock.sh`: the lock and the memory lid.
 - `apps/example-engine-rust/Cargo.toml`: the development profile.

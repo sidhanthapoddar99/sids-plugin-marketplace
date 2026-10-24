@@ -71,8 +71,14 @@ if [[ -n \${HOLD_FILE:-} && ${name} == lint ]]; then while [[ ! -f $HOLD_FILE ]]
     clearRungs: () => rmSync(log, { force: true }),
     lid: () => existsSync(lid) ? readFileSync(lid, 'utf8') : '',
     // ctl <args…> in the fixture, with only the environment given here, so nothing leaks in from the
-    // run that executes the tests, such as a gate's own TEST_* values.
+    // run that executes the tests, such as a gate's own TEST_* values. It forgets earlier green gate
+    // runs first, so every call runs its rungs; `again` keeps them, for the tests of that record.
     ctl(args: string[], extra: Record<string, string> = {}): Run {
+      rmSync(join(root, '.git/ctl-gate-green'), { recursive: true, force: true });
+      const run = spawnSync('bash', [join(root, 'ctl'), ...args], { cwd: root, env: environment(extra), encoding: 'utf8', timeout: 60_000 });
+      return result(run.status, run.stdout, run.stderr);
+    },
+    again(args: string[], extra: Record<string, string> = {}): Run {
       const run = spawnSync('bash', [join(root, 'ctl'), ...args], { cwd: root, env: environment(extra), encoding: 'utf8', timeout: 60_000 });
       return result(run.status, run.stdout, run.stderr);
     },

@@ -19,5 +19,15 @@ debug = "line-tables-only"
 [profile.dev.package."*"]
 debug = false
 
+# Release builds, the ones production runs: full optimization, one codegen unit and fat LTO, so the
+# compiler sees the whole program at once. The binary is faster and smaller; the price is a last
+# build step that runs on one core, so only images and release builds pay it. Debug info is stripped
+# and line tables stay in no shipped file. references/16_rust-production.md has the measured numbers.
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "debuginfo"
+
 [workspace.dependencies]
 # tokio, axum, sqlx (postgres, offline), neo4rs, serde, serde_yaml, figment, dotenvy, jsonwebtoken, tracing, thiserror, anyhow

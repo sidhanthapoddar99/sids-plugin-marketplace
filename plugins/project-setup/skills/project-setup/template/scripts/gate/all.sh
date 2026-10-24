@@ -15,6 +15,10 @@
 # target. `--dry-run` prints the change set and what it selects, and runs nothing. The closing line
 # names what ran and what the changes did not reach.
 #
+# ONE RUN PER TREE. A green run records the tree it checked (_receipt.sh). A run on a tree that
+# already passed with the same base prints so and runs nothing, in every checkout of the repository;
+# `--rerun` runs it again.
+#
 # SETTINGS. The TESTING section of the root .env sets the cores, the compiler jobs and the memory
 # budget (scripts/common/_test-settings.sh); --cpus, --build-jobs and --memory win over it. The root
 # .env is loaded before any of them is read. One gate run per user at a time, under one memory lid
@@ -25,7 +29,7 @@
 #
 # [ADAPT] RUNGS. The floor is `lint typecheck test check`: seconds each, no extra tooling. A rung
 # joins when the user says so and the project earns it (a dead-code cleanup → `dead`; the first
-# external user → `audit`; an image → `build`; a user flow → `e2e`) and is never removed. Which rungs
+# external user → `audit`; an image → `build`; a user flow → `e2e`) and leaves the same way. Which rungs
 # the ladder holds is written in AGENTS.md; keep the two lists equal. `clones`, `fuzz`, `perf` run BY
 # NAME (`ctl gate clones`), never here: a rung that reports zero every run is a rung people stop reading.
 set -euo pipefail
@@ -35,6 +39,7 @@ source "$CTL_ROOT/scripts/common/_test-settings.sh"
 source "$CTL_ROOT/scripts/gate/_lock.sh"
 source "$CTL_ROOT/scripts/gate/_targets.sh"
 source "$CTL_ROOT/scripts/gate/_changed.sh"
+source "$CTL_ROOT/scripts/gate/_receipt.sh"
 
 LADDER=(lint typecheck dead audit test check build e2e)   # the full order. Never edited.
 RUNGS=(lint typecheck test check)                          # [ADAPT] the rungs this repo runs, a subset of LADDER
@@ -42,7 +47,7 @@ DYNAMIC=(test e2e)                                         # rungs that run the 
 TARGETED=(lint typecheck test)                             # rungs a changed-only run narrows to targets (_targets.sh)
 
 usage() { print_help "gate" "the ladder: ${RUNGS[*]} — stop at the first red" \
-  'gate [static|dynamic] [--changed | --delta <base> | --all] [--dry-run] [-q] [--cpus LIST] [--build-jobs N] [--memory SIZE] [-h]
+  'gate [static|dynamic] [--changed | --delta <base> | --all] [--dry-run] [--rerun] [-q] [--cpus LIST] [--build-jobs N] [--memory SIZE] [-h]
   ctl gate <rung> [args] [-q]' \
 "What runs  (one mode at a time; check always runs)
   --changed                            the default: the rungs and targets the uncommitted changes reach
@@ -55,6 +60,7 @@ usage() { print_help "gate" "the ladder: ${RUNGS[*]} — stop at the first red" 
   --all, all                           every listed rung on every target, only when truly required
   --dry-run                            with the default, --changed or --delta: print every changed path and
                                        what it selects, run nothing
+  --rerun                              run even when a green run on this tree with the same base is recorded
 
 The ladder, in order  (ctl gate runs the rungs this repo lists; ctl gate <rung> runs one)
   lint [app…] [--staged]               ruff · clippy · oxlint · gofmt  (--staged: staged files only, the pre-commit hook)
@@ -86,6 +92,9 @@ Options  (a flag wins over the shell, the shell over the TESTING section of .env
                                        default: 80 % of what is available
   -h, --help                           show this help
 
+A green run records the tree it checked. A run on a tree that already passed, with the same base and
+group, says so and runs nothing, in every checkout of this repository.
+
 AGENTS.md names the ladder this repo runs (RUNGS in this file). The run stops at the first red rung and
 names every rung it did not reach. One gate run per user at a time: a second run waits for the first.
 Each rung has its own help: ctl gate <rung> -h." \
@@ -95,7 +104,7 @@ Each rung has its own help: ctl gate <rung> -h." \
 flag_value() { [[ -n ${2:-} && ${2:-} != -* ]] || die "$1 needs a value (see ctl gate --help)"; }
 
 INNER=0; [[ -z ${GATE_LID:-} ]] || INNER=1   # the half of a lidded run that runs inside the lid
-QUIET=0 CPUS_FLAG="" JOBS_FLAG="" MEMORY_FLAG="" FULL=0 CHANGED_FLAG=0 DELTA_FLAG=0 DELTA_BASE="" DRY_RUN=0 GROUP=all
+QUIET=0 CPUS_FLAG="" JOBS_FLAG="" MEMORY_FLAG="" FULL=0 CHANGED_FLAG=0 DELTA_FLAG=0 DELTA_BASE="" DRY_RUN=0 RERUN=0 GROUP=all
 ORIG_ARGS=("$@") rest=()
 while (( $# )); do case "$1" in
   -q|--quiet)     QUIET=1 ;;
@@ -114,6 +123,7 @@ while (( $# )); do case "$1" in
   --delta=*)      DELTA_FLAG=1 DELTA_BASE="${1#*=}"; flag_value --delta "$DELTA_BASE" ;;
   --all|all)      FULL=1 ;;
   --dry-run)      DRY_RUN=1 ;;
+  --rerun)        RERUN=1 ;;
   static|dynamic) GROUP="$1" ;;
   *)              rest+=("$1") ;;
 esac; shift; done
@@ -145,7 +155,7 @@ done
 FLOOR=(lint typecheck test check)
 for f in "${FLOOR[@]}"; do
   found=0; for r in "${RUNGS[@]}"; do [[ $r == "$f" ]] && found=1; done
-  (( found )) || die "RUNGS omits '$f' — the floor is ${FLOOR[*]}, and a rung once listed is never removed"
+  (( found )) || die "RUNGS omits '$f' — the floor is ${FLOOR[*]}"
 done
 (( ${#SELECTED[@]} )) || die "no $GROUP rung is listed in RUNGS (${RUNGS[*]}) — nothing to prove"
 RUNGS=("${SELECTED[@]}")
@@ -218,6 +228,17 @@ test_jobs_apply
 if (( INNER )); then plan_rungs quiet; else plan_rungs; fi
 test_settings_line
 
+# A tree that already passed with the same base needs no second run. The key is taken now, so files
+# edited during the run cannot be recorded as checked.
+RECEIPT=0
+if gate_receipt_key "$FULL" "${CHANGED_BASE:-}"; then
+  RECEIPT=1
+  if (( ! RERUN && ! INNER )) && receipt=$(gate_receipt_find "$GROUP"); then
+    ok "gate $GROUP: already green on this tree — $(<"$receipt") — nothing ran; --rerun runs it again"
+    exit 0
+  fi
+fi
+
 gate_lock_take "gate $GROUP" ${ORIG_ARGS[@]+"${ORIG_ARGS[@]}"}
 gate_lid_reexec "${BASH_SOURCE[0]}" ${ORIG_ARGS[@]+"${ORIG_ARGS[@]}"}
 
@@ -260,6 +281,10 @@ for i in "${!RUNGS[@]}"; do
   ran+=("$rung${label:+ (${RUNG_PLAN[$rung]})}")
 done
 hr
+# Record the run only when the tree is still the one it checked.
+if (( RECEIPT )) && [[ $(gate_work_tree 2>/dev/null) == "$GATE_RECEIPT_TREE" ]]; then
+  gate_receipt_write "$GROUP" "${SECONDS}s" || warn "could not record this green run in $(gate_receipt_dir)"
+fi
 mapfile -t skipped < <(skipped_parts)
 if (( FULL )); then
   ok "gate --all green — every target of ${RUNGS[*]} — ${SECONDS}s total"

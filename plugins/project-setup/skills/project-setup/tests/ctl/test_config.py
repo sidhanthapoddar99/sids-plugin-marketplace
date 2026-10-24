@@ -44,6 +44,7 @@ def scaffold_check(root: Path, body: str) -> None:
     (root / "apps/api/config.yaml").write_text("server:\n  port: ${API_PORT}\n")
     (root / ".env.template").write_text(body)
     (root / "AGENTS.md").write_text("| Gate ladder | `lint typecheck test check` |\n")
+    (root / "CLAUDE.md").write_text("@AGENTS.md\n")
     (root / "scripts/gate").mkdir(parents=True)
     (root / "scripts/gate/all.sh").write_text("RUNGS=(lint typecheck test check)\n")
     subprocess.run(["git", "init", "-q", str(root)], check=True)
@@ -55,17 +56,34 @@ def test_check_accepts_mixed_setting_kinds_and_blank_secrets(tmp_path: Path) -> 
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-@pytest.mark.parametrize("as_symlink", [False, True])
-def test_check_rejects_root_claude_file(tmp_path: Path, as_symlink: bool) -> None:
+@pytest.mark.parametrize(
+    ("setup", "failure"),
+    [
+        (lambda root: (root / "CLAUDE.md").unlink(), "CLAUDE.md missing — write it as the one line '@AGENTS.md'"),
+        (lambda root: (root / "CLAUDE.md").write_text("Read AGENTS.md first.\n"), "CLAUDE.md must be exactly '@AGENTS.md'"),
+        (lambda root: ((root / "CLAUDE.md").unlink(), (root / "CLAUDE.md").symlink_to("AGENTS.md")), "CLAUDE.md missing"),
+        (lambda root: ((root / "apps/api/AGENTS.md").write_text("# API\n")), "apps/api/CLAUDE.md missing"),
+        (lambda root: ((root / "apps/web").mkdir(), (root / "apps/web/CLAUDE.md").write_text("@AGENTS.md\n")), "apps/web/CLAUDE.md has no AGENTS.md beside it"),
+        (lambda root: (root / "AGENTS.md").write_text("| Gate ladder | `lint typecheck test check` |\n" + "line\n" * 200), "AGENTS.md has 201 lines; the limit is 200"),
+        (lambda root: (root / "AGENTS.md").write_text("| Gate ladder | `lint typecheck test check` |\nDecided on 2026-10-20.\n"), "AGENTS.md:2 holds a date"),
+        (lambda root: ((root / "apps/api/AGENTS.md").write_text("x" * 33000 + "\n"), (root / "apps/api/CLAUDE.md").write_text("@AGENTS.md\n")), "the limit is 32768"),
+    ],
+)
+def test_check_enforces_the_brief(tmp_path: Path, setup, failure: str) -> None:
     scaffold_check(tmp_path, "API_PORT=8000\n")
-    claude = tmp_path / "CLAUDE.md"
-    if as_symlink:
-        claude.symlink_to("AGENTS.md")
-    else:
-        claude.write_text("@AGENTS.md\n")
+    setup(tmp_path)
     result = run_worker(tmp_path, CHECK)
     assert result.returncode != 0
-    assert "CLAUDE.md exists at the repo root" in result.stderr
+    assert failure in result.stderr
+
+
+def test_check_accepts_an_agents_file_with_its_claude_import(tmp_path: Path) -> None:
+    scaffold_check(tmp_path, "API_PORT=8000\n")
+    (tmp_path / "apps/api/AGENTS.md").write_text("# API\n")
+    (tmp_path / "apps/api/CLAUDE.md").write_text("@AGENTS.md\n")
+    result = run_worker(tmp_path, CHECK)
+    assert "2 AGENTS.md file(s)" in result.stdout, result.stdout + result.stderr
+    assert "CLAUDE.md" not in result.stderr
 
 
 @pytest.mark.parametrize(

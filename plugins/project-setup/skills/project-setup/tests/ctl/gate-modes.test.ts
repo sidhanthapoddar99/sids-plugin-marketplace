@@ -2,7 +2,7 @@
 // (the changes since a branch, a commit or a date-time) and all. The fixture is a throwaway git
 // repository shaped like the template, with stand-in rungs that record their arguments.
 import { afterEach, beforeEach, expect, setDefaultTimeout, test } from 'bun:test';
-import { appendFileSync, mkdirSync, rmSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { appFiles, fixture, type Fixture } from './gate-fixture';
 
@@ -76,8 +76,9 @@ test('changed: a deleted app counts as changed, but no rung runs on a folder tha
   expect(plan()).toEqual(skipped);
 });
 
-test('changed: docker/ and the root docs reach only check', () => {
-  f.put('README.md', 'changed\n'); f.put('AGENTS.md', 'changed\n'); f.put('docker/compose.base.yaml', 'changed\n');
+test('changed: docker/ and documentation reach only check, in an app folder too', () => {
+  f.put('README.md', 'changed\n'); f.put('AGENTS.md', 'changed\n'); f.put('CLAUDE.md', '@AGENTS.md\n'); f.put('docker/compose.base.yaml', 'changed\n');
+  f.put('apps/example-api-python/README.md', 'changed\n'); f.put('notes/plan.md', 'changed\n');
   expect(plan()).toEqual(skipped);
 });
 
@@ -278,4 +279,40 @@ test('GATE_REACHES may name only rows of GATE_TARGETS, in every mode, so a renam
     expect(run.err).toContain("GATE_REACHES in scripts/gate/_changed.sh names 'backend', which is no row of GATE_TARGETS");
   }
   expect(f.rungs()).toEqual([]);
+});
+
+test('a tree that already passed with the same base runs nothing, and --rerun runs it again', () => {
+  f.put('apps/example-api-python/app/main.py', 'changed\n');
+  expect(f.ctl(['gate']).code).toBe(0);
+  f.clearRungs();
+  const again = f.again(['gate']);
+  expect(again.code, again.all).toBe(0);
+  expect(again.out).toContain('already green on this tree');
+  expect(f.rungs()).toEqual([]);
+  expect(f.again(['gate', '--rerun']).code).toBe(0);
+  expect(f.rungs().length).toBeGreaterThan(0);
+});
+
+test('an edit after a green run, or another base, runs again; a commit of the checked work keeps the receipt for its delta', () => {
+  f.put('apps/example-api-python/app/main.py', 'changed\n');
+  const start = f.git('rev-parse', 'HEAD').trim();
+  expect(f.ctl(['gate']).code).toBe(0);
+  f.clearRungs();
+  f.put('apps/example-api-python/app/main.py', 'changed again\n');
+  expect(f.again(['gate']).out).not.toContain('already green');
+  f.clearRungs();
+  f.git('add', '-A'); f.git('commit', '-qm', 'work');
+  const delta = f.again(['gate', '--delta', start]);
+  expect(delta.out, delta.all).toContain('already green on this tree');
+  expect(f.again(['gate', '--delta', second]).out).not.toContain('already green');
+});
+
+test('an --all run covers a changed run of the same tree, and a red run records nothing', () => {
+  expect(f.ctl(['gate', '--all']).code).toBe(0);
+  f.clearRungs();
+  expect(f.again(['gate']).out).toContain('already green on this tree');
+  f.put('apps/example-api-python/app/main.py', 'red\n');
+  f.put('scripts/gate/check.sh', 'exit 3\n', true);
+  expect(f.ctl(['gate']).code).not.toBe(0);
+  expect(existsSync(join(f.root, '.git/ctl-gate-green'))).toBe(false);
 });

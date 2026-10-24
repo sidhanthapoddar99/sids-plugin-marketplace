@@ -111,7 +111,7 @@ owns their rules.
 
 ## Rust and WASM — opt-in
 
-Add this workflow only when a project actually compiles Rust to WebAssembly. The base template installs no WASM target, bindings generator or watcher. Record the target, selected toolchain, required packaging tools and versions, output directory and compatibility contract in that project's `AGENTS.md`, because a browser module and a WASI module need different targets and runtimes.
+The release build of a Rust server or WASM module, its profile, `wasm-opt` and the image that builds it, is `16_rust-production.md`. Add this workflow only when a project actually compiles Rust to WebAssembly. The base template installs no WASM target, bindings generator or watcher. Record the target, selected toolchain, required packaging tools and versions, output directory and compatibility contract in that project's `AGENTS.md`, because a browser module and a WASI module need different targets and runtimes.
 
 ### Setup and builds
 
