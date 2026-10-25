@@ -312,11 +312,25 @@ test('an --all run covers a changed run of the same tree, and a red run records 
   expect(f.ctl(['gate', '--all']).code).toBe(0);
   f.clearRungs();
   expect(f.again(['gate']).out).toContain('already green on this tree');
-  const wholeGate = () => readdirSync(join(f.root, '.git/ctl-gate-green')).filter(name => !name.includes('.rung-'));
+  const wholeGate = () => readdirSync(join(f.root, '.git/ctl-gate-green')).filter(name => !name.includes('rung-'));
   f.put('apps/example-api-python/app/main.py', 'red\n');
   f.put('scripts/gate/check.sh', 'exit 3\n', true);
   expect(f.ctl(['gate']).code).not.toBe(0);
   expect(wholeGate()).toEqual([]);
+});
+
+test('an ordinary green run does not cover a merge run, and a merge run covers an ordinary one', () => {
+  f.put('apps/example-api-python/app/main.py', 'changed\n');
+  expect(f.ctl(['gate']).code).toBe(0);
+  f.clearRungs();
+  const merge = f.again(['gate'], { CTL_MERGE: '1' });
+  expect(merge.code, merge.all).toBe(0);
+  expect(merge.out).not.toContain('already green');
+  expect(f.rungs().length).toBeGreaterThan(0);
+  f.clearRungs();
+  const plain = f.again(['gate']);
+  expect(plain.out).toContain('already green on this tree');
+  expect(f.rungs()).toEqual([]);
 });
 
 test('a same-size edit in the second of the last commit is part of the tree the receipt names', () => {
@@ -340,7 +354,7 @@ test('a same-size edit in the second of the last commit is part of the tree the 
   const index = join(mkdtempSync(join(tmpdir(), 'tree-')), 'index');
   const tree = f.bash('git add -A -- . && git write-tree', { GIT_INDEX_FILE: index }).out.trim();
   rmSync(dirname(index), { recursive: true, force: true });
-  const named = readdirSync(join(f.root, '.git/ctl-gate-green')).filter(name => !name.includes('.rung-'));
+  const named = readdirSync(join(f.root, '.git/ctl-gate-green')).filter(name => !name.includes('rung-'));
   expect(named.map(name => name.split('.')[0])).toEqual([tree]);
 });
 

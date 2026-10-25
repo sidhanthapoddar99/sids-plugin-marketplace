@@ -40,14 +40,22 @@ gate_receipt_key() {
   fi
 }
 
+# gate_receipt_kind — `merge-` inside ctl merge, else nothing. A merge run applies the checks' merge-time
+# rules (CTL_MERGE=1), so only a merge run's receipt covers it; a merge run's receipt covers an
+# ordinary run too, because it checked more.
+gate_receipt_kind() { [[ ${CTL_MERGE:-} == 1 ]] && printf 'merge-\n' || printf '\n'; }
+
 # gate_receipt_find <group> — print the receipt that covers this run, if one exists. A run of the
 # whole ladder covers a static or dynamic run with the same base, and an --all run covers every base.
 gate_receipt_find() {
-  local dir name
+  local dir name kind kinds=(merge-)
   dir=$(gate_receipt_dir)
-  for name in "$GATE_RECEIPT_TREE.$GATE_RECEIPT_BASE.$1" "$GATE_RECEIPT_TREE.$GATE_RECEIPT_BASE.all" \
-              "$GATE_RECEIPT_TREE.all.$1" "$GATE_RECEIPT_TREE.all.all"; do
-    [[ -f $dir/$name ]] && { printf '%s\n' "$dir/$name"; return 0; }
+  [[ -n $(gate_receipt_kind) ]] || kinds+=("")
+  for kind in "${kinds[@]}"; do
+    for name in "$GATE_RECEIPT_TREE.$GATE_RECEIPT_BASE.$kind$1" "$GATE_RECEIPT_TREE.$GATE_RECEIPT_BASE.${kind}all" \
+                "$GATE_RECEIPT_TREE.all.$kind$1" "$GATE_RECEIPT_TREE.all.${kind}all"; do
+      [[ -f $dir/$name ]] && { printf '%s\n' "$dir/$name"; return 0; }
+    done
   done
   return 1
 }
@@ -57,6 +65,6 @@ gate_receipt_write() {
   local dir
   dir=$(gate_receipt_dir)
   mkdir -p "$dir" || return 1
-  printf '%s · gate %s · %s\n' "$(date '+%Y-%m-%d %H:%M')" "$1" "$2" > "$dir/$GATE_RECEIPT_TREE.$GATE_RECEIPT_BASE.$1"
+  printf '%s · gate %s · %s\n' "$(date '+%Y-%m-%d %H:%M')" "$(gate_receipt_kind)$1" "$2" > "$dir/$GATE_RECEIPT_TREE.$GATE_RECEIPT_BASE.$(gate_receipt_kind)$1"
   find "$dir" -type f -mtime +30 -delete 2>/dev/null || true
 }
