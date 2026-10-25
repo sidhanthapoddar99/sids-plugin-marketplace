@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.0
+
+- `ctl test` runs every suite marked `db` against a throwaway PostgreSQL of its own, never the dev data core (`scripts/test/_test-database.sh`). The server runs the compose postgres image on tmpfs with `fsync=off`, on a loopback port Docker picks. The run migrates `test_template` once with the project's migration image, and each `db` suite gets its own copy through `CREATE DATABASE … TEMPLATE`, read from `DATABASE_URL`, `TEST_DATABASE_URL` and the `POSTGRES_*` parts. A caller's `TEST_DATABASE_URL`, such as a CI service, is used as it is. The run removes its server when it ends, and the next run removes a server whose run was killed. `need_core` and its data-core start are gone.
+- `10c_dynamic-tests.md` states the test-database rules and their reasons: a throwaway server, never a database a person uses; production's image; one migration per run and one copy per suite; a clean database per test by copy or by rollback; the CI override; cleanup; Flyway on the server's own network, because Docker Desktop does not forward a port Docker picked to the host network. Measured on Studio: its 25 test schemas migrated in 65.5 s on the dev core and in 17.1 s on a tmpfs server.
+- `tests/ctl/test-database.test.ts` covers the new path; the data-core tests no longer cover `ctl test`.
+
 ## 0.16.1
 
 - `ctl gate`'s tree key copies the index with its timestamps. A plain copy hid a same-size edit made in the second of the last commit, so a run could skip its receipt, or record one for a tree it did not check. A test reproduces the case.

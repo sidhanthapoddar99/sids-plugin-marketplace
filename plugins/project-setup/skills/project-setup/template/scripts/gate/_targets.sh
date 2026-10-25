@@ -10,7 +10,8 @@
 # folder here when you rename one. A run with no target skips a row whose folder is absent, because
 # a repo deletes the apps it does not have. A target named on the command line must exist, because
 # a typo that passes teaches the caller nothing. The word `db` among the rungs marks an app whose
-# tests read the data core: ctl test starts a stopped core before that suite runs.
+# tests read PostgreSQL: ctl test gives that suite its own copy of a throwaway, migrated database
+# (scripts/test/_test-database.sh).
 GATE_TARGETS=(
   # name     folder                              ecosystem  rungs
   "api       apps/example-api-python             python     lint typecheck test db"
@@ -34,7 +35,7 @@ gate_target_rows() {
   return 0
 }
 
-# gate_target_needs_db <name> — 0 when the row of <name> marks its tests as reading the data core
+# gate_target_needs_db <name> — 0 when the row of <name> marks its tests as reading PostgreSQL
 gate_target_needs_db() {
   local row name folder ecosystem rungs
   for row in "${GATE_TARGETS[@]}"; do
