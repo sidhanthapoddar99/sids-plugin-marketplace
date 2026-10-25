@@ -79,7 +79,7 @@ Git's worktree list already says which branch each slot holds, so it is the pool
 
 The pool's state rule: every `slot-<n>` folder is a worktree git lists. Every command reads the whole pool first. When it finds anything else, it names each problem and changes nothing, because a guess could put work on the wrong branch. So never move, delete or `git worktree remove` a slot. Switch a slot's branch through `ctl worktree`, so the slot stays free or taken as the pool expects.
 
-An older `ctl` named each slot with a link, `.worktrees/<branch> -> slot-<n>`. `create`, `remove` and `trim` delete such a link, and the folders it leaves empty, and say so. `list` names it. A link that points anywhere else is left alone.
+An older `ctl` named each slot with a link, `.worktrees/<branch> -> slot-<n>`. A `create`, `remove` or `trim` that succeeds deletes such a link, and the folders it leaves empty, and says so; one that refuses changes nothing. `list` names it. A link that points anywhere else is left alone.
 
 ## The physical path
 

@@ -78,7 +78,7 @@ wt_create() {
     *)        [[ -z $name ]] || die "ctl worktree create takes one name (got: $name and $1)"; name=$1 ;;
   esac; shift; done
   [[ -n $name ]] || die "usage: ctl worktree create <name> [--from <ref>]"
-  wt_init; wt_name_ok "$name"; wt_settings; wt_lock; wt_pool_load; wt_pool_check; wt_drop_old_links
+  wt_init; wt_name_ok "$name"; wt_settings; wt_lock; wt_pool_load; wt_pool_check
   if wt_branch_exists "$WT_MAIN" "$name"; then
     [[ -z $from ]] || die "branch $name exists, so --from does not apply; run create without --from"
     for i in "${!WT_LIST_BRANCH[@]}"; do [[ ${WT_LIST_BRANCH[$i]} != "$name" ]] || holder=${WT_LIST_PATH[$i]}; done
@@ -111,6 +111,7 @@ wt_create() {
     || die "git could not put slot-$n on branch $name; the slot stays free"
   [[ $(wt_current_branch "$slot") == "$name" ]] || die "slot-$n is not on branch $name after the switch; check it by hand"
   wt_env_install "$n"
+  wt_drop_old_links
   ok "worktree $name is in slot-$n$origin" >&2
   (( ! new )) || say "· a new slot builds from cold once: run ctl setup in .worktrees/slot-$n to install its dependencies" >&2
   wt_auto_trim
@@ -120,7 +121,7 @@ wt_create() {
 wt_remove() {
   local name=${1:-} n slot dirty head label rc=0
   [[ -n $name && $# -eq 1 ]] || die "usage: ctl worktree remove <name>"
-  wt_init; wt_settings; wt_lock; wt_pool_load; wt_pool_check; wt_drop_old_links
+  wt_init; wt_settings; wt_lock; wt_pool_load; wt_pool_check
   n=${WT_BRANCH_SLOT[$name]:-}
   [[ -n $n ]] || die "no slot holds branch $name; ctl worktree list shows them"
   slot="$WT_DIR/slot-$n"
@@ -141,6 +142,7 @@ wt_remove() {
   wt_refuse_busy "$n" "$name"
   wt_detach "$slot" || die "git could not detach slot-$n; nothing else changed"
   [[ -z $(wt_current_branch "$slot") ]] || die "slot-$n is still on a branch after detaching; check it by hand"
+  wt_drop_old_links
   ok "freed slot-$n: it keeps its builds, and branch $name is kept"
   wt_auto_trim
 }
@@ -201,8 +203,9 @@ wt_trim_command() {
   wt_init; wt_settings
   days=${days:-$WT_TRIM_DAYS}
   [[ $days =~ ^[1-9][0-9]{0,4}$ ]] || die "--days wants a whole number of days, 1 or more (got: $days)"
-  wt_lock; wt_pool_load; wt_pool_check; wt_drop_old_links
+  wt_lock; wt_pool_load; wt_pool_check
   wt_trim "$days" "$dry"
+  (( dry )) || wt_drop_old_links
 }
 
 sub=${1:-}; shift || true

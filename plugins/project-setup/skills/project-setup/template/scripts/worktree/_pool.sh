@@ -118,7 +118,7 @@ wt_pool_load() {
 }
 
 # wt_drop_old_links — remove the name links an older ctl made, and the folders they leave empty.
-# Call it holding the pool lock.
+# Call it holding the pool lock, once the command has done its work, so a refusal changes nothing.
 wt_drop_old_links() {
   local link dir
   for link in ${WT_OLD_LINKS[@]+"${WT_OLD_LINKS[@]}"}; do

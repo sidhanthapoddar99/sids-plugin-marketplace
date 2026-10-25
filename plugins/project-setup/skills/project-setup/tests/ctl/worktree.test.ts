@@ -213,6 +213,12 @@ test('a name link an older ctl made is named by list and removed by the next cre
   symlinkSync('../slot-1', W('feat/login'));
   symlinkSync('../../elsewhere', W('mine'));
   expect(ok(['list']).out).toContain('name links an older ctl made, which the next create, remove or trim removes: feat/login');
+  // A refused command changes nothing, the old link included.
+  expect(refused(['create', 'bad..name'])).toContain('is not a usable worktree name');
+  f.put('.env', mainEnv().replace('WORKTREE_SLOTS=\n', 'WORKTREE_SLOTS=1\n'));
+  expect(refused(['create', 'other'])).toContain('every slot is in use');
+  expect(lstatSync(W('feat/login')).isSymbolicLink()).toBe(true);
+  f.put('.env', mainEnv());
   const run = ok(['create', 'other']);
   expect(run.err).toContain('removed .worktrees/feat/login, a name link an older ctl made');
   expect(existsSync(W('feat'))).toBe(false);
