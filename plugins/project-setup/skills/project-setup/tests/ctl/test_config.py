@@ -82,11 +82,13 @@ def test_check_warns_about_long_source_files_without_failing(tmp_path: Path) -> 
     (tmp_path / "apps/api/big.py").write_text("x = 1\n" * 501)
     (tmp_path / "apps/api/generated").mkdir()
     (tmp_path / "apps/api/generated/schema.ts").write_text("x;\n" * 900)
+    (tmp_path / "apps/api/routeTree.gen.ts").write_text("x;\n" * 900)
     result = run_worker(tmp_path, CHECK)
     assert result.returncode == 0, result.stdout + result.stderr
     assert "apps/api/big.py has 501 lines — consider a split" in result.stderr
     assert "1 file(s) over 500 lines (a warning; the check still passes)" in result.stdout
     assert "schema.ts" not in result.stderr
+    assert "routeTree.gen.ts" not in result.stderr
     with (tmp_path / "AGENTS.md").open("a") as brief:
         brief.write("## Exceptions to the standard layout\n\n- size-cap apps/api/big.py: one generated-by-hand table.\n")
     result = run_worker(tmp_path, CHECK)

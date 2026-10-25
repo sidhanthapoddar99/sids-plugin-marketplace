@@ -232,13 +232,14 @@ pass "every app ships its lint config"
 
 step "source size"
 # A file past 500 lines is hard to read whole and often holds more than one job, so it is named. It
-# is a warning, never a failure, because a long file can be the right shape. Generated files, lock
-# files and SQL migrations are not split by hand, so they do not count. A file that stays long on
-# purpose is recorded as 'size-cap <path>' under the exceptions, which silences it.
+# is a warning, never a failure, because a long file can be the right shape. Generated files (under a
+# generated/ folder or named *.gen.*), lock files and SQL migrations are not split by hand, so they do
+# not count. A file that stays long on purpose is recorded as 'size-cap <path>' under the exceptions,
+# which silences it.
 SOURCE_WARN_LINES=500 long=0
 while IFS= read -r f; do
   [[ -f $f ]] || continue
-  case "$f" in */generated/*|*.d.ts|*.min.js) continue ;; esac
+  case "$f" in */generated/*|*.gen.*|*.d.ts|*.min.js) continue ;; esac
   lines=$(wc -l < "$f"); (( lines > SOURCE_WARN_LINES )) || continue
   exception_recorded "size-cap $f" && continue
   warn "$f has $lines lines — consider a split, or record 'size-cap $f' in AGENTS.md"; long=$(( long + 1 ))
