@@ -5,6 +5,7 @@
 - `ctl gate`'s tree key copies the index with its timestamps. A plain copy hid a same-size edit made in the second of the last commit, so a run could skip its receipt, or record one for a tree it did not check. A test reproduces the case.
 - A gate inside `ctl merge` (`CTL_MERGE=1`) records a `merge-` receipt, and only such a receipt covers a merge run. An ordinary green run on the same tree used to cover it, so the merge skipped the checks' merge-time rules. A merge receipt still covers an ordinary run.
 - The release-profile rule is narrowed: a rung builds the release profile only for a test that must run the shipped bytes, keyed by its inputs so a rerun reuses it; every other rung builds the dev profile. 0.16.0 said no rung builds it.
+- `10c_dynamic-tests.md` starts the data core only after a test run's settings and tools pass, and starts none when `DATA_SVCS` is empty, as in a ctl test fixture. Studio started it first, so a bad lane setting brought Docker up before it failed.
 - `10c_dynamic-tests.md` gives each wait one shared deadline of about a minute, because a gate runs suites beside compiling lanes.
 
 ## 0.16.0
