@@ -37,8 +37,8 @@ Rules
   lint      every app ships its lint config with the complexity floor: [tool.ruff] in pyproject.toml,
             .oxlintrc.json beside package.json, clippy.toml beside Cargo.toml, .golangci.yml beside go.mod —
             a linter run without its config reports only its defaults, and ruff's default has no complexity rule
-  size      no source file in ctl, apps/ or scripts/ over 500 lines (generated files and SQL left out),
-            unless AGENTS.md records 'size-cap <path>' as an exception
+  size      a warning, never a failure: each source file in ctl, apps/ or scripts/ over 500 lines
+            (generated files and SQL left out), unless AGENTS.md records 'size-cap <path>'
   pointers  no code, script or compose file names a skill page (references/NN_*.md) or a tracker issue
             (data/tasks/<date>-…), unless AGENTS.md records 'doc-pointer <path>' as an exception
   migrations no file in apps/database/postgres/migrations that is on the default branch is changed or
@@ -231,18 +231,20 @@ done < <(find apps -maxdepth 3 \( -name pyproject.toml -o -name package.json -o 
 pass "every app ships its lint config"
 
 step "source size"
-# A file past 500 lines holds more than one job, and every reader pays for all of it. Generated
-# files, lock files and SQL migrations are not split by hand, so they do not count. A file that must
-# stay whole is recorded as 'size-cap <path>' under the exceptions, with its reason.
-SOURCE_MAX_LINES=500
+# A file past 500 lines is hard to read whole and often holds more than one job, so it is named. It
+# is a warning, never a failure, because a long file can be the right shape. Generated files, lock
+# files and SQL migrations are not split by hand, so they do not count. A file that stays long on
+# purpose is recorded as 'size-cap <path>' under the exceptions, which silences it.
+SOURCE_WARN_LINES=500 long=0
 while IFS= read -r f; do
   [[ -f $f ]] || continue
   case "$f" in */generated/*|*.d.ts|*.min.js) continue ;; esac
-  lines=$(wc -l < "$f"); (( lines > SOURCE_MAX_LINES )) || continue
-  exception_recorded "size-cap $f" \
-    || fail "$f has $lines lines; split it (the cap is $SOURCE_MAX_LINES), or record 'size-cap $f' with its reason in AGENTS.md"
+  lines=$(wc -l < "$f"); (( lines > SOURCE_WARN_LINES )) || continue
+  exception_recorded "size-cap $f" && continue
+  warn "$f has $lines lines — consider a split, or record 'size-cap $f' in AGENTS.md"; long=$(( long + 1 ))
 done < <(repo_files ctl apps scripts | grep -E '(^ctl$|\.(py|ts|tsx|js|jsx|mjs|rs|go|sh|css)$)')
-pass "no source file over $SOURCE_MAX_LINES lines"
+if (( long )); then say "  $long file(s) over $SOURCE_WARN_LINES lines (a warning; the check still passes)"
+else pass "no source file over $SOURCE_WARN_LINES lines"; fi
 
 step "doc pointers"
 # Documentation points at code, never the reverse: a skill page, a tracker issue or a plan moves and

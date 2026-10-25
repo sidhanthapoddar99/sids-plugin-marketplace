@@ -76,7 +76,7 @@ These rules are the input to a lint rule. When one is broken a second time, writ
 
 | Rule | Number | Detail |
 |---|---|---|
-| File | 300 lines soft, 500 hard | Source, tests, components. Not generated code, vendored code, lock files or data fixtures. Past 300 a file holds two things; past 500 nobody reads it whole. Relaxed only with a comment at the top saying why, and an inline lint-ignore on that file. |
+| File | 300 lines to consider a split, 500 a warning | Source, tests, components. Not generated code, vendored code, lock files or data fixtures. Past 300 a file often holds two things; past 500 it is hard to read whole, so `ctl check` warns and names it. The warning never fails a gate, because a long file can be the right shape. A file that stays long on purpose is recorded as `size-cap <path>`, which silences the warning. |
 | Function | 40 lines | Split by responsibility, because a longer one carries a second responsibility. |
 | Component | 150 lines; page 50 | A page is a route, so it composes; a component past 150 lines holds a second component. This row is the home; `05_frontend.md` points here. |
 | Feature folder | ~10 files | Subdivide inside the folder, along the axis the files change on together. Ten files is where a listing stops fitting on one screen. |
@@ -141,7 +141,7 @@ Each of these means a rule was broken somewhere else. Find that place.
 | a tripwire crossed with no deferral in the tracker | the brief is the contract |
 | a brief that tells the history of a rule, or a nested `AGENTS.md` that repeats the root one | the brief holds current facts, once |
 | a code comment naming a doc page, plan, issue or skill file | documentation points at code, never the reverse; `ctl check` catches skill pages and tracker issues |
-| a source file over 500 lines with no `size-cap` exception | the tripwire's hard cap; `ctl check` fails it |
+| a source file over 500 lines with no `size-cap` exception and no reason in the tracker | worth a split; `ctl check` warns |
 | an edited or deleted migration that is on the default branch | a change is a new migration; `ctl check` fails it |
 | `command -v <tool>` followed by another way to do the tool's job | a missing tool is installed, never coded around |
 | a `ctl` that does not source `scripts/common/_lib.sh`, or a helper in `scripts/common/` that differs from the template | `ctl` is a copy of the template (`08_ctl.md` § Copy and verify) |

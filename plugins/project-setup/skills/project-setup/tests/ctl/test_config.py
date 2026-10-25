@@ -77,13 +77,15 @@ def test_check_enforces_the_brief(tmp_path: Path, setup, failure: str) -> None:
     assert failure in result.stderr
 
 
-def test_check_caps_source_files_unless_recorded(tmp_path: Path) -> None:
+def test_check_warns_about_long_source_files_without_failing(tmp_path: Path) -> None:
     scaffold_check(tmp_path, "API_PORT=8000\n")
     (tmp_path / "apps/api/big.py").write_text("x = 1\n" * 501)
     (tmp_path / "apps/api/generated").mkdir()
     (tmp_path / "apps/api/generated/schema.ts").write_text("x;\n" * 900)
     result = run_worker(tmp_path, CHECK)
-    assert "apps/api/big.py has 501 lines; split it" in result.stderr
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "apps/api/big.py has 501 lines — consider a split" in result.stderr
+    assert "1 file(s) over 500 lines (a warning; the check still passes)" in result.stdout
     assert "schema.ts" not in result.stderr
     with (tmp_path / "AGENTS.md").open("a") as brief:
         brief.write("## Exceptions to the standard layout\n\n- size-cap apps/api/big.py: one generated-by-hand table.\n")

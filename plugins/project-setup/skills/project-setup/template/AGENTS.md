@@ -48,7 +48,7 @@ Crossing one obligates the restructure, or a deferral recorded in the tracker (w
 |---|---|
 | 8 to 10 flat domains | Add a domain layer. |
 | 10 files in one module folder | Subdivide inside the module: a sub-module, or by kind. |
-| A file over 300 lines | Split it. 500 is the hard cap, which `ctl check` enforces; a file that must stay whole is recorded as `size-cap <path>` under Exceptions. |
+| A file over 300 lines | Consider a split. Past 500, `ctl check` warns; a file that stays long on purpose is recorded as `size-cap <path>` under Exceptions. |
 | A route file over 50 lines, or a component over 150 | Move logic into a module or a primitive. |
 | The same utility combination twice | Add a variant to the primitive. |
 | A helper used three times | Extract it and name it. |
