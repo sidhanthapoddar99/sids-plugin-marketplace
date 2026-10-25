@@ -42,7 +42,7 @@ Every repo takes this shape. A repo with one app and a repo with five apps look 
 ├── memory/                     # add-on: agent working rules split out of AGENTS.md once they outgrow it
 ├── .env.template               # grouped environment contract; blank secrets, committed
 ├── .env                        # local values, gitignored; created by ctl setup
-├── .worktrees/                 # every git worktree: warm slots and branch-named links, gitignored. 13_worktree.md
+├── .worktrees/                 # every git worktree: the warm slots slot-<n>, gitignored. 13_worktree.md
 ├── .mise.toml                  # tool version contract
 ├── .gitignore
 ├── .dockerignore
@@ -110,7 +110,7 @@ Root `.gitignore`: curated for the ecosystems present, not a kitchen-sink templa
 | Section | Entries |
 |---|---|
 | Env files and local overrides | `.env`, `.env.*`, `!/.env.template`. `config.local.yaml`. |
-| Worktrees | `/.worktrees/`: the slots and their links that `ctl worktree` makes. `13_worktree.md`. |
+| Worktrees | `/.worktrees/`: the slots that `ctl worktree` makes. `13_worktree.md`. |
 | Runtime state | Not here. `data/.gitignore` and `logs/.gitignore` own it. |
 | Ecosystem artifacts | Only for ecosystems present: `__pycache__/`, `.venv/`, `node_modules/`, `dist/`, `target/`, tool caches. |
 | Logs and OS junk | `*.log`, `.DS_Store`. |

@@ -16,7 +16,7 @@ One paragraph: what this product is and which apps make it.
 - `ctl up` — full stack in docker; `ctl up preset <name>` runs a saved line from `docker/presets.yaml`
 - `ctl db migrate` — apply schema migrations (`ctl dev` also runs them on every launch)
 - `ctl gate` — the ladder over what the uncommitted changes reach (`--delta <base>` once work is committed); green here is the only definition of green
-- `ctl worktree create <name>` — a worktree at `.worktrees/<name>` on a warm slot; `ctl worktree remove <name>` frees it once the branch is merged
+- `ctl worktree create <name>` — puts branch `<name>` in a warm slot, `.worktrees/slot-<n>`, and prints that path; `ctl worktree remove <name>` frees the slot once the branch is merged
 
 ## Commands
 | Verb | Does |

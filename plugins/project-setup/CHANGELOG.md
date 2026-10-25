@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.0
+
+- `ctl worktree` makes no name links. Git's worktree list is the one record of which slot holds which branch, so `.worktrees/<branch> -> slot-<n>` only repeated it, and two records of one fact could disagree. `create <branch>` prints the slot's path, `.worktrees/slot-<n>`; `remove <branch>` finds the slot through git; `list` shows each slot's branch. The state rule shrinks to one line: every `slot-<n>` folder is a worktree git lists. A branch may now start with `slot-`, and a name no longer has to fit beside other links.
+- `create`, `remove` and `trim` delete a name link an older `ctl` made, and the folders it leaves empty; `list` names one. A link that points anywhere else is left alone.
+- `13_worktree.md` § The pool's one record replaces § Names are links to slots; the layout, the commands and the template brief follow. `CTL_ROOT` stays the physical path, for a checkout a person reaches through a symlink of their own.
+
 ## 0.17.0
 
 - `ctl test` runs every suite marked `db` against a throwaway PostgreSQL of its own, never the dev data core (`scripts/test/_test-database.sh`). The server runs the compose postgres image on tmpfs with `fsync=off`, on a loopback port Docker picks. The run migrates `test_template` once with the project's migration image, and each `db` suite gets its own copy through `CREATE DATABASE … TEMPLATE`, read from `DATABASE_URL`, `TEST_DATABASE_URL` and the `POSTGRES_*` parts. A caller's `TEST_DATABASE_URL`, such as a CI service, is used as it is. The run removes its server when it ends, and the next run removes a server whose run was killed. `need_core` and its data-core start are gone.

@@ -33,8 +33,8 @@
 # not running · compose plugin missing). Run `ctl <command> --help` for any command.
 
 set -euo pipefail
-# The physical path (pwd -P): a worktree slot is reached through .worktrees/<name>, a link whose name
-# changes with each branch, and builds, process records and locks must all see the slot's one path.
+# The physical path (pwd -P): a checkout reached through a symlink still has one path, and builds,
+# process records and locks must all see that one path.
 CTL_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$CTL_ROOT/scripts/common/_lib.sh"
 cd "$CTL_ROOT"
@@ -95,11 +95,11 @@ ctl_help() {
   row "setup env"                       "only .env, generated credentials and storage dirs — installs nothing"
   row "check"                           "the repo contract — layout, env contract, compose validity, brief"
   row "status"                          "config doctor (env · runtimes · deps · health · stack)"
-  printf '\n%sWorktrees%s (work in .worktrees/<name>, a link to a warm slot)\n' "$C_B" "$C_RESET"
+  printf '\n%sWorktrees%s (work in the warm slot .worktrees/slot-<n> that create prints)\n' "$C_B" "$C_RESET"
   row "merge <branch> [--minor[=PART]]" "land a worktree branch: merge the default branch in, set versions, one gate, fast-forward"
-  row "worktree create <name> [--from R]" "put a free slot on branch <name> and link .worktrees/<name> to it"
-  row "worktree list"                   "each slot: name or free · clean or dirty · merged · builds · last use"
-  row "worktree remove <name>"          "free a clean, merged worktree's slot; keep the branch and the builds"
+  row "worktree create <name> [--from R]" "put a free slot on branch <name> and print its path"
+  row "worktree list"                   "each slot: branch or free · clean or dirty · merged · builds · last use"
+  row "worktree remove <name>"          "free the slot of a clean, merged branch; keep the branch and the builds"
   row "worktree trim [--days N] [--dry-run]" "delete Cargo outputs no build used for N days, in every slot"
   printf '\n%sup configs%s    %s\n' "$C_DIM" "$C_RESET" "$(list_configs | join_sp | or_none)"
   printf '%sup modifiers%s  %s\n' "$C_DIM" "$C_RESET" "$(list_modifiers | sed 's/^/+/' | join_sp | or_none)"

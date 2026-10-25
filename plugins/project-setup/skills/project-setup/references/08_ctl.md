@@ -122,7 +122,7 @@ are a separate suite and are not installed by CTL.
 | | `setup env [--remove-unlisted]` | The env step alone: `.env` created from its template or rebuilt in its shape with every value kept, declared local credentials generated and checked, storage folders created under `BASE_DIR`. Installs nothing. A key the template lacks is removed only on a yes in a terminal or with `--remove-unlisted`. `02_env.md` § Setting up `.env`. |
 | | `check` | The repo contract. Below. |
 | | `status` | Read-only doctor: env, runtimes, deps, docker, health, stack. Never dies. |
-| Worktrees | `worktree create <name> [--from <ref>]` | Puts a free slot, a git worktree at `.worktrees/slot-<n>` whose builds stay warm, on branch `<name>`, and links `.worktrees/<name>` to it. A slot's first use writes its `.env` with every port + 100 × n. `13_worktree.md`. |
+| Worktrees | `worktree create <name> [--from <ref>]` | Puts a free slot, a git worktree at `.worktrees/slot-<n>` whose builds stay warm, on branch `<name>`, and prints the slot's path. A slot's first use writes its `.env` with every port + 100 × n. `13_worktree.md`. |
 | | `worktree list` | Each slot: name or free, clean or dirty, merged into the main tree, build size, last use. |
 | | `worktree remove <name>` | Frees the slot once the worktree is clean, not busy, and merged into the main tree. Keeps the branch and the builds. No force option. |
 | | `worktree trim [--days N] [--dry-run]` | Deletes Cargo outputs no build used for N days, in every idle slot. `create` and `remove` run it weekly. |

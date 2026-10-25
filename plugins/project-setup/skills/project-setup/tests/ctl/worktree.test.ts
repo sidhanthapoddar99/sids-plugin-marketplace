@@ -2,7 +2,7 @@
 // merged, the state checks and the physical path. Each test works in a throwaway git repository
 // copied from the template, never in a real checkout.
 import { expect, setDefaultTimeout, test } from 'bun:test';
-import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, realpathSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { W, branchOf, f, mainEnv, nothingCreated, ok, refused, useWorktreeFixture, wt } from './worktree-fixture';
 
@@ -15,10 +15,10 @@ const storage = (dir: string) => Bun.spawnSync(['bash', '-c',
   'source scripts/common/_lib.sh; require_env; resolve_storage_dirs; printf "%s\\n" "$DATA_DIR" "$LOGS_DIR" "$BACKUP_DIR"'],
   { cwd: dir, env: { PATH: process.env.PATH!, NO_COLOR: '1' } }).stdout.toString().trim().split('\n');
 
-test('create puts slot-1 on a new branch, links the nested name to it, and prints only the path', () => {
+test('create puts slot-1 on a new branch and prints only the slot path, with no name link', () => {
   const run = ok(['create', 'feat/login']);
-  expect(run.out).toBe(W('feat/login') + '\n');
-  expect(readlinkSync(W('feat/login'))).toBe('../slot-1');
+  expect(run.out).toBe(W('slot-1') + '\n');
+  expect(existsSync(W('feat'))).toBe(false);
   expect(branchOf(W('slot-1'))).toBe('feat/login');
   expect(f.git('rev-parse', 'feat/login')).toBe(f.git('rev-parse', 'HEAD'));
   expect(run.err).toContain('a new branch from HEAD of the main tree');
@@ -41,7 +41,7 @@ test("a slot's first .env is the main tree's with ports + 100 × n and its own s
   expect(lstatSync(W('slot-1/.env')).mode & 0o777).toBe(0o600);
   // The storage paths stay relative, so the slot keeps its own data and logs.
   const slot = realpathSync(W('slot-1'));
-  expect(storage(W('foo'))).toEqual([`${slot}/data`, `${slot}/logs`, `${slot}/logs/backups`]);
+  expect(storage(W('slot-1'))).toEqual([`${slot}/data`, `${slot}/logs`, `${slot}/logs/backups`]);
   ok(['create', 'bar']);
   expect(line(readFileSync(W('slot-2/.env'), 'utf8'), 'API_PORT')).toBe('API_PORT=8200');
 });
@@ -57,7 +57,7 @@ test('a BASE_DIR storage block is copied as it is and resolves inside the slot; 
   ok(['create', 'foo']);
   expect(line(readFileSync(W('slot-1/.env'), 'utf8'), 'DATA_DIR')).toBe('DATA_DIR=${BASE_DIR}/data');
   const slot = realpathSync(W('slot-1'));
-  expect(storage(W('foo'))).toEqual([`${slot}/data`, `${slot}/logs`, `${slot}/logs/backups`]);
+  expect(storage(W('slot-1'))).toEqual([`${slot}/data`, `${slot}/logs`, `${slot}/logs/backups`]);
 });
 
 test('an empty COMPOSE_PROJECT_NAME becomes the main folder name, as compose reads it, plus -slot-<n>', () => {
@@ -108,37 +108,34 @@ test("a slot's ports must be clear of the main tree's, every other slot's .env a
   expect(() => f.git('show-ref', '--verify', 'refs/heads/c')).toThrow();
 });
 
-test('the pool grows to WORKTREE_SLOTS and then refuses, naming every slot; ctl runs from a named worktree too', () => {
+test('the pool grows to WORKTREE_SLOTS and then refuses, naming every slot; ctl runs from a slot too', () => {
   f.put('.env', mainEnv().replace('WORKTREE_SLOTS=\n', 'WORKTREE_SLOTS=2\n'));
   ok(['create', 'a']);
-  ok(['create', 'b'], {}, W('a'));
-  expect(readlinkSync(W('b'))).toBe('slot-2');
-  expect(refused(['create', 'c'])).toContain('every slot is in use (WORKTREE_SLOTS=2): slot-1 (.worktrees/a) slot-2 (.worktrees/b)');
+  ok(['create', 'b'], {}, W('slot-1'));
+  expect(branchOf(W('slot-2'))).toBe('b');
+  expect(refused(['create', 'c'])).toContain('every slot is in use (WORKTREE_SLOTS=2): slot-1 (a) slot-2 (b)');
   // The shell wins over the main tree's .env.
   ok(['create', 'c'], { WORKTREE_SLOTS: '3' });
   expect(refused(['create', 'd'], { WORKTREE_SLOTS: 'many' })).toContain('WORKTREE_SLOTS must be a whole number from 1 to 99');
 });
 
-test('create refuses a taken name, a bad or slot- name, --from on an existing branch, and a branch checked out elsewhere', () => {
-  mkdirSync(W('taken'), { recursive: true });
-  expect(refused(['create', 'taken'])).toContain('.worktrees/taken already exists');
+test('create refuses a bad name, --from on an existing branch, and a branch checked out elsewhere', () => {
   expect(refused(['create', 'bad..name'])).toContain('is not a usable worktree name');
   expect(refused(['create', '-x'])).toContain('unknown option -x');
-  expect(refused(['create', 'slot-9'])).toContain('starts with slot-, which the slot folders use');
   f.git('branch', 'old');
   expect(refused(['create', 'old', '--from', 'HEAD'])).toContain('branch old exists, so --from does not apply');
   expect(refused(['create', 'main'])).toContain(`branch main is checked out at ${realpathSync(f.root)}`);
   expect(refused(['create', 'new', '--from', 'no-such-ref'])).toContain('--from no-such-ref is not a commit');
   expect(existsSync(W('slot-1'))).toBe(false);
   ok(['create', 'feat']);
-  expect(refused(['create', 'feat/inner'])).toContain('.worktrees/feat is a worktree link, so it cannot hold .worktrees/feat/inner');
+  expect(refused(['create', 'feat'])).toContain('branch feat is checked out at');
 });
 
 test('create switches a slot to a branch that exists, and --from starts a new branch elsewhere', () => {
   f.put('README.md', 'second\n'); f.git('commit', '-q', '-am', 'second');
   f.git('branch', 'old', 'HEAD~1');
   ok(['create', 'old']);
-  expect(f.git('-C', W('old'), 'rev-parse', 'HEAD')).toBe(f.git('rev-parse', 'HEAD~1'));
+  expect(f.git('-C', W('slot-1'), 'rev-parse', 'HEAD')).toBe(f.git('rev-parse', 'HEAD~1'));
   ok(['create', 'fresh', '--from', 'HEAD~1']);
   expect(branchOf(W('slot-2'))).toBe('fresh');
   expect(f.git('rev-parse', 'fresh')).toBe(f.git('rev-parse', 'HEAD~1'));
@@ -146,7 +143,7 @@ test('create switches a slot to a branch that exists, and --from starts a new br
 
 test('remove refuses changes and untracked files, but not ignored build folders, and refuses until merged into the main tree', () => {
   ok(['create', 'feat/login']);
-  const named = W('feat/login');
+  const named = W('slot-1');
   writeFileSync(join(named, 'README.md'), 'changed\n');
   expect(refused(['remove', 'feat/login'])).toContain('has uncommitted changes or untracked files');
   f.git('-C', named, 'checkout', '-q', '--', '.');
@@ -160,34 +157,32 @@ test('remove refuses changes and untracked files, but not ignored build folders,
   expect(refused(['remove', 'feat/login'])).toMatch(/branch feat\/login is not merged into the main tree \(branch main at [0-9a-f]+\); merge it there first/);
   f.git('merge', '-q', '--ff-only', 'feat/login');
   ok(['remove', 'feat/login']);
-  expect(existsSync(W('feat'))).toBe(false);
   expect(branchOf(W('slot-1'))).toBe('');
   expect(f.git('rev-parse', '--verify', 'feat/login')).toBe(f.git('rev-parse', 'HEAD'));
   expect(readFileSync(W('slot-1/apps/example-engine-rust/target/debug/marker'), 'utf8')).toBe('warm\n');
-  expect(refused(['remove', 'nothing'])).toContain('no worktree named nothing');
-  mkdirSync(W('handmade'));
-  expect(refused(['remove', 'handmade'])).toContain('.worktrees/handmade is not a slot link');
+  expect(refused(['remove', 'nothing'])).toContain('no slot holds branch nothing');
 });
 
 test('a freed slot is taken again with its build folders and its .env as they were', () => {
   ok(['create', 'foo']);
-  mkdirSync(W('foo/apps/example-engine-rust/target'), { recursive: true });
-  writeFileSync(W('foo/apps/example-engine-rust/target/marker'), 'warm\n');
+  mkdirSync(W('slot-1/apps/example-engine-rust/target'), { recursive: true });
+  writeFileSync(W('slot-1/apps/example-engine-rust/target/marker'), 'warm\n');
   writeFileSync(W('slot-1/.env'), readFileSync(W('slot-1/.env'), 'utf8') + 'MINE=kept\n');
   ok(['remove', 'foo']);
   const run = ok(['create', 'bar']);
   expect(run.err).not.toContain('wrote slot-1/.env');
-  expect(readlinkSync(W('bar'))).toBe('slot-1');
-  expect(readFileSync(W('bar/apps/example-engine-rust/target/marker'), 'utf8')).toBe('warm\n');
+  expect(run.out).toBe(W('slot-1') + '\n');
+  expect(branchOf(W('slot-1'))).toBe('bar');
+  expect(readFileSync(W('slot-1/apps/example-engine-rust/target/marker'), 'utf8')).toBe('warm\n');
   expect(readFileSync(W('slot-1/.env'), 'utf8')).toContain('MINE=kept');
 });
 
-test('list shows each slot with its name or free, clean or dirty, merged, and last use', () => {
+test('list shows each slot with its branch or free, clean or dirty, merged, and last use', () => {
   expect(ok(['list']).out).toContain('no slots yet');
   ok(['create', 'foo']); ok(['create', 'bar']); ok(['create', 'gone']); ok(['remove', 'gone']);
-  writeFileSync(W('bar/README.md'), 'changed\n');
-  writeFileSync(W('foo/NOTES.md'), 'work not in the main tree\n');
-  f.git('-C', W('foo'), 'add', 'NOTES.md'); f.git('-C', W('foo'), 'commit', '-q', '-m', 'unmerged');
+  writeFileSync(W('slot-2/README.md'), 'changed\n');
+  writeFileSync(W('slot-1/NOTES.md'), 'work not in the main tree\n');
+  f.git('-C', W('slot-1'), 'add', 'NOTES.md'); f.git('-C', W('slot-1'), 'commit', '-q', '-m', 'unmerged');
   const rows = ok(['list']).out.split('\n');
   const row = (slot: string) => rows.find(text => text.startsWith(`${slot} `))!.split(/\s+/);
   expect(row('slot-1').slice(0, 4)).toEqual(['slot-1', 'foo', 'clean', 'no']);
@@ -202,25 +197,32 @@ test('list warns about a worktree outside .worktrees/', () => {
   expect(ok(['list']).err).toContain(`worktrees outside .worktrees/, which this repo's rules do not allow: ${join(f.base, 'outside')}`);
 });
 
-test('a pool whose state does not match the rules is reported, and nothing changes', () => {
-  ok(['create', 'foo']); ok(['create', 'bar']);
-  unlinkSync(W('foo'));
-  let err = refused(['create', 'other']);
-  expect(err).toContain('slot-1 is on branch foo, but no .worktrees/foo links to it');
+test('a slot folder git does not list is reported, and nothing changes', () => {
+  ok(['create', 'foo']);
+  mkdirSync(W('slot-7'));
+  const err = refused(['create', 'other']);
+  expect(err).toContain('.worktrees/slot-7 exists, but git does not list it as a slot');
   expect(err).toContain('changed nothing');
-  expect(existsSync(W('slot-3'))).toBe(false);
+  expect(existsSync(W('slot-2'))).toBe(false);
   expect(wt(['list']).code).toBe(1);
-  f.git('-C', W('slot-1'), 'switch', '-q', '--detach');
-  f.git('-C', W('slot-2'), 'switch', '-q', '-c', 'elsewhere');
-  err = refused(['remove', 'bar']);
-  expect(err).toContain('slot-2 is on branch elsewhere, but its link is .worktrees/bar');
-  expect(existsSync(W('bar'))).toBe(true);
+});
+
+test('a name link an older ctl made is named by list and removed by the next create; other links stay', () => {
+  ok(['create', 'feat/login']);
+  mkdirSync(W('feat'));
+  symlinkSync('../slot-1', W('feat/login'));
+  symlinkSync('../../elsewhere', W('mine'));
+  expect(ok(['list']).out).toContain('name links an older ctl made, which the next create, remove or trim removes: feat/login');
+  const run = ok(['create', 'other']);
+  expect(run.err).toContain('removed .worktrees/feat/login, a name link an older ctl made');
+  expect(existsSync(W('feat'))).toBe(false);
+  expect(lstatSync(W('mine')).isSymbolicLink()).toBe(true);
 });
 
 test("a branch whose work is in the main tree's HEAD counts as merged, even when rebased in; later work does not", () => {
   ok(['create', 'foo']);
-  writeFileSync(W('foo/README.md'), 'feature\n');
-  f.git('-C', W('foo'), 'commit', '-q', '-am', 'feature');
+  writeFileSync(W('slot-1/README.md'), 'feature\n');
+  f.git('-C', W('slot-1'), 'commit', '-q', '-am', 'feature');
   // The main tree moves on, then takes the work by cherry-pick: new commits, so foo is no ancestor of HEAD.
   f.put('LICENSE', 'other work\n'); f.git('commit', '-q', '-am', 'other');
   expect(refused(['remove', 'foo'])).toContain('branch foo is not merged into the main tree');
@@ -229,8 +231,8 @@ test("a branch whose work is in the main tree's HEAD counts as merged, even when
   expect(ok(['list']).out.split('\n').find(text => text.startsWith('slot-1 '))).toMatch(/^slot-1\s+foo\s+clean\s+yes\s/);
   ok(['remove', 'foo']);
   ok(['create', 'foo']);
-  writeFileSync(W('foo/README.md'), 'more\n');
-  f.git('-C', W('foo'), 'commit', '-q', '-am', 'more');
+  writeFileSync(W('slot-1/README.md'), 'more\n');
+  f.git('-C', W('slot-1'), 'commit', '-q', '-am', 'more');
   expect(refused(['remove', 'foo'])).toContain('is not merged into the main tree');
 });
 
@@ -241,15 +243,17 @@ test('create refuses while git does not ignore .worktrees/', () => {
   expect(existsSync(W())).toBe(false);
 });
 
-test("ctl run through a name sees the slot's one physical path as CTL_ROOT, and so does _lib.sh alone", () => {
+test("ctl run through a symlink sees the slot's one physical path as CTL_ROOT, and so does _lib.sh alone", () => {
   ok(['create', 'feat/login']);
+  const alias = join(f.base, 'alias');
+  symlinkSync(W('slot-1'), alias);
   // A worker that prints the CTL_ROOT ctl hands it, in place of the slot's status worker.
   writeFileSync(W('slot-1/scripts/config/status.sh'), 'printf "%s" "$CTL_ROOT"\n');
-  const run = f.ctl(['status'], {}, W('feat/login'));
+  const run = f.ctl(['status'], {}, alias);
   expect(run.code, run.all).toBe(0);
   expect(run.out).toBe(realpathSync(W('slot-1')));
   const alone = Bun.spawnSync(['bash', '-c', 'source scripts/common/_lib.sh; printf "%s" "$CTL_ROOT"'],
-    { cwd: W('feat/login'), env: { PATH: process.env.PATH!, NO_COLOR: '1' } });
+    { cwd: alias, env: { PATH: process.env.PATH!, NO_COLOR: '1' } });
   expect(alone.stdout.toString()).toBe(realpathSync(W('slot-1')));
 });
 

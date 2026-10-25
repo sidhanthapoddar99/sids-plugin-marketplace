@@ -2,9 +2,9 @@
 # worktree/worktree.sh — `ctl worktree create|list|remove|trim`: named worktrees on a fixed pool of
 # warm slots under .worktrees/.
 #
-# Work happens in .worktrees/<name>, a link to the slot (.worktrees/slot-<n>) that holds branch
-# <name>. A slot's path never changes, so its build folders stay warm across branches, and the
-# repository stops growing with every new worktree. create takes a free slot, or adds one up to
+# Work happens in the slot (.worktrees/slot-<n>) that holds branch <name>; git's worktree list is
+# the one record of which slot that is. A slot's path never changes, so its build folders stay warm
+# across branches, and the repository stops growing with every new worktree. create takes a free slot, or adds one up to
 # WORKTREE_SLOTS. remove frees a clean slot whose branch the main tree has merged. Nothing deletes a
 # slot, a build folder or a branch; trim deletes only Cargo outputs that no build used for N days.
 # _pool.sh holds the pool rules and the main-tree guard, _git.sh every git command, _env.sh a slot's
@@ -21,13 +21,13 @@ usage() { print_help "worktree" "named worktrees on a fixed pool of warm slots u
 "Subcommands
   create <name> [--from <ref>]   take the lowest free slot, or add one up to WORKTREE_SLOTS, and put it
                                  on branch <name>: the existing branch, or a new one from <ref> (default:
-                                 the main tree's HEAD). Links .worktrees/<name> to the slot and prints
-                                 that path, the one to work in. On a slot's first use it writes the
+                                 the main tree's HEAD). Prints the slot's path, .worktrees/slot-<n>,
+                                 the one to work in. On a slot's first use it writes the
                                  slot's .env from the main tree's, with every port + 100 × the slot
                                  number and COMPOSE_PROJECT_NAME ending in -slot-<n>
-  list                           each slot: its name or free, clean or dirty, merged into the main tree
+  list                           each slot: its branch or free, clean or dirty, merged into the main tree
                                  or not, the size of its builds, and its last checkout or commit
-  remove <name>                  free the slot. Refuses uncommitted changes, untracked files git does not
+  remove <name>                  free the slot that holds branch <name>. Refuses uncommitted changes, untracked files git does not
                                  ignore, and a branch whose work is not in the main tree's HEAD (merged,
                                  rebased or squashed in). Keeps the branch, the slot and its builds
   trim [--days N] [--dry-run]    in every slot, delete Cargo outputs that no build used for N days
@@ -45,17 +45,17 @@ Settings (the main tree's .env, WORKTREES section; a value set in the shell wins
 Terms
   main tree            the repository's main checkout, whatever branch it has checked out
   slot                 a git worktree at .worktrees/slot-<n>. It is never deleted, and keeps its builds
-  name                 a branch name. .worktrees/<name> links to the slot that holds it
+  name                 a branch name; git's worktree list names the slot that holds it
 
-Never move, delete or git-worktree-remove a slot, and never switch branches inside one by hand: its
-fixed path keeps its builds valid, and its branch must match its link." \
-"Every command reads the whole pool first, and changes nothing when a slot and its link disagree."; }
+Never move, delete or git-worktree-remove a slot: its fixed path keeps its builds valid. Switch a
+slot's branch only through ctl worktree, so the slot stays free or taken as the pool expects." \
+"Every command reads the whole pool first, and changes nothing when the pool is not in a state it knows."; }
 
 # wt_refuse_busy <n> [<name>] — stop, changing nothing, while anything ctl started in slot-<n> runs
 wt_refuse_busy() {
   local reasons line
   reasons=$(slot_busy "$WT_DIR/slot-$1") || return 0
-  err "slot-$1${2:+ (.worktrees/$2)} is in use, so ctl worktree changed nothing:"
+  err "slot-$1${2:+ (branch $2)} is in use, so ctl worktree changed nothing:"
   while IFS= read -r line; do printf '  - %s\n' "$line" >&2; done <<< "$reasons"
   die "stop it there first with ctl stop, which stops its dev apps and its containers, the data core included, or let the gate finish; then run the command again"
 }
@@ -70,7 +70,7 @@ wt_auto_trim() {
 }
 
 wt_create() {
-  local name="" from="" n="" new=0 slot link rel commit="" holder="" origin="" i used=()
+  local name="" from="" n="" new=0 slot commit="" holder="" origin="" i used=()
   while (( $# )); do case $1 in
     --from)   (( $# >= 2 )) && [[ -n $2 && $2 != -* ]] || die "--from needs a branch or a commit"; from=$2; shift ;;
     --from=*) from=${1#--from=}; [[ -n $from ]] || die "--from needs a branch or a commit" ;;
@@ -78,9 +78,7 @@ wt_create() {
     *)        [[ -z $name ]] || die "ctl worktree create takes one name (got: $name and $1)"; name=$1 ;;
   esac; shift; done
   [[ -n $name ]] || die "usage: ctl worktree create <name> [--from <ref>]"
-  wt_init; wt_name_ok "$name"; wt_settings; wt_lock; wt_pool_load; wt_pool_check
-  link="$WT_DIR/$name"
-  [[ ! -e $link && ! -L $link ]] || die ".worktrees/$name already exists"
+  wt_init; wt_name_ok "$name"; wt_settings; wt_lock; wt_pool_load; wt_pool_check; wt_drop_old_links
   if wt_branch_exists "$WT_MAIN" "$name"; then
     [[ -z $from ]] || die "branch $name exists, so --from does not apply; run create without --from"
     for i in "${!WT_LIST_BRANCH[@]}"; do [[ ${WT_LIST_BRANCH[$i]} != "$name" ]] || holder=${WT_LIST_PATH[$i]}; done
@@ -98,7 +96,7 @@ wt_create() {
   elif (( ${#WT_SLOTS[@]} < WT_MAX )); then
     n=1; while [[ -v WT_SLOT_BRANCH[$n] ]]; do n=$(( n + 1 )); done; new=1
   else
-    for i in "${WT_SLOTS[@]}"; do used+=("slot-$i (.worktrees/${WT_SLOT_LINK[$i]})"); done
+    for i in "${WT_SLOTS[@]}"; do used+=("slot-$i (${WT_SLOT_BRANCH[$i]})"); done
     die "every slot is in use (WORKTREE_SLOTS=$WT_MAX): ${used[*]}. Free a merged one with ctl worktree remove <name>, or raise WORKTREE_SLOTS"
   fi
   # The .env is checked and written aside before anything changes, so a refusal leaves the pool as it was.
@@ -112,29 +110,23 @@ wt_create() {
   if wt_branch_exists "$WT_MAIN" "$name"; then wt_switch "$slot" "$name"; else wt_switch_new "$slot" "$name" "$commit"; fi \
     || die "git could not put slot-$n on branch $name; the slot stays free"
   [[ $(wt_current_branch "$slot") == "$name" ]] || die "slot-$n is not on branch $name after the switch; check it by hand"
-  rel=${name//[^\/]/}; rel=${rel//\//../}slot-$n
-  mkdir -p -- "$(dirname -- "$link")"
-  ln -s -- "$rel" "$link" || { wt_detach "$slot"; die "could not link .worktrees/$name; slot-$n is free again"; }
   wt_env_install "$n"
   ok "worktree $name is in slot-$n$origin" >&2
-  (( ! new )) || say "· a new slot builds from cold once: run ctl setup in .worktrees/$name to install its dependencies" >&2
+  (( ! new )) || say "· a new slot builds from cold once: run ctl setup in .worktrees/slot-$n to install its dependencies" >&2
   wt_auto_trim
-  printf '%s\n' "$link"
+  printf '%s\n' "$slot"
 }
 
 wt_remove() {
-  local name=${1:-} n slot dirty head label dir rc=0
+  local name=${1:-} n slot dirty head label rc=0
   [[ -n $name && $# -eq 1 ]] || die "usage: ctl worktree remove <name>"
-  wt_init; wt_settings; wt_lock; wt_pool_load; wt_pool_check
-  n=${WT_LINK[$name]:-}
-  if [[ -z $n ]]; then
-    [[ ! -e $WT_DIR/$name && ! -L $WT_DIR/$name ]] || die ".worktrees/$name is not a slot link; ctl worktree removes only the links it made"
-    die "no worktree named $name; ctl worktree list shows them"
-  fi
+  wt_init; wt_settings; wt_lock; wt_pool_load; wt_pool_check; wt_drop_old_links
+  n=${WT_BRANCH_SLOT[$name]:-}
+  [[ -n $n ]] || die "no slot holds branch $name; ctl worktree list shows them"
   slot="$WT_DIR/slot-$n"
   dirty=$(wt_dirty "$slot") || die "git cannot read the state of slot-$n"
   if [[ -n $dirty ]]; then
-    err ".worktrees/$name (slot-$n) has uncommitted changes or untracked files git does not ignore:"
+    err "slot-$n (branch $name) has uncommitted changes or untracked files git does not ignore:"
     head -n 10 <<< "$dirty" | sed 's/^/  /' >&2
     die "commit them or delete them first; ignored build files may stay"
   fi
@@ -149,10 +141,7 @@ wt_remove() {
   wt_refuse_busy "$n" "$name"
   wt_detach "$slot" || die "git could not detach slot-$n; nothing else changed"
   [[ -z $(wt_current_branch "$slot") ]] || die "slot-$n is still on a branch after detaching; check it by hand"
-  rm -- "$WT_DIR/$name"
-  dir=$(dirname -- "$WT_DIR/$name")
-  while [[ $dir != "$WT_DIR" ]] && rmdir -- "$dir" 2>/dev/null; do dir=$(dirname -- "$dir"); done
-  ok "removed .worktrees/$name: slot-$n is free and keeps its builds, and branch $name is kept"
+  ok "freed slot-$n: it keeps its builds, and branch $name is kept"
   wt_auto_trim
 }
 
@@ -175,12 +164,10 @@ wt_list() {
   if (( ${#WT_SLOTS[@]} == 0 )); then
     say "no slots yet (WORKTREE_SLOTS=$WT_MAX); ctl worktree create <name> adds the first"
   else
-    printf '%-8s %-36s %-7s %-7s %-7s %s\n' slot name state merged builds 'last use'
+    printf '%-8s %-36s %-7s %-7s %-7s %s\n' slot branch state merged builds 'last use'
   fi
   for n in ${WT_SLOTS[@]+"${WT_SLOTS[@]}"}; do
-    slot="$WT_DIR/slot-$n" name=${WT_SLOT_LINK[$n]:-free} state=missing merged=- size=- used=-
-    [[ -n ${WT_SLOT_BRANCH[$n]} || -z ${WT_SLOT_LINK[$n]:-} ]] || name="free, but ${WT_SLOT_LINK[$n]} links here"
-    [[ -z ${WT_SLOT_BRANCH[$n]} || -n ${WT_SLOT_LINK[$n]:-} ]] || name="branch ${WT_SLOT_BRANCH[$n]}, no link"
+    slot="$WT_DIR/slot-$n" name=${WT_SLOT_BRANCH[$n]:-free} state=missing merged=- size=- used=-
     if [[ -d $slot ]]; then
       if ! state=$(wt_dirty "$slot" 2>/dev/null); then state=unknown; elif [[ -z $state ]]; then state=clean; else state=dirty; fi
       if [[ -n ${WT_SLOT_BRANCH[$n]} && -n $head ]]; then
@@ -196,6 +183,7 @@ wt_list() {
   (( ${#WT_SLOTS[@]} == 0 )) || say "main tree: $WT_MAIN"
   (( ${#WT_OTHER[@]} == 0 )) || say "· other worktrees under .worktrees/, not slots: ${WT_OTHER[*]}"
   (( ${#WT_OUTSIDE[@]} == 0 )) || warn "worktrees outside .worktrees/, which this repo's rules do not allow: ${WT_OUTSIDE[*]}"
+  (( ${#WT_OLD_LINKS[@]} == 0 )) || say "· name links an older ctl made, which the next create, remove or trim removes: ${WT_OLD_LINKS[*]#"$WT_DIR"/}"
   (( ${#WT_PROBLEMS[@]} )) || return 0
   err "the slots are not in a state ctl worktree knows; create, remove and trim refuse until each is fixed:"
   for problem in "${WT_PROBLEMS[@]}"; do printf '  - %s\n' "$problem" >&2; done
@@ -213,7 +201,7 @@ wt_trim_command() {
   wt_init; wt_settings
   days=${days:-$WT_TRIM_DAYS}
   [[ $days =~ ^[1-9][0-9]{0,4}$ ]] || die "--days wants a whole number of days, 1 or more (got: $days)"
-  wt_lock; wt_pool_load; wt_pool_check
+  wt_lock; wt_pool_load; wt_pool_check; wt_drop_old_links
   wt_trim "$days" "$dry"
 }
 

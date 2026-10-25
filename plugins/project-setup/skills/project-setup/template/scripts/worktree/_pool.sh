@@ -7,11 +7,11 @@
 # A SLOT is a git worktree at <main tree>/.worktrees/slot-<n>. Its path never changes, so the build
 # folders inside it (target/, node_modules/, .venv/) stay valid for every branch it carries. A slot is
 # FREE when its HEAD is detached, and TAKEN when it is on a branch.
-# A NAME is a branch name. .worktrees/<name> is a relative symlink to the slot that holds the branch,
-# and a `/` in the name makes nested folders, as in the branch (.worktrees/feat/login).
-# THE STATE MUST MATCH: a taken slot has exactly one link, named as its branch, and a free slot has
-# none. Every command reads the whole pool first and stops, changing nothing, when it finds anything
-# else, because a guess here could put work on the wrong branch.
+# A NAME is a branch name. Git's own worktree list is the one record of which slot holds which
+# branch, so work happens in .worktrees/slot-<n>, the path ctl worktree create prints.
+# THE STATE MUST MATCH: every slot folder is a worktree git lists, and a branch sits in one slot.
+# Every command reads the whole pool first and stops, changing nothing, when it finds anything else,
+# because a guess here could put work on the wrong branch.
 source "$CTL_ROOT/scripts/worktree/_git.sh"
 
 # wt_setting <key> <default> <env file> — the shell's value when the shell sets the key, even to
@@ -67,10 +67,10 @@ wt_settings() {
 
 # wt_lock — hold .worktrees/.slots.lock until the command exits, so two pool commands never
 # interleave; a second one says so and waits. It first checks that git ignores .worktrees/, because
-# a slot or a link that git can see could be committed into the main tree.
+# a slot that git can see could be committed into the main tree.
 wt_lock() {
   wt_ignored "$WT_MAIN" .worktrees/ \
-    || die "git does not ignore .worktrees/ here; add /.worktrees/ to .gitignore first, so a slot or a link can never be committed"
+    || die "git does not ignore .worktrees/ here; add /.worktrees/ to .gitignore first, so a slot can never be committed"
   mkdir -p -- "$WT_DIR"
   exec {WT_LOCK_FD}>>"$WT_DIR/.slots.lock" || die "cannot open $WT_DIR/.slots.lock"
   if ! flock -n "$WT_LOCK_FD"; then
@@ -80,13 +80,13 @@ wt_lock() {
 }
 
 # wt_pool_load — read the pool. Sets WT_SLOTS (the slot numbers, ascending), WT_SLOT_BRANCH[n] (empty
-# when free), WT_SLOT_LINK[n] (its link name), WT_LINK[name]=n, WT_OTHER (other worktrees under
-# .worktrees/), WT_OUTSIDE (worktrees outside .worktrees/) and WT_PROBLEMS (each way the pool differs
-# from the rules at the top of this file).
+# when free), WT_BRANCH_SLOT[branch]=n, WT_OTHER (other worktrees under .worktrees/), WT_OUTSIDE
+# (worktrees outside .worktrees/), WT_OLD_LINKS (name links an older ctl made) and WT_PROBLEMS (each
+# way the pool differs from the rules at the top of this file).
 wt_pool_load() {
-  local i path n name target depth slashes links
-  WT_SLOTS=() WT_OTHER=() WT_OUTSIDE=() WT_PROBLEMS=()
-  declare -gA WT_SLOT_BRANCH=() WT_SLOT_LINK=() WT_LINK=()
+  local i path n links
+  WT_SLOTS=() WT_OTHER=() WT_OUTSIDE=() WT_OLD_LINKS=() WT_PROBLEMS=()
+  declare -gA WT_SLOT_BRANCH=() WT_BRANCH_SLOT=()
   wt_worktrees "$WT_MAIN" || die "git could not list the worktrees of $WT_MAIN"
   for i in "${!WT_LIST_PATH[@]}"; do
     (( i > 0 )) || continue                     # the first entry is the main tree
@@ -95,6 +95,7 @@ wt_pool_load() {
       n=${BASH_REMATCH[1]}
       [[ -d $path && ${WT_LIST_STATE[$i]} != prunable ]] || WT_PROBLEMS+=("git lists slot-$n, but its folder is missing")
       WT_SLOTS+=("$n"); WT_SLOT_BRANCH[$n]=${WT_LIST_BRANCH[$i]}
+      [[ -z ${WT_LIST_BRANCH[$i]} ]] || WT_BRANCH_SLOT[${WT_LIST_BRANCH[$i]}]=$n
     elif [[ $path == "$WT_DIR"/* ]]; then WT_OTHER+=("${path#"$WT_DIR"/}")
     else WT_OUTSIDE+=("$path"); fi
   done
@@ -105,33 +106,28 @@ wt_pool_load() {
     [[ $n =~ ^[1-9][0-9]*$ && -v WT_SLOT_BRANCH[$n] ]] || WT_PROBLEMS+=(".worktrees/${path##*/} exists, but git does not list it as a slot")
   done
   [[ -d $WT_DIR ]] || return 0
-  # Links: a symlink under .worktrees/ whose target is ../…/slot-<n>, with one ../ per folder of its
-  # name, which is the form create makes. Other links are not the pool's and are left alone. A
-  # worktree folder is never walked into, so a big slot costs nothing here. The listing is taken
-  # whole first, so a find that fails stops the command instead of leaving out a link.
+  # An older ctl named each slot with a link, .worktrees/<branch> → ../…/slot-<n>. Git now holds that
+  # record, so such a link only repeats it; wt_drop_old_links removes it. Other links are left alone.
+  # A worktree folder is never walked into, so a big slot costs nothing here.
   links=$(find "$WT_DIR" -mindepth 1 \( -type d -exec test -e '{}/.git' \; -prune \) -o -type l -print0 | tr '\0' '\n') \
-    || die "find could not read all of $WT_DIR, so ctl worktree cannot tell which names link to which slot"
+    || die "find could not read all of $WT_DIR"
   while IFS= read -r path; do
-    [[ -n $path ]] || continue
-    name=${path#"$WT_DIR"/}; target=$(readlink -- "$path")
-    [[ $target =~ ^((\.\./)*)slot-([1-9][0-9]*)$ ]] || continue
-    n=${BASH_REMATCH[3]} depth=$(( ${#BASH_REMATCH[1]} / 3 )) slashes=${name//[^\/]/}
-    (( depth == ${#slashes} )) || continue
-    if [[ ! -v WT_SLOT_BRANCH[$n] ]]; then WT_PROBLEMS+=(".worktrees/$name links to slot-$n, which git does not list as a slot"); continue; fi
-    if [[ -n ${WT_SLOT_LINK[$n]:-} ]]; then WT_PROBLEMS+=("slot-$n has two names: .worktrees/${WT_SLOT_LINK[$n]} and .worktrees/$name"); continue; fi
-    WT_SLOT_LINK[$n]=$name WT_LINK[$name]=$n
+    [[ -n $path && $(readlink -- "$path") =~ ^(\.\./)*slot-[1-9][0-9]*$ ]] && WT_OLD_LINKS+=("$path")
   done <<< "$links"
-  for n in ${WT_SLOTS[@]+"${WT_SLOTS[@]}"}; do
-    name=${WT_SLOT_LINK[$n]:-}
-    if [[ -z ${WT_SLOT_BRANCH[$n]} ]]; then
-      [[ -z $name ]] || WT_PROBLEMS+=("slot-$n is free (detached), but .worktrees/$name still links to it")
-    elif [[ -z $name ]]; then
-      WT_PROBLEMS+=("slot-$n is on branch ${WT_SLOT_BRANCH[$n]}, but no .worktrees/${WT_SLOT_BRANCH[$n]} links to it")
-    elif [[ $name != "${WT_SLOT_BRANCH[$n]}" ]]; then
-      WT_PROBLEMS+=("slot-$n is on branch ${WT_SLOT_BRANCH[$n]}, but its link is .worktrees/$name")
-    fi
-  done
   return 0
+}
+
+# wt_drop_old_links — remove the name links an older ctl made, and the folders they leave empty.
+# Call it holding the pool lock.
+wt_drop_old_links() {
+  local link dir
+  for link in ${WT_OLD_LINKS[@]+"${WT_OLD_LINKS[@]}"}; do
+    rm -f -- "$link" || continue
+    say "· removed .worktrees/${link#"$WT_DIR"/}, a name link an older ctl made; git's worktree list names each slot's branch" >&2
+    dir=$(dirname -- "$link")
+    while [[ $dir != "$WT_DIR" ]] && rmdir -- "$dir" 2>/dev/null; do dir=$(dirname -- "$dir"); done
+  done
+  WT_OLD_LINKS=()
 }
 
 # wt_pool_check — stop, changing nothing, when the pool differs from the rules
@@ -140,25 +136,14 @@ wt_pool_check() {
   local problem
   err "the slots under .worktrees/ are not in a state ctl worktree knows, so it changed nothing:"
   for problem in "${WT_PROBLEMS[@]}"; do printf '  - %s\n' "$problem" >&2; done
-  die "fix each item by hand (a slot's branch and its .worktrees/<branch> link must agree), then run the command again"
+  die "fix each item by hand, then run the command again"
 }
 
 # wt_name_ok <name> — a worktree name is a branch name of letters, digits, '.', '_', '-' and '/',
-# starting with a letter or digit, that git accepts. Its first part may not start with slot-, which
-# the slots use, and its link may not land inside another link, a worktree or a file.
+# starting with a letter or digit, that git accepts
 wt_name_ok() {
-  local name=$1 part path="$WT_DIR" parts=()
-  [[ $name =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] && wt_ref_name_ok "$WT_MAIN" "$name" \
-    || die "'$name' is not a usable worktree name: use a branch name of letters, digits, '.', '_', '-' and '/', starting with a letter or digit"
-  [[ ${name%%/*} != slot-* ]] || die "'$name' starts with slot-, which the slot folders use; choose another name"
-  [[ $name == */* ]] && IFS=/ read -r -a parts <<< "${name%/*}"
-  for part in ${parts[@]+"${parts[@]}"}; do
-    path+="/$part"
-    [[ ! -L $path ]] || die ".worktrees/${path#"$WT_DIR"/} is a worktree link, so it cannot hold .worktrees/$name"
-    [[ ! -e $path || -d $path ]] || die ".worktrees/${path#"$WT_DIR"/} is a file, so it cannot hold .worktrees/$name"
-    [[ ! -e $path/.git ]] || die ".worktrees/${path#"$WT_DIR"/} is a worktree, so it cannot hold .worktrees/$name"
-  done
-  return 0
+  [[ $1 =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] && wt_ref_name_ok "$WT_MAIN" "$1" \
+    || die "'$1' is not a usable worktree name: use a branch name of letters, digits, '.', '_', '-' and '/', starting with a letter or digit"
 }
 
 # wt_compose_name <text> — <text> as compose turns a folder name into a project name: lower case,

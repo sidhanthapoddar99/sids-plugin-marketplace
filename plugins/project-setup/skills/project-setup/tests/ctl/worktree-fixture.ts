@@ -85,7 +85,6 @@ export const refused = (args: string[], extra: Record<string, string> = {}, dir?
 export const branchOf = (dir: string) => f.git('-C', dir, 'branch', '--show-current');
 export const nothingCreated = (name: string) => {
   expect(existsSync(W('slot-1'))).toBe(false);
-  expect(existsSync(W(name))).toBe(false);
   expect(() => f.git('show-ref', '--verify', `refs/heads/${name}`)).toThrow();
 };
 

@@ -2,9 +2,9 @@
 // and the main-tree guard. Each test works in a throwaway git repository copied from the template,
 // never in a real checkout, and holds only locks inside the system temp folder.
 import { expect, setDefaultTimeout, test } from 'bun:test';
-import { cpSync, existsSync, mkdirSync, readFileSync, readlinkSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { W, age, cargoProfile, f, liveProcess, mainEnv, ok, refused, spawnKept, useWorktreeFixture } from './worktree-fixture';
+import { W, age, branchOf, cargoProfile, f, liveProcess, mainEnv, ok, refused, spawnKept, useWorktreeFixture } from './worktree-fixture';
 
 setDefaultTimeout(60_000);
 useWorktreeFixture();
@@ -53,7 +53,7 @@ test('create and remove trim on their own once the last trim is a week old, and 
   age(W('.trim-stamp'), 2);
   const create = ok(['create', 'bar']);
   expect(create.err).not.toContain('trims too');
-  expect(create.out).toBe(W('bar') + '\n');
+  expect(create.out).toBe(W('slot-2') + '\n');
   old.forEach(path => expect(existsSync(path), path).toBe(true));
   age(W('.trim-stamp'), 8);
   expect(ok(['remove', 'bar']).err).toContain('no trim in the last 7 days, so this command trims too');
@@ -76,9 +76,9 @@ test('create and remove refuse while containers of the slot run; a stopped docke
   ok(['create', 'foo']);
   writeFileSync(join(f.base, 'docker-running'), 'demo-slot-1\n');
   let err = refused(['remove', 'foo']);
-  expect(err).toContain('slot-1 (.worktrees/foo) is in use, so ctl worktree changed nothing');
+  expect(err).toContain('slot-1 (branch foo) is in use, so ctl worktree changed nothing');
   expect(err).toContain('1 container(s) of compose project demo-slot-1 run');
-  expect(readlinkSync(W('foo'))).toBe('slot-1');
+  expect(branchOf(W('slot-1'))).toBe('foo');
   writeFileSync(join(f.base, 'docker-state'), 'broken');
   expect(refused(['remove', 'foo'])).toContain('Docker did not answer, so ctl cannot tell whether containers of compose project demo-slot-1 run');
   writeFileSync(join(f.base, 'docker-state'), 'stopped');
@@ -87,7 +87,7 @@ test('create and remove refuse while containers of the slot run; a stopped docke
   writeFileSync(join(f.base, 'docker-state'), 'ok');
   err = refused(['create', 'bar']);
   expect(err).toContain('slot-1 is in use');
-  expect(existsSync(W('bar'))).toBe(false);
+  expect(() => f.git('show-ref', '--verify', 'refs/heads/bar')).toThrow();
 });
 
 test('create and remove refuse while a process ctl recorded in the slot still runs', async () => {
@@ -215,7 +215,7 @@ test('with WORKTREE_ONLY=1 the build verbs refuse in the main tree, and run in a
   expect(f.ctl(['gate'], { WORKTREE_ONLY: '' }).out).toContain('ran gate/all.sh');
   // A worktree is never the main tree, whatever its .env says.
   writeFileSync(W('slot-1/.env'), readFileSync(W('slot-1/.env'), 'utf8').replace('WORKTREE_ONLY=\n', 'WORKTREE_ONLY=1\n'));
-  const inside = f.ctl(['gate'], {}, W('foo'));
+  const inside = f.ctl(['gate'], {}, W('slot-1'));
   expect(inside.code, inside.all).toBe(0);
   expect(inside.out).toContain('ran gate/all.sh');
   f.put('.env', mainEnv().replace('WORKTREE_ONLY=\n', 'WORKTREE_ONLY=yes\n'));

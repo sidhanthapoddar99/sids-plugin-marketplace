@@ -1,6 +1,6 @@
 # Worktrees — `.worktrees/`, warm slots and `ctl worktree`
 
-Every git worktree of a repo lives at `<repo>/.worktrees/<name>`, and `ctl worktree create` makes it. The name is a link to one slot of a fixed pool. A new branch therefore builds warm, the repo stops growing with every worktree, and the disk takes far fewer writes. This page owns the design and its reasons. The rule an agent follows is one bullet in `template/AGENTS.md` § Working rules.
+Every git worktree of a repo lives at `<repo>/.worktrees/slot-<n>`, one slot of a fixed pool, and `ctl worktree create <branch>` puts a branch in one. A new branch therefore builds warm, the repo stops growing with every worktree, and the disk takes far fewer writes. This page owns the design and its reasons. The rule an agent follows is one bullet in `template/AGENTS.md` § Working rules.
 
 Template: `template/scripts/worktree/` (`worktree.sh` and its helpers), the guard line and the physical `CTL_ROOT` in `template/ctl`, `CTL_ROOT` in `template/scripts/common/_lib.sh`, the WORKTREES section of `template/.env.template`, and `/.worktrees/` in `template/.gitignore`.
 
@@ -11,14 +11,14 @@ Template: `template/scripts/worktree/` (`worktree.sh` and its helpers), the guar
 | Main tree | The repo's main checkout, whatever branch it has checked out. It owns `.worktrees/`. Every slot's `.env` is written from its `.env`, and merging happens there. |
 | Slot | A git worktree at `.worktrees/slot-<n>`. Its path never changes, and nothing deletes it. |
 | Free, taken | A free slot has a detached HEAD. A taken slot is on a branch. |
-| Name | A branch name. `.worktrees/<name>` is a relative symlink to the slot that holds that branch. A `/` in the name makes nested folders, as in the branch. |
+| Name | A branch name. Git's own worktree list is the one record of which slot holds which branch. |
 | Busy | Something `ctl` started in the slot still runs: a recorded process, a container of the slot's stack, or a gate run. |
 
 ## The layout
 
 ```
 <repo>/                            # the main tree
-├── .gitignore                     # holds /.worktrees/, so git never sees a slot or a link
+├── .gitignore                     # holds /.worktrees/, so git never sees a slot
 └── .worktrees/
     ├── slot-1/                    # a git worktree, taken: on branch feat/login
     │   ├── .env                   # written on its first use: ports + 100, COMPOSE_PROJECT_NAME and TAG end in -slot-1
@@ -26,8 +26,6 @@ Template: `template/scripts/worktree/` (`worktree.sh` and its helpers), the guar
     │   ├── data/                  # its own engine data, from the relative BASE_DIR or DATA_DIR
     │   └── logs/                  # its own process records, logs and backups
     ├── slot-2/                    # free: a detached HEAD, its builds kept warm for the next branch
-    ├── feat/
-    │   └── login -> ../slot-1     # the path you work in: a relative link, nested like the branch name
     ├── .slots.lock                # one ctl worktree command at a time
     └── .trim-stamp                # the time of the last trim
 ```
@@ -35,7 +33,7 @@ Template: `template/scripts/worktree/` (`worktree.sh` and its helpers), the guar
 A typical round, from the main tree:
 
 ```sh
-cd "$(ctl worktree create feat/login)"   # create prints only the path, .worktrees/feat/login
+cd "$(ctl worktree create feat/login)"   # create prints only the slot's path, .worktrees/slot-1
 ctl setup                                # only on a new slot's first use: installs its dependencies
 ctl dev                                  # work, test and commit here, as in any checkout
 ctl stop                                 # stop the slot's dev apps and its containers
@@ -49,9 +47,9 @@ ctl worktree remove feat/login           # frees slot-1; the branch and the buil
 
 | Command | Does | Refuses, and changes nothing, when |
 |---|---|---|
-| `ctl worktree create <name> [--from <ref>]` | Takes the lowest free slot, or adds one up to `WORKTREE_SLOTS`. Puts it on branch `<name>`: the existing branch, or a new one from `<ref>`, by default the main tree's HEAD. Links `.worktrees/<name>` to it and prints that path. On a slot's first use, writes its `.env` (§ A slot's `.env`). | The name is taken, is no valid branch name, or starts with `slot-`. `--from` names an existing branch. The branch is checked out elsewhere. The lowest free slot has changes or is busy. Every slot is taken. The slot's `.env` cannot be made safe. Git does not ignore `.worktrees/`. |
-| `ctl worktree list` | Shows each slot: its name or `free`, clean or dirty, merged into the main tree or not, the size of its builds, and its last checkout or commit. Warns about a worktree outside `.worktrees/`. | Never refuses. It exits 1 when the pool breaks the state rule below. |
-| `ctl worktree remove <name>` | Detaches the slot's HEAD and deletes the link, so the slot is free. Keeps the branch, the slot and its builds. | The worktree has uncommitted changes or untracked files git does not ignore. The branch's work is not in the main tree's HEAD. The slot is busy. |
+| `ctl worktree create <name> [--from <ref>]` | Takes the lowest free slot, or adds one up to `WORKTREE_SLOTS`. Puts it on branch `<name>`: the existing branch, or a new one from `<ref>`, by default the main tree's HEAD. Prints the slot's path, the one to work in. On a slot's first use, writes its `.env` (§ A slot's `.env`). | The name is no valid branch name. `--from` names an existing branch. The branch is checked out elsewhere. The lowest free slot has changes or is busy. Every slot is taken. The slot's `.env` cannot be made safe. Git does not ignore `.worktrees/`. |
+| `ctl worktree list` | Shows each slot: its branch or `free`, clean or dirty, merged into the main tree or not, the size of its builds, and its last checkout or commit. Warns about a worktree outside `.worktrees/`, and names any link an older `ctl` made (§ The pool's one record). | Never refuses. It exits 1 when the pool breaks the state rule below. |
+| `ctl worktree remove <name>` | Detaches the HEAD of the slot that holds branch `<name>`, so the slot is free. Keeps the branch, the slot and its builds. | The worktree has uncommitted changes or untracked files git does not ignore. The branch's work is not in the main tree's HEAD. The slot is busy. |
 | `ctl worktree trim [--days N] [--dry-run]` | In every slot, deletes Cargo outputs that no build used for N days (§ The trim). `--dry-run` only counts. | Never refuses a slot. It skips a slot where a process `ctl` started or a gate still runs, and a profile Cargo is building in, and names each. |
 
 `remove` has no force option, because a freed slot goes to the next `create`, so its work must already be in the main tree. `remove` keeps the branch, because deleting a branch stays a person's call.
@@ -75,21 +73,21 @@ Every new worktree path costs a full build, and an old path never gives its buil
 
 A slot's path never changes, so a branch that moves into a slot reuses everything the last branch built. The fixed pool caps how many sets of builds exist, and the trim caps how long an unused output stays.
 
-## Names are links to slots
+## The pool's one record
 
-You work in `.worktrees/<name>`, and the slot keeps its own path. The name follows the branch, so a person or an agent finds a worktree by its branch. The link is relative, so it survives a move of the whole repo.
+Git's worktree list already says which branch each slot holds, so it is the pool's only record. You work in `.worktrees/slot-<n>`, the path `create` prints, and `ctl worktree list` shows which branch is where. A second record, such as a link named after each branch, would only repeat that fact, and two records of one fact can disagree.
 
-The pool has one state rule: a taken slot has exactly one link, named as its branch, and a free slot has none. Every command reads the whole pool first. When it finds anything else, it names each problem and changes nothing, because a guess could put work on the wrong branch. So never move, delete or `git worktree remove` a slot, and never switch branches inside one by hand. Fix a reported problem by hand, then run the command again: put the slot back on the branch its link names with `git -C .worktrees/slot-<n> switch <branch>`, or delete or remake the link.
+The pool's state rule: every `slot-<n>` folder is a worktree git lists. Every command reads the whole pool first. When it finds anything else, it names each problem and changes nothing, because a guess could put work on the wrong branch. So never move, delete or `git worktree remove` a slot. Switch a slot's branch through `ctl worktree`, so the slot stays free or taken as the pool expects.
+
+An older `ctl` named each slot with a link, `.worktrees/<branch> -> slot-<n>`. `create`, `remove` and `trim` delete such a link, and the folders it leaves empty, and say so. `list` names it. A link that points anywhere else is left alone.
 
 ## The physical path
 
-`ctl` and `scripts/common/_lib.sh` set `CTL_ROOT` with `pwd -P`, the physical path. A slot is reached through a name that changes with each branch. Every path that `ctl` writes down must still match under the next name:
+`ctl` and `scripts/common/_lib.sh` set `CTL_ROOT` with `pwd -P`, the physical path. A person may still reach a checkout through a symlink of their own. Every path that `ctl` writes down must stay one path:
 - Cargo's outputs and the paths baked into them;
 - the `project` file of each process record under `LOGS_DIR/run/`, which `ctl stop` compares with `CTL_ROOT`;
 - the compose working-directory label, which `ctl stop` matches;
 - the `checkout=` line of the gate lock, which the busy check compares.
-
-The main tree's path usually has no link in it, so the physical path changes nothing there.
 
 ## One build folder per slot
 
@@ -168,7 +166,7 @@ Slots made by `ctl worktree create` never move. A worktree made by hand and move
 
 To convert one:
 1. Run `git worktree move <old path> .worktrees/slot-<n>`, with a number no slot has.
-2. Keep it taken with a relative link named as its branch, such as `ln -s slot-<n> .worktrees/<branch>`, or run `git switch --detach` in it to free it.
+2. Keep it on its branch, so it stays taken, or run `git switch --detach` in it to free it.
 3. Move its `.env` aside, because it still has the main tree's ports. The next `create` that takes the free slot writes a fresh one; a taken slot needs its ports edited by hand.
 4. Delete its `target/`, `node_modules/` and `.venv/` folders, then run `ctl setup` in it.
 

@@ -37,7 +37,7 @@
 #   source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 
 # ── repo root — set by ctl before sourcing; else derived from this file ──
-: "${CTL_ROOT:=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)}"   # physical, as in ctl: a worktree slot has one path under any .worktrees/<name> link
+: "${CTL_ROOT:=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)}"   # physical, as in ctl: a checkout has one path under any symlink
 export CTL_ROOT
 DOCKER_DIR="docker"
 DEFAULT_CONFIG=base                       # the config `ctl up` runs when --config is not given
