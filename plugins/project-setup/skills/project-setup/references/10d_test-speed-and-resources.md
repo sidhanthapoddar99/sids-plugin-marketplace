@@ -84,9 +84,10 @@ How to use the modes:
 A green ladder run writes a receipt: a one-line file under `ctl-gate-green/` in the repository's git folder, named by the hash of the working tree it checked, the tree of the base it counted from (`all` for `--all`), and its group: `all`, `static` or `dynamic` (`scripts/gate/_receipt.sh`). The tree hash is git's own: the run copies the index, adds every file `git status` would show, and writes the tree, so two checkouts with the same files get the same hash. A later run with the same key prints `already green on this tree`, with the earlier run's summary, and runs nothing. A run of the whole ladder covers a `static` or `dynamic` run on the same base, and an `--all` run covers every base. `--rerun` runs it anyway, for a check whose result depends on something outside the tree, such as a flaky service.
 
 - The receipt is written only when the tree is the same at the end of the run as at the start, because an edit made during the run was not checked.
+- Each green rung writes its own receipt too, named by the rung and the targets it ran. A run that went red at the test rung, such as on a test that timed out under load, reruns from the test rung on the same tree, and prints `already green on this tree` for each rung before it.
 - Every checkout of a repository shares the receipts, because they live in the common git folder. A worktree whose branch already passed costs no second run when `ctl merge` gates the same tree.
 - Receipts older than 30 days are deleted at the next run.
-- This is the input-keyed caching that Bazel, Nx and Turborepo do per target, at the size a four-rung ladder needs: one key for the whole run.
+- This is the input-keyed caching that Bazel, Nx and Turborepo do per target, at the size a four-rung ladder needs: one key for the run, and one for each rung.
 
 ## One run at a time, under a memory lid
 
@@ -136,6 +137,10 @@ These hold for any project, and for every runner a project adds. The order of th
 
 - Inside one rung or runner, run the checks that compile nothing before any check that compiles, because a formatting slip found after a ten-minute build wastes the build. The lint rung runs ruff, cargo fmt, oxlint and gofmt on every target before clippy and golangci-lint.
 - Check prerequisites, such as a tool, a running engine or a free port, before a build starts, for the same reason.
+- Start what a suite needs before the suite starts. `ctl test` starts a stopped data core before a suite marked `db`, because a suite that meets a refused connection fails after its build and its first minutes, and names no cause.
+- Build the fast profile in every rung. A rung that needs a built artifact, such as the WASM bindings a frontend typecheck reads, builds it in the dev profile with incremental on. Fat LTO and one codegen unit run on one core and reuse no cache, so a rung that builds the release profile pays the whole optimization again after every version raise. `16_rust-production.md` § The release profile has the numbers.
+- Build independent packages at the same time. Two engines that share no target folder build in parallel within the job budget, because one after another the run waits on the sum of their times, and in parallel on the slowest.
+- Land finished work with `ctl merge` alone. Its gate runs on the merged tree with the versions set; a `ctl gate` run before it checks a tree that the version raise then changes, so the work pays two full gates.
 - Bound the fan-out by the budget. A lane is one of several commands a runner starts at once. A runner that starts lanes takes their count from a key in the TESTING section of `.env`, with a default derived from the machine. The runner divides `CARGO_BUILD_JOBS` between its lanes, because four lanes that each take eight jobs start thirty-two compilers.
 - Reuse a verified artifact only when its inputs match exactly: the source, the toolchain, the profile, the features and every environment value that enters the build. A mismatch is a miss that rebuilds, never a pass, because an artifact built from other inputs proves nothing about this change. Leave out of the inputs what does not change the output, such as the compiler job count, so it causes no needless miss.
 - Keep a green run's output small: its counts, not its passing lines. A reader who pages through passing lines spends attention, and an agent spends context, on nothing. `ctl gate -q` prints one line per green rung.

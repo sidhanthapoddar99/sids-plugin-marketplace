@@ -54,7 +54,9 @@ if [[ -n \${HOLD_FILE:-} && ${name} == lint ]]; then while [[ ! -f $HOLD_FILE ]]
   }
 
   // TZ is fixed, so the local date-times a test gives --delta mean the same moment on every machine.
+  // The stand-in tools have no Docker, so the fixture has no data core: a `db` suite starts none.
   const environment = (extra: Record<string, string> = {}) => ({
+    DATA_SVCS_STR: '',
     PATH: `${base}/bin:${dirname(process.execPath)}:/usr/local/bin:/usr/bin:/bin`, HOME: base, NO_COLOR: '1', LANG: 'C.UTF-8',
     TZ: 'Asia/Kolkata', GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', GATE_LOCK_FILE: lock, ...extra });
   const git = (args: string[], extra: Record<string, string> = {}, cwd = root) => {

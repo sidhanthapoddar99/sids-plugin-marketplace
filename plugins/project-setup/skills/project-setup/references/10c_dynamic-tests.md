@@ -40,6 +40,8 @@ No root `tests/` folder. Each app owns its suite and its `test` script (`bun tes
 - `go test -race` always. Concurrency bugs are cheapest here.
 - The browser suite is its own rung. A browser bolted onto the fast gate makes agents stop running the gate.
 - A test that cannot reach its engine dies by name. It never skips itself green.
+- `ctl test` starts the data core before a suite that reads it, and that suite's row in `scripts/gate/_targets.sh` carries the word `db`. A suite run against a stopped core fails minutes later with a refused connection that names no cause.
+- A test sets the settings its path needs, such as authentication on for a sign-in test, through the app's settings object. It never inherits them from the checkout's `.env`, because each checkout and worktree slot holds its own values and the same test then passes in one and fails in another.
 - A run owns the disposable resources it makes, such as a schema, a container, a port or a folder. Give each one a unique name, because two runs that share mutable test data fail each other at random. Remove each one when the run ends, pass or fail, because leftovers pile up across runs until a disk or an engine fills.
 - Pay a setup once per suite, not once per test, such as one migrated schema per suite, because a per-test setup multiplies by the size of the suite.
 - Wait for the exact state a test needs, such as a health check or a row, never for a fixed time. A sleep that passes on an idle machine times out under a gate that shares the machine.

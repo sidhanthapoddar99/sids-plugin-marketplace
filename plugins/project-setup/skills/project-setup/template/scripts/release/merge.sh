@@ -80,7 +80,10 @@ fi
 say "· setting versions"
 versions=$(cd "$slot" && export CTL_ROOT="$slot" && bash scripts/release/versions.sh --base "$target" ${version_args[@]+"${version_args[@]}"}) \
   || die "the version step failed; nothing is committed, and $slot holds what it wrote (git -C $slot status)"
-sed 's/^/  /' <<<"$versions"
+# Only the step's own lines, `<part> <old> → <new>`, name the release, because a wrapper around the
+# step, such as a memory guard, may print its own report on the same stream.
+versions=$(grep -E '^[^ ]+ [^ ]+ → ' <<<"$versions" || true)
+sed 's/^/  /' <<<"${versions:-none}"
 if [[ -n $(wt_dirty "$slot") ]]; then
   wt_git "$slot" add -A
   wt_git "$slot" commit --quiet -m "Release: $(paste -sd ';' <<<"$versions" | sed 's/;/; /g')"

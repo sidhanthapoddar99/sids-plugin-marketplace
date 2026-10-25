@@ -550,3 +550,46 @@ def test_dry_runs_change_nothing(project: Project, arguments: list[str]) -> None
     assert_core_untouched(project)
     assert not project.compose("run")
     assert not project.compose("build")
+
+
+# ── 4. ctl test starts the core for a suite that reads it ──
+
+def mark_targets(project: Project) -> None:
+    """Two apps with one test file each: `probe` reads the data core, `plain` does not."""
+    targets = project.root / "scripts/gate/_targets.sh"
+    text = targets.read_text()
+    start, end = text.index("GATE_TARGETS=("), text.index(")\n", text.index("GATE_TARGETS=("))
+    targets.write_text(text[:start] + 'GATE_TARGETS=(\n  "probe apps/probe bun test db"\n  "plain apps/plain bun test"\n'
+                       + text[end:])
+    for name in ("probe", "plain"):
+        (project.root / "apps" / name).mkdir(parents=True)
+        (project.root / "apps" / name / "package.json").write_text('{"scripts": {"test": "true"}}\n')
+        (project.root / "apps" / name / "one.test.ts").write_text("")
+
+
+def test_a_db_suite_with_no_test_file_starts_nothing(project: Project) -> None:
+    mark_targets(project)
+    (project.root / "apps/probe/one.test.ts").unlink()
+    result = project.ctl("test", "probe")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not project.compose("up")
+
+
+def test_a_suite_that_reads_the_database_starts_a_stopped_core_first(project: Project) -> None:
+    mark_targets(project)
+    result = project.ctl("test", "probe")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert started_without_build(project)
+    assert project.migrated()
+
+
+def test_a_running_core_is_used_as_it_is_and_other_suites_never_touch_it(project: Project) -> None:
+    mark_targets(project)
+    project.core("running")
+    result = project.ctl("test", "probe")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert_core_untouched(project)
+    project.core("stopped")
+    result = project.ctl("test", "plain")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert not project.compose("up")

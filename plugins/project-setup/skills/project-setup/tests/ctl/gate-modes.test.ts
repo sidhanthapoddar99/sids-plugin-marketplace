@@ -2,7 +2,7 @@
 // (the changes since a branch, a commit or a date-time) and all. The fixture is a throwaway git
 // repository shaped like the template, with stand-in rungs that record their arguments.
 import { afterEach, beforeEach, expect, setDefaultTimeout, test } from 'bun:test';
-import { appendFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { appFiles, fixture, type Fixture } from './gate-fixture';
 
@@ -307,12 +307,27 @@ test('an edit after a green run, or another base, runs again; a commit of the ch
   expect(f.again(['gate', '--delta', second]).out).not.toContain('already green');
 });
 
-test('an --all run covers a changed run of the same tree, and a red run records nothing', () => {
+test('an --all run covers a changed run of the same tree, and a red run records no whole-gate receipt', () => {
   expect(f.ctl(['gate', '--all']).code).toBe(0);
   f.clearRungs();
   expect(f.again(['gate']).out).toContain('already green on this tree');
+  const wholeGate = () => readdirSync(join(f.root, '.git/ctl-gate-green')).filter(name => !name.includes('.rung-'));
   f.put('apps/example-api-python/app/main.py', 'red\n');
   f.put('scripts/gate/check.sh', 'exit 3\n', true);
   expect(f.ctl(['gate']).code).not.toBe(0);
-  expect(existsSync(join(f.root, '.git/ctl-gate-green'))).toBe(false);
+  expect(wholeGate()).toEqual([]);
+});
+
+test('a run that went red at one rung reruns from that rung while the tree is unchanged', () => {
+  f.put('apps/example-api-python/app/main.py', 'changed\n');
+  f.put('scripts/gate/check.sh', 'exit 3\n', true);
+  expect(f.ctl(['gate']).code).not.toBe(0);
+  f.clearRungs();
+  const again = f.again(['gate']);
+  expect(again.code, again.all).not.toBe(0);
+  for (const rung of ['lint', 'typecheck', 'test']) expect(again.out).toContain(`gate ${rung}: already green on this tree`);
+  expect(f.rungs()).toEqual([]);
+  f.clearRungs();
+  expect(f.again(['gate', '--rerun']).code).not.toBe(0);
+  expect(f.rungs().length).toBeGreaterThan(0);
 });

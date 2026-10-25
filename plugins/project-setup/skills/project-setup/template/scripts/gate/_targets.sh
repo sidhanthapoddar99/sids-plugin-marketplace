@@ -9,11 +9,12 @@
 # bun or go) and the rungs that check it. Delete the rows of apps the repo dropped, and change the
 # folder here when you rename one. A run with no target skips a row whose folder is absent, because
 # a repo deletes the apps it does not have. A target named on the command line must exist, because
-# a typo that passes teaches the caller nothing.
+# a typo that passes teaches the caller nothing. The word `db` among the rungs marks an app whose
+# tests read the data core: ctl test starts a stopped core before that suite runs.
 GATE_TARGETS=(
   # name     folder                              ecosystem  rungs
-  "api       apps/example-api-python             python     lint typecheck test"
-  "database  apps/database/postgres              python     lint test"
+  "api       apps/example-api-python             python     lint typecheck test db"
+  "database  apps/database/postgres              python     lint test db"
   "engine    apps/example-engine-rust            rust       lint typecheck test"
   "single    apps/example-single-web-app-vite    bun        lint typecheck test"
   "landing   apps/example-multi-web-app/landing  bun        lint typecheck test"
@@ -31,6 +32,16 @@ gate_target_rows() {
     [[ " $rungs " == *" $1 "* ]] && printf '%s %s %s\n' "$name" "$folder" "$ecosystem"
   done
   return 0
+}
+
+# gate_target_needs_db <name> — 0 when the row of <name> marks its tests as reading the data core
+gate_target_needs_db() {
+  local row name folder ecosystem rungs
+  for row in "${GATE_TARGETS[@]}"; do
+    read -r name folder ecosystem rungs <<< "$row"
+    [[ $name == "$1" && " $rungs " == *" db "* ]] && return 0
+  done
+  return 1
 }
 
 # gate_target_names <rung> — the rung's target names, joined with |

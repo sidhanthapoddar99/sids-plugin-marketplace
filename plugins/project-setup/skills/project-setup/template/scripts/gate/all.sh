@@ -17,7 +17,8 @@
 #
 # ONE RUN PER TREE. A green run records the tree it checked (_receipt.sh). A run on a tree that
 # already passed with the same base prints so and runs nothing, in every checkout of the repository;
-# `--rerun` runs it again.
+# `--rerun` runs it again. Each green rung records itself too, so a run that went red at the test rung
+# reruns from the test rung when the tree is unchanged.
 #
 # SETTINGS. The TESTING section of the root .env sets the cores, the compiler jobs and the memory
 # budget (scripts/common/_test-settings.sh); --cpus, --build-jobs and --memory win over it. The root
@@ -252,10 +253,19 @@ run_rung() {
   else bash "$CTL_ROOT/scripts/gate/$rung.sh" "${targets[@]}"; fi
 }
 
+# rung_receipt <rung> — the receipt name of one rung on its planned targets. A rung that passed on
+# this tree, against this base and on these targets, is not run again, so a ladder that went red at a
+# later rung, such as on a test that timed out, reruns from that rung on.
+rung_receipt() { printf 'rung-%s-%s\n' "$1" "$(printf '%s' "${RUNG_PLAN[$1]}" | sha256sum | cut -c1-12)"; }
+
 ran=()
 for i in "${!RUNGS[@]}"; do
   rung="${RUNGS[$i]}"; worker="scripts/gate/$rung.sh"
   [[ -n ${RUNG_PLAN[$rung]} ]] || continue
+  if (( RECEIPT && ! RERUN )) && receipt=$(gate_receipt_find "$(rung_receipt "$rung")"); then
+    ok "gate $rung: already green on this tree — $(<"$receipt") — not run again"
+    ran+=("$rung (already green)"); continue
+  fi
   gate_require_file "$worker" "the gate worker for '$rung'"
   gate_lock_step "$rung"
   label=""; [[ ${RUNG_PLAN[$rung]} == full ]] || label=" — ${RUNG_PLAN[$rung]}"
@@ -278,6 +288,9 @@ for i in "${!RUNGS[@]}"; do
     exit "$rc"
   fi
   ok "gate $rung green — ${took}s"
+  if (( RECEIPT )) && [[ $(gate_work_tree 2>/dev/null) == "$GATE_RECEIPT_TREE" ]]; then
+    gate_receipt_write "$(rung_receipt "$rung")" "${took}s" || true
+  fi
   ran+=("$rung${label:+ (${RUNG_PLAN[$rung]})}")
 done
 hr
