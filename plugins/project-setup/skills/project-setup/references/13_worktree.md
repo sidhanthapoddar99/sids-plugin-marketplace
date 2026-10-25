@@ -62,7 +62,7 @@ The settings are read from the shell, else from the main tree's `.env`, whicheve
 |---|---|---|
 | `WORKTREE_SLOTS` | 4 | The most slots. Each slot holds one full set of builds, so this caps the disk the pool can take. |
 | `WORKTREE_TRIM_DAYS` | 7 | The trim deletes outputs no build used for this many days. |
-| `WORKTREE_ONLY` | off | `1` turns on the main-tree guard (§ The main-tree guard). |
+| `WORKTREE_ONLY` | on | `0` turns off the main-tree guard, for a checkout with no slots such as CI (§ The main-tree guard). |
 
 ## Why a pool of slots
 
@@ -140,14 +140,22 @@ The trim covers the slots only. In the main tree, `ctl clean rust` removes the d
 
 ## The main-tree guard
 
-With `WORKTREE_ONLY=1`, `ctl dev`, `ctl test`, `ctl gate` and `ctl build` refuse in the main tree and point at `ctl worktree create`. They write build outputs into the checkout, so the guard keeps the main tree's size flat. The guard lets these through:
+`ctl dev`, `ctl test`, `ctl gate` and `ctl build` refuse in the main tree and point at `ctl worktree create`. The guard is on by default, because a build in the main tree costs twice:
+- **Time.** The main tree's build folders fall behind while the work happens in slots, so a build there recompiles most of the dependency graph. On Studio, one gate in the main tree took 836 s, where the same kind of gate in a warm slot took 340 s; Cargo recompiled 345 crates in the typecheck rung alone, third-party crates among them.
+- **Disk.** Each build folder in the main tree is a second full set of outputs beside the slots', often several GB per Rust app.
+
+The guard lets these through:
 - help, anywhere on the line;
 - `ctl build start`, which only serves a frozen build, and `ctl build clean`, which frees space;
 - `ctl dev db`, which runs the data core in Docker as `ctl up` does, and `ctl dev stop`, which only stops processes, because stopping must always work;
 - `ctl setup`, always, because a new checkout must be able to set itself up, and because `create` refuses a main `.env` that lacks a template port until setup has run there;
 - every other verb, such as `ctl up`, `ctl db` and `ctl worktree`, because the guard covers only the verbs that build the apps into the checkout.
 
-The guard is off by default, so nothing changes for a `.env` without the key. It accepts empty, `0` or `1`, and refuses any other value. A value set in the shell wins over `.env`, an empty one included. Outside a git checkout there is no worktree to work in, so nothing is guarded.
+`.env.template` ships `WORKTREE_ONLY=1`, and an empty value or a `.env` without the key means on too, so the default holds in an older `.env`. `0` turns the guard off. It accepts empty, `0` or `1`, and refuses any other value. A value set in the shell wins over `.env`, so one command runs unguarded with `WORKTREE_ONLY=0 ./ctl <verb>`. Outside a git checkout there is no worktree to work in, so nothing is guarded.
+
+Two checkouts set it to `0`, because they have no slot to work in:
+- **CI.** A CI clone is a main tree with no `.worktrees/`, so its job runs `WORKTREE_ONLY=0 ./ctl gate --delta <base>` (`10b_static-checks.md`).
+- **A bootstrap's first gate.** The copied template is not committed yet, so no slot can check it out; the bootstrap runs that one gate with `WORKTREE_ONLY=0` (`SKILL.md`, Bootstrapping, step 8).
 
 ## Disk writes and wear
 

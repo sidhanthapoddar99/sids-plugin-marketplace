@@ -22,9 +22,9 @@ wt_setting() {
   printf '%s\n' "${value:-$2}"
 }
 
-# worktree_guard <command> [args…] — with WORKTREE_ONLY=1, the verbs that write build outputs into a
+# worktree_guard <command> [args…] — unless WORKTREE_ONLY=0, the verbs that write build outputs into a
 # checkout refuse in the main tree, so the main tree stays a checkout for git, ctl up, ctl setup and
-# ctl worktree, and its size stays flat. `build start` only serves a frozen build and `build clean`
+# ctl worktree, its size stays flat, and no build runs cold beside the warm slots. Empty means on. `build start` only serves a frozen build and `build clean`
 # frees space, so both pass, and help anywhere passes. `dev db` runs the data core in Docker, as
 # ctl up does, and `dev stop` only stops processes, so both pass: stopping must always work. ctl setup
 # is never guarded, because a new checkout must always be able to set itself up. Only the main tree
@@ -35,10 +35,10 @@ worktree_guard() {
   for arg; do ! is_help "$arg" || return 0; done
   [[ $cmd != build || ( ${1:-} != start && ${1:-} != clean ) ]] || return 0
   [[ $cmd != dev || ( ${1:-} != db && ${1:-} != stop ) ]] || return 0
-  only=$(wt_setting WORKTREE_ONLY "" "$CTL_ROOT/.env")
-  case $only in ''|0) return 0 ;; 1) ;; *) die "WORKTREE_ONLY must be empty, 0 or 1 (got: $only)" ;; esac
+  only=$(wt_setting WORKTREE_ONLY 1 "$CTL_ROOT/.env")
+  case $only in 0) return 0 ;; 1) ;; *) die "WORKTREE_ONLY must be empty, 0 or 1 (got: $only)" ;; esac
   wt_in_main_tree "$CTL_ROOT" || return 0
-  die "ctl $cmd writes build outputs into this checkout, and WORKTREE_ONLY=1 keeps the main tree for git, ctl up, ctl setup and ctl worktree. Work in a worktree: ctl worktree create <name>"
+  die "ctl $cmd writes build outputs into this checkout, and WORKTREE_ONLY=1 keeps the main tree for git, ctl up, ctl setup and ctl worktree. Work in a worktree: ctl worktree create <name>. A checkout with no slots, such as CI, sets WORKTREE_ONLY=0"
 }
 
 # wt_need_tools — the commands the pool runs; a missing one is named, so it gets installed

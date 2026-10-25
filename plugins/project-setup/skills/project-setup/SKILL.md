@@ -125,7 +125,7 @@ Ask each of these rather than infer it, because each answer changes the tree and
 These versions are still <version>. The defaults come from the live sources named.
 - jq: 1.8.1 (mise ls-remote jq)
 - react: 19.2.0 (npm registry)
-Reply yes to pin these, or name other versions. Then I write them and run ./ctl setup and ./ctl gate.
+Reply yes to pin these, or name other versions. Then I write them and run ./ctl setup and WORKTREE_ONLY=0 ./ctl gate.
 ```
 
 Then run these steps in order:
@@ -137,7 +137,7 @@ Then run these steps in order:
 5. Keep the lint config each app ships (`[tool.ruff]`, `.oxlintrc.json`, `clippy.toml`, `.golangci.yml`). `ctl check` fails an app without one. Change a threshold only with the user, and record it in `AGENTS.md`.
 6. Fill every section of `template/AGENTS.md`. The file is the example: eleven sections, each with its table or its one-line placeholder. Replace every `<angle-bracket>` choice with the real one. Keep the copied `CLAUDE.md`, which holds `@AGENTS.md`. When the product or any of its parts has a version, list each part in `VERSION_PARTS` in `scripts/release/versions.sh`; leave it empty when nothing is versioned yet.
 7. Run `./ctl setup env`, then `./ctl check`. `ctl setup env` writes `.env`, generates the declared credentials and creates the storage folders. It installs nothing, so it runs while a `<version>` remains, and `ctl check` can then test the env contract and the compose files. Fix each red line except an unresolved version.
-8. Run `./ctl setup`, then `./ctl gate`, before you commit the copy. `ctl setup` installs every tool in `.mise.toml`, `jq` among them. A plain `ctl gate` checks what the uncommitted changes reach, so while the copy is uncommitted it checks every rung on every app. Report each exit code as it is. A red rung is a finding to fix, not a note.
+8. Run `./ctl setup`, then `WORKTREE_ONLY=0 ./ctl gate`, before you commit the copy. `ctl setup` installs every tool in `.mise.toml`, `jq` among them. A plain `ctl gate` checks what the uncommitted changes reach, so while the copy is uncommitted it checks every rung on every app. `WORKTREE_ONLY=0` lifts the main-tree guard for this one gate, because no slot can check out an uncommitted copy; later work happens in a slot (`13_worktree.md`). Report each exit code as it is. A red rung is a finding to fix, not a note.
 9. Run `bash <skill folder>/scripts/template.sh verify .`. Report its verdict. Give each difference it lists a reason: a row of the table below, an `[ADAPT]` point, a rename, or a new worker. A red verdict is a finding to fix, because it means a shared helper is not the template's.
 10. End with `ctl --help` and the manual path in the README. Name the optional rungs and the add-ons in one line, so the user knows they exist, and stop there.
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.19.0
+
+- The main-tree guard is on by default. `ctl dev`, `test`, `gate` and `build` refuse in the main checkout and point at `ctl worktree create`, because the main tree's build folders fall behind while work happens in slots: on Studio, one gate there took 836 s, where a warm slot's took 340 s, and Cargo recompiled third-party crates. `.env.template` ships `WORKTREE_ONLY=1`, and an empty value or a missing key means on too. `0` turns it off.
+- Two checkouts with no slot run with `WORKTREE_ONLY=0`: CI (`10b_static-checks.md`) and a bootstrap's first gate on the uncommitted copy (`SKILL.md`, step 8). `ctl merge` needs nothing, because it runs its gate in the branch's slot.
+- `13_worktree.md` § The main-tree guard gives the reasons and the exceptions. The gate test fixture, a main checkout with no slots as a CI clone is, runs with the guard off; `worktree-safety.test.ts` tests it on, off, empty and in the shell.
+
 ## 0.18.0
 
 - `ctl worktree` makes no name links. Git's worktree list is the one record of which slot holds which branch, so `.worktrees/<branch> -> slot-<n>` only repeated it, and two records of one fact could disagree. `create <branch>` prints the slot's path, `.worktrees/slot-<n>`; `remove <branch>` finds the slot through git; `list` shows each slot's branch. The state rule shrinks to one line: every `slot-<n>` folder is a worktree git lists. A branch may now start with `slot-`, and a name no longer has to fit beside other links.

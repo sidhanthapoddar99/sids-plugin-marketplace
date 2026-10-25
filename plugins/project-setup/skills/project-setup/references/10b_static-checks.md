@@ -93,7 +93,7 @@ Repo-level rules, the env contract and the compose shape, stay in `ctl check`. T
 - Adding a rung beyond the four is the user's decision. Recommend it with the reason; do not add it unasked, and do not add it during a bootstrap.
 - The audit tools (`gitleaks`, `cargo-audit`, `govulncheck`) join `.mise.toml` when the `audit` rung joins, not before.
 - `lefthook.yml` is an add-on: `ctl gate lint --staged` is the shape of a pre-commit hook, `ctl test` of a pre-push hook. A hook never calls a tool directly. `additional-template/lefthook.yml`.
-- CI, when it exists, runs `ctl gate --delta <base>` and nothing else, because a CI checkout has no uncommitted changes for a plain `ctl gate` to check. On a pull request, `<base>` is the target branch as CI fetched it, such as `origin/main`. On a push, `<base>` is the commit the branch held before the push. The checkout needs the history back to `<base>`, because `--delta` stops when it cannot find `<base>` or the merge base. PR builds get no secrets.
+- CI, when it exists, runs `WORKTREE_ONLY=0 ctl gate --delta <base>` and nothing else, because a CI checkout has no uncommitted changes for a plain `ctl gate` to check. `WORKTREE_ONLY=0` turns off the main-tree guard, because a CI clone is a main tree with no slots (`13_worktree.md` § The main-tree guard). On a pull request, `<base>` is the target branch as CI fetched it, such as `origin/main`. On a push, `<base>` is the commit the branch held before the push. The checkout needs the history back to `<base>`, because `--delta` stops when it cannot find `<base>` or the merge base. PR builds get no secrets.
 
 ## Verbs
 

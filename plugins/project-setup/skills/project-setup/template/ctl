@@ -108,8 +108,8 @@ ctl_help() {
 }
 
 cmd="${1:-help}"; shift || true
-# WORKTREE_ONLY=1 keeps the main tree for git, ctl up, ctl setup and ctl worktree: the verbs that write
-# build outputs into a checkout refuse there (worktree_guard). setup is never guarded, because a new
+# WORKTREE_ONLY, on unless 0, keeps the main tree for git, ctl up, ctl setup and ctl worktree: the verbs
+# that write build outputs into a checkout refuse there (worktree_guard). setup is never guarded, because a new
 # checkout must always be able to set itself up.
 case "$cmd" in dev|test|gate|build) source "$CTL_ROOT/scripts/worktree/_pool.sh"; worktree_guard "$cmd" "$@" ;; esac
 case "$cmd" in

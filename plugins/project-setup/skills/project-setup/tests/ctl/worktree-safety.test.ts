@@ -189,13 +189,13 @@ test('the trim, by hand and weekly, skips a slot whose process still runs and sa
   again.old.forEach(path => expect(existsSync(path), path).toBe(false));
 });
 
-test('with WORKTREE_ONLY=1 the build verbs refuse in the main tree, and run in a worktree; setup is never guarded', () => {
+test('by default the build verbs refuse in the main tree, and run in a worktree; setup is never guarded', () => {
   ok(['create', 'foo']);
   // Stand-in workers that only say they ran, so the test sees what the guard let through.
   const stub = 'printf "ran %s\\n" "${BASH_SOURCE[0]##*/scripts/}"\n';
   const workers = ['dev/dev.sh', 'dev/db.sh', 'dev/dev-stop.sh', 'test/test.sh', 'gate/all.sh', 'container/build.sh', 'test/build.sh', 'config/setup.sh'];
   for (const dir of [f.root, W('slot-1')]) for (const worker of workers) writeFileSync(join(dir, 'scripts', worker), stub);
-  f.put('.env', mainEnv().replace('WORKTREE_ONLY=\n', 'WORKTREE_ONLY=1\n'));
+  expect(mainEnv()).toContain('\nWORKTREE_ONLY=1\n');   // the template ships the guard on
   for (const args of [['dev'], ['test', 'api'], ['gate'], ['build'], ['build', 'save']]) {
     const run = f.ctl(args);
     expect(run.code, args.join(' ')).toBe(1);
@@ -211,14 +211,21 @@ test('with WORKTREE_ONLY=1 the build verbs refuse in the main tree, and run in a
   expect(f.ctl(['setup']).out).toContain('ran config/setup.sh');
   expect(f.ctl(['dev', 'db']).out).toContain('ran dev/db.sh');
   expect(f.ctl(['dev', 'stop']).out).toContain('ran dev/dev-stop.sh');
-  // The shell wins over .env, including an empty value.
-  expect(f.ctl(['gate'], { WORKTREE_ONLY: '' }).out).toContain('ran gate/all.sh');
-  // A worktree is never the main tree, whatever its .env says.
-  writeFileSync(W('slot-1/.env'), readFileSync(W('slot-1/.env'), 'utf8').replace('WORKTREE_ONLY=\n', 'WORKTREE_ONLY=1\n'));
+  // An empty value, in .env or in the shell, keeps the default: on.
+  f.put('.env', mainEnv().replace('WORKTREE_ONLY=1\n', 'WORKTREE_ONLY=\n'));
+  expect(f.ctl(['gate']).code).toBe(1);
+  expect(f.ctl(['gate'], { WORKTREE_ONLY: '' }).code).toBe(1);
+  // 0 turns it off, in .env or in the shell, which wins over .env.
+  f.put('.env', mainEnv().replace('WORKTREE_ONLY=1\n', 'WORKTREE_ONLY=0\n'));
+  expect(f.ctl(['gate']).out).toContain('ran gate/all.sh');
+  f.put('.env', mainEnv());
+  expect(f.ctl(['gate'], { WORKTREE_ONLY: '0' }).out).toContain('ran gate/all.sh');
+  // A worktree is never the main tree, whatever its .env says: the slot's .env carries the guard too.
+  expect(readFileSync(W('slot-1/.env'), 'utf8')).toContain('\nWORKTREE_ONLY=1\n');
   const inside = f.ctl(['gate'], {}, W('slot-1'));
   expect(inside.code, inside.all).toBe(0);
   expect(inside.out).toContain('ran gate/all.sh');
-  f.put('.env', mainEnv().replace('WORKTREE_ONLY=\n', 'WORKTREE_ONLY=yes\n'));
+  f.put('.env', mainEnv().replace('WORKTREE_ONLY=1\n', 'WORKTREE_ONLY=yes\n'));
   expect(f.ctl(['gate']).err).toContain('WORKTREE_ONLY must be empty, 0 or 1 (got: yes)');
 });
 
@@ -226,7 +233,7 @@ test('outside a git checkout the guard has no main tree to keep, so the build ve
   const copy = join(f.base, 'exported');
   cpSync(f.root, copy, { recursive: true, filter: source => !/\/\.(git|worktrees)(\/|$)/.test(source) });
   writeFileSync(join(copy, 'scripts/gate/all.sh'), 'printf "ran\\n"\n');
-  writeFileSync(join(copy, '.env'), mainEnv().replace('WORKTREE_ONLY=\n', 'WORKTREE_ONLY=1\n'));
+  writeFileSync(join(copy, '.env'), mainEnv());
   const run = f.ctl(['gate'], {}, copy);
   expect(run.code, run.all).toBe(0);
   expect(run.out).toBe('ran\n');

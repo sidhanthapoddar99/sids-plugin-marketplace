@@ -40,7 +40,7 @@ process it recorded, a container of the slot's compose project, or a gate run.
 Settings (the main tree's .env, WORKTREES section; a value set in the shell wins)
   WORKTREE_SLOTS       the most slots. Empty: 4
   WORKTREE_TRIM_DAYS   the trim's age in days. Empty: 7
-  WORKTREE_ONLY        1: ctl dev, test, gate and build refuse in the main tree. Empty or 0: off
+  WORKTREE_ONLY        1 or empty: ctl dev, test, gate and build refuse in the main tree. 0: off
 
 Terms
   main tree            the repository's main checkout, whatever branch it has checked out
