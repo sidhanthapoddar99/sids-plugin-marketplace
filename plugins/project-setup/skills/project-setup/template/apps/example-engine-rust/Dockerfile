@@ -1,4 +1,4 @@
-# Multi-stage, built only on the server that runs it (references/16_rust-production.md):
+# Multi-stage, built only on the server that runs it, so the build must be fast and bounded on disk:
 #   1. FROM rust:<version> AS build: the same pin as .mise.toml. cargo build --release -p api, with
 #      BuildKit cache mounts for the Cargo registry (one id per stage, because Cargo's package lock
 #      sits outside the mount) and for target/, which a size check empties when it passes its limit.

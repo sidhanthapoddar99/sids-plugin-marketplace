@@ -41,8 +41,7 @@ esac; shift; done
 require_tools git
 
 main_tree=$(wt_main_tree "$CTL_ROOT") || die "cannot find the main tree of this repository"
-default=$(wt_git "$main_tree" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
-default=${default#origin/}; default=${default:-main}
+default=$(wt_default_branch "$main_tree")
 [[ $branch != "$default" ]] || die "$branch is the default branch; name the branch to land on it"
 wt_branch_exists "$main_tree" "$branch" || die "no branch $branch in this repository"
 [[ $(wt_current_branch "$main_tree") == "$default" ]] || die "the main tree ($main_tree) is not on $default; switch it back first"

@@ -10,9 +10,9 @@ These bind every agent on every change.
 
 - `ctl` is the only way to run, build, migrate or test. Never call docker, flyway, uv or bun directly for those.
 - Keep settings in the ignored root `.env`, grouped by kind with two-line hash headers. Read `.env.template` for the contract; the filled file holds live secrets.
-- Schema changes go through `apps/database/postgres/migrations/`. Never edit a live schema.
+- Schema changes go through a new file in `apps/database/postgres/migrations/`. Never edit a live schema or a migration already on the default branch, because a database has applied it; `ctl check` fails such an edit.
 - An app never imports from another app. Shared code is a package under `apps/packages/`.
-- Documentation points at code. A code comment never names a doc page, plan, issue or skill file. `README.md` and `AGENTS.md` are the only exceptions.
+- Documentation points at code, never the reverse. A code comment never names a doc page, a plan, a tracker issue or a skill file, because those move and renumber and no test reads comments; write the rule into the comment instead. `ctl check` fails code that names a skill page or a tracker issue. `README.md`, `AGENTS.md` and `memory/` are the entry doors and may point anywhere.
 - A frontend has no app-local env file. Its dev server inherits the root environment; expose only selected public constants to browser code, because bundles are public.
 - Every git worktree lives at `.worktrees/<name>` in this repo, and nowhere else, because there it reuses a warm slot's builds and git ignores it. Create one with `ctl worktree create <name>`, not `git worktree add`, because only `ctl` puts it on a slot with its own ports. Free it with `ctl worktree remove <name>` once the main tree has merged its branch, so the next worktree can take the slot. Never move, delete or switch branches inside a `.worktrees/slot-<n>` folder by hand, because each slot must stay on the branch its link names.
 - Test only what you change: `ctl test <app>` while you work, then one `ctl gate` when the work is done. The gate records each tree it passed and skips that tree the next time, so run it once, not after every edit.
@@ -48,7 +48,7 @@ Crossing one obligates the restructure, or a deferral recorded in the tracker (w
 |---|---|
 | 8 to 10 flat domains | Add a domain layer. |
 | 10 files in one module folder | Subdivide inside the module: a sub-module, or by kind. |
-| A file over 300 lines | Split it. 500 is the hard cap. |
+| A file over 300 lines | Split it. 500 is the hard cap, which `ctl check` enforces; a file that must stay whole is recorded as `size-cap <path>` under Exceptions. |
 | A route file over 50 lines, or a component over 150 | Move logic into a module or a primitive. |
 | The same utility combination twice | Add a variant to the primitive. |
 | A helper used three times | Extract it and name it. |
@@ -61,10 +61,6 @@ With `tokens.css` and the ui package in place, this section overrides every gene
 - No hex, no raw px, no arbitrary values, no `var(--…)` in JSX, because each one is a value the tokens cannot change later.
 - Typography allowlist: `text-sm` for content, `text-base` for headings, `text-xs` for meta. `font-normal` everywhere. The one emphasis weight is `<font-medium | font-semibold>`, used only inside primitives. Hierarchy comes from size and colour, never weight, so a page reads as one voice.
 - After a UI change, screenshot light and dark and compare them against `<design/brand-guidelines/>`, because drift is visible before it is measurable.
-
-## Documentation and code
-
-Documentation points at code. Code never points at documentation. `docs/`, tracker issues, plans and skill pages name files and lines. A code comment never names a doc page, a plan, a subtask number or a skill file, because those move and renumber and no test reads comments. The exceptions are `README.md`, `AGENTS.md` and `memory/` when it exists, which are the entry doors. A rule worth citing is written into the comment in one sentence.
 
 ## Exceptions to the standard layout
 
@@ -85,15 +81,13 @@ Additions to the stack list, with the reason: none.
 
 ## Commands
 
-`ctl --help` is the list. Summary: `ctl setup` · `ctl setup env` · `ctl check` · `ctl status` · `ctl dev [app…]` · `ctl dev db [stop]` · `ctl dev stop [--all]` · `ctl ps` · `ctl up [--config <name>] [+expose_web|+public|+expose|+expose_db|+env_override] [--services a,b]` · `ctl up preset [<name>]` · `ctl up set-preset` · `ctl down` · `ctl restart` · `ctl logs` · `ctl exec` · `ctl shell` · `ctl health` · `ctl clean` · `ctl clean rust` · `ctl build [app|cli|save|start|clean]` · `ctl db migrate [new "<msg>"|status]` · `ctl db backup|shell` · `ctl manage ops|settings` · `ctl test [app…|e2e]` · `ctl gate [static|dynamic] [--changed|--delta <base>|--all] [--rerun] [--dry-run] [-q] [--cpus LIST] [--build-jobs N] [--memory SIZE]` · `ctl gate <rung>` · `ctl merge <branch> [--minor|--major] [--dry-run]` · `ctl worktree create <name> [--from <ref>]` · `ctl worktree list` · `ctl worktree remove <name>` · `ctl worktree trim [--days N] [--dry-run]`.
+`ctl --help` lists every verb, and `ctl <verb> --help` explains one. The list is not copied here, because a copy drifts from the router. `ctl dev stop` stops the dev apps and keeps the data core; `ctl stop` stops everything this checkout started and keeps containers and data.
 
-Use `ctl stop [--dry-run]` for project-wide shutdown without deleting containers or data. See `scripts/dev/_stop.sh` for ownership checks and failure handling; unrecorded processes are not stop targets. `ctl dev stop` stops the dev apps and keeps the data core.
-
-Green means a `ctl gate` run passed that covered the whole change: a plain `ctl gate` while all of the work is uncommitted, and `ctl gate --delta <base>` once any of it is committed, where `<base>` is the commit the work started from. Plain `ctl gate` checks what the uncommitted changes reach: lint, typecheck and test on the apps those files reach, `check` always, and every rung on every app when shared tooling or a path with no owner rule changed. A Markdown file reaches only `check`. `scripts/gate/_changed.sh` holds the owner rules, and `scripts/gate/_targets.sh` holds the apps. A run on a tree that already passed prints `already green` and runs nothing; `--rerun` runs it again. `ctl merge <branch>` is the one way a branch reaches the default branch: in the branch's worktree it merges the default branch in, sets the versions (`scripts/release/versions.sh`), runs `ctl gate --delta <default branch>` once, and fast-forwards the main tree. It never pushes. Run `ctl gate --all` only when the selection itself is in doubt, because the selection already widens on every path it cannot place. `--dry-run` shows what a run would select. One gate runs per user at a time, and a second one waits.
+Green means a `ctl gate` run passed that covered the whole change: a plain `ctl gate` while all of the work is uncommitted, and `ctl gate --delta <base>` once any of it is committed, where `<base>` is the commit the work started from. The gate runs lint, typecheck and test on the apps the changes reach, `check` always, and every rung on every app when shared tooling or a path with no owner rule changed. A Markdown file reaches only `check`. `scripts/gate/_changed.sh` holds the owner rules, and `scripts/gate/_targets.sh` holds the apps. `ctl merge` sets the versions from `VERSION_FILES` in `scripts/release/versions.sh`. Run `ctl gate --all` only when the selection itself is in doubt, because the selection already widens on every path it cannot place. One gate runs per user at a time, and a second one waits.
 
 The TESTING section of `.env` sets the cores, the compiler jobs and the memory budget of every gate and test run. The RUST section sets the debug info of the dev and test builds `ctl` starts. Keep it empty, so a cargo you run yourself builds the same way. Leave `CARGO_INCREMENTAL` on, because a test build after a small edit then takes seconds instead of a minute. Never export one `CARGO_TARGET_DIR` for every checkout, because the checkouts then wait on one build lock and rebuild each other's crates.
 
-The rungs the gate runs are the `Gate ladder` row above and `RUNGS` in `scripts/gate/all.sh`. `ctl check` fails when the two differ, because the audit reads the row and the gate runs the list. To switch on `dead`, `audit`, `build` or `e2e`, add the name to both, in ladder order. To drop one, remove it from both, with the user's yes. `clones`, `fuzz` and `perf` run by name and are never listed. Project-specific verbs are added as `scripts/<group>/<name>.sh` plus a `run` line in `ctl`, and listed here.
+The rungs the gate runs are the `Gate ladder` row above and `RUNGS` in `scripts/gate/all.sh`. `ctl check` fails when the two differ, because the audit reads the row and the gate runs the list. To switch on `dead`, `audit`, `build` or `e2e`, add the name to both, in ladder order. To drop one, remove it from both, with the user's yes. `clones`, `fuzz` and `perf` run by name and are never listed. A project verb is a `scripts/<group>/<name>.sh` worker plus a `run` line and a help row in `ctl`, so `ctl --help` shows it.
 
 ## Review passes
 
@@ -104,7 +98,7 @@ A review pass is a check by a second party, a person or another model, on a froz
 | Adversarial review | A second model in its own shell, for example Codex | `<on request · every round · at stage close-out>` |
 | The audit | The `project-setup` skill, audit mode | `on request` |
 | Frozen-build pass | `ctl build save`, `ctl build start`, then a person | `on request` |
-| Security review | `<not yet · walked on <date>>` | `on request` |
+| Security review | `<not yet · walked, answers in the tracker>` | `on request` |
 | Instruction review | The `instruction-writing` skill's rubric | `<on request · every change to this file>` |
 
 ## Deciding alone

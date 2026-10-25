@@ -28,7 +28,7 @@ The brief is a contract, not a welcome note. Skills are not always loaded; the b
 | Styling | The typography allowlist and the emphasis weight, resolved; the precedence rule over `frontend-design` (`05_frontend.md`). |
 | Exceptions | Every departure from the standard layout, with its reason. An unrecorded exception is a defect. |
 | Stack | The table of picks with versions, and the reason for any addition to `04_stack.md`. |
-| Commands | The `ctl` surface this repo actually has. Matches `ctl --help`, or the brief is stale. |
+| Commands | A pointer to `ctl --help`, and the rules for green, the gate and the ladder. The verb list itself is not copied, because a copy drifts from the router. |
 | Escalation | "For any structural decision this brief does not cover, load the `project-setup` skill. Do not improvise a pattern inline." |
 
 In a multi-repo product each brief states the repo's one-sentence role and names its siblings; repo names are `<product>-<role>`, the prefix chosen at the first split.
@@ -140,7 +140,9 @@ Each of these means a rule was broken somewhere else. Find that place.
 | `uvicorn --reload` in a Dockerfile | production serving (`06_backend.md`) |
 | a tripwire crossed with no deferral in the tracker | the brief is the contract |
 | a brief that tells the history of a rule, or a nested `AGENTS.md` that repeats the root one | the brief holds current facts, once |
-| a code comment naming a doc page, plan, issue or skill file | documentation points at code, never the reverse |
+| a code comment naming a doc page, plan, issue or skill file | documentation points at code, never the reverse; `ctl check` catches skill pages and tracker issues |
+| a source file over 500 lines with no `size-cap` exception | the tripwire's hard cap; `ctl check` fails it |
+| an edited or deleted migration that is on the default branch | a change is a new migration; `ctl check` fails it |
 | `command -v <tool>` followed by another way to do the tool's job | a missing tool is installed, never coded around |
 | a `ctl` that does not source `scripts/common/_lib.sh`, or a helper in `scripts/common/` that differs from the template | `ctl` is a copy of the template (`08_ctl.md` § Copy and verify) |
 

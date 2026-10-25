@@ -9,6 +9,8 @@
 - New pages: `15_releases.md` (numbering, `ctl merge`, the version step, packages, the version log) and `16_rust-production.md` (the release profile, `wasm-opt` and a pinned binaryen, parallel image stages, bounded caches, image pruning, measured numbers). `SKILL.md` gains a stage map from prototype to production line, and principle 11.
 - The template brief and the pages drop the gate before and after a merge, the rung that can never be removed, and deferrals recorded in the brief; deferrals go in the tracker.
 - The template's Rust engine carries the release profile.
+- `ctl check` gains three rules that the brief stated only as text: no source file over 500 lines in `ctl`, `apps/` or `scripts/` (a `size-cap <path>` exception keeps one whole), no code, script or compose file that names a skill page or tracker issue (`doc-pointer <path>` exception), and no edit to a migration already on the default branch. The template's own comments that pointed at skill pages now state their rule instead.
+- The template brief states each rule once, points at `ctl --help` instead of copying the verb list, and its security-review placeholder no longer holds a date, which the brief rule would refuse. `wt_default_branch` in `scripts/worktree/_git.sh` is the one place `ctl merge` and `ctl check` learn the default branch.
 
 ## 0.15.0
 

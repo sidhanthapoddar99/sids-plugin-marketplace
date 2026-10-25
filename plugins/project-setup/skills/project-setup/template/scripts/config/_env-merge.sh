@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # config/_env-merge.sh — step 1 of the env step: each ENV_FILES entry rebuilt in the shape of its
-# template, every existing value kept. SOURCE it after _lib.sh. references/02_env.md § Setting up
-# `.env` holds the rules; this header is the short form.
+# template, every existing value kept. SOURCE it after _lib.sh.
 #
 #   - The result has the template's sections, comments, blank lines and key order. Each key line
 #     .env holds is copied byte for byte; a key .env lacks takes the template's line.

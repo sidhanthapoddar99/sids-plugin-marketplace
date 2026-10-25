@@ -77,6 +77,57 @@ def test_check_enforces_the_brief(tmp_path: Path, setup, failure: str) -> None:
     assert failure in result.stderr
 
 
+def test_check_caps_source_files_unless_recorded(tmp_path: Path) -> None:
+    scaffold_check(tmp_path, "API_PORT=8000\n")
+    (tmp_path / "apps/api/big.py").write_text("x = 1\n" * 501)
+    (tmp_path / "apps/api/generated").mkdir()
+    (tmp_path / "apps/api/generated/schema.ts").write_text("x;\n" * 900)
+    result = run_worker(tmp_path, CHECK)
+    assert "apps/api/big.py has 501 lines; split it" in result.stderr
+    assert "schema.ts" not in result.stderr
+    with (tmp_path / "AGENTS.md").open("a") as brief:
+        brief.write("## Exceptions to the standard layout\n\n- size-cap apps/api/big.py: one generated-by-hand table.\n")
+    result = run_worker(tmp_path, CHECK)
+    assert "big.py" not in result.stderr, result.stderr
+
+
+def test_check_refuses_code_that_names_a_doc_page_or_tracker_issue(tmp_path: Path) -> None:
+    scaffold_check(tmp_path, "API_PORT=8000\n")
+    (tmp_path / "apps/api/main.py").write_text("# see references/02_env.md\nx = 1\n# data/tasks/2026-01-01-auth/issue.md\n")
+    (tmp_path / "apps/api/README.md").write_text("Rules: references/02_env.md\n")
+    result = run_worker(tmp_path, CHECK)
+    assert "apps/api/main.py:1 names a doc page or tracker issue" in result.stderr
+    assert "apps/api/main.py:3 names a doc page or tracker issue" in result.stderr
+    assert "README.md" not in result.stderr
+
+
+def git_commit(root: Path, message: str) -> None:
+    identity = ["-c", "user.name=fixture", "-c", "user.email=fixture@invalid"]
+    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(root), *identity, "commit", "-qm", message], check=True)
+
+
+def test_check_refuses_an_edit_to_a_migration_on_the_default_branch(tmp_path: Path) -> None:
+    scaffold_check(tmp_path, "API_PORT=8000\n")
+    subprocess.run(["git", "-C", str(tmp_path), "checkout", "-qb", "main"], check=True)
+    migrations = tmp_path / "apps/database/postgres/migrations"
+    migrations.mkdir(parents=True)
+    (migrations / "V1__start.sql").write_text("CREATE TABLE a (id int);\n")
+    git_commit(tmp_path, "base")
+    subprocess.run(["git", "-C", str(tmp_path), "checkout", "-qb", "work"], check=True)
+    (migrations / "V2__next.sql").write_text("CREATE TABLE b (id int);\n")
+    result = run_worker(tmp_path, CHECK)
+    assert "no migration on main is changed or deleted" in result.stdout, result.stdout + result.stderr
+    (migrations / "V1__start.sql").write_text("CREATE TABLE a (id bigint);\n")
+    git_commit(tmp_path, "edit")
+    result = run_worker(tmp_path, CHECK)
+    assert "V1__start.sql is on main, so a database may have applied it" in result.stderr
+    (migrations / "V1__start.sql").write_text("CREATE TABLE a (id int);\n")
+    (migrations / "V2__next.sql").unlink()
+    git_commit(tmp_path, "restore")
+    assert "V1__start.sql" not in run_worker(tmp_path, CHECK).stderr
+
+
 def test_check_accepts_an_agents_file_with_its_claude_import(tmp_path: Path) -> None:
     scaffold_check(tmp_path, "API_PORT=8000\n")
     (tmp_path / "apps/api/AGENTS.md").write_text("# API\n")

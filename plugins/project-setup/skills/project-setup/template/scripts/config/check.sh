@@ -3,6 +3,7 @@
 # Read-only. Prints every failure, exits non-zero if any. Runs as a gate rung too (gate/check.sh).
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../worktree/_git.sh"
 
 usage() { print_help "check" "Conformance floor — layout, env contract, compose validity." \
   'check [-h]' \
@@ -36,6 +37,12 @@ Rules
   lint      every app ships its lint config with the complexity floor: [tool.ruff] in pyproject.toml,
             .oxlintrc.json beside package.json, clippy.toml beside Cargo.toml, .golangci.yml beside go.mod —
             a linter run without its config reports only its defaults, and ruff's default has no complexity rule
+  size      no source file in ctl, apps/ or scripts/ over 500 lines (generated files and SQL left out),
+            unless AGENTS.md records 'size-cap <path>' as an exception
+  pointers  no code, script or compose file names a skill page (references/NN_*.md) or a tracker issue
+            (data/tasks/<date>-…), unless AGENTS.md records 'doc-pointer <path>' as an exception
+  migrations no file in apps/database/postgres/migrations that is on the default branch is changed or
+            deleted, in commits or in the working tree
   compose   no ports: in any config (docker/compose.<name>.yaml) — only a modifier publishes ·
             no ../ in any docker/compose.*.yaml ·
             every \${NAME} inside the root .env file names a set key, no cycle (the values ctl hands
@@ -53,6 +60,21 @@ is_help "${1:-}" && { usage; exit 0; }
 # only when nothing in that step failed, so an ok line is never printed under a failure.
 rc=0; sf=0
 fail() { err "$*"; rc=1; sf=1; }
+# exception_recorded <text> — 0 when a line under "## Exceptions to the standard layout" in AGENTS.md
+# holds <text>, because a recorded exception is a decision, not drift.
+exception_recorded() {
+  [[ -f AGENTS.md ]] && awk '/^## Exceptions to the standard layout/{f=1;next} /^## /{f=0} f' AGENTS.md | grep -qF -- "$1"
+}
+# repo_files <dir>… — every file git sees below the dirs, untracked ones included; outside git, every
+# file below them, build output left out.
+repo_files() {
+  if [[ $(git rev-parse --is-inside-work-tree 2>/dev/null) == true ]]; then
+    git ls-files -co --exclude-standard -- "$@" | sort -u
+  else
+    find "$@" \( -name node_modules -o -name .git -o -name .worktrees -o -name target -o -name .venv \) -prune -o -type f -print 2>/dev/null \
+      | sed 's|^\./||' | sort
+  fi
+}
 pass() { (( sf )) || ok "$*"; }
 step() { sf=0; printf '%s▸%s %s\n' "$C_CYN" "$C_RESET" "$*"; }
 LOG_INDENT="  "
@@ -121,7 +143,7 @@ step "layout"
 # records `root-manifest` under "## Exceptions to the standard layout" in AGENTS.md. Only the
 # root rule is skipped for it; apps/ and group folders keep the rule.
 root_manifest_ok=0
-if [[ -f AGENTS.md ]] && awk '/^## Exceptions to the standard layout/{f=1;next} /^## /{f=0} f' AGENTS.md | grep -q 'root-manifest'; then
+if exception_recorded 'root-manifest'; then
   root_manifest_ok=1; say "root-manifest exception recorded in AGENTS.md — root manifest allowed"
 fi
 manifests=(package.json bun.lock pnpm-workspace.yaml)
@@ -207,6 +229,50 @@ while IFS= read -r m; do
 done < <(find apps -maxdepth 3 \( -name pyproject.toml -o -name package.json -o -name Cargo.toml -o -name go.mod \) \
           -not -path '*/node_modules/*' -not -path '*/target/*' -not -path '*/.venv/*' -not -path '*/crates/*' 2>/dev/null | sort)
 pass "every app ships its lint config"
+
+step "source size"
+# A file past 500 lines holds more than one job, and every reader pays for all of it. Generated
+# files, lock files and SQL migrations are not split by hand, so they do not count. A file that must
+# stay whole is recorded as 'size-cap <path>' under the exceptions, with its reason.
+SOURCE_MAX_LINES=500
+while IFS= read -r f; do
+  [[ -f $f ]] || continue
+  case "$f" in */generated/*|*.d.ts|*.min.js) continue ;; esac
+  lines=$(wc -l < "$f"); (( lines > SOURCE_MAX_LINES )) || continue
+  exception_recorded "size-cap $f" \
+    || fail "$f has $lines lines; split it (the cap is $SOURCE_MAX_LINES), or record 'size-cap $f' with its reason in AGENTS.md"
+done < <(repo_files ctl apps scripts | grep -E '(^ctl$|\.(py|ts|tsx|js|jsx|mjs|rs|go|sh|css)$)')
+pass "no source file over $SOURCE_MAX_LINES lines"
+
+step "doc pointers"
+# Documentation points at code, never the reverse: a skill page, a tracker issue or a plan moves and
+# renumbers, and no test reads a comment, so code that names one goes stale unnoticed. Markdown is the
+# documentation side and is not read here. A file whose code names such a path on purpose is recorded
+# as 'doc-pointer <path>' under the exceptions.
+DOC_POINTER='references/[0-9]{2}[a-z]?_[a-z0-9-]+\.md|data/(tasks|todo)/[0-9]{4}-'
+while IFS= read -r f; do
+  [[ -f $f ]] && ! exception_recorded "doc-pointer $f" || continue
+  while IFS= read -r line; do fail "$f:$line names a doc page or tracker issue — write the rule into the comment instead"; done \
+    < <(grep -nIE -- "$DOC_POINTER" "$f" | cut -d: -f1)
+done < <(repo_files ctl apps scripts docker | grep -vE '\.md$')
+pass "no code, script or compose file names a doc page or tracker issue"
+
+step "migrations"
+# A migration on the default branch has run against some database, and Flyway refuses a database whose
+# applied history changed, so such a file is never edited or deleted: a change is a new migration.
+MIGRATIONS=apps/database/postgres/migrations
+if [[ ! -d $MIGRATIONS ]]; then say "  no $MIGRATIONS — nothing to compare"
+elif [[ $(git rev-parse --is-inside-work-tree 2>/dev/null) != true ]]; then say "  not a git checkout — nothing to compare"
+else
+  default=$(wt_default_branch .)
+  if ! base=$(git merge-base HEAD "$default" 2>/dev/null); then say "  no $default branch yet — nothing to compare"
+  else
+    while IFS=$'\t' read -r status path; do
+      if [[ $status == [MD]* ]]; then fail "$path is on $default, so a database may have applied it — restore it and add a new migration"; fi
+    done < <(git diff --name-status --no-renames "$base" -- "$MIGRATIONS")
+    pass "no migration on $default is changed or deleted"
+  fi
+fi
 
 step "compose files"
 # a config never publishes a port: lists only union across files, so exposure can only be added, by a modifier

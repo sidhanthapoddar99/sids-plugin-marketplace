@@ -52,6 +52,18 @@ wt_commit() { wt_git "$1" rev-parse --verify --quiet --end-of-options "$2^{commi
 wt_short() { wt_git "$1" rev-parse --short "$2"; }
 # wt_current_branch <dir> — print the branch <dir> has checked out; nothing when its HEAD is detached
 wt_current_branch() { wt_git "$1" symbolic-ref --quiet --short HEAD || true; }
+# wt_default_branch <dir> — the branch origin/HEAD names; with no remote HEAD, main, else master when
+# only that exists.
+wt_default_branch() {
+  local name
+  name=$(wt_git "$1" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
+  name=${name#origin/}
+  if [[ -z $name ]]; then
+    name=main
+    ! wt_branch_exists "$1" main && wt_branch_exists "$1" master && name=master
+  fi
+  printf '%s\n' "$name"
+}
 # wt_ignored <dir> <path> — 0 when git ignores <path> (relative to <dir>)
 wt_ignored() { wt_git "$1" check-ignore -q -- "$2"; }
 
