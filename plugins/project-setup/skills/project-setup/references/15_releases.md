@@ -18,7 +18,7 @@ A version is `<major>.<minor>.<patch>`, written bare in its manifest and shown t
 
 Every part to the right of the raised one becomes 0, as `1.4.2` becomes `1.5.0`, because readers compare versions part by part.
 
-What counts as a change is mechanical: a branch that touches shipped code gets a patch release. Shipped code is source under `apps/`, apart from tests, fixtures and Markdown. A branch that changes only tests, docs or tooling ships no version, because people receive nothing new. The minor and major parts are the person's call, given as `ctl merge <branch> --minor` or `--major`, because only a person knows whether an update adds or breaks.
+What counts as a change is mechanical: a part whose shipping paths the branch changed gets a patch release. Tests, fixtures and Markdown ship nothing, so a branch that changes only those, or only tooling, ships no version, because people receive nothing new. The minor and major numbers are the person's call, given as `ctl merge <branch> --minor=<part>` or `--major=<part>` (the part may be left out when the repo has one), because only a person knows whether an update adds or breaks.
 
 ## `ctl merge <branch>`
 
@@ -27,7 +27,7 @@ The one way work reaches the default branch. In the worktree that holds `<branch
 1. merges the default branch into `<branch>` when the branch does not already contain it. A conflict stops the run with nothing half merged;
 2. runs the version step, `scripts/release/versions.sh`, and commits what it sets as `Release: <versions>`;
 3. runs one gate, `ctl gate --delta <default branch>`, on the merged tree, with `CTL_MERGE=1` in its environment;
-4. fast-forwards the main tree's default branch to `<branch>`.
+4. fast-forwards the main tree's default branch to `<branch>`, and creates the tag of each part whose version is a git tag.
 
 It never pushes, never rewrites a commit and fast-forwards only. `--dry-run` prints the plan and the versions it would set.
 
@@ -41,9 +41,27 @@ Why one command instead of steps in `AGENTS.md`:
 
 ## The version step
 
-`template/scripts/release/versions.sh` sets the product's one version. Its `[ADAPT]` list `VERSION_FILES` names the manifests that carry it, such as `apps/web/package.json` or a Rust workspace's `Cargo.toml` (`[workspace.package] version`). An empty list means the product has no version yet, and the step sets none. For a `Cargo.toml` it also runs `cargo update --workspace --offline` beside it, because `Cargo.lock` records each member's version and a `--locked` build refuses a lock that disagrees.
+`template/scripts/release/versions.sh` sets versions part by part. A part is something people receive with its own version: a product, a service, a package, a CLI, a WASM module. Its `[ADAPT]` list `VERSION_PARTS` holds one line per part, `<part> <where> [<path that ships it>…]`. The paths default to the folder of the part's manifest.
 
-A project with parts that carry their own version extends this step and records the extension in `AGENTS.md` § Exceptions. The shape Studio uses for its document engines:
+| Where the version lives | Write it as | What the step reads and writes |
+|---|---|---|
+| `package.json` | `web apps/web/package.json` | the top-level `"version"` |
+| `pyproject.toml` | `api apps/api/pyproject.toml` | `version` under `[project]` |
+| `Cargo.toml` | `engine apps/engine/Cargo.toml` | `version` under `[package]` or `[workspace.package]` |
+| a `VERSION` file | `worker apps/worker/VERSION` | the file's one line, `x.y.z`, for any language |
+| a git tag, as a Go module's | `cli tag:apps/cli/v apps/cli` | the newest tag `apps/cli/vx.y.z`; with none yet, it starts from `0.0.0`. `ctl merge` creates the next tag on the landed commit |
+| one version in several manifests | `product apps/api/pyproject.toml,apps/web/package.json apps` | every listed manifest, which must agree |
+
+The cases the step covers:
+
+- **No version yet.** An empty `VERSION_PARTS` sets none, and `ctl merge` adds no commit. A repo that publishes nothing can stay this way.
+- **One version.** One line. `--minor` and `--major` need no part name.
+- **Several parts.** Each moves only when the branch changes one of its own paths, so a branch that touches the API raises the API and leaves the web app alone.
+- **A version raised by hand** on the branch is kept and printed with `(raised on the branch)`.
+- **Lock files** move with their manifest, because a locked install refuses a lock that disagrees: `cargo update --workspace --offline` for `Cargo.lock`, `uv lock --offline` for `uv.lock`, and `npm install --package-lock-only --offline` for `package-lock.json`. `bun.lock` records no workspace version, so Bun needs none. Each lock is the nearest one at or above the manifest.
+- **A version the step cannot read**, such as a `pyproject.toml` with `dynamic = ["version"]`, stops the step by name. Such a version usually comes from git tags, so list the part as `tag:<prefix>`.
+
+A part whose version moves on another trigger extends this step and records the extension in `AGENTS.md` § Exceptions. The shape Studio uses for its document engines:
 
 | Part | Trigger | What the step writes |
 |---|---|---|
@@ -55,10 +73,10 @@ The extension keeps the rule: each trigger is a fact the code can read, so no ag
 
 ## Packages
 
-- Keep one version per workspace. A Rust workspace sets `version` once in `[workspace.package]`, and members say `version.workspace = true`. A crate that never leaves the repo sets `publish = false`.
+- Keep one version per workspace, and list the workspace as one part. A Rust workspace sets `version` once in `[workspace.package]`, and members say `version.workspace = true`. A crate that never leaves the repo sets `publish = false`.
 - Pin shared dependencies once in `[workspace.dependencies]`, and in a JS group every manifest names the same version (`04_stack.md`).
-- Commit every lockfile: `Cargo.lock`, `bun.lock`, `uv.lock`. A release builds from the lock, so two builds of one commit get the same dependencies.
-- A published crate runs `cargo semver-checks` before its version is set, because it reads the public API and says whether the change is major. Choose `--major` when it says so.
+- Commit every lockfile: `Cargo.lock`, `bun.lock`, `uv.lock`, `package-lock.json`, `go.sum`. A release builds from the lock, so two builds of one commit get the same dependencies.
+- A published crate runs `cargo semver-checks` before its version is set, because it reads the public API and says whether the change is major. Choose `--major=<part>` when it says so.
 - A source-only package (`11_conventions.md`) carries no version of its own; the product's version covers it.
 
 ## What each release records

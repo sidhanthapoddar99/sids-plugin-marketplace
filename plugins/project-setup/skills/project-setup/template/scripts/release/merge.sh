@@ -9,31 +9,34 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; 
 source "$CTL_ROOT/scripts/worktree/_git.sh"
 
 usage() { print_help "merge" "land a worktree branch on the default branch: versions, one gate, fast-forward" \
-  'merge <branch> [--minor | --major] [--dry-run] [-h]' \
+  'merge <branch> [--minor[=PART]] [--major[=PART]] [--dry-run] [-h]' \
 "What it does, in the worktree that holds <branch>
   1. merges the default branch into <branch> when the branch does not already contain it. A conflict
      stops the run and leaves nothing half merged: merge it in that worktree, then run ctl merge again
-  2. sets the version the branch changes (scripts/release/versions.sh) and commits it: the patch
-     part goes up when the branch changes shipped code, or the part --minor or --major names. A
-     version the branch raised by hand is kept
+  2. sets the version of each part the branch changes (VERSION_PARTS in scripts/release/versions.sh)
+     and commits them: a part's patch number goes up when the branch changes a path that ships it,
+     or the number --minor or --major names. A version the branch raised by hand is kept. A repo
+     with no parts sets none
   3. runs ctl gate --delta <default branch> with CTL_MERGE=1. A tree that already passed costs nothing
-  4. fast-forwards the main tree's default branch to <branch>
+  4. fast-forwards the main tree's default branch to <branch>, and creates the tag of each part whose
+     version is a git tag, such as a Go module's
 
 Options
-  --minor          raise the minor part instead of the patch part
-  --major          raise the major part
+  --minor[=PART]   raise PART's minor number instead of its patch number; PART may be left out when
+                   the repo has one part. Repeat it for several parts
+  --major[=PART]   the same for the major number
   --dry-run        print the plan and the versions it would set; change nothing
   -h, --help       show this help
 
 The main tree must hold the default branch with no uncommitted change, and the worktree must be
-clean. Push afterwards with git push." \
+clean. Push afterwards with git push --follow-tags." \
 "It never pushes, never rewrites a commit, and fast-forwards only."; }
 
 branch="" dry=0 version_args=()
 while (( $# )); do case "$1" in
   -h|--help) usage; exit 0 ;;
   --dry-run) dry=1 ;;
-  --minor|--major) version_args=("$1") ;;
+  --minor|--major|--minor=*|--major=*) version_args+=("$1") ;;
   -*) die "unknown flag $1" ;;
   *) [[ -z $branch ]] || die "ctl merge lands one branch"; branch="$1" ;;
 esac; shift; done
@@ -88,6 +91,13 @@ say "· one gate on the merged tree"
 (cd "$slot" && CTL_MERGE=1 ./ctl gate --delta "$default") || die "the gate is red; fix it on $branch, then run ctl merge $branch again"
 
 wt_git "$main_tree" merge --quiet --ff-only "$branch" || die "$default moved while the gate ran; run ctl merge $branch again"
-ok "$default is at $(wt_short "$main_tree" HEAD) — push it with: git push origin $default"
+# A part whose version is a git tag gets its tag on the commit that landed, only once the gate passed.
+tag_line='^([^ ]+) [^ ]+ → ([^ ]+) \(tag ([^)]+)\)$'
+while IFS= read -r line; do
+  [[ $line =~ $tag_line ]] || continue
+  wt_git "$main_tree" tag -a "${BASH_REMATCH[3]}" -m "${BASH_REMATCH[1]} ${BASH_REMATCH[2]}" || die "could not create the tag ${BASH_REMATCH[3]}"
+  ok "tagged ${BASH_REMATCH[3]}"
+done <<<"$versions"
+ok "$default is at $(wt_short "$main_tree" HEAD) — push it with: git push --follow-tags origin $default"
 grep -q '→' <<<"$versions" && say "  record each new version in the changelog or version log the project keeps"
 exit 0
