@@ -2,7 +2,8 @@
 // (the changes since a branch, a commit or a date-time) and all. The fixture is a throwaway git
 // repository shaped like the template, with stand-in rungs that record their arguments.
 import { afterEach, beforeEach, expect, setDefaultTimeout, test } from 'bun:test';
-import { appendFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { appFiles, fixture, type Fixture } from './gate-fixture';
 
@@ -316,6 +317,31 @@ test('an --all run covers a changed run of the same tree, and a red run records 
   f.put('scripts/gate/check.sh', 'exit 3\n', true);
   expect(f.ctl(['gate']).code).not.toBe(0);
   expect(wholeGate()).toEqual([]);
+});
+
+test('a same-size edit in the second of the last commit is part of the tree the receipt names', () => {
+  // Git trusts a file's cached size and times unless the file is as new as the index. The edit keeps
+  // the size and lands in the second of the commit, so only that check finds it; the gate runs a
+  // second later, so a copy of the index stamped then would hide the edit.
+  const file = 'apps/example-api-python/app/main.py';
+  let same = false;
+  for (let attempt = 0; attempt < 5 && !same; attempt++) {
+    while (Date.now() % 1000 > 100) Bun.sleepSync(5);
+    f.put(file, `aaa${attempt}\n`);
+    f.git('add', '-A'); f.git('commit', '-qm', 'same size');
+    f.put(file, `bbb${attempt}\n`);
+    const second = (path: string) => Math.floor(statSync(join(f.root, path)).ctimeMs / 1000);
+    same = second(file) === second('.git/index');
+  }
+  expect(same).toBe(true);
+  Bun.sleepSync(1100);
+  expect(f.ctl(['gate']).code).toBe(0);
+  // The tree as git hashes it with no cached stat: a fresh index, every file read.
+  const index = join(mkdtempSync(join(tmpdir(), 'tree-')), 'index');
+  const tree = f.bash('git add -A -- . && git write-tree', { GIT_INDEX_FILE: index }).out.trim();
+  rmSync(dirname(index), { recursive: true, force: true });
+  const named = readdirSync(join(f.root, '.git/ctl-gate-green')).filter(name => !name.includes('.rung-'));
+  expect(named.map(name => name.split('.')[0])).toEqual([tree]);
 });
 
 test('a run that went red at one rung reruns from that rung while the tree is unchanged', () => {

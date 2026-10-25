@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.1
+
+- `ctl gate`'s tree key copies the index with its timestamps. A plain copy hid a same-size edit made in the second of the last commit, so a run could skip its receipt, or record one for a tree it did not check. A test reproduces the case.
+- The release-profile rule is narrowed: a rung builds the release profile only for a test that must run the shipped bytes, keyed by its inputs so a rerun reuses it; every other rung builds the dev profile. 0.16.0 said no rung builds it.
+- `10c_dynamic-tests.md` gives each wait one shared deadline of about a minute, because a gate runs suites beside compiling lanes.
+
 ## 0.16.0
 
 - `ctl gate` records each green run in a receipt named by the working tree's git hash, the base tree and the group (`scripts/gate/_receipt.sh`). A run on the same tree and base prints `already green` and runs nothing; `--rerun` runs it again. A run writes its receipt only when the tree did not change while it ran.

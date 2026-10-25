@@ -15,7 +15,10 @@
 gate_work_tree() {
   local index rc=0 tree
   index=$(mktemp) || return 1
-  cp "$(git rev-parse --git-path index)" "$index" 2>/dev/null || : > "$index"
+  # -p keeps the index's own time. Git trusts a file's cached size and time only when the file is
+  # older than the index, so a copy stamped now would hide a same-size edit made in the same second
+  # as the last commit, and the key would name a tree the run never had.
+  cp -p "$(git rev-parse --git-path index)" "$index" 2>/dev/null || : > "$index"
   tree=$(GIT_INDEX_FILE="$index" git add -A -- . >/dev/null 2>&1 && GIT_INDEX_FILE="$index" git write-tree) || rc=$?
   rm -f "$index"
   (( rc == 0 )) && [[ -n $tree ]] || return 1
