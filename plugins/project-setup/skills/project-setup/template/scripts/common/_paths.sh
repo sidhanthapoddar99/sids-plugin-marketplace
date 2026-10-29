@@ -63,7 +63,10 @@ storage_dir_writable() {
     printf '%s is not writable by %s; the deploy user must own it: sudo chown %s %s\n' "$dir" "$(id -un)" "$owner" "$dir"
     return 1
   fi
-  while [[ ! -d $parent ]]; do parent="${parent%/*}"; parent="${parent:-/}"; done
+  while [[ ! -d $parent ]]; do
+    [[ $parent == */* ]] || { parent=.; break; }   # a relative name with no folder left: the current one
+    parent="${parent%/*}"; parent="${parent:-/}"
+  done
   if [[ -w $parent && -x $parent ]]; then
     printf '%s does not exist; ctl setup env creates it\n' "$dir"
   else

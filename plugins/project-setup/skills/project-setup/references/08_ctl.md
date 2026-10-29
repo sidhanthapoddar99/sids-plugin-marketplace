@@ -141,7 +141,7 @@ The `scripts/` groups are `common config dev container db admin test gate worktr
 
 ## Deploy transcripts
 
-A deploy is a `ctl up` whose `TAG` is set and is not a local tag: `TAG=auto`, a commit or a version. Every deploy writes its whole output, stdout and stderr, to `LOGS_DIR/deploy/<YYYYmmdd-HHMMSS>-<tag>.log`. The time is UTC, and the tag is the resolved one. No flag turns it on, because the run that needs a record is the one nobody thought to record. A local run (`dev`, `dev-*`, `latest`) writes none, unless it runs with `--background`. `scripts/common/_transcript.sh` holds the code.
+A deploy is a `ctl up` whose `TAG` is set and is not a local tag: `TAG=auto`, a commit or a version. Every deploy writes its whole output, stdout and stderr, to `LOGS_DIR/deploy/<YYYYmmdd-HHMMSS>-<tag>.log`. The time is UTC, and the tag is the resolved one. A run waits for the next second while any transcript already holds the current one, so the names sort in the order the runs started, and the last name is the newest run. No flag turns it on, because the run that needs a record is the one nobody thought to record. A local run (`dev`, `dev-*`, `latest`) writes none, unless it runs with `--background`. `scripts/common/_transcript.sh` holds the code.
 
 - **When it starts.** Once the plan is settled and the prompts are over, so `--dry-run` and `--list` write nothing. It runs to the end: build, activation, readiness, image retention and any error.
 - **How it ends.** An EXIT trap writes the last line, `result: ok` or `result: failed (exit N)`. A signal ends the run with 128 plus its number. A transcript with no result line was interrupted: the machine stopped, or the kernel killed the run.

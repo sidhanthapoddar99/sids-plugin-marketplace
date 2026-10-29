@@ -388,7 +388,31 @@ def test_status_takes_no_other_argument(tmp_path: Path) -> None:
     assert "unknown argument: prod (try ctl up status --help)" in result.stderr
 
 
+def test_a_run_waits_for_a_second_no_transcript_holds_so_status_names_it(tmp_path: Path) -> None:
+    env = deploy_repo(tmp_path)
+    now = time.time()
+    held = [time.strftime("%Y%m%d-%H%M%S", time.gmtime(now + offset)) for offset in (0, 1)]
+    for stamp in held:   # this tag sorts after any commit, so a shared second would sort the new run first
+        write_transcript(tmp_path, f"{stamp}-zzzzzzzz.log", "result: ok")
+    older = git(tmp_path, "rev-parse", "HEAD")
+    write_record(tmp_path, commit(tmp_path, "newer"))
+    result = up(env, TAG=older[:8])   # refused as a rollback, so the run ends within a second
+    assert result.returncode == 1, result.stderr
+    newest = transcripts(tmp_path)[-1]
+    assert NAME.match(newest.name)["tag"] == older[:8]
+    assert newest.name[:15] not in held
+    reported = status(env)
+    assert f"tag         {older[:8]}" in reported.stdout and "state       failed (exit 1)" in reported.stdout
+
+
 # ── ctl check: the storage folders ──
+
+def test_the_storage_check_of_a_missing_relative_name_ends(tmp_path: Path) -> None:
+    paths = UP.parents[1] / "common/_paths.sh"
+    result = subprocess.run(["bash", "-c", 'source "$1"; storage_dir_writable missing', "bash", str(paths)],
+                            cwd=tmp_path, text=True, capture_output=True, timeout=5)
+    assert result.returncode == 1
+    assert result.stdout == "missing does not exist; ctl setup env creates it\n"
 
 def check(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["bash", str(CHECK)], env=env, text=True, capture_output=True, timeout=60)

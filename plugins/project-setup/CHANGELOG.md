@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.22.2
+
+- `ctl up status` names the newest run when two runs start in the same second. A transcript's name starts with the UTC second, and status takes the last name. Two runs in one second with different tags, such as a deploy and a rollback refused right after it, used to sort by tag, so status could name the older run. `transcript_open` now waits for the next second while any transcript holds the current one, whatever its tag. It holds `LOGS_DIR/run/transcript.lock` for the check and the create, because a `--background` run opens its transcript before it holds the run's record. Studio's port found it.
+- `storage_dir_writable` in `_paths.sh` ends for a missing relative name with no slash. Its walk up to the nearest existing folder never ended there. ctl passes only absolute paths, so no command reached it, but the loop no longer depends on that. Studio's port added the same guard.
+- `test_transcript.py` covers both. `08_ctl.md` § Deploy transcripts says the names sort in start order.
+
 ## 0.22.1
 
 - A deploy's terminal output keeps its start when stdout goes to a file. The transcript copy used to write the terminal copy through `tee -a /dev/fd/<n>`, which opens the file a second time with its own write position. With stdout redirected to a file not opened for append, such as `ctl up … > deploy.out`, the result line and the `-a` log stream then landed over the start of that file. A socket cannot be reopened at all. `transcript_copy` in `_transcript.sh` now writes the terminal copy through the handle it inherits, and only the pipe to the colour filter is reopened. The Agents repo found it.

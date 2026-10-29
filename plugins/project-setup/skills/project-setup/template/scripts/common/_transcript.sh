@@ -55,17 +55,28 @@ transcript_precheck() {
   transcript_refuse_live
 }
 
-# transcript_open <tag> — create this run's transcript. A name the same second already holds waits for
-# the next second, so two runs never share a file and the name stays <time>-<tag>.log.
+# transcript_open <tag> — create this run's transcript, <UTC second>-<tag>.log. ctl up status takes the
+# last name as the newest run, so a run waits for the next second while any transcript already holds this
+# one, whatever its tag: two runs in one second used to sort by tag, and status then named the older
+# one. LOGS_DIR/run/transcript.lock makes the check and the create one step, because a --background run
+# opens its transcript before it holds the run's record.
 transcript_open() {
-  local tag="${1:-untagged}" file attempt
+  local tag="${1:-untagged}" dir="$LOGS_DIR/deploy" stamp file lock attempt
+  local -a taken
+  exec {lock}> "$LOGS_DIR/run/transcript.lock" || { err "ctl cannot open $LOGS_DIR/run/transcript.lock"; return 1; }
+  if ! flock -w 30 "$lock"; then exec {lock}>&-; err "another ctl up holds $LOGS_DIR/run/transcript.lock"; return 1; fi
   for attempt in {1..15}; do
-    file="$LOGS_DIR/deploy/$(date -u +%Y%m%d-%H%M%S)-$tag.log"
-    if ( set -o noclobber; : > "$file" ) 2>/dev/null; then TRANSCRIPT_FILE="$file"; return 0; fi
-    [[ -e $file ]] || break
+    stamp=$(date -u +%Y%m%d-%H%M%S)
+    taken=("$dir/$stamp"-*.log)
+    if [[ ! -e ${taken[0]} ]]; then
+      file="$dir/$stamp-$tag.log"
+      if ( set -o noclobber; : > "$file" ) 2>/dev/null; then exec {lock}>&-; TRANSCRIPT_FILE="$file"; return 0; fi
+      break
+    fi
     sleep 0.2
   done
-  err "ctl cannot create a transcript in $LOGS_DIR/deploy"
+  exec {lock}>&-
+  err "ctl cannot create a transcript in $dir"
   return 1
 }
 
