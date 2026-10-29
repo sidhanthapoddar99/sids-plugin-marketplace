@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.20.0
+
+- `TAG` takes four forms, and `ctl` resolves it once per run, in `_lib.sh`, for every compose call: `dev` for local builds, `auto` for the checkout's commit (`git rev-parse --short=8 HEAD`), `none` for images called `latest`, and any other valid Docker tag used as written. `.env.template` keeps `TAG=dev` and lists the four forms beside it. `09_production.md` § The deploy recommends `auto` for production, because a tag typed by hand gets forgotten: the build then reuses the last deploy's name, and the previous images lose theirs, so no rollback image is left.
+- A build with `TAG=auto` from a checkout with uncommitted changes, tracked or untracked and not ignored, is refused, because its images would carry a commit's name without matching it. `ctl up`, `ctl build`, `ctl db migrate` and the test database build through one check; `--no-build` starts the images that exist without it. `auto` outside a git checkout, and a tag Docker would refuse, stop every verb with the fix named. `ctl check` checks `TAG` too.
+- A value set in the shell still wins over `.env`, so `TAG=<old commit> ctl up preset public --no-build` rolls back. A nested `ctl` resolves `auto` again at its own commit. An unset `TAG` is left alone, for a repo whose compose files name no tag.
+- The `ctl up` plan prints the tag, such as `tag  auto → f5744bff`, and its reproduce lines start with `TAG=<commit>` when `ctl` resolved one.
+- A slot's `.env` gets `TAG=dev-slot-<n>` whatever the main tree's `TAG` is, so a slot never takes a production name.
+- `test_image_tag.py` covers each form and each refusal; `worktree.test.ts` covers a slot made from an `auto` or a pinned main tree.
+
 ## 0.19.0
 
 - The main-tree guard is on by default. `ctl dev`, `test`, `gate` and `build` refuse in the main checkout and point at `ctl worktree create`, because the main tree's build folders fall behind while work happens in slots: on Studio, one gate there took 836 s, where a warm slot's took 340 s, and Cargo recompiled third-party crates. `.env.template` ships `WORKTREE_ONLY=1`, and an empty value or a missing key means on too. `0` turns it off.

@@ -46,7 +46,7 @@ Rules
   compose   no ports: in any config (docker/compose.<name>.yaml) — only a modifier publishes ·
             no ../ in any docker/compose.*.yaml ·
             every \${NAME} inside the root .env file names a set key, no cycle (the values ctl hands
-            compose and the apps) ·
+            compose and the apps) · TAG is dev, auto, none, a commit or a version ·
             docker compose config validates every config alone, and every modifier fits at least one
             config (the pair validates) — the fit list is printed, because that is what ctl up offers
             (a modifier whose required keys are blank, such as +public before the public origin is
@@ -300,6 +300,9 @@ if (( have_env )); then
   step "Rust settings (the RUST section holds values Cargo accepts)"
   if rust_env_apply; then pass "CTL_RUST_DEBUG is ${CTL_RUST_DEBUG:-empty, so Cargo.toml decides}"
   else fail "ctl dev, ctl test and ctl gate would stop on CTL_RUST_DEBUG (named above)"; fi
+  step "image tag (TAG is dev, auto, none, a commit or a version)"
+  if image_tag_resolve; then pass "TAG gives the image tag $(image_tag_label)"
+  else fail "every ctl verb would stop on TAG (named above)"; fi
 fi
 
 # check_storage_paths — every storage path hangs off BASE_DIR, so one setting moves them all.

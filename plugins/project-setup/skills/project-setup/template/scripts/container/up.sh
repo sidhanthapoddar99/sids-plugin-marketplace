@@ -224,7 +224,8 @@ render_plan() {
   hr
   printf '%sPlan%s   config=%s   modifiers=[%s]   services=[%s]\n' "$C_B" "$C_RESET" "$config" \
     "$(IFS=,; echo "${modifiers[*]:-}")" "$( (( ${#services[@]} )) && { IFS=,; echo "${services[*]}"; } || echo all)"
-  printf '%scompose%s %s\n\n' "$C_DIM" "$C_RESET" "${files[*]}"
+  printf '%scompose%s %s\n' "$C_DIM" "$C_RESET" "${files[*]}"
+  printf '%stag%s     %s\n\n' "$C_DIM" "$C_RESET" "$(image_tag_label)"
   local json cfg_err
   cfg_err=$("${compose_base[@]}" config -q 2>&1 >/dev/null) || {
     err "this combination is invalid — docker compose rejected it:"
@@ -255,8 +256,10 @@ render_plan() {
   printf '%sreproduce%s  (no prompts)\n' "$C_B" "$C_RESET"
   printf '  %sctl up %s --nqa%s\n'      "$C_DIM" "$repro" "$C_RESET"
   printf '  %sctl up %s --nqa -y%s\n'   "$C_DIM" "$repro" "$C_RESET"
-  (( no_build )) || printf '  %sbuild:%s   %s build --with-dependencies %s\n' "$C_DIM" "$C_RESET" "${compose_base[*]}" "${services[*]}"
-  printf '  %sdocker:%s %s\n'    "$C_DIM" "$C_RESET" "${docker_cmd[*]}"
+  # compose reads TAG from .env as written; a tag ctl resolved goes in front, so each line reproduces this run
+  local tag_env=''; [[ ${CTL_TAG_SETTING-} == "${TAG-}" ]] || tag_env="TAG=$TAG "
+  (( no_build )) || printf '  %sbuild:%s   %s%s build --with-dependencies %s\n' "$C_DIM" "$C_RESET" "$tag_env" "${compose_base[*]}" "${services[*]}"
+  printf '  %sdocker:%s %s%s\n'    "$C_DIM" "$C_RESET" "$tag_env" "${docker_cmd[*]}"
   hr
 }
 # service_selected <svc> — 0 when the subset is empty (= all) or names it

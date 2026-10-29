@@ -47,7 +47,7 @@ printf '%s\n' "$services" | grep -qx postgres || die 'PostgreSQL is not running 
 pg() {
   local argv=() tty=()
   # Keep build output separate from Flyway machine-readable results.
-  dc build "$FLYWAY_SERVICE" >&2
+  dc_build "$FLYWAY_SERVICE" >&2
   [[ -t 0 && -t 1 ]] || tty=(-T)
   mapfile -t argv < <(compose_argv -f "$BASE" run --rm --no-deps "${tty[@]}" "$FLYWAY_SERVICE" "$@")
   "${argv[@]}"

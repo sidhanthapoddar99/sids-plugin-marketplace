@@ -75,7 +75,7 @@ test_database_start() {
     sleep 0.2
   done
   step "migrating $TEST_DATABASE_TEMPLATE once ($migrate)"
-  dc build migrate >&2 || { test_database_stop; die "the migration image did not build"; }
+  dc_build migrate >&2 || { test_database_stop; die "the migration image did not build"; }
   # Flyway joins the server's own network, so it reaches the server whatever runtime runs Docker.
   docker run --rm --network "container:$TEST_DATABASE_ID" \
     -e FLYWAY_URL="jdbc:postgresql://127.0.0.1:5432/$TEST_DATABASE_TEMPLATE" \

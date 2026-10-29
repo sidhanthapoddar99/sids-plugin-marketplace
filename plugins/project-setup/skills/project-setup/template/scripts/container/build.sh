@@ -26,6 +26,6 @@ if [[ "${1:-}" == cli ]]; then
   exit 0
 fi
 require_env; require_docker
-step "docker compose build ${*:-(all)}"
-dc build "$@"
+step "docker compose build ${*:-(all)}  (tag $(image_tag_label))"
+dc_build "$@"
 ok "images built"

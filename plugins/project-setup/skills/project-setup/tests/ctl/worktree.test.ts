@@ -46,6 +46,16 @@ test("a slot's first .env is the main tree's with ports + 100 × n and its own s
   expect(line(readFileSync(W('slot-2/.env'), 'utf8'), 'API_PORT')).toBe('API_PORT=8200');
 });
 
+test("a slot's tag is dev-slot-<n> whatever the main tree's TAG is, so it never takes a production name", () => {
+  const block = mainEnv();
+  f.put('.env', block.replace('\nTAG=dev\n', '\nTAG=auto\n'));
+  ok(['create', 'foo']);
+  expect(line(readFileSync(W('slot-1/.env'), 'utf8'), 'TAG')).toBe('TAG=dev-slot-1');
+  f.put('.env', block.replace('\nTAG=dev\n', '\nTAG=1.4.2\n'));
+  ok(['create', 'bar']);
+  expect(line(readFileSync(W('slot-2/.env'), 'utf8'), 'TAG')).toBe('TAG=dev-slot-2');
+});
+
 test('a BASE_DIR storage block is copied as it is and resolves inside the slot; an absolute one is refused', () => {
   // The template ships the block: BASE_DIR=., with DATA_DIR, LOGS_DIR and BACKUP_DIR derived from it.
   const block = mainEnv();

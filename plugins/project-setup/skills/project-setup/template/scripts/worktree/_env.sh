@@ -6,9 +6,11 @@
 #   every KEY_PORT that holds a number   + WT_PORT_STEP × the slot number (+ 100 for slot-1)
 #   COMPOSE_PROJECT_NAME                 <name>-slot-<n>; an empty one starts from the main tree's
 #                                        folder name, as compose names the main tree's stack
-#   TAG                                  <tag>-slot-<n>, so each slot builds and runs its own
-#                                        images: with one shared tag, one slot's migration image
-#                                        could migrate another slot's database
+#   TAG                                  dev-slot-<n>, whatever the main tree's TAG is, so each slot
+#                                        builds and runs its own images: with one shared tag, one
+#                                        slot's migration image could migrate another slot's
+#                                        database. A slot is for development, so it never takes a
+#                                        main tree's auto, none or pinned production name
 # BASE_DIR and the storage paths are copied as they are. They must be relative, so each slot keeps
 # its own data/ and logs/. Later uses of a slot keep its .env; ctl worktree never rewrites one.
 #
@@ -94,7 +96,7 @@ wt_env_render() {
         COMPOSE_PROJECT_NAME)
           line="COMPOSE_PROJECT_NAME=${WT_VALUE:-$base}-slot-$n"; found=1 ;;
         TAG)
-          [[ -z $WT_VALUE ]] || line="TAG=$WT_VALUE-slot-$n" ;;
+          [[ -z $WT_VALUE ]] || line="TAG=dev-slot-$n" ;;
         BASE_DIR|DATA_DIR|LOGS_DIR|BACKUP_DIR)
           problem=$(_wt_storage_problem "$WT_KEY" "$WT_VALUE")
           [[ -z $problem ]] || problems+=("$problem, so slot-$n could share the main tree's data; make it relative, like ./data") ;;

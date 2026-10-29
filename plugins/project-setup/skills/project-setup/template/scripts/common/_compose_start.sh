@@ -76,6 +76,7 @@ compose_start() (
   local required oneshot health replicas start_long_running=0
   local -a start_services=() start_pending=()
   local -A start_warned=()
+  (( ! start_build )) || image_tag_buildable || return 1
   [[ $start_attach =~ ^[01]$ && $start_timeout =~ ^[1-9][0-9]*$ ]] || {
     err "compose_start needs attach=0|1 and a positive readiness timeout"; return 1;
   }

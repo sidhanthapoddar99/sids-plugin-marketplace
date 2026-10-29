@@ -21,7 +21,7 @@ Template: `template/scripts/worktree/` (`worktree.sh` and its helpers), the guar
 ├── .gitignore                     # holds /.worktrees/, so git never sees a slot
 └── .worktrees/
     ├── slot-1/                    # a git worktree, taken: on branch feat/login
-    │   ├── .env                   # written on its first use: ports + 100, COMPOSE_PROJECT_NAME and TAG end in -slot-1
+    │   ├── .env                   # written on its first use: ports + 100, COMPOSE_PROJECT_NAME ends in -slot-1, TAG=dev-slot-1
     │   ├── apps/<engine>/target/  # its build folders stay across branches: target/, node_modules/, .venv/
     │   ├── data/                  # its own engine data, from the relative BASE_DIR or DATA_DIR
     │   └── logs/                  # its own process records, logs and backups
@@ -103,7 +103,7 @@ Each slot keeps its own build folders. Three ways to share builds between slots 
 A slot's first use writes its `.env` from the main tree's `.env`, mode 600, with three changes:
 - Every `*_PORT` key that holds a number gets + 100 × the slot number. A step of 100 keeps each port's last two digits, so a port stays recognisable in every slot. A step of 1 collides at once with a neighbouring service's port.
 - `COMPOSE_PROJECT_NAME` gets `-slot-<n>`, so each slot runs its own stack. An empty name starts from the main tree's folder name, as compose would read it.
-- `TAG` gets `-slot-<n>`, so each slot builds and runs its own images. With one shared tag, two slots that start `ctl dev` together race on one migration image, and one slot's migrations can run against the other slot's database.
+- `TAG` becomes `dev-slot-<n>`, whatever the main tree's `TAG` is, so each slot builds and runs its own images. With one shared tag, two slots that start `ctl dev` together race on one migration image, and one slot's migrations can run against the other slot's database. A slot is for development, so it never takes a main tree's `auto`, `none` or pinned production name.
 
 `BASE_DIR` and the storage paths are copied as they are. Relative paths resolve inside the slot, so each slot keeps its own `data/` and `logs/`. The storage contract itself is in `02_env.md`. Later uses of a slot keep its `.env`, and `ctl worktree` never rewrites one, so a hand edit stays.
 

@@ -208,6 +208,53 @@ env_file_args() { local f; for f in "${ENV_FILES[@]}"; do [[ -f "$CTL_ROOT/$f" ]
 compose_argv()  { printf '%s\n' docker compose --project-directory "$CTL_ROOT"; env_file_args; (( $# == 0 )) || printf '%s\n' "$@"; }
 compose_cmd()   { resolve_storage_dirs || return; local -a argv; mapfile -t argv < <(compose_argv "$@"); "${argv[@]}"; }
 dc()     { compose_cmd -f "$BASE" "$@"; }
+dc_build() { image_tag_buildable || return; dc build "$@"; }   # every build of the base file goes through here
+
+# ── image tag ──
+# TAG names every image ctl builds and starts (image: ${REGISTRY}/<app>:${TAG}). require_env runs
+# image_tag_resolve, which turns the setting into that name and exports it. Compose takes the
+# shell's value over the --env-file's, so every compose call of the run uses the same tag.
+#   dev     local builds: one name, which each build replaces
+#   auto    the checkout's commit (git rev-parse --short=8 HEAD), so each deploy keeps its own images
+#   none    no version: the images are called latest, and each build replaces them
+#   other   used as written: a commit or a version, for a rollback or a prebuilt image
+# CTL_TAG_SETTING keeps the value as written, so a nested ctl resolves auto again at its own commit,
+# and the plan can print "auto → <commit>". An unset or empty TAG is left alone: a repo whose compose
+# files name no tag needs none. An invalid tag, or auto outside a git checkout, is an error, never a guess.
+image_tag_resolve() {
+  [[ -v CTL_TAG_SETTING ]] || export CTL_TAG_SETTING="${TAG-}"
+  local setting="$CTL_TAG_SETTING" commit
+  case "$setting" in
+    '') return 0 ;;
+    auto)
+      commit=$(git -C "$CTL_ROOT" rev-parse --short=8 HEAD 2>/dev/null) || {
+        err "TAG=auto names the images after this checkout's commit, but $CTL_ROOT has no git commit; commit, or set TAG=dev or a version"
+        return 1; }
+      export TAG="$commit" ;;
+    none) export TAG=latest ;;
+    *)
+      [[ $setting =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]] || {
+        err "TAG=$setting is not a Docker image tag; use dev, auto, none, a commit or a version"
+        return 1; }
+      export TAG="$setting" ;;
+  esac
+}
+# image_tag_buildable — 0 when a build may use the resolved tag. With TAG=auto the images carry the
+# commit's name, so a build from a checkout with uncommitted changes (tracked, or untracked and not
+# ignored) is refused: the images would not match the commit they are named after.
+image_tag_buildable() {
+  [[ ${CTL_TAG_SETTING-} == auto ]] || return 0
+  local changes
+  changes=$(git -C "$CTL_ROOT" status --porcelain 2>/dev/null) || { err "TAG=auto: git cannot read the state of $CTL_ROOT"; return 1; }
+  [[ -z $changes ]] && return 0
+  err "TAG=auto names the images after commit $TAG, but the checkout has uncommitted changes, so the images would not match it; commit them, or set TAG=dev for a local build"
+  return 1
+}
+# image_tag_label — the tag as the plan prints it: "dev", or "auto → f5744bff" when ctl resolved it.
+image_tag_label() {
+  if [[ -n ${CTL_TAG_SETTING-} && ${CTL_TAG_SETTING} != "${TAG-}" ]]; then printf '%s → %s' "$CTL_TAG_SETTING" "${TAG-}"
+  else printf '%s' "${TAG:-not set}"; fi
+}
 # auto-discovery — no hard-coded list.
 #   compose.<name>.yaml   = config <name>   (a name holds no dot, so compose.m.* is never a config)
 #   compose.m.<name>.yaml = modifier <name>
@@ -319,6 +366,7 @@ require_env() {
   done
   expand_env_refs || exit 1
   rust_env_apply || exit 1
+  image_tag_resolve || exit 1
 }
 # rust_env_apply — hand the RUST section of the root .env to Cargo. require_env and the test
 # settings call it, because ctl dev, ctl test and ctl gate start the Cargo commands ctl runs.
@@ -337,7 +385,7 @@ rust_env_apply() {
   [[ -v CARGO_PROFILE_DEV_DEBUG ]] || export CARGO_PROFILE_DEV_DEBUG="$level"
 }
 load_env_files() { local f; for f in "${ENV_FILES[@]}"; do load_env_file "$f"; done; }   # skip-if-set; a missing file is skipped
-load_env_soft()  { load_env_files; expand_env_refs || true; }                              # diagnostics: never die
+load_env_soft()  { load_env_files; expand_env_refs || true; image_tag_resolve || true; }    # diagnostics: never die
 # docker_state — one word on stdout: ok · missing · stopped · no-compose. Never dies; `ctl status`
 # reads it too. The three failures are different repairs, so they are never one message.
 docker_state() {
