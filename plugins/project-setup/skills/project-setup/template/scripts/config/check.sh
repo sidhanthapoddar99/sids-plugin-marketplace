@@ -46,8 +46,9 @@ Rules
   compose   no ports: in any config (docker/compose.<name>.yaml) — only a modifier publishes ·
             no ../ in any docker/compose.*.yaml ·
             every \${NAME} inside the root .env file names a set key, no cycle (the values ctl hands
-            compose and the apps) · TAG is dev, auto, none, a commit or a version ·
-            docker compose config validates every config alone, and every modifier fits at least one
+            compose and the apps) · TAG is dev, auto, none, a commit or a version · ROLLBACK is off or on ·
+            docker compose config validates every config alone, every service with build: has
+            pull_policy: never, and every modifier fits at least one
             config (the pair validates) — the fit list is printed, because that is what ctl up offers
             (a modifier whose required keys are blank, such as +public before the public origin is
             uncommented, is skipped and named, the way ctl up refuses it)
@@ -303,6 +304,9 @@ if (( have_env )); then
   step "image tag (TAG is dev, auto, none, a commit or a version)"
   if image_tag_resolve; then pass "TAG gives the image tag $(image_tag_label)"
   else fail "every ctl verb would stop on TAG (named above)"; fi
+  step "rollback (ROLLBACK is off or on)"
+  if rollback=$(rollback_setting); then pass "ROLLBACK is $rollback"
+  else fail "ctl up and ctl db migrate up would stop on ROLLBACK (named above)"; fi
 fi
 
 # check_storage_paths — every storage path hangs off BASE_DIR, so one setting moves them all.
@@ -359,6 +363,17 @@ if [[ "$(docker_state)" == ok ]] && (( have_env )); then
     if out=$(compose_cmd -f "$(config_file "$c")" config -q 2>&1); then ok "config $c"
     else fail "config $c — $out"; fi
   done
+  # ctl builds every service with build: from source, so each says pull_policy: never: a missing image
+  # is then an error, never a download from REGISTRY
+  if require_tools jq; then
+    for c in "${cfgs[@]}"; do
+      model=$(compose_cmd -f "$(config_file "$c")" config --format json 2>/dev/null) || continue   # named above
+      pulled=$(jq -r '.services | to_entries[] | select(.value.build != null and .value.pull_policy != "never") | .key' <<< "$model" | join_sp) \
+        || { fail "config $c: jq cannot read the compose model, so the pull_policy rule did not run"; continue; }
+      if [[ -n $pulled ]]; then fail "config $c: $pulled built from source without pull_policy: never — compose would pull a missing image from REGISTRY"
+      else ok "config $c: every built service has pull_policy: never"; fi
+    done
+  else fail "the pull_policy rule needs jq (named above)"; fi
   # every modifier must fit at least one config; the fit list is what ctl up offers for each config.
   # A modifier whose mapped keys are blank is skipped, the way ctl up refuses it: +public needs the
   # optional public-origin keys uncommented, and a blank ${VAR} would validate as an empty string.

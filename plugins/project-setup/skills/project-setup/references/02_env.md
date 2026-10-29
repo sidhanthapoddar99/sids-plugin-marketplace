@@ -88,7 +88,7 @@ The env step writes `.env`, its credentials and the storage folders it names. `c
 2. It generates the blank declared credentials and requires the active ones, as § Secret classes describes.
 3. It resolves the storage paths, as § Host storage paths describes. Then it creates `DATA_DIR/<service>` for each data-core service that `DATA_SVCS` in `template/scripts/common/_lib.sh` lists, `LOGS_DIR/dev`, `LOGS_DIR/run`, `LOGS_DIR/test_build` and `BACKUP_DIR`.
 
-The step installs nothing, so it runs before the versions are resolved, and on a host that only runs images. A rerun adds only what is missing: keys the template gained, blank declared credentials and storage folders. It changes or removes no value without a yes, so a rerun is safe on any checkout. The storage folders belong to this step because `.env` names them and creating them installs nothing. Docker would otherwise create a missing bind-mount source owned by root.
+The step installs nothing, so it runs before the versions are resolved, and on a server, which builds its images in Docker and needs no host toolchain. A rerun adds only what is missing: keys the template gained, blank declared credentials and storage folders. It changes or removes no value without a yes, so a rerun is safe on any checkout. The storage folders belong to this step because `.env` names them and creating them installs nothing. Docker would otherwise create a missing bind-mount source owned by root.
 
 ## Merging `.env` with its template
 

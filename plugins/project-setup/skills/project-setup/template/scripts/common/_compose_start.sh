@@ -67,13 +67,15 @@ compose_start_interrupt() {
 
 # compose_start [--no-build] <attach 0|1> <timeout-seconds> [service…] — build the selected services
 # and their dependencies, activate them without building, then wait for the readiness contract.
-# --no-build skips the build and starts the images that exist.
+# --no-build skips the build and starts the images that exist. A deploy (TAG=auto or a pinned tag)
+# passes the rollback guard first, writes its record just before activation, and prunes old image
+# tags once ready (_images.sh § deploys).
 compose_start() (
   local start_build=1
   if [[ ${1:-} == --no-build ]]; then start_build=0; shift; fi
   local start_attach="$1" start_timeout="$2"; shift 2
   local start_child='' start_activated=0 start_deadline model selected start_contract build_help='' status service
-  local required oneshot health replicas start_long_running=0
+  local required oneshot health replicas start_long_running=0 deploy_target
   local -a start_services=() start_pending=()
   local -A start_warned=()
   (( ! start_build )) || image_tag_buildable || return 1
@@ -82,6 +84,7 @@ compose_start() (
   }
   require_tools jq timeout || return $?
   resolve_storage_dirs || return
+  deploy_target=$(deploy_guard) || return 1
   trap 'compose_start_interrupt 130' INT
   trap 'compose_start_interrupt 143' TERM
   model=$("${compose_base[@]}" config --format json) || return $?
@@ -134,6 +137,7 @@ compose_start() (
     step "skip image build (--no-build): start the images that exist"
   fi
 
+  [[ -z $deploy_target ]] || deploy_record "$deploy_target" || return 1
   start_deadline=$((SECONDS + start_timeout))
   step "${compose_base[*]} up -d --no-build $*"
   start_activated=1
@@ -154,6 +158,7 @@ compose_start() (
     sleep 1
   done
   ok "startup ready: ${start_services[*]}"
+  [[ -z $deploy_target ]] || image_retain "$model"
   (( start_attach )) || return 0
 
   say "${C_DIM}foreground — streaming logs; Ctrl-C stops the selected stack${C_RESET}"

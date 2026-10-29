@@ -1,6 +1,7 @@
 # Config `base`: the complete production stack, including engines and migration jobs.
 # Ports are added only by modifiers. The dev preset selects just the data-core services.
 # Each service declares its environment explicitly; source paths resolve from the project root.
+# A service with build: says pull_policy: never: ctl builds it from source, so a missing image is an error, never a download from REGISTRY.
 x-defaults: &defaults
   restart: unless-stopped
   stop_grace_period: 35s                        # gunicorn --graceful-timeout 30 + margin
@@ -24,6 +25,7 @@ services:
   api:
     <<: *defaults
     image: ${REGISTRY}/api:${TAG}
+    pull_policy: never
     build: { context: ./apps/example-api-python }
     environment:
       POSTGRES_HOST: postgres
@@ -58,6 +60,7 @@ services:
   engine:
     <<: *defaults
     image: ${REGISTRY}/engine:${TAG}
+    pull_policy: never
     build: { context: ./apps/example-engine-rust }
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -89,6 +92,7 @@ services:
     <<: *defaults
     stop_grace_period: 10s                      # nginx drains fast; no long requests terminate here
     image: ${REGISTRY}/web:${TAG}
+    pull_policy: never
     build:
       context: ./apps                           # needs packages/ too
       dockerfile: example-multi-web-app/Dockerfile
@@ -133,6 +137,7 @@ services:
   dashboard:
     <<: *defaults
     image: ${REGISTRY}/dashboard:${TAG}
+    pull_policy: never
     build:
       context: ./apps/example-dashboard-nextjs
       args:                                     # the prefix, from .env
@@ -214,6 +219,7 @@ services:
   migrate:
     <<: *oneshot
     image: ${REGISTRY}/migrate:${TAG}
+    pull_policy: never
     build: { context: ./apps/database/postgres }
     environment:
       FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}

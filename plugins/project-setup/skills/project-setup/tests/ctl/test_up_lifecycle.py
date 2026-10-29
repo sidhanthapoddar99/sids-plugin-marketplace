@@ -41,6 +41,22 @@ if args[0] == "inspect":
     sys.exit(0)
 if args[0] == "info":
     sys.exit(0)
+images = fixture.get("images", {})   # repository -> [{"tag": ..., "created": ...}]
+if args[0] == "image":
+    if args[1] == "ls":
+        print("\n".join(f"{args[-1]}:{image['tag']}" for image in images.get(args[-1], [])))
+    elif args[1] == "inspect":
+        found = [{"Created": image["created"]} for ref in args[2:] for image in images[ref.rsplit(":", 1)[0]]
+                 if image["tag"] == ref.rsplit(":", 1)[1]]
+        print(json.dumps(found))
+    elif args[1] == "rm":
+        sys.exit(fixture.get("rm_exit", 0))
+    sys.exit(0)
+if args[0] == "ps":   # docker ps: the containers that use an image
+    ancestor = next(part.removeprefix("ancestor=") for part in args if part.startswith("ancestor="))
+    if ancestor in fixture.get("in_use", []):
+        print("f1x7ure0c0n7")
+    sys.exit(0)
 commands = {"config", "version", "build", "up", "ps", "stop", "logs"}
 command = next((part for part in args if part in commands), "")
 if command == "config":
@@ -56,6 +72,8 @@ elif command == "build":
 elif command == "up":
     time.sleep(fixture.get("up_delay", 0))
     sys.exit(fixture.get("up_exit", 0))
+elif command == "ps" and "--services" in args:
+    print("\n".join(fixture.get("running", services)))
 elif command == "ps":
     service = args[-1]
     if service not in fixture.get("missing", []):

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.21.0
+
+- Rollbacks are off by default, and never cross a migration. `.env.template` gains `ROLLBACK=off` in the Images group. `off`, also what an unset or empty value means, refuses every rollback. `on` allows one only when no file under `MIGRATION_PATHS` differs between the two commits. `MIGRATION_PATHS` is an `[ADAPT]` knob in `_lib.sh`, `apps/database` by default. Any other value is an error, and `ctl check` names it.
+- A deploy is a `ctl up` with `TAG=auto` or a pinned tag. Each deployment keeps a record, `DATA_DIR/deployed-commit`, with the full commit of the last deploy that reached activation. `ctl` writes it just before activation, not after readiness, because the migrate one-shot may change the data even when a later service fails. A deploy whose commit is not ahead of the record is a rollback, and the guard runs before anything starts, with or without `--no-build`. A pinned tag that names no commit is refused, and so is a record whose commit the checkout lacks; the message names the record file. `ctl db migrate up` passes the same guard and writes the same record. `dev`, `dev-<name>` (a slot's `dev-slot-<n>`), `none` and an unset `TAG` are local builds: no guard, no record.
+- After a deploy is ready, `ctl` keeps the 2 newest tags of each image it builds, by creation time, and removes the rest with `docker image rm`. `IMAGE_KEEP` is the `[ADAPT]` knob. It never removes an image a container uses, never lists a repository it does not build, and turns a docker error into a warning, never a failed deploy. The output names what it removed.
+- Images are built from source on the server and never pulled. Every built service in `compose.base.yaml` says `pull_policy: never`, so a missing image is an error, never a download from `REGISTRY`; third-party images keep compose's default. `ctl check` fails a built service without it.
+- `09_production.md` § The deploy says the server builds every image from a full clone, with no registry. It adds recovery forward and the retention step, and its checklist drops the rollback line. The `.env.template` notes for `REGISTRY` and `TAG` say the same, and the `REGISTRY` placeholder is `<product>` instead of `ghcr.io/<org>`, because no registry is involved. `08_ctl.md` and `02_env.md` no longer describe a host that runs prebuilt images, and § Multi-stack no longer pushes images between repos.
+- The image tag functions and the new deploy steps live in a new shared helper, `scripts/common/_images.sh`, which `_lib.sh` sources, so `_lib.sh` stays under the 500 lines `ctl check` warns at. The two new knobs stay in `_lib.sh` with the others.
+- `test_deploy.py` covers each rule; the shim in `test_up_lifecycle.py` answers `docker image` and `docker ps` calls.
+
 ## 0.20.1
 
 - `scripts/db/migrate.sh` stops when its migrate image build is refused, such as a `TAG=auto` build from a checkout with uncommitted changes. `ctl db migrate check` runs that build inside `$(…)`, where bash does not apply `set -e`, so the refusal used to fall through to `docker compose run`, which builds a missing image by itself.

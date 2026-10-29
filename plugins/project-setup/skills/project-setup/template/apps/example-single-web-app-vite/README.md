@@ -19,6 +19,7 @@ No `.env` here. It owns `/`, so no prefix key; ports and proxy targets come from
 ```yaml
   web:
     image: ${REGISTRY}/web:${TAG}
+    pull_policy: never
     build:
       context: ./apps
       dockerfile: example-single-web-app-vite/Dockerfile

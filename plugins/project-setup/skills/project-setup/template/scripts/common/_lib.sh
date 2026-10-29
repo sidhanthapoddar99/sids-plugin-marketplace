@@ -29,6 +29,8 @@
 #   • DATA_SVCS           — the data core; empty = no data core (dev/up/status/setup skip it)
 #   • app_names/app_port/app_cmd — the host-run apps `ctl dev` knows, in dev/dev.sh
 #   • MODIFIER_REQUIRES   — env keys a modifier needs non-blank before `ctl up` accepts it
+#   • MIGRATION_PATHS     — the schema files a rollback must not cross (ROLLBACK=on)
+#   • IMAGE_KEEP          — how many tags of each built image a deploy keeps
 #   • PORT_PRESETS        — ports offered by `ctl build start`, scanned by `ctl ps`
 #
 # Worker preamble (copy verbatim at the top of every scripts/<group>/<name>.sh):
@@ -61,6 +63,13 @@ read -r -a DATA_SVCS <<< "$DATA_SVCS_STR" || true
 # through `ctl db migrate up` on every launch. Empty = no schema step, and ctl dev skips it.
 export SCHEMA_SVCS_STR="${SCHEMA_SVCS_STR-${SCHEMA_SVCS-migrate neo4j-init}}"
 read -r -a SCHEMA_SVCS <<< "$SCHEMA_SVCS_STR" || true
+
+# [ADAPT] the files the schema one-shots apply. Under ROLLBACK=on, a deploy refuses a rollback when any
+# file under these paths differs between the two commits. Empty: the project has no schema files.
+MIGRATION_PATHS=(apps/database)
+
+# [ADAPT] how many tags of each image ctl builds survive a deploy: the newest ones by creation time.
+IMAGE_KEEP=2
 
 # [ADAPT] env keys a modifier maps with ${VAR} (from .env). `ctl up` refuses
 # the modifier when any is blank, and `ctl check` skips validating it and says so —
@@ -210,51 +219,6 @@ compose_cmd()   { resolve_storage_dirs || return; local -a argv; mapfile -t argv
 dc()     { compose_cmd -f "$BASE" "$@"; }
 dc_build() { image_tag_buildable || return; dc build "$@"; }   # every build of the base file goes through here
 
-# ── image tag ──
-# TAG names every image ctl builds and starts (image: ${REGISTRY}/<app>:${TAG}). require_env runs
-# image_tag_resolve, which turns the setting into that name and exports it. Compose takes the
-# shell's value over the --env-file's, so every compose call of the run uses the same tag.
-#   dev     local builds: one name, which each build replaces
-#   auto    the checkout's commit (git rev-parse --short=8 HEAD), so each deploy keeps its own images
-#   none    no version: the images are called latest, and each build replaces them
-#   other   used as written: a commit or a version, for a rollback or a prebuilt image
-# CTL_TAG_SETTING keeps the value as written, so a nested ctl resolves auto again at its own commit,
-# and the plan can print "auto → <commit>". An unset or empty TAG is left alone: a repo whose compose
-# files name no tag needs none. An invalid tag, or auto outside a git checkout, is an error, never a guess.
-image_tag_resolve() {
-  [[ -v CTL_TAG_SETTING ]] || export CTL_TAG_SETTING="${TAG-}"
-  local setting="$CTL_TAG_SETTING" commit
-  case "$setting" in
-    '') return 0 ;;
-    auto)
-      commit=$(git -C "$CTL_ROOT" rev-parse --short=8 HEAD 2>/dev/null) || {
-        err "TAG=auto names the images after this checkout's commit, but $CTL_ROOT has no git commit; commit, or set TAG=dev or a version"
-        return 1; }
-      export TAG="$commit" ;;
-    none) export TAG=latest ;;
-    *)
-      [[ $setting =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]] || {
-        err "TAG=$setting is not a Docker image tag; use dev, auto, none, a commit or a version"
-        return 1; }
-      export TAG="$setting" ;;
-  esac
-}
-# image_tag_buildable — 0 when a build may use the resolved tag. With TAG=auto the images carry the
-# commit's name, so a build from a checkout with uncommitted changes (tracked, or untracked and not
-# ignored) is refused: the images would not match the commit they are named after.
-image_tag_buildable() {
-  [[ ${CTL_TAG_SETTING-} == auto ]] || return 0
-  local changes
-  changes=$(git -C "$CTL_ROOT" status --porcelain 2>/dev/null) || { err "TAG=auto: git cannot read the state of $CTL_ROOT"; return 1; }
-  [[ -z $changes ]] && return 0
-  err "TAG=auto names the images after commit $TAG, but the checkout has uncommitted changes, so the images would not match it; commit them, or set TAG=dev for a local build"
-  return 1
-}
-# image_tag_label — the tag as the plan prints it: "dev", or "auto → f5744bff" when ctl resolved it.
-image_tag_label() {
-  if [[ -n ${CTL_TAG_SETTING-} && ${CTL_TAG_SETTING} != "${TAG-}" ]]; then printf '%s → %s' "$CTL_TAG_SETTING" "${TAG-}"
-  else printf '%s' "${TAG:-not set}"; fi
-}
 # auto-discovery — no hard-coded list.
 #   compose.<name>.yaml   = config <name>   (a name holds no dot, so compose.m.* is never a config)
 #   compose.m.<name>.yaml = modifier <name>
@@ -494,6 +458,7 @@ split_csv() { __SPLIT=(); local raw tok s; IFS=',' read -r -a raw <<< "$1"
 
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_tools.sh"
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_paths.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_images.sh"
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_process.sh"
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../config/_discovery.sh"
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/_controller-lock.sh"
