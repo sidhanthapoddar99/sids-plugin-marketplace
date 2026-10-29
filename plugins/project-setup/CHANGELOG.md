@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.20.1
+
+- `scripts/db/migrate.sh` stops when its migrate image build is refused, such as a `TAG=auto` build from a checkout with uncommitted changes. `ctl db migrate check` runs that build inside `$(…)`, where bash does not apply `set -e`, so the refusal used to fall through to `docker compose run`, which builds a missing image by itself.
+
 ## 0.20.0
 
 - `TAG` takes four forms, and `ctl` resolves it once per run, in `_lib.sh`, for every compose call: `dev` for local builds, `auto` for the checkout's commit (`git rev-parse --short=8 HEAD`), `none` for images called `latest`, and any other valid Docker tag used as written. `.env.template` keeps `TAG=dev` and lists the four forms beside it. `09_production.md` § The deploy recommends `auto` for production, because a tag typed by hand gets forgotten: the build then reuses the last deploy's name, and the previous images lose theirs, so no rollback image is left.

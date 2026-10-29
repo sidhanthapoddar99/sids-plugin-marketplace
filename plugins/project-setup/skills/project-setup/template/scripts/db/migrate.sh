@@ -46,8 +46,9 @@ services=$(dc ps --status running --services) || die 'cannot inspect this projec
 printf '%s\n' "$services" | grep -qx postgres || die 'PostgreSQL is not running for this project; start the data stack first'
 pg() {
   local argv=() tty=()
-  # Keep build output separate from Flyway machine-readable results.
-  dc_build "$FLYWAY_SERVICE" >&2
+  # Keep build output separate from Flyway machine-readable results. The explicit return stops a
+  # refused build inside $(pg …) too, where bash does not apply set -e.
+  dc_build "$FLYWAY_SERVICE" >&2 || return
   [[ -t 0 && -t 1 ]] || tty=(-T)
   mapfile -t argv < <(compose_argv -f "$BASE" run --rm --no-deps "${tty[@]}" "$FLYWAY_SERVICE" "$@")
   "${argv[@]}"
