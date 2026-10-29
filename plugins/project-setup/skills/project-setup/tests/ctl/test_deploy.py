@@ -195,6 +195,9 @@ def test_an_unknown_rollback_setting_is_an_error(tmp_path: Path) -> None:
 def retention_repo(root: Path, **options: object) -> dict[str, str]:
     images = {
         "example/api": [
+            {"tag": "dev", "created": "2026-10-30T10:00:00Z"},           # local tags: never counted, never removed
+            {"tag": "dev-slot-2", "created": "2026-10-30T09:00:00Z"},
+            {"tag": "latest", "created": "2026-10-25T10:00:00Z"},
             {"tag": "current", "created": "2026-10-29T10:00:00.12Z"},
             {"tag": "t4", "created": "2026-10-29T10:00:00.1Z"},    # newer than t3 by its fraction
             {"tag": "t3", "created": "2026-10-28T10:00:00Z"},
@@ -219,7 +222,8 @@ def removed(root: Path) -> list[str]:
     return [args[-1] for args in calls(root, "rm")]
 
 
-def test_retention_keeps_the_newest_tags_and_spares_used_images_and_other_repositories(tmp_path: Path) -> None:
+def test_retention_keeps_the_newest_deploy_tags_and_spares_local_tags_used_images_and_other_repositories(
+        tmp_path: Path) -> None:
     env = retention_repo(tmp_path, in_use=["example/api:t2"])
     result = up(env, TAG="auto")
     assert result.returncode == 0, result.stderr
@@ -244,7 +248,7 @@ def test_retention_runs_in_the_foreground_too(tmp_path: Path) -> None:
     assert record(tmp_path).exists()
 
 
-@pytest.mark.parametrize("tag", ["dev", "dev-slot-2", "none", None])
+@pytest.mark.parametrize("tag", ["dev", "dev-slot-2", "none", "latest", None])
 def test_local_builds_make_no_record_and_remove_nothing(tmp_path: Path, tag: str | None) -> None:
     env = retention_repo(tmp_path)
     write_record(tmp_path, "f" * 40)
@@ -272,6 +276,16 @@ def test_db_migrate_up_passes_the_guard_and_moves_the_record(tmp_path: Path) -> 
         assert "ROLLBACK=off refuses every rollback" in result.stderr
     assert len(calls(tmp_path, "run")) == 1
     assert not activated(tmp_path)
+
+
+def test_db_migrate_up_moves_no_record_when_the_build_is_refused(tmp_path: Path) -> None:
+    env = deploy_repo(tmp_path, running=["postgres"])
+    (tmp_path / "apps/api.txt").write_text("uncommitted\n")
+    result = migrate(env, TAG="auto")
+    assert result.returncode != 0
+    assert "uncommitted changes" in result.stderr
+    assert not record(tmp_path).exists()
+    assert not calls(tmp_path, "run")
 
 
 def compose_services() -> list[tuple[str, str, dict]]:

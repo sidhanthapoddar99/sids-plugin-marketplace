@@ -175,3 +175,38 @@ def test_backup_resolves_storage_before_creation_and_propagates_failures(sandbox
 def test_backup_neo4j_pipeline_failure_propagates(sandbox):
     sandbox.env.update(DATA_SVCS="neo4j", NEO4J_PASSWORD="synthetic pass", FAIL_ACTION="exec")
     assert sandbox.run("db", "backup").returncode == 37
+
+
+COMMIT = "a" * 40
+
+
+def test_backup_carries_the_deploy_record(sandbox):
+    (sandbox.root / "data").mkdir(exist_ok=True)
+    (sandbox.root / "data/deployed-commit").write_text(COMMIT + "\n")
+    sandbox.env["DATA_SVCS"] = "postgres"
+    result = sandbox.run("db", "backup")
+    assert result.returncode == 0, result.stderr
+    [destination] = (sandbox.root / "logs/backups").glob("*")
+    assert (destination / "deployed-commit").read_text() == COMMIT + "\n"
+
+
+@pytest.mark.parametrize("carried", [True, False])
+def test_restore_puts_back_the_backup_record_or_keeps_the_current_one(sandbox, carried):
+    directory = archive(sandbox)
+    current = sandbox.root / "data/deployed-commit"
+    current.parent.mkdir(exist_ok=True)
+    current.write_text("b" * 40 + "\n")
+    if carried:
+        (directory / "deployed-commit").write_text(COMMIT + "\n")
+    result = sandbox.run("db", "restore", str(directory), "-y")
+    assert result.returncode == 0, result.stderr
+    assert current.read_text() == (COMMIT if carried else "b" * 40) + "\n"
+
+
+def test_a_backup_record_that_holds_no_commit_prevents_every_mutation(sandbox):
+    directory = archive(sandbox)
+    (directory / "deployed-commit").write_text("not a commit\n")
+    result = sandbox.run("db", "restore", str(directory), "-y")
+    assert result.returncode != 0
+    assert "holds no commit" in result.stderr
+    assert not mutations(sandbox)

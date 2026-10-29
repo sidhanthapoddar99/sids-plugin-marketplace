@@ -41,4 +41,9 @@ if has neo4j; then
     | sed '1d; s/^"//; s/"$//' > "$dest/neo4j-schema.cypher"
   ok "neo4j (schema only)"
 fi
+# The deploy record names the commit this data matches, so ctl db restore can put it back with the data.
+if [[ -f $(deploy_record_file) ]]; then
+  cp -- "$(deploy_record_file)" "$dest/deployed-commit"
+  ok "deploy record"
+fi
 ok "backup at $dest ($(du -sh "$dest" | cut -f1))"

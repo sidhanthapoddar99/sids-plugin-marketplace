@@ -57,7 +57,14 @@ image_tag_label() {
 # a later service fails; and it sits beside the data it describes, outside git. A deploy whose commit
 # is older than the record, or on another line of history, is a rollback. ROLLBACK=off refuses every
 # rollback. ROLLBACK=on allows one only when no file under MIGRATION_PATHS differs between the two commits.
+# The record follows the data: ctl db backup copies it into the backup, and ctl db restore puts it back.
 deploy_record_file() { printf '%s/deployed-commit\n' "$DATA_DIR"; }
+# deploy_commit_valid <text> — 0 for a full commit hash, the only thing a deploy record may hold.
+deploy_commit_valid() { [[ $1 =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]]; }
+
+# image_tag_local <tag> — 0 for a tag a local build makes: dev, dev-<name> or latest (what none gives).
+# Each build replaces it, so it names no deploy: the guard skips it, and retention neither counts nor removes it.
+image_tag_local() { [[ $1 == dev || $1 == dev-* || $1 == latest ]]; }
 
 # rollback_setting — print ROLLBACK as ctl reads it: off (also unset or empty) or on. Any other value is an error.
 rollback_setting() {
@@ -73,8 +80,8 @@ rollback_setting() {
 deploy_guard() {
   local setting="${CTL_TAG_SETTING-}" rollback target record file changed kept status=0
   rollback=$(rollback_setting) || return 1
+  if [[ -z ${TAG-} ]] || image_tag_local "$TAG"; then return 0; fi
   case "$setting" in
-    ''|dev|dev-*|none) return 0 ;;
     auto) target=$(git -C "$CTL_ROOT" rev-parse --verify --quiet 'HEAD^{commit}') || target='' ;;
     *) target=$(git -C "$CTL_ROOT" rev-parse --verify --quiet "$setting^{commit}") || target='' ;;
   esac
@@ -84,7 +91,7 @@ deploy_guard() {
   file=$(deploy_record_file)
   if [[ -e $file ]]; then
     record=$(<"$file") || { err "ctl cannot read the deploy record $file"; return 1; }
-    [[ $record =~ ^[0-9a-f]{40}([0-9a-f]{24})?$ ]] || {
+    deploy_commit_valid "$record" || {
       err "the deploy record $file holds no commit, so ctl cannot tell whether this deploy is a rollback; restore it, or delete it only if no deploy ever ran against this data"
       return 1; }
     git -C "$CTL_ROOT" rev-parse --verify --quiet "$record^{commit}" >/dev/null || {
@@ -127,9 +134,10 @@ deploy_record() {
   return 1
 }
 
-# image_retain <compose model JSON> — after a deploy is ready, keep the IMAGE_KEEP newest tags, by
-# creation time, of each image ctl builds (the image: of every service with build:), and remove the
-# rest. The tag the deploy runs and every tag a container uses, running or stopped, stay. A repository
+# image_retain <compose model JSON> — after a deploy is ready, keep the IMAGE_KEEP newest deploy tags,
+# by creation time, of each image ctl builds (the image: of every service with build:), and remove the
+# rest. The tag the deploy runs and every tag a container uses, running or stopped, stay. A local tag
+# (image_tag_local) is neither counted nor removed, because it belongs to the local loop. A repository
 # no built service names is never listed. Retention never fails the deploy: a docker error is a warning.
 image_retain() {
   local model="$1" image repo listing ref used n
@@ -142,7 +150,10 @@ image_retain() {
     [[ -n $image && $image != *@* ]] || continue      # a digest names one image, not a repository's tags
     repo="$image"; [[ ${image##*/} != *:* ]] || repo="${image%:*}"
     listing=$(docker image ls --format '{{.Repository}}:{{.Tag}}' "$repo") || { warn "docker cannot list $repo; none of its images removed"; continue; }
-    mapfile -t refs < <(grep -v ':<none>$' <<< "$listing" | grep .)
+    refs=()
+    while IFS= read -r ref; do
+      if [[ -n $ref && ${ref##*:} != '<none>' ]] && ! image_tag_local "${ref##*:}"; then refs+=("$ref"); fi
+    done <<< "$listing"
     (( ${#refs[@]} > IMAGE_KEEP )) || continue
     listing=$(docker image inspect "${refs[@]}") || { warn "docker cannot read the images of $repo; none removed"; continue; }
     # inspect answers in argument order; .Created is UTC with up to 9 fraction digits, padded here so it sorts as text

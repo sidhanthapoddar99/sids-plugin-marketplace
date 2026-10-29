@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.21.1
+
+- Image retention counts and removes only deploy tags. A local tag (`dev`, `dev-<name>`, `latest`) is neither counted nor removed, so a deploy on a machine with worktree slots no longer deletes the slots' images. One shared rule, `image_tag_local` in `_images.sh`, decides a local build for both the rollback guard and retention. A pinned `TAG=latest` is now a local build too.
+- `ctl db migrate up` checks that the tag allows a build before it moves the deploy record. A refused build used to move the record even though nothing migrated.
+- The deploy record follows the data. `ctl db backup` copies `DATA_DIR/deployed-commit` into the backup. `ctl db restore` puts it back, so the commit the backup's data matches may deploy again. Before this, a restore followed by a deploy of that commit was refused as a rollback. A backup without a record leaves the current record, so only a deploy at or ahead of it may start. A backup record that holds no commit stops the restore before any engine changes. `deploy_commit_valid` is the one check of a record's text.
+
 ## 0.21.0
 
 - Rollbacks are off by default, and never cross a migration. `.env.template` gains `ROLLBACK=off` in the Images group. `off`, also what an unset or empty value means, refuses every rollback. `on` allows one only when no file under `MIGRATION_PATHS` differs between the two commits. `MIGRATION_PATHS` is an `[ADAPT]` knob in `_lib.sh`, `apps/database` by default. Any other value is an error, and `ctl check` names it.

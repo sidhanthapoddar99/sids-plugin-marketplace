@@ -57,7 +57,9 @@ case "$mode" in
   up)
     # Applying migrations is a deploy's step, so it passes the same rollback guard and moves the same
     # record as ctl up; a later ctl up at an older commit then counts as a rollback. A local build skips both.
+    # A build the tag refuses migrates nothing, so it is refused before the record moves.
     resolve_storage_dirs || exit 1
+    image_tag_buildable || exit 1
     deploy_target=$(deploy_guard) || exit 1
     [[ -z $deploy_target ]] || deploy_record "$deploy_target" || exit 1
     pg migrate ;;

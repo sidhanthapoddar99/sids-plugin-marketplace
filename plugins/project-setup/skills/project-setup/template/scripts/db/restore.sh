@@ -52,6 +52,11 @@ if has postgres; then
   [[ "$(head -c 5 -- "$archive")" == PGDMP ]] || die "expected pg_dump custom format: $archive"
   dc exec -T postgres pg_restore --list < "$archive" > /dev/null
 fi
+backup_commit=''
+if [[ -e $dir/deployed-commit ]]; then
+  backup_commit=$(<"$dir/deployed-commit") || die "cannot read the deploy record in $dir"
+  deploy_commit_valid "$backup_commit" || die "$dir/deployed-commit holds no commit, so ctl cannot tell which deploy this data matches"
+fi
 if (( ! yes )); then
   warn "this REPLACES the current data with $dir"
   confirm "continue" || { say "aborted."; exit 0; }
@@ -76,5 +81,14 @@ if has neo4j && [[ -f $dir/neo4j-schema.cypher ]]; then
   step "neo4j: replay schema"
   dc exec -T neo4j cypher-shell -u neo4j -p "${NEO4J_PASSWORD:?}" < "$dir/neo4j-schema.cypher"
   ok "neo4j (schema)"
+fi
+# The deploy record follows the data. A backup that carries one names the commit its data matches, so
+# that commit and every newer one may deploy. Without one the record stays: only a deploy at or ahead
+# of it may start, and that deploy migrates the restored data forward.
+if [[ -n $backup_commit ]]; then
+  deploy_record "$backup_commit" || exit 1
+  ok "deploy record: ${backup_commit:0:8}, the commit this data matches"
+elif [[ -f $(deploy_record_file) ]]; then
+  say "the backup carries no deploy record, so $(deploy_record_file) stays: deploy that commit or a newer one, which migrates this data forward"
 fi
 ok "restored from $dir"
