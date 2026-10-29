@@ -68,12 +68,12 @@ The value is exactly what follows `ctl up` on the command line. It is the reprod
 
 | Verb | Does |
 |---|---|
-| `ctl up preset <name> [-y] [--no-build]` | run the stored line; plan, confirm, start. No `--config`, `+modifier` or `--services` beside it: a preset is the whole shape. `--no-build` starts the images that exist and skips the build step. |
+| `ctl up preset <name> [-y] [--no-build] [--background]` | run the stored line; plan, confirm, start. No `--config`, `+modifier` or `--services` beside it: a preset is the whole shape. `--no-build` starts the images that exist and skips the build step. `-y --background` runs it detached with a transcript (`08_ctl.md` § Deploy transcripts). |
 | `ctl up preset` | pick one in a terminal, then the same |
 | `ctl up preset --list` | the stored presets and their lines. Needs no docker. |
 | `ctl up set-preset [<name>]` | walk the pickers, then Save, Save and run, Back or Cancel. An existing preset's values are preselected, so editing one is re-walking it. Flags given skip their prompt, so `set-preset x --config base +expose_db --services postgres,redis,neo4j -y` needs no terminal. Docker must be up, because the plan is the real merge. |
 
-A preset stores the stack shape only: `--config`, `+modifier`, `--services`. Give run flags (`-y`, `-a`, `--nqa`, `--no-build`) on the command line. `ctl up preset` refuses a preset that stores one and names the flag. A flag in the file would act on every reader. A line without `--config` means `base`. An empty line is an error. A name is letters, digits, `-` and `_`. A duplicated name: the first line wins on read, and `set-preset` collapses it to one line.
+A preset stores the stack shape only: `--config`, `+modifier`, `--services`. Give run flags (`-y`, `-a`, `--nqa`, `--no-build`, `--background`) on the command line. `ctl up preset` refuses a preset that stores one and names the flag. A flag in the file would act on every reader. A line without `--config` means `base`. An empty line is an error. A name is letters, digits, `-` and `_`. A duplicated name: the first line wins on read, and `set-preset` collapses it to one line.
 
 The file is committed. It holds names, never values. One name is reserved: `dev` is the data core that `ctl dev` and `ctl dev db` start, so editing that line changes what the dev loop brings up. It lists the `DATA_SVCS` engines and no schema one-shot, because `ctl dev` applies migrations through `ctl db migrate` on every launch (`08_ctl.md` § The data core). When the line is missing, `ctl dev` stops and says which line to add. It never falls back to a hidden default.
 

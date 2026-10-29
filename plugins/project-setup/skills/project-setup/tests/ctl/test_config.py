@@ -181,10 +181,15 @@ def test_root_template_is_trackable_and_local_env_is_ignored(tmp_path: Path) -> 
 STORAGE = "BASE_DIR=.\nDATA_DIR=${BASE_DIR}/data\nLOGS_DIR=${BASE_DIR}/logs\nBACKUP_DIR=${LOGS_DIR}/backups\n"
 
 
-def run_check(root: Path, local_env: str | None = None) -> subprocess.CompletedProcess[str]:
-    """Run ctl check with docker reported as stopped, so only the repo and env rules decide."""
+def run_check(root: Path, local_env: str | None = None,
+              folders: tuple[str, ...] = ("data", "logs/backups")) -> subprocess.CompletedProcess[str]:
+    """Run ctl check with docker reported as stopped, so only the repo and env rules decide. With a local
+    .env, the storage folders it names are created first, as ctl setup env creates them; {root} in a
+    folder or in the .env is the repo root."""
     if local_env is not None:
-        (root / ".env").write_text(local_env)
+        (root / ".env").write_text(local_env.replace("{root}", str(root)))
+        for folder in folders:
+            (root / folder.replace("{root}", str(root))).mkdir(parents=True, exist_ok=True)
     fake = root.parent / "fake-bin"
     fake.mkdir(exist_ok=True)
     (fake / "docker").write_text("#!/bin/sh\nexit 1\n")
@@ -222,20 +227,21 @@ def test_check_rejects_a_template_path_that_leaves_base_dir(tmp_path: Path, stor
     assert failure in result.stderr
 
 
-@pytest.mark.parametrize(("local", "failure"), [
-    (STORAGE, None),
-    (STORAGE.replace("BASE_DIR=.", "BASE_DIR=/srv/app").replace("${BASE_DIR}/data", "/mnt/fast/data"), None),
-    (STORAGE.replace("BASE_DIR=.", "BASE_DIR=/srv/app").replace("${BASE_DIR}/logs", "./logs"),
+@pytest.mark.parametrize(("local", "folders", "failure"), [
+    (STORAGE, ("data", "logs/backups"), None),
+    (STORAGE.replace("BASE_DIR=.", "BASE_DIR={root}/srv/app").replace("${BASE_DIR}/data", "{root}/mnt/fast/data"),
+     ("{root}/srv/app/logs/backups", "{root}/mnt/fast/data"), None),
+    (STORAGE.replace("BASE_DIR=.", "BASE_DIR=/srv/app").replace("${BASE_DIR}/logs", "./logs"), (),
      "LOGS_DIR=./logs resolves to {root}/logs, outside BASE_DIR (/srv/app)"),
-    (STORAGE.replace("BASE_DIR=.", "BASE_DIR=./state").replace("${BASE_DIR}/data", "./data"),
+    (STORAGE.replace("BASE_DIR=.", "BASE_DIR=./state").replace("${BASE_DIR}/data", "./data"), (),
      "DATA_DIR=./data resolves to {root}/data, outside BASE_DIR ({root}/state)"),
 ], ids=["derived", "absolute-is-deliberate", "stale-logs", "stale-data"])
 def test_check_names_a_local_relative_path_left_behind_by_base_dir(
-    tmp_path: Path, local: str, failure: str | None
+    tmp_path: Path, local: str, folders: tuple[str, ...], failure: str | None
 ) -> None:
     root = tmp_path / "repo"
     scaffold_check(root, "API_PORT=8000\n" + STORAGE)
-    result = run_check(root, "API_PORT=8000\n" + local)
+    result = run_check(root, "API_PORT=8000\n" + local, folders)
     if failure is None:
         assert result.returncode == 0, result.stdout + result.stderr
     else:

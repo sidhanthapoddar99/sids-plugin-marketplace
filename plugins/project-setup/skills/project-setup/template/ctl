@@ -53,6 +53,7 @@ ctl_help() {
   printf '\n%sContainers%s (docker compose)\n' "$C_B" "$C_RESET"
   row "up [--config c] [+mod…] [--services a,b]" "assemble + start a stack shape, or a subset — interactive  (ctl up --help)"
   row "up preset [name] | set-preset [name]" "run a saved up line from docker/presets.yaml · save one from the pickers"
+  row "up … -y --background | up status [-f]" "run detached with a transcript in logs/deploy · the newest one's state"
   row "down [svc]"                      "stop the stack (or one service)"
   row "restart [svc]"                   "restart the stack (or one service)"
   row "logs [svc] [-f]"                 "tail container logs"

@@ -32,6 +32,14 @@ process_valid() {
   [[ ${fields[2]} == "$pid" && ${fields[3]} == "$pid" ]]
 }
 
+# process_stale <record> — 0 for a record whose process has ended: a complete pid file whose process no
+# longer runs. A live record, and one with no complete pid file yet, are not stale. process_start and
+# process_claim remove a stale record and refuse any other.
+process_stale() {
+  local pid birth
+  [[ -f $1/pid ]] && read -r pid birth < "$1/pid" && [[ $pid =~ ^[0-9]+$ && $birth =~ ^[0-9]+$ ]] && ! process_running "$1"
+}
+
 process_group_members() {
   local group="$1" entry stat fields
   for entry in /proc/[0-9]*/stat; do
@@ -168,6 +176,9 @@ process_init() {
   trap 'process_cleanup' EXIT
 }
 
+# process_start <name> <directory> <command…> — run the command in its own session, stdin from /dev/null,
+# recorded as LOGS_DIR/run/<name>.process. Its output goes to PROCESS_LOG when that is set, else to
+# LOGS_DIR/dev/<name>.log.
 process_start() {
   local name="$1" directory="$2" process_lock pid birth; shift 2
   [[ $name =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]*$ ]] || die "invalid process name: $name"
@@ -177,8 +188,7 @@ process_start() {
   exec {process_lock}> "$PROCESS_RECORD.lock"
   if ! flock -w 2 "$process_lock"; then exec {process_lock}>&-; return 1; fi
   if [[ -d $PROCESS_RECORD ]]; then
-    if [[ -f $PROCESS_RECORD/pid ]] && read -r pid birth < "$PROCESS_RECORD/pid" &&
-       [[ $pid =~ ^[0-9]+$ && $birth =~ ^[0-9]+$ ]] && ! process_valid "$PROCESS_RECORD"; then
+    if process_stale "$PROCESS_RECORD"; then
       rm -rf -- "$PROCESS_RECORD"
     else
       exec {process_lock}>&-
@@ -212,7 +222,7 @@ process_start() {
       mv -- "$record/status.tmp" "$record/status"
     fi
     kill -KILL -- -$$
-  ' bash "$PROCESS_RECORD" "$directory" "$@" {process_lock}>&- < /dev/null >> "$LOGS_DIR/dev/$name.log" 2>&1 &
+  ' bash "$PROCESS_RECORD" "$directory" "$@" {process_lock}>&- < /dev/null >> "${PROCESS_LOG:-$LOGS_DIR/dev/$name.log}" 2>&1 &
   local attempt
   for attempt in {1..20}; do
     [[ -s $PROCESS_RECORD/pid ]] && break
@@ -224,6 +234,35 @@ process_start() {
   PROCESS_PENDING=""
   touch "$PROCESS_RECORD/go"
   exec {process_lock}>&-
+}
+
+# process_claim <name> — record the current shell as LOGS_DIR/run/<name>.process, for a run that stays in
+# the foreground, such as a deploy ctl up. It takes the lock process_start takes and the same stale test,
+# so a claim and a start never hold one name at once. The caller removes PROCESS_RECORD when it ends.
+# A claimed shell usually leads no session, so ctl stop names the record and leaves the shell running.
+process_claim() {
+  local name="$1" record process_lock
+  [[ $name =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]*$ ]] || die "invalid process name: $name"
+  resolve_storage_dirs || return
+  mkdir -p -- "$LOGS_DIR/run" || return
+  record="$LOGS_DIR/run/$name.process"
+  exec {process_lock}> "$record.lock" || return
+  if ! flock -w 2 "$process_lock"; then exec {process_lock}>&-; return 1; fi
+  if [[ -d $record ]]; then
+    if process_stale "$record"; then
+      rm -rf -- "$record"
+    else
+      exec {process_lock}>&-
+      printf 'live or incomplete process record: %s\n' "$record" >&2
+      return 1
+    fi
+  fi
+  if ! { mkdir -- "$record" && printf '%s\n' "$CTL_ROOT" > "$record/project" &&
+         printf '%s %s\n' "$$" "$(process_identity "$$")" > "$record/pid"; }; then
+    rm -rf -- "$record"; exec {process_lock}>&-; return 1
+  fi
+  exec {process_lock}>&-
+  PROCESS_RECORD="$record"
 }
 
 process_status() {

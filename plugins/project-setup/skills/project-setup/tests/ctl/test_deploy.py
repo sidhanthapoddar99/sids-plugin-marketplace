@@ -25,7 +25,7 @@ MIGRATIONS = "apps/database/postgres/migrations"
 def deploy_repo(root: Path, services: dict | None = None, **options: object) -> dict[str, str]:
     """A committed checkout whose one built service is api; the fixture files stay ignored."""
     env = {**fixture_env(root, services or {"api": {"build": ".", "image": "example/api:current"}}, **options), **GIT_ENV}
-    (root / ".gitignore").write_text(".env\ncalls.jsonl\n*.count\nbin/\nfixture.json\ndata/\n")
+    (root / ".gitignore").write_text(".env\ncalls.jsonl\n*.count\nbin/\nfixture.json\ndata/\nlogs/\n")
     (root / MIGRATIONS).mkdir(parents=True)
     (root / MIGRATIONS / "V1__start.sql").write_text("CREATE TABLE a (id int);\n")
     git(root, "init", "-q", "-b", "main")

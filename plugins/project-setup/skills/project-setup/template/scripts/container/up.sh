@@ -7,9 +7,13 @@
 #              named services and their depends_on chain are built and started.
 #   presets    docker/presets.yaml — a name for one argument line. `preset` runs one, `set-preset` writes one.
 #
-# Grammar:  ctl up [--config <name>] [+mod…] [--modifier a,b] [--services a,b] [-a] [--nqa] [-y] [--no-build] [--dry-run] [--list]
-#           ctl up preset [<name>] [-a] [-y] [--nqa] [--no-build] [--dry-run]     ·  ctl up preset --list
+# Grammar:  ctl up [--config <name>] [+mod…] [--modifier a,b] [--services a,b] [-a] [--nqa] [-y] [--no-build] [--background] [--dry-run] [--list]
+#           ctl up preset [<name>] [-a] [-y] [--nqa] [--no-build] [--background] [--dry-run]     ·  ctl up preset --list
 #           ctl up set-preset [<name>] [--config <name>] [+mod…] [--services a,b] [-y]
+#           ctl up status [-f]
+#
+# A deploy (a TAG that is not local) writes its output to a transcript under LOGS_DIR/deploy, and
+# --background runs any ctl up detached with one; `status` reads the newest (_transcript.sh).
 #
 # Bare `ctl up` in a terminal is interactive (dependency-free TUI from _select.sh):
 #   pick a config (single; skipped when only one exists) → pick modifiers (multi, the fitting ones,
@@ -34,11 +38,16 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_lib.sh"; cd "$CTL_ROOT"
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_compose_start.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/../common/_transcript.sh"
+up_script="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/${BASH_SOURCE[0]##*/}"
+up_argv=("$@")
+transcript_adopt      # the child of --background: record how it ends, from its first line
 
 usage() { print_help "up" "Assemble + start the container stack (interactive, flag-driven, or from a preset)." \
-  'up [--config <name>] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--no-build] [--dry-run] [--list] [-h]
-  ctl up preset [<name>] [-a] [-y] [--nqa] [--no-build] [--dry-run] [--list]
-  ctl up set-preset [<name>] [--config <name>] [+modifier…] [--services a,b] [-y]' \
+  'up [--config <name>] [+modifier…] [--services a,b] [-a] [--nqa] [-y] [--no-build] [--background] [--dry-run] [--list] [-h]
+  ctl up preset [<name>] [-a] [-y] [--nqa] [--no-build] [--background] [--dry-run] [--list]
+  ctl up set-preset [<name>] [--config <name>] [+modifier…] [--services a,b] [-y]
+  ctl up status [-f]' \
 "Arguments
   --config <name>     the stack shape: docker/compose.<name>.yaml — any of: $(list_configs | join_sp | or_none)
                       (none given: interactive pick in a terminal when more than one exists, else $DEFAULT_CONFIG)
@@ -51,6 +60,8 @@ usage() { print_help "up" "Assemble + start the container stack (interactive, fl
   --nqa               no questions — don't prompt; use flags/defaults
   -y, --yes           skip the final confirmation
   --no-build          start the images that exist, without the build step (ctl dev db uses it)
+  --background        run detached from the terminal, with a transcript, and return at once; needs -y,
+                      implies --nqa, refuses -a, --dry-run and --list. Follow it with: ctl up status -f
   --dry-run, -n       show the plan and exit without running
   --list              list the configs, modifiers, presets and the services the config defines, then exit
   -h, --help          show this help
@@ -65,12 +76,18 @@ Presets ($PRESETS_FILE — one \`<name>: \"<arguments>\"\` line each)
                       (-a, -y, --nqa, --no-build) are given at run time and refused inside the file.
                       The dev preset is reserved: it is the data core ctl dev and ctl dev db start.
 
+Transcripts
+  A deploy (TAG auto or a pinned tag) writes its output, from the settled plan to a last
+  \`result:\` line, to \$LOGS_DIR/deploy/<UTC time>-<tag>.log. A local tag writes none.
+  status [-f]         the newest transcript: its state and last lines · -f follows it to the end
+
 A config publishes no port; modifiers add exposure. The schema one-shots (migrate, neo4j-init) run
 before any app because the apps wait on them — never on app boot." \
 "Example:  ctl up                                # interactive
           ctl up -y                             # local docker: base +expose_web, no prompts
           ctl up preset dev --no-build -y       # the engines alone, bound to loopback (what ctl dev db runs)
           ctl up +public -y                     # public deployment: 80/443 + PUBLIC_URL, uncommented in .env
+          ctl up preset public -y --background  # the same over SSH: detached, then ctl up status -f
           ctl up --services=api,postgres -y     # one backend and its chain only
           ctl up preset local -y                # a stored line, no prompts
           ctl up set-preset staging             # save a new preset from the pickers"; }
@@ -81,6 +98,7 @@ preset_usage() { print_help "up preset" "Run a stored \`ctl up\` line from $PRES
   <name>          the preset to run (none given: pick in a terminal)
   -a, --attach    foreground   ·   -y  skip the confirm   ·   --dry-run  plan only
   --no-build      start the images that exist, without the build step
+  --background    run detached with a transcript; needs -y (ctl up status -f follows it)
   --list          the stored presets and their lines
   -h, --help      show this help
 
@@ -89,12 +107,18 @@ Stored presets: $(list_presets | join_sp | or_none)" \
 
 # ── parse ── one parser for the three modes; preset lines are fed back through it
 mode=up
-case "${1:-}" in preset|set-preset) mode="$1"; shift ;; esac
-cfg_cli="" cfg_set=0 mods_cli=() mod_set=0 svcs_cli=() svc_set=0 nqa=0 yes=0 dry=0 attach=0 list=0 no_build=0 name=""
+case "${1:-}" in
+  preset|set-preset) mode="$1"; shift ;;
+  # status reads files only: the storage paths matter, TAG and docker do not
+  status) shift; load_env_files; expand_env_refs || exit 1; resolve_storage_dirs || exit 1
+          transcript_status "$@"; exit ;;
+esac
+cfg_cli="" cfg_set=0 mods_cli=() mod_set=0 svcs_cli=() svc_set=0 nqa=0 yes=0 dry=0 attach=0 list=0 no_build=0 background=0 name=""
 parse_args() { while (( $# )); do case "$1" in
   --nqa|--no-questions-asked) nqa=1; shift ;;
   -y|--yes)      yes=1; shift ;;
   --no-build)    no_build=1; shift ;;
+  --background)  background=1; shift ;;
   -a|--attach|--no-detach) attach=1; shift ;;
   --list)        list=1; shift ;;
   --dry-run|-n)  dry=1; shift ;;
@@ -133,6 +157,14 @@ check_shape() { local w="${1:-}"
   return 0; }
 parse_args "$@"
 check_shape
+# --background has no terminal to ask in or to attach to, and it runs a stack, so it refuses what needs one
+if (( background )); then
+  [[ $mode != set-preset ]] || die "--background runs a stack, and set-preset saves one — save it first, then: ctl up preset <name> -y --background"
+  (( yes )) || die "--background needs -y — a run with no terminal cannot ask to confirm"
+  (( ! attach )) || die "--background cannot attach (-a) — follow it with ctl up status -f, or run -a in the terminal"
+  (( ! dry && ! list )) || die "--background with --dry-run or --list starts nothing — run that in the terminal"
+  nqa=1
+fi
 
 interactive=0; [[ -t 1 && -r /dev/tty && $nqa -eq 0 ]] && interactive=1
 
@@ -185,6 +217,9 @@ if (( list )); then
   compose_cmd -f "$(config_file "$c")" config --services 2>/dev/null | sort | sed 's/^/  /' || printf '  %s(compose could not read %s)%s\n' "$C_DIM" "$(config_file "$c")" "$C_RESET"
   exit 0
 fi
+
+# a deploy or a background run that cannot write its folders, or that another run blocks, stops before the plan
+(( dry )) || [[ $mode == set-preset ]] || transcript_precheck "$background"
 
 mapfile -t CONFIGS < <(list_configs)
 (( ${#CONFIGS[@]} )) || die "no config in $DOCKER_DIR/ — ship docker/compose.<name>.yaml"
@@ -413,6 +448,9 @@ done
 # ── start ── compose orders the chain itself: engines healthy → schema one-shots done → apps.
 # With a subset, only the named services and their depends_on chain come up: an app brings the
 # engines and the schema step with it, an engine alone brings nothing.
+# The plan is settled: --background hands the run to a detached copy, and a deploy starts its transcript.
+if (( background )); then transcript_background "$up_script" "${up_argv[@]}"; exit 0; fi
+transcript_begin "${up_argv[@]}"
 start_options=(); (( no_build )) && start_options=(--no-build)
 compose_start "${start_options[@]}" "$attach" 120 "${services[@]}"
 (( attach )) && exit 0

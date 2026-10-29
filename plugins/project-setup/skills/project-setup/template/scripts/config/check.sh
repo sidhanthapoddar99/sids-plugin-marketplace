@@ -21,7 +21,9 @@ Rules
             no config.local.yaml tracked by git
   storage   .env.template derives DATA_DIR and LOGS_DIR from \${BASE_DIR}, and BACKUP_DIR from
             \${LOGS_DIR} or \${BASE_DIR}, each below the line it reads ·
-            in .env, no relative storage path resolves outside BASE_DIR (an absolute one is deliberate)
+            in .env, no relative storage path resolves outside BASE_DIR (an absolute one is deliberate) ·
+            with .env, the DATA_DIR, LOGS_DIR and BACKUP_DIR folders exist and the current user can write
+            each — a deploy writes there, so the deploy user must own them (the fix names the chown)
   layout    no package.json / bun.lock / pnpm-workspace.yaml at the root or directly in apps/ ·
             no folder under apps/ that holds a manifest and child folders with manifests (a group
             folder such as a static-frontend group or packages/ is not a workspace) ·
@@ -317,7 +319,7 @@ fi
 # An absolute path there is taken as deliberate (a fast disk, a CI tmpfs). Runs before compose_cmd,
 # because compose_cmd makes every storage path absolute.
 check_storage_paths() {
-  local n=0 line key parent parents derived value base
+  local n=0 line key parent parents derived value base dirs problem owned=''
   local -A at=() raw=()
   step "storage paths (every one hangs off BASE_DIR)"
   if [[ -f .env.template ]]; then
@@ -349,8 +351,19 @@ check_storage_paths() {
       [[ $value == "$base" || $value == "$base"/* ]] \
         || fail ".env: $key=${!key} resolves to $value, outside BASE_DIR ($base) — derive it from \${BASE_DIR}, or write an absolute path if it lives elsewhere on purpose"
     done
+    # The folders themselves: ctl writes the deploy record, logs, process records and backups there, so
+    # the user who runs ctl must be able to write each. A subshell resolves them, so the values above stay
+    # as written. The folders a bind mount uses below DATA_DIR belong to their containers and are not read.
+    if dirs=$(resolve_storage_dirs 2>&1 && printf '%s\n' "DATA_DIR=$DATA_DIR" "LOGS_DIR=$LOGS_DIR" "BACKUP_DIR=$BACKUP_DIR"); then
+      while IFS='=' read -r key value; do
+        problem=$(storage_dir_writable "$value") || fail ".env: $key — $problem"
+      done <<< "$dirs"
+      owned=", and $(id -un) can write each"
+    else
+      fail ".env: ctl cannot resolve the storage paths — $dirs"
+    fi
   fi
-  pass "DATA_DIR, LOGS_DIR and BACKUP_DIR derive from BASE_DIR"
+  pass "DATA_DIR, LOGS_DIR and BACKUP_DIR derive from BASE_DIR$owned"
 }
 check_storage_paths
 

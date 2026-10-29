@@ -46,3 +46,29 @@ resolve_storage_dirs() {
     export "${key?}"
   done
 }
+
+# storage_dir_writable <dir> — 0 when the folder exists and the current user may create files in it.
+# Otherwise it prints what is wrong and the fix, and returns 1. ctl check runs it on DATA_DIR, LOGS_DIR
+# and BACKUP_DIR, and a deploy on the folders it writes, before the build: a root-owned folder used to
+# stop a deploy only at its first write there. A missing folder names its nearest existing parent.
+storage_dir_writable() {
+  local dir="$1" parent="$1" owner
+  [[ -d $dir && -w $dir && -x $dir ]] && return 0
+  owner="$(id -un):$(id -gn)"
+  if [[ -e $dir && ! -d $dir ]]; then
+    printf '%s is not a folder; move that file away, then ctl setup env creates the folder\n' "$dir"
+    return 1
+  fi
+  if [[ -d $dir ]]; then
+    printf '%s is not writable by %s; the deploy user must own it: sudo chown %s %s\n' "$dir" "$(id -un)" "$owner" "$dir"
+    return 1
+  fi
+  while [[ ! -d $parent ]]; do parent="${parent%/*}"; parent="${parent:-/}"; done
+  if [[ -w $parent && -x $parent ]]; then
+    printf '%s does not exist; ctl setup env creates it\n' "$dir"
+  else
+    printf '%s does not exist, and %s is not writable by %s; the deploy user must own it: sudo chown %s %s\n' \
+      "$dir" "$parent" "$(id -un)" "$owner" "$parent"
+  fi
+  return 1
+}

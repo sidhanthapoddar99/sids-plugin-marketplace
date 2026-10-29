@@ -145,7 +145,7 @@ LOGS_DIR=${BASE_DIR}/logs
 BACKUP_DIR=${LOGS_DIR}/backups
 ```
 
-`DATA_DIR` holds actual data: the engine bind mounts (`${DATA_DIR}/postgres` …), datasets and uploads. `LOGS_DIR` holds produced state: dev logs in `dev/`, process records in `run/` and frozen builds in `test_build/`. `ctl db backup` writes `BACKUP_DIR/<timestamp>/`.
+`DATA_DIR` holds actual data: the engine bind mounts (`${DATA_DIR}/postgres` …), datasets and uploads. `LOGS_DIR` holds produced state: dev logs in `dev/`, process records in `run/`, deploy transcripts in `deploy/` and frozen builds in `test_build/`. `ctl db backup` writes `BACKUP_DIR/<timestamp>/`.
 
 Set the root by these rules:
 

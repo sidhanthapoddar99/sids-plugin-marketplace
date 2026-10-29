@@ -162,7 +162,10 @@ compose_start() (
   (( start_attach )) || return 0
 
   say "${C_DIM}foreground — streaming logs; Ctrl-C stops the selected stack${C_RESET}"
-  "${compose_base[@]}" logs --follow "${start_services[@]}" &
+  # a deploy's transcript (_transcript.sh) keeps the startup, not the container logs: they go to the terminal only
+  local log_out=1 log_err=2
+  [[ -z ${TRANSCRIPT_CONSOLE-} ]] || { log_out="$TRANSCRIPT_CONSOLE"; log_err="$TRANSCRIPT_STDERR"; }
+  "${compose_base[@]}" logs --follow "${start_services[@]}" >&"$log_out" 2>&"$log_err" &
   start_child=$!
   while kill -0 "$start_child" 2>/dev/null; do
     start_deadline=$((SECONDS + start_timeout))
