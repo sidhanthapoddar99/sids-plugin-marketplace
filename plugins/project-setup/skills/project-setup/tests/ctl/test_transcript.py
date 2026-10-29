@@ -139,6 +139,30 @@ def test_a_terminated_deploy_records_the_signal(tmp_path: Path) -> None:
     assert last_line(only_transcript(tmp_path)) == "result: failed (exit 143)"
 
 
+def test_output_redirected_to_a_file_keeps_its_start_and_ends_with_the_result(tmp_path: Path, tmp_path_factory) -> None:
+    env = deploy_repo(tmp_path)
+    capture = tmp_path_factory.mktemp("capture") / "up.out"   # outside the repo, so the tree stays clean
+    with capture.open("w") as out:   # not append mode: a reopened handle would write from its own position
+        process = subprocess.run(["bash", str(UP), "--config", "fixture", "--nqa", "-y"], env={**env, "TAG": "auto"},
+                                 stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, timeout=20)
+    text = capture.read_text()
+    assert process.returncode == 0, text
+    first = only_transcript(tmp_path).read_text().splitlines()[0]
+    assert text.index(first) < text.index("startup ready: api") < text.index("result: ok")
+    assert text.splitlines()[-1] == "result: ok"
+
+
+def test_attach_to_a_file_keeps_the_log_stream_after_the_transcript_lines(tmp_path: Path, tmp_path_factory) -> None:
+    env = deploy_repo(tmp_path, logs_exit=0)
+    capture = tmp_path_factory.mktemp("capture") / "up.out"
+    with capture.open("w") as out:
+        subprocess.run(["bash", str(UP), "--config", "fixture", "--nqa", "-y", "-a"], env={**env, "TAG": "auto"},
+                       stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, timeout=20)
+    text = capture.read_text()
+    first = only_transcript(tmp_path).read_text().splitlines()[0]
+    assert text.index(first) < text.index("startup ready: api") < text.index("fixture log stream")
+
+
 def test_the_terminal_keeps_its_colours_and_the_transcript_has_none(tmp_path: Path) -> None:
     env = deploy_repo(tmp_path)
     del env["NO_COLOR"]

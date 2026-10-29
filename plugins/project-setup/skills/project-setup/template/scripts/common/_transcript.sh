@@ -124,10 +124,13 @@ transcript_begin() {
 # without colour codes. stdout and stderr keep their own terminal fds, so a caller that reads stderr still
 # can; in the file each line lands whole, and a line from one stream can land a moment before a line the
 # other wrote first. tee keeps going when the terminal goes away (--output-error=warn, signals ignored), so
-# the transcript still gets the run's end after an SSH drop.
+# the transcript still gets the run's end after an SSH drop. tee writes the terminal copy through the
+# handle it inherits, never a reopened /dev/fd path: a reopened file gets its own write position, so a
+# later write to the terminal fd (the result line, the attached log stream) would land over earlier
+# output, and a socket cannot be reopened at all. Only the pipe to sed is reopened.
 transcript_copy() {
   trap '' INT TERM HUP PIPE
-  tee -a --output-error=warn "/dev/fd/$1" | sed -u $'s/\e\\[[0-9;]*m//g' >> "$TRANSCRIPT_FILE"
+  tee --output-error=warn /dev/fd/3 3>&1 >&"$1" | sed -u $'s/\e\\[[0-9;]*m//g' >> "$TRANSCRIPT_FILE"
 }
 
 # transcript_finish — the EXIT trap: let both copies drain, write the result line last, release the claim.

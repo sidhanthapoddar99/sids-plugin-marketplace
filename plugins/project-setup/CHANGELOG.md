@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.1
+
+- A deploy's terminal output keeps its start when stdout goes to a file. The transcript copy used to write the terminal copy through `tee -a /dev/fd/<n>`, which opens the file a second time with its own write position. With stdout redirected to a file not opened for append, such as `ctl up … > deploy.out`, the result line and the `-a` log stream then landed over the start of that file. A socket cannot be reopened at all. `transcript_copy` in `_transcript.sh` now writes the terminal copy through the handle it inherits, and only the pipe to the colour filter is reopened. The Agents repo found it.
+- `test_transcript.py` gains two tests with stdout in a plain file: one checks that the capture keeps its plan and ends with `result: ok`, and one that the `-a` log stream comes after the transcript's lines.
+
 ## 0.22.0
 
 - Every deploy writes a transcript. A deploy is a `ctl up` whose `TAG` is set and that `image_tag_local` does not call local. It writes its whole output, stdout and stderr, to `LOGS_DIR/deploy/<YYYYmmdd-HHMMSS>-<tag>.log`, with the UTC start and the resolved tag. No flag turns it on. It starts once the plan is settled, so `--dry-run` and `--list` write nothing, and it runs to the end: build, activation, readiness, retention and any error. An EXIT trap writes the last line, `result: ok` or `result: failed (exit N)`. The terminal still shows the output with its colours, the transcript gets it without colour codes, and stderr stays stderr. With `-a`, the container log stream after startup goes to the terminal only. A local run writes no transcript. Server deploys used to run as `nohup ./ctl up … > ~/<name>.log 2>&1 &`, which kept no result and no record.
