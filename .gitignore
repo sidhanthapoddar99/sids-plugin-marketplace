@@ -6,3 +6,8 @@ plugins/*/evals-workspace/
 # and .worktrees/ holds local git worktrees.
 /TODO.md
 /.worktrees/
+
+# Python bytecode caches that pytest writes beside the skill tests. They are machine-local,
+# so a commit only adds noise, and an install would copy them into every plugin cache.
+__pycache__/
+*.pyc

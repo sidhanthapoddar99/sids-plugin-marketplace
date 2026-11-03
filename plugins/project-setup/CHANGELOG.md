@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.4
+
+- The plugin no longer ships Python bytecode caches. The 43 `__pycache__/*.pyc` files under `tests/ctl/` came from local pytest runs and are removed, and the marketplace `.gitignore` now ignores `__pycache__/` and `*.pyc`, so a test run cannot add them again.
+
 ## 0.22.3
 
 - The worktree round in `13_worktree.md` starts with `git pull --ff-only` in the main tree, because `ctl worktree create` starts a new branch from the main tree's HEAD, and it pushes after `ctl merge` when the person asks, because `ctl merge` never pushes. It also says a freed slot's only free mark is having no branch checked out, so a placeholder branch parked in a slot makes the pool count it as taken. Studio's slots showed both.
