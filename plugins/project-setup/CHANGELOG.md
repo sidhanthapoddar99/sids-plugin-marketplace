@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.3
+
+- The worktree round in `13_worktree.md` starts with `git pull --ff-only` in the main tree, because `ctl worktree create` starts a new branch from the main tree's HEAD, and it pushes after `ctl merge` when the person asks, because `ctl merge` never pushes. It also says a freed slot's only free mark is having no branch checked out, so a placeholder branch parked in a slot makes the pool count it as taken. Studio's slots showed both.
+- `template/AGENTS.md` says the same in its worktree and merge rules.
+
 ## 0.22.2
 
 - `ctl up status` names the newest run when two runs start in the same second. A transcript's name starts with the UTC second, and status takes the last name. Two runs in one second with different tags, such as a deploy and a rollback refused right after it, used to sort by tag, so status could name the older run. `transcript_open` now waits for the next second while any transcript holds the current one, whatever its tag. It holds `LOGS_DIR/run/transcript.lock` for the check and the create, because a `--background` run opens its transcript before it holds the run's record. Studio's port found it.

@@ -33,13 +33,17 @@ Template: `template/scripts/worktree/` (`worktree.sh` and its helpers), the guar
 A typical round, from the main tree:
 
 ```sh
+git pull --ff-only                       # in the main tree: create starts the branch from its HEAD
 cd "$(ctl worktree create feat/login)"   # create prints only the slot's path, .worktrees/slot-1
 ctl setup                                # only on a new slot's first use: installs its dependencies
 ctl dev                                  # work, test and commit here, as in any checkout
 ctl stop                                 # stop the slot's dev apps and its containers
 ctl merge feat/login                     # merge main in, set versions, one gate here, fast-forward main
+git push origin main                     # when the person asks: ctl merge never pushes
 ctl worktree remove feat/login           # frees slot-1; the branch and the builds stay
 ```
+
+Pull before `create`, because `create` starts a new branch from the main tree's HEAD, and a stale main tree gives a stale branch. A freed slot has no branch checked out, and that is the pool's only free mark. So never park a placeholder branch in a free slot: the pool then counts the slot as taken, and `create` adds a slot or refuses once every slot is taken.
 
 `ctl merge` runs its gate in the slot, because a gate writes build outputs, and with `WORKTREE_ONLY=1` the main tree runs none. It then fast-forwards the main tree, so the main tree gets exactly the gated tree (`15_releases.md`). `remove` refuses while the slot's containers run, so `ctl stop` comes first: the data core outlives `ctl dev` on purpose.
 
