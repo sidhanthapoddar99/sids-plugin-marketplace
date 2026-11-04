@@ -22,7 +22,7 @@ test('with no TESTING keys the gate takes every core, 80 % of the memory availab
   const run = f.ctl(['gate']);
   expect(run.code, run.all).toBe(0);
   expect(f.rungs().map(entry => entry.split(' ')[0])).toEqual(['lint', 'typecheck', 'test', 'check']);
-  expect(line('lint')).toMatch(/ memory=$/);
+  expect(line('lint')).toMatch(/ memory= /);
   expect(run.out).toContain('every core');
   expect(run.out).toMatch(/compiler job\(s\) per Cargo command \(the default, from \d+ cores and a memory budget of /);
   expect(run.err).toContain('80 % of');
@@ -81,7 +81,7 @@ test('flags win over the shell and .env, and a nested run keeps the flag values'
   for (const rung of ['lint', 'typecheck', 'test', 'check']) {
     expect(line(rung)).toContain(`cores=${core} `);
     expect(line(rung)).toContain('jobs=2 ');
-    expect(line(rung)).toMatch(/ memory=3G$/);
+    expect(line(rung)).toMatch(/ memory=3G /);
   }
   expect(lidMiB()).toBe('MemoryMax=3072M');
   expect(run.out).toContain('2 compiler job(s) per Cargo command (--build-jobs)');
@@ -100,6 +100,11 @@ test('a bad value is refused before any rung runs and before the lid, naming whe
     ['TEST_MEMORY=10M\n', {}, [], 'TEST_MEMORY wants at least 64M'],
     ['', {}, ['--memory', 'lots'], '--memory wants a size like 8G'],
     ['', {}, ['--cpus'], '--cpus needs a value'],
+    ['TEST_DB_WORKERS=0\n', {}, [], 'TEST_DB_WORKERS wants a whole number of test workers from 1 to 64'],
+    ['TEST_DB_WORKERS=65\n', {}, [], 'TEST_DB_WORKERS wants a whole number of test workers from 1 to 64'],
+    ['TEST_DB_WORKERS=two\n', {}, [], 'TEST_DB_WORKERS wants a whole number of test workers from 1 to 64'],
+    ['TEST_DB_WORKERS=08\n', {}, [], 'TEST_DB_WORKERS wants a whole number of test workers from 1 to 64'],
+    ['TEST_DB_WORKERS=2\n', { TEST_DATABASE_URL: 'postgresql://ci@db/ci' }, [], 'TEST_DB_WORKERS=2 gives each worker a server of its own'],
   ];
   for (const [env, shell, args, message] of cases) {
     f.put('.env', env);
@@ -126,4 +131,32 @@ test('a rung run by name reads the settings too', () => {
   expect(run.code, run.all).toBe(0);
   expect(line('lint')).toContain(`cores=${core} `);
   expect(line('lint')).toContain('jobs=7 ');
+});
+
+test('db test workers: one per 2 cores, at most one per GiB of the budget and 8, at least 1; the key and the shell win', () => {
+  const cases: [string, string, string][] = [[core, '64G', '1']];
+  const four = coreList(4), eighteen = coreList(18);
+  if (four) cases.push([four, '64G', '2'], [four, '1G', '1']);
+  if (eighteen) cases.push([eighteen, '64G', '8'], [eighteen, '5G', '5']);
+  for (const [cpus, memory, workers] of cases) {
+    f.clearRungs();
+    f.put('.env', `TEST_CPUS=${cpus}\nTEST_MEMORY=${memory}\n`);
+    const run = f.ctl(['gate']);
+    expect(run.code, run.all).toBe(0);
+    for (const rung of ['lint', 'test']) expect(line(rung), `${cpus} ${memory} ${rung}`).toMatch(new RegExp(` dbworkers=${workers}$`));
+  }
+  f.clearRungs();
+  f.put('.env', 'TEST_DB_WORKERS=3\n');
+  expect(f.ctl(['gate']).code).toBe(0);
+  expect(line('test')).toMatch(/ dbworkers=3$/);
+  f.clearRungs();
+  expect(f.ctl(['gate'], { TEST_DB_WORKERS: '5' }).code).toBe(0);
+  expect(line('test')).toMatch(/ dbworkers=5$/);
+});
+
+test('a caller\'s TEST_DATABASE_URL makes the default one db test worker', () => {
+  f.put('.env', '');
+  const run = f.ctl(['gate'], { TEST_DATABASE_URL: 'postgresql://ci@db/ci' });
+  expect(run.code, run.all).toBe(0);
+  expect(line('test')).toMatch(/ dbworkers=1$/);
 });

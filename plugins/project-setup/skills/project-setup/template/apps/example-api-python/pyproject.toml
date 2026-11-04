@@ -5,7 +5,19 @@ requires-python = ">=<version>"
 dependencies = ["fastapi", "uvicorn", "pydantic-settings", "sqlalchemy", "asyncpg", "redis", "pyyaml", "python-dotenv"]
 [dependency-groups]
 # the gate's tools are pinned here, per app: ctl gate typecheck (mypy) · dead (deptry) · audit (bandit, pip-audit)
-dev = ["pytest", "pytest-asyncio", "ruff", "httpx", "mypy", "deptry", "bandit", "pip-audit"]
+dev = ["pytest", "pytest-asyncio", "pytest-xdist", "ruff", "httpx", "mypy", "deptry", "bandit", "pip-audit"]
+
+# tests/ imports app, so the app folder is on the path. Async tests and fixtures need no marker each.
+# ctl test adds the pytest-xdist flags when it runs this suite on more than one worker.
+[tool.pytest.ini_options]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+# asyncpg ships no type information, so mypy reads it as untyped instead of failing the typecheck rung.
+[[tool.mypy.overrides]]
+module = ["asyncpg", "asyncpg.*"]
+ignore_missing_imports = true
 
 # The lint floor. `ctl gate lint` runs `ruff check` and reads this; ruff enables no complexity rule
 # on its own, so C901 is selected here. `ctl check` fails an app whose manifest has no [tool.ruff].

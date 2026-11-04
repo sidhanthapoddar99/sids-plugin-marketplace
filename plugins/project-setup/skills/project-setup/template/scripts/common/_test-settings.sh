@@ -11,6 +11,11 @@
 #   TEST_BUILD_JOBS  compiler jobs per Cargo command, handed to Cargo as CARGO_BUILD_JOBS.
 #                    Empty: one per core the run may use, but no more than one per 2 GiB of the
 #                    memory budget, and at least one.
+#   TEST_DB_WORKERS  test workers of a suite marked `db workers` in scripts/gate/_targets.sh, 1 to
+#                    64. 1 runs the suite serially; above 1, ctl test gives each worker a PostgreSQL
+#                    server of its own. Empty: 1 when TEST_DATABASE_URL names the caller's database,
+#                    else one per 2 cores the run may use, no more than one per GiB of the memory
+#                    budget, at most 8, and at least one.
 #
 # PRECEDENCE, highest first: the `ctl gate` flag (--cpus, --memory, --build-jobs), the process
 # environment, the root .env, the default. For compiler jobs, a CARGO_BUILD_JOBS already set in the
@@ -22,6 +27,12 @@
 # out of memory at Cargo's default. 2 GiB a job leaves room for the linker and for the tests that
 # share the lid. A machine with more memory than cores gets one job per core, as Cargo would.
 #
+# WHY THE WORKER DEFAULT LOOKS AT CORES AND MEMORY. A db test worker keeps two processes busy: its
+# pytest worker and its PostgreSQL server. One server peaked near 260 MiB under a large suite, and
+# its migration's JVM takes a few hundred more while it starts, so 1 GiB a worker leaves room. Past 8,
+# each worker adds a server and a migration for a gain that only a very large suite sees; set the key
+# to go higher. Each server is its own container, so the run's cores and memory lid do not bind it.
+#
 # A NESTED RUN AGREES. Each value is exported once it is resolved, and the root .env is loaded
 # skip-if-set, so a run started from this one (the gate's test rung runs scripts/test/test.sh)
 # resolves the same values, a flag's included. The settings line prints once per run.
@@ -32,6 +43,9 @@
 TEST_JOB_MIB=2048       # the memory one compiler job may take when TEST_BUILD_JOBS is empty
 TEST_MEMORY_SHARE=80    # the share of available memory an empty TEST_MEMORY gives a run
 TEST_MEMORY_MIN_MIB=64  # a smaller budget cannot hold a compiler, so it is refused
+TEST_DB_WORKER_MIB=1024 # the memory one db test worker may take when TEST_DB_WORKERS is empty
+TEST_DB_WORKERS_MAX=8   # the most db test workers an empty TEST_DB_WORKERS gives
+TEST_DB_WORKERS_LIMIT=64 # the most TEST_DB_WORKERS may name: each worker above 1 starts a server
 
 # test_settings_init [cpus] [build-jobs] [memory] — the start of `ctl test` and of a rung run by
 # name: load, check and apply the settings, and print what the run uses. Each argument is a flag's
@@ -41,6 +55,7 @@ test_settings_init() {
   test_settings_resolve "${1:-}" "${2:-}" "${3:-}"
   test_cpus_apply
   test_jobs_apply
+  test_db_workers_apply
   test_settings_line
 }
 
@@ -95,6 +110,14 @@ test_settings_resolve() {
   [[ -z $jobs || $jobs =~ ^[1-9][0-9]{0,3}$ ]] \
     || die "${TEST_BUILD_JOBS_FROM%% *} wants a whole number of compiler jobs from 1 to 9999 (got: $jobs)"
   export TEST_BUILD_JOBS="$jobs"
+
+  local workers="${TEST_DB_WORKERS:-}"
+  [[ -z $workers ]] || { [[ $workers =~ ^[1-9][0-9]?$ ]] && (( 10#$workers <= TEST_DB_WORKERS_LIMIT )); } \
+    || die "TEST_DB_WORKERS wants a whole number of test workers from 1 to $TEST_DB_WORKERS_LIMIT; 1 runs serially (got: $workers)"
+  # A caller's TEST_DATABASE_URL is one database, and workers that share one database share its rows.
+  [[ -z $workers || $workers == 1 || -z ${TEST_DATABASE_URL:-} ]] \
+    || die "TEST_DB_WORKERS=$workers gives each worker a server of its own, and TEST_DATABASE_URL names one database; set TEST_DB_WORKERS=1, or unset TEST_DATABASE_URL"
+  export TEST_DB_WORKERS="$workers"
 }
 
 # test_core_count <list> — how many cores a taskset -c list names
@@ -166,6 +189,28 @@ test_jobs_apply() {
     TEST_JOBS_WORDS="the default, from $cores cores and a memory budget of $(test_human "$budget") at 2 GB a job"
   fi
   export CARGO_BUILD_JOBS="$jobs"
+}
+
+# test_db_workers_apply — export TEST_DB_WORKERS, the test workers of a suite marked `db workers`:
+# the key when set, else the default the header describes. TEST_DB_WORKERS_WORDS says where the
+# count came from. Run it after test_cpus_apply, which sets the cores. A nested run keeps the count.
+test_db_workers_apply() {
+  local cores budget workers
+  [[ -z ${TEST_DB_WORKERS:-} || -z ${TEST_DB_WORKERS_WORDS:-} ]] || return 0
+  if [[ -n ${TEST_DB_WORKERS:-} ]]; then
+    workers="$TEST_DB_WORKERS" TEST_DB_WORKERS_WORDS=TEST_DB_WORKERS
+  elif [[ -n ${TEST_DATABASE_URL:-} ]]; then
+    workers=1 TEST_DB_WORKERS_WORDS="TEST_DATABASE_URL names one database"
+  else
+    cores=$(test_core_count "$(test_allowed_cores)")
+    budget=$(test_memory_budget_mib) || exit 1
+    workers=$(( cores / 2 ))
+    (( workers <= budget / TEST_DB_WORKER_MIB )) || workers=$(( budget / TEST_DB_WORKER_MIB ))
+    (( workers <= TEST_DB_WORKERS_MAX )) || workers=$TEST_DB_WORKERS_MAX
+    (( workers >= 1 )) || workers=1
+    TEST_DB_WORKERS_WORDS="the default, from $cores cores and a memory budget of $(test_human "$budget"), at most $TEST_DB_WORKERS_MAX"
+  fi
+  export TEST_DB_WORKERS="$workers" TEST_DB_WORKERS_WORDS
 }
 
 # test_settings_line — one line that says what this run uses, printed once: a nested run skips it

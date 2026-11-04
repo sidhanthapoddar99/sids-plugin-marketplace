@@ -104,7 +104,7 @@ gate_lid_reexec() {
   if (( rc == 137 )); then
     _gl_say ""; _gl_say "✗ OUT OF MEMORY — the run was killed at the $(test_human "$lid_mib") lid."
     _gl_say "  It ran: $(_gl_get verb) $(_gl_get args)"
-    _gl_say "  Re-run with a bigger lid (--memory, or TEST_MEMORY in .env), or fewer compiler jobs (--build-jobs, or TEST_BUILD_JOBS)."
+    _gl_say "  Re-run with a bigger lid (--memory, or TEST_MEMORY in .env), fewer compiler jobs (--build-jobs, or TEST_BUILD_JOBS), or fewer db test workers (TEST_DB_WORKERS)."
   fi
   exit "$rc"
 }

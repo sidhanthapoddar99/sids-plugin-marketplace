@@ -11,10 +11,13 @@
 # a repo deletes the apps it does not have. A target named on the command line must exist, because
 # a typo that passes teaches the caller nothing. The word `db` among the rungs marks an app whose
 # tests read PostgreSQL: ctl test gives that suite its own copy of a throwaway, migrated database
-# (scripts/test/_test-database.sh).
+# (scripts/test/_test-database.sh). The word `workers` beside `db` marks a pytest suite that runs on
+# TEST_DB_WORKERS pytest-xdist workers, whole files to a worker: above 1, ctl test starts one
+# PostgreSQL server per worker and passes their URLs in TEST_DATABASE_URLS, and the suite's own
+# fixture gives worker gw<n> a database on server n. A row without `workers` runs serially.
 GATE_TARGETS=(
   # name     folder                              ecosystem  rungs
-  "api       apps/example-api-python             python     lint typecheck test db"
+  "api       apps/example-api-python             python     lint typecheck test db workers"
   "database  apps/database/postgres              python     lint test db"
   "engine    apps/example-engine-rust            rust       lint typecheck test"
   "single    apps/example-single-web-app-vite    bun        lint typecheck test"
@@ -35,15 +38,18 @@ gate_target_rows() {
   return 0
 }
 
-# gate_target_needs_db <name> — 0 when the row of <name> marks its tests as reading PostgreSQL
-gate_target_needs_db() {
+# gate_target_marked <name> <word> — 0 when the row of <name> lists <word> among its rungs
+gate_target_marked() {
   local row name folder ecosystem rungs
   for row in "${GATE_TARGETS[@]}"; do
     read -r name folder ecosystem rungs <<< "$row"
-    [[ $name == "$1" && " $rungs " == *" db "* ]] && return 0
+    [[ $name == "$1" && " $rungs " == *" $2 "* ]] && return 0
   done
   return 1
 }
+
+# gate_target_needs_db <name> — 0 when the row of <name> marks its tests as reading PostgreSQL
+gate_target_needs_db() { gate_target_marked "$1" db; }
 
 # gate_target_names <rung> — the rung's target names, joined with |
 gate_target_names() {

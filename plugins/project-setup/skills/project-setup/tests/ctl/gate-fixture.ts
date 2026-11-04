@@ -45,8 +45,8 @@ while [[ $# -gt 0 && $1 != -- ]]; do shift; done; shift; exec "$@"
 set -euo pipefail
 source '${root}/scripts/common/_lib.sh'; source '${root}/scripts/common/_test-settings.sh'
 test_settings_init
-printf '%s args=[%s] cores=%s jobs=%s memory=%s\\n' ${name} "$*" "$(test_allowed_cores)" "\${CARGO_BUILD_JOBS-unset}" \\
-  "\${TEST_MEMORY-unset}" >> '${log}'
+printf '%s args=[%s] cores=%s jobs=%s memory=%s dbworkers=%s\\n' ${name} "$*" "$(test_allowed_cores)" "\${CARGO_BUILD_JOBS-unset}" \\
+  "\${TEST_MEMORY-unset}" "\${TEST_DB_WORKERS-unset}" >> '${log}'
 if [[ -n \${HOLD_FILE:-} && ${name} == lint ]]; then while [[ ! -f $HOLD_FILE ]]; do sleep 0.1; done; fi
 `;
     for (const name of ['lint', 'typecheck', 'check']) put(`scripts/gate/${name}.sh`, standIn(name), true);

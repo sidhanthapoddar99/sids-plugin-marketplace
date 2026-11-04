@@ -1,20 +1,21 @@
 # Test speed and resources — what a gate run checks, and what it may use
 
-This page owns the TESTING settings in `.env`, the gate's modes, the one-run lock and the memory lid, the Rust settings that keep a test build small, and the rules that keep a gate run fast without weakening it. The ladder, the rung contract and what counts as green are in `10b_static-checks.md`. Where tests live, and the rules every suite follows, are in `10c_dynamic-tests.md`. How a worktree slot keeps its own warm build folders is in `13_worktree.md`.
+This page owns the TESTING settings in `.env`, the database test workers, the gate's modes, the one-run lock and the memory lid, the Rust settings that keep a test build small, and the rules that keep a gate run fast without weakening it. The ladder, the rung contract and what counts as green are in `10b_static-checks.md`. Where tests live, and the rules every suite follows, are in `10c_dynamic-tests.md`. How a worktree slot keeps its own warm build folders is in `13_worktree.md`.
 
 A target, on this page, is one app the lint, typecheck and test rungs check: one row of `scripts/gate/_targets.sh`. Every path on this page is relative to the root of a project made from this skill. In the skill, that root is `template/`.
 
 ## The TESTING settings
 
-`ctl gate` and `ctl test` read three keys from the TESTING section of the root `.env`. A rung run by name reads them too when it compiles or runs code: `lint`, `typecheck`, `test`, `dead`, `fuzz` and `perf`. One helper, `scripts/common/_test-settings.sh`, reads the keys for every caller, so the gate and the test runner cannot disagree.
+`ctl gate` and `ctl test` read four keys from the TESTING section of the root `.env`. A rung run by name reads them too when it compiles or runs code: `lint`, `typecheck`, `test`, `dead`, `fuzz` and `perf`. One helper, `scripts/common/_test-settings.sh`, reads the keys for every caller, so the gate and the test runner cannot disagree.
 
 | Key | `ctl gate` flag | What it sets | When it is empty |
 |---|---|---|---|
 | `TEST_CPUS` | `--cpus LIST` | The cores a run may use, as `taskset -c` reads them: `0-7` or `0-3,8-11`. | Every core the shell may use. |
 | `TEST_BUILD_JOBS` | `--build-jobs N` | The compiler jobs per Cargo command. Cargo gets the value as `CARGO_BUILD_JOBS`. | One job per core the run may use, at most one per 2 GB of the memory budget, and at least one. |
 | `TEST_MEMORY` | `--memory SIZE` | The memory budget of a run: `8G` or `512M`. The gate's memory lid has this size. | 80 % of the memory available when the run starts. |
+| `TEST_DB_WORKERS` | — | The pytest workers of each suite marked `db workers`, 1 to 64. 1 runs the suite serially. Above 1, each worker gets a PostgreSQL server of its own. | 1 when `TEST_DATABASE_URL` is set. Else one per 2 cores the run may use, at most one per GiB of the memory budget, at most 8, and at least 1. |
 
-A value comes from the first source that sets it, in this order: the `ctl gate` flag, the shell, the root `.env`, the default. For compiler jobs, a `CARGO_BUILD_JOBS` already set in the shell comes after `--build-jobs` and before `TEST_BUILD_JOBS`. The helper does not read a `CARGO_BUILD_JOBS` line in `.env`, because `.env` names this budget `TEST_BUILD_JOBS`. Only the ladder forms of `ctl gate` take the flags. A rung run by name reads the shell and `.env`.
+A value comes from the first source that sets it, in this order: the `ctl gate` flag, the shell, the root `.env`, the default. For compiler jobs, a `CARGO_BUILD_JOBS` already set in the shell comes after `--build-jobs` and before `TEST_BUILD_JOBS`. The helper does not read a `CARGO_BUILD_JOBS` line in `.env`, because `.env` names this budget `TEST_BUILD_JOBS`. Only the ladder forms of `ctl gate` take the flags. A rung run by name reads the shell and `.env`. `TEST_DB_WORKERS` has no flag: set it in `.env`, or for one run in the shell, such as `TEST_DB_WORKERS=1 ctl test api`.
 
 On a machine shared with other work, set the keys to leave part of it free. For example, a 32-core desktop that keeps 8 cores for the desktop and an editor:
 
@@ -35,7 +36,20 @@ The rules the helper follows:
 - `TEST_CPUS` binds the whole run with `taskset`: every compiler, test and browser it starts. A Docker container a test starts is bound neither by `TEST_CPUS` nor by the memory lid, because the Docker daemon starts it, not the run.
 - Compiler jobs and test workers are separate budgets. libtest and `go test` start one test worker per core the run may use, so `TEST_CPUS` bounds them. `TEST_BUILD_JOBS` bounds only the compilers.
 
-Every run prints one line with its cores and its compiler jobs and says where each came from. The gate also prints its memory lid. `ctl test` has no lid: there the memory budget only sizes the default job count.
+Every run prints one line with its cores and its compiler jobs and says where each came from. The gate also prints its memory lid. `ctl test` has no lid: there the memory budget only sizes the default compiler jobs and the default database test workers. `ctl test` prints the database test workers on a line of their own when it runs a `db workers` suite on more than one.
+
+## Database test workers
+
+`TEST_DB_WORKERS` sets how many pytest-xdist workers run a suite marked `db workers` in `scripts/gate/_targets.sh`. `10c_dynamic-tests.md` § Rules says what the run gives each worker: a PostgreSQL server, a migrated template on it, and a database of its own.
+
+The default is one worker per 2 cores the run may use, because a worker keeps two processes busy, its pytest worker and its server. It is at most one per GB of the memory budget, because a server, its migration's JVM while it starts, and a pytest worker need about that much together. It is at most 8, because past 8 each worker adds a server start and a migration that only a very large suite repays. Studio's API suite of 1,445 tests ran in about 108 s on 8 workers, each with its own server.
+
+- Keep the default once the suite's database tests take more than a few seconds serially. On a 32-core machine running Docker Desktop, each worker past the first adds about 0.7 s to the run, for its server, its migration, its database and its pytest worker. The template's example suite of 89 tests takes 5.2 s serially, 7.9 s on 4 workers and 10.8 s on 8, because its tests take 0.2 s in all. A suite that small runs fastest serially; set `TEST_DB_WORKERS=1` until it grows.
+- Raise it past 8 only for a suite with more test files than workers that still runs long, and only with memory to spare. Whole files go to a worker, so a worker past the number of test files has nothing to run.
+- Lower it on a machine short of memory, and to 1 to debug a test serially.
+- One PostgreSQL server takes about 175 new connections a second on Docker Desktop. Docker Desktop forwards each connection to a published port by opening a new connection from its VM to the container. The VM has 10,536 source ports per container address (55000–65535), and a closed connection holds its port for 60 s in TIME_WAIT. Studio's 8 workers opened about 420 connections a second through one server, used the ports up in about 25 s, and every later connection closed before PostgreSQL saw it: psycopg reported `server closed the connection unexpectedly`, and sqlx `unexpected response from SSLRequest: 0x00`. Above about 175 a second, reuse connections, such as one pool per worker, or give each worker its own server, which `ctl test` does for a `db workers` suite. A plain `db` suite has one server, so keep its connection rate under that.
+- A server takes about 200–260 MiB under a large suite: one of Studio's 8 peaked at 264 MiB, and all 8 together at 1.6 GiB. Under the template's example suite one takes 75–125 MiB, and 8 together 600–860 MiB. Each server has a 3 GiB cap and a 2 GiB tmpfs inside it, a ceiling and not a reservation. The servers are containers, so neither `TEST_CPUS` nor the gate's memory lid binds them; on Docker Desktop they use the VM's memory.
+- The servers migrate at once, with Flyway, because every server then runs the migrations production runs. On the same machine, 8 servers take 5.7 s that way. One after another takes 20.5 s. Flyway once and `pg_dump | pg_restore` into the other servers takes 3.0 s, but a dump carries no role, grant target or database setting that a migration creates outside the database, so the copies could differ from production.
 
 ## What a gate run checks
 
@@ -165,3 +179,5 @@ These hold for any project, and for every runner a project adds. The order of th
 - `scripts/gate/_lock.sh`: the lock and the memory lid.
 - `apps/example-engine-rust/Cargo.toml`: the development profile.
 - `.env.template`: the TESTING section.
+- `scripts/test/_test-database.sh`: the servers, one per database test worker.
+- `apps/example-api-python/tests/`: a database suite on workers, and the fixture that gives each worker its database.

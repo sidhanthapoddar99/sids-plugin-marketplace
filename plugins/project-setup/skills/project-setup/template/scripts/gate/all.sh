@@ -20,10 +20,10 @@
 # `--rerun` runs it again. Each green rung records itself too, so a run that went red at the test rung
 # reruns from the test rung when the tree is unchanged.
 #
-# SETTINGS. The TESTING section of the root .env sets the cores, the compiler jobs and the memory
-# budget (scripts/common/_test-settings.sh); --cpus, --build-jobs and --memory win over it. The root
-# .env is loaded before any of them is read. One gate run per user at a time, under one memory lid
-# (_lock.sh); a second run waits.
+# SETTINGS. The TESTING section of the root .env sets the cores, the compiler jobs, the memory budget
+# and the database test workers (scripts/common/_test-settings.sh); --cpus, --build-jobs and --memory
+# win over it. The root .env is loaded before any of them is read. One gate run per user at a time,
+# under one memory lid (_lock.sh); a second run waits.
 #
 # `ctl gate static` runs the static rungs of RUNGS (read the code), `ctl gate dynamic` the dynamic
 # ones (run the code). Both keep the ladder order, in any mode.
@@ -223,6 +223,7 @@ test_settings_load
 test_settings_resolve "$CPUS_FLAG" "$JOBS_FLAG" "$MEMORY_FLAG"
 test_cpus_apply
 test_jobs_apply
+test_db_workers_apply
 
 # The plan comes before the lock too, so a bad --delta base fails at once. The half inside the lid
 # works it out again, quietly, because it is a new process.

@@ -23,11 +23,15 @@ An app marked db in scripts/gate/_targets.sh runs against this run's own Postgre
 container migrated once; each such suite gets its own copy of the migrated database. Set
 TEST_DATABASE_URL to use a database you migrated instead, such as a CI service.
 
+An app marked db workers runs pytest on TEST_DB_WORKERS workers, whole files to a worker, and a
+crashed worker fails the run. Above 1, each worker gets a PostgreSQL server of its own, and
+TEST_DATABASE_URLS lists them in worker order. TEST_DB_WORKERS=1 runs the suite serially on one.
+
 Options
   -h, --help      show this help
 
-The TESTING section of .env sets the cores, the compiler jobs and the memory budget; a value in the
-shell wins over .env. ctl gate --help lists them."; }
+The TESTING section of .env sets the cores, the compiler jobs, the memory budget and the db test
+workers; a value in the shell wins over .env. ctl gate --help lists the first three."; }
 
 is_help "${1:-}" && { usage; exit 0; }
 if [[ ${1:-} == e2e ]]; then shift; test_settings_init; exec bash "$CTL_ROOT/scripts/test/e2e.sh" "$@"; fi
@@ -37,23 +41,50 @@ while (( $# )); do case "$1" in
   *)  names+=("$1") ;;
 esac; shift; done
 gate_target_select test ${names[@]+"${names[@]}"}
+# A row marked `workers` is a pytest suite that reads PostgreSQL; say so before anything starts.
+worker_rows=0
+for row in ${GATE_SELECTED[@]+"${GATE_SELECTED[@]}"}; do
+  read -r name dir ecosystem <<< "$row"
+  gate_target_marked "$name" workers || continue
+  [[ $ecosystem == python ]] || die "scripts/gate/_targets.sh marks $name with workers; ctl test runs workers for pytest suites only (pytest-xdist)"
+  gate_target_needs_db "$name" || die "scripts/gate/_targets.sh marks $name with workers but not db; workers are database test workers, so mark it db too"
+  worker_rows=$(( worker_rows + 1 ))
+done
 test_settings_init
+has_postgres() { [[ " ${DATA_SVCS[*]} " == *" postgres "* ]]; }
+# One worker prints nothing, so a serial run reads as it always did.
+(( worker_rows == 0 || TEST_DB_WORKERS == 1 )) || ! has_postgres || say "· $TEST_DB_WORKERS db test workers ($TEST_DB_WORKERS_WORDS)"
+# suite_workers <name> — the test workers of the suite: TEST_DB_WORKERS for a row marked `workers`
+# in a project with postgres in its data core, else 1.
+suite_workers() {
+  if gate_target_marked "$1" workers && has_postgres; then printf '%s\n' "$TEST_DB_WORKERS"; else echo 1; fi
+}
 # need_database <name> — fill suite_env, the settings a suite runs with. A suite marked `db` in
 # _targets.sh gets its own copy of the run's throwaway database (test/_test-database.sh), which starts
-# with the first such suite and goes when the run ends. A caller's TEST_DATABASE_URL is used as it is.
-# A project whose DATA_SVCS has no postgres, as in a ctl test fixture, starts none.
+# with the first such suite and goes when the run ends. With a `workers` suite selected and more than
+# one worker, the run starts one server per worker, and that suite gets its copy on each. A caller's
+# TEST_DATABASE_URL is used as it is. A project whose DATA_SVCS has no postgres, as in a ctl test
+# fixture, starts none.
 suite_env=()
 need_database() {
   suite_env=()
-  gate_target_needs_db "$1" && [[ " ${DATA_SVCS[*]} " == *" postgres "* ]] || return 0
+  gate_target_needs_db "$1" && has_postgres || return 0
   if [[ -n ${TEST_DATABASE_URL:-} ]]; then suite_env=("DATABASE_URL=$TEST_DATABASE_URL"); return 0; fi
   if ! declare -F test_database_start >/dev/null; then
     source "$CTL_ROOT/scripts/common/_process.sh"; source "$CTL_ROOT/scripts/test/_test-database.sh"
     trap test_database_stop EXIT
-    test_database_start
+    if (( worker_rows )); then test_database_start "$TEST_DB_WORKERS"; else test_database_start; fi
   fi
-  mapfile -t suite_env < <(test_database_for "$1")
+  mapfile -t suite_env < <(test_database_for "$1" "$(suite_workers "$1")")
   (( ${#suite_env[@]} )) || die "no test database settings for the $1 suite"
+}
+# set_pytest_args <name> — fill pytest_args, the pytest-xdist flags of a suite on more than one
+# worker: whole files to a worker, so a module's fixtures stay in one process, and no restart, so a
+# crashed worker fails the run. One worker gets none, so a serial run is a plain pytest.
+pytest_args=()
+set_pytest_args() {
+  local workers; workers=$(suite_workers "$1"); pytest_args=()
+  (( workers == 1 )) || pytest_args=(-n "$workers" --dist loadfile --max-worker-restart 0)
 }
 # with_suite_env <command…> — run the command with suite_env exported. Call it inside the suite's
 # subshell, so the next suite starts without them.
@@ -69,7 +100,8 @@ for row in ${GATE_SELECTED[@]+"${GATE_SELECTED[@]}"}; do
   read -r name dir ecosystem <<< "$row"
   case "$ecosystem" in
     python) step "$dir (pytest)";      has_tests "$dir" || { no_tests_yet "$dir"; continue; }; need_database "$name"
-            ( require_tools uv && cd "$dir" && with_suite_env uv run pytest ) || rc=1 ;;
+            set_pytest_args "$name"
+            ( require_tools uv && cd "$dir" && with_suite_env uv run pytest ${pytest_args[@]+"${pytest_args[@]}"} ) || rc=1 ;;
     rust)   step "$dir (cargo test)";  need_database "$name"; ( require_tools cargo && cd "$dir" && with_suite_env cargo test ) || rc=1 ;;
     bun)    step "$dir (bun run test)"; has_tests "$dir" || { no_tests_yet "$dir"; continue; }; need_database "$name"
             ( require_tools bun && cd "$dir" && with_suite_env bun run test ) || rc=1 ;;
