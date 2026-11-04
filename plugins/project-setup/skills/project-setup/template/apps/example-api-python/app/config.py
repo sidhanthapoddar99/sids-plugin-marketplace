@@ -6,9 +6,11 @@
 #    Do not use dotenv's eager interpolation: it can erase a forward or missing reference.
 #    Under docker the file is absent: compose already set the declared environment keys.
 # 2. yaml.safe_load(config.yaml); deep-merge config.local.yaml over it if present (gitignored).
-# 3. walk the tree; replace every ${VAR} with os.environ[VAR]; raise on a missing one, naming the key.
-# 4. apply the nested override channel: an env var `API__<SECTION>__<KEY>` (pydantic env_nested_delimiter="__",
-#    env_prefix="API__") overrides that one literal. This is how a container or CI tweaks pool_size without a file.
+# 3. walk the tree; replace every ${VAR} with os.environ[VAR]; raise on a missing one, naming
+#    the key.
+# 4. apply the nested override channel: an env var `API__<SECTION>__<KEY>` (pydantic
+#    env_nested_delimiter="__", env_prefix="API__") overrides that one literal. This is how a
+#    container or CI tweaks pool_size without a file.
 # 5. validate into a pydantic Settings model; export `settings`.
 # 6. auth.enabled comes from app.core.auth.parse_auth_enabled, not pydantic's bool, which also reads
 #    1, yes and on. Then call check_listener(enabled, server.host, os.environ.get("PUBLIC_URL")),

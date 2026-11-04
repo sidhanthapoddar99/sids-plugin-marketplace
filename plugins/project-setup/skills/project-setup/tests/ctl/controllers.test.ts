@@ -7,7 +7,7 @@ const template = resolve(import.meta.dir, '../../template');
 let root: string, record: string, env: Record<string, string>, command: string[], declarations: string;
 const original = `
 controller_names() { echo compiler; }
-controller_command() { echo 'echo started >> "$CTL_ROOT/starts"; touch "$CTL_ROOT/ready"; trap "exit 0" TERM; while :; do sleep .1; done'; }
+controller_command() { echo 'on_term() { rm -f "$CTL_ROOT/ready"; exit 0; }; trap on_term TERM; echo started >> "$CTL_ROOT/starts"; touch "$CTL_ROOT/ready"; while :; do sleep .1; done'; }
 controller_probe() { echo 'test -f "$CTL_ROOT/ready"'; }
 controller_timeout() { echo 3; }
 `;

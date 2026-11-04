@@ -3,8 +3,25 @@ import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, rmSync, existsSync
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 const watcher = resolve(import.meta.dir, '../../template/scripts/dev/rust-watch.ts');
-async function until(check: () => boolean) {
-  for (let n = 0; n < 100; n++) { if (check()) return; await Bun.sleep(50); }
+// rust-watch.ts runs bare `watchexec`; ctl dev checks it first with require_tools, and this test skips ctl dev.
+// Check it from the fixture's folder, where the watcher runs, so a missing tool or a mise shim with no
+// version selected there fails by name instead of as a timeout.
+function requireWatchexec(cwd: string) {
+  let run;
+  try { run = Bun.spawnSync(['watchexec', '--version'], { cwd, stdout: 'pipe', stderr: 'pipe' }); }
+  catch { throw new Error('required tool missing on PATH: watchexec (the template pins it in .mise.toml)'); }
+  if (run.exitCode !== 0) {
+    throw new Error(`required tool cannot run from ${cwd}: watchexec (${Bun.which('watchexec')}): ${run.stderr.toString().trim()}`);
+  }
+}
+async function until(check: () => boolean, child: ReturnType<typeof Bun.spawn>) {
+  for (let n = 0; n < 100; n++) {
+    if (check()) return;
+    if (child.exitCode !== null) {
+      throw new Error(`Watcher exited with ${child.exitCode}: ${await new Response(child.stderr as ReadableStream).text()}`);
+    }
+    await Bun.sleep(50);
+  }
   throw new Error('Watcher condition timed out');
 }
 
@@ -27,6 +44,7 @@ test('one watcher rebuilds after source edits and ignores generated artifacts', 
   const root = mkdtempSync(join(tmpdir(), 'rust-watch-fixture-'));
   let child: ReturnType<typeof Bun.spawn> | undefined;
   try {
+    requireWatchexec(root);
     mkdirSync(join(root, 'src/generated'), { recursive: true });
     const source = join(root, 'src/lib.rs');
     const output = join(root, 'output');
@@ -39,9 +57,9 @@ test('one watcher rebuilds after source edits and ignores generated artifacts', 
     `]];
     writeFileSync(config, 'export default ' + JSON.stringify({ paths: [join(root, 'src')], commands, debounceMs: 100 }));
     child = Bun.spawn([process.execPath, watcher, '--config', config], { cwd: root, stdout: 'pipe', stderr: 'pipe' });
-    await until(() => existsSync(output));
+    await until(() => existsSync(output), child);
     writeFileSync(source, 'second');
-    await until(() => readFileSync(output, 'utf8').includes('second'));
+    await until(() => readFileSync(output, 'utf8').includes('second'), child);
     await Bun.sleep(400);
     const before = readFileSync(output, 'utf8');
     writeFileSync(join(root, 'src/generated/output.rs'), 'generated');

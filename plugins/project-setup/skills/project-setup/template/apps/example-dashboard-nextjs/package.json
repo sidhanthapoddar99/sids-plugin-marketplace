@@ -20,6 +20,7 @@
     "zod": "<version>"
   },
   "devDependencies": {
+    "oxlint": "<version>",
     "typescript": "<version>",
     "tailwindcss": "<version>",
     "@scope/tsconfig": "link:../packages/tsconfig",

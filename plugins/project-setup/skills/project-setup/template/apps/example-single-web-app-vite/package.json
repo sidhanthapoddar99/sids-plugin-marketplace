@@ -23,6 +23,7 @@
     "zod": "<version>"
   },
   "devDependencies": {
+    "oxlint": "<version>",
     "vite": "<version>",
     "typescript": "<version>",
     "tailwindcss": "<version>",

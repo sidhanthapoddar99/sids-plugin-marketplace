@@ -1,0 +1,5 @@
+# Tools the plugins' own test suites run, so `mise install` here gives a checkout that passes them.
+# project-setup's rust-watch test starts the real watcher, and the watcher runs bare `watchexec`.
+# No [env] block, so mise needs no `mise trust` for this file.
+[tools]
+watchexec = "2.8.0"

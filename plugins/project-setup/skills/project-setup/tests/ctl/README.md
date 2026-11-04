@@ -8,9 +8,10 @@ From the marketplace repository root, with Python 3 and pytest installed:
 
 ```sh
 python3 -m pytest plugins/project-setup/skills/project-setup/tests/ctl -q
+bun test plugins/project-setup/skills/project-setup/tests/ctl/*.test.ts
 ```
 
-Run the suite on Linux or WSL with Bash, util-linux (`setsid`, `flock`, `taskset`), GNU coreutils, `curl` and `jq`. No Docker daemon or application dependencies are needed. Tests exercise real shell workers and isolated child processes; temporary directories contain all test storage.
+Run the suite on Linux or WSL with Bash, util-linux (`setsid`, `flock`, `taskset`), GNU coreutils, `curl` and `jq`. The Bun suite also needs a `watchexec` that runs from any folder: the marketplace root's `.mise.toml` pins it, so run `mise install` once there and start `bun` through mise, or put the real binary on `PATH`. A mise shim with no version chosen for the test's temp folder does not run, and the rust-watch test then fails by name. No Docker daemon or application dependencies are needed. Tests exercise real shell workers and isolated child processes; temporary directories contain all test storage.
 
 - Environment, credentials and storage tests execute the real template helpers.
 - Development tests launch isolated processes and HTTP probes to check readiness, interruption and owned-group cleanup.

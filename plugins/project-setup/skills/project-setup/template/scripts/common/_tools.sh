@@ -18,14 +18,14 @@ activate_tools() {
     return 1
   }
   if [[ $install == true ]]; then
-    (cd "$CTL_ROOT" && "$mise_bin" install) || { err "mise install failed"; return 1; }
+    (cd "$CTL_ROOT" && "$mise_bin" install) || { err "mise install failed — see mise's reason above; a new clone needs \`mise trust\` once in $CTL_ROOT"; return 1; }
   fi
   while IFS= read -r variable; do
     case "$variable" in PATH|JAVA_HOME|GOROOT|RUSTUP_TOOLCHAIN) continue ;; esac
     [[ -v $variable ]] || continue
     preserved["$variable"]=${!variable}
   done < <(compgen -e)
-  activation=$(cd "$CTL_ROOT" && "$mise_bin" env -s bash) || { err "mise activation failed"; return 1; }
+  activation=$(cd "$CTL_ROOT" && "$mise_bin" env -s bash) || { err "mise activation failed — see mise's reason above; a new clone needs \`mise trust\` once in $CTL_ROOT"; return 1; }
   [[ -n $activation ]] || { err "mise activation returned no environment"; return 1; }
   eval "$activation" || { err "mise activation failed"; return 1; }
   for variable in "${!preserved[@]}"; do export "$variable=${preserved[$variable]}"; done

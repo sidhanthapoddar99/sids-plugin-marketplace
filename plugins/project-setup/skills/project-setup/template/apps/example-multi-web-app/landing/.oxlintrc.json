@@ -4,6 +4,7 @@
     "suspicious": "warn"
   },
   "rules": {
+    "unicorn/no-empty-file": "off",
     "max-depth": [
       "error",
       4

@@ -14,6 +14,7 @@
     "@scope/ui": "link:../../packages/ui"
   },
   "devDependencies": {
+    "oxlint": "<version>",
     "typescript": "<version>",
     "tailwindcss": "<version>",
     "@tailwindcss/vite": "<version>",

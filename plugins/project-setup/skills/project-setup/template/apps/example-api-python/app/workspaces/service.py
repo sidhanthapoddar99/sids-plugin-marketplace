@@ -1,1 +1,2 @@
-# The rules of workspaces. Calls its own repository and other domains' services. Never another domain's repository. No HTTP.
+# The rules of workspaces. Calls its own repository and other domains' services. Never another
+# domain's repository. No HTTP.

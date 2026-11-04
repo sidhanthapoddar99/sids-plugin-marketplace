@@ -3,3 +3,7 @@
 // common::load() refuses AUTH_ENABLED=FALSE on a non-loopback listener, so the binary exits before it binds. It serves
 // with into_make_service_with_connect_info::<SocketAddr>(), because the auth extractor checks the peer address, and
 // logs one warning at startup under FALSE: requests without a credential act as the reserved user.
+
+// Until that composition is written, main does nothing, so the workspace still compiles and the
+// gate's clippy, check and test rungs run on a fresh copy. A binary crate with no main does not build.
+fn main() {}

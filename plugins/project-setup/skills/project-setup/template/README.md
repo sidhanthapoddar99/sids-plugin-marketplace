@@ -3,6 +3,7 @@
 One paragraph: what this product is and which apps make it.
 
 ## Prerequisites
+- `mise trust` — once per clone: mise reads no `.mise.toml` with an `[env]` block until it is trusted, and the trust covers the worktree slots
 - `mise install` — installs every toolchain pinned in `.mise.toml`
 - `ctl setup` — creates `.env` from `.env.template`, generates declared local credentials, creates configured data/log/backup directories, installs and activates tools
 - `ctl setup env` — only `.env`, its generated credentials and the storage directories under `BASE_DIR`; installs nothing

@@ -67,7 +67,7 @@ A repo whose `ctl` is not the template's is adopted only when the user says yes,
 3. Move the logic out of the old router. An exported variable becomes a key in `.env.template`, or a line in the one worker that needs it. A loop over rungs is `ctl gate`. A script under `scripts/` in another language moves into the app that owns it, or is rewritten in Bash or TypeScript (§ Scripting languages).
 4. Delete the old `ctl` and `scripts/`, because git history keeps them and a second router is drift. Move `ctl` and `scripts/` from the stage into the repo. From the stage, take what the kept workers need: `.mise.toml` and `.env.template`, merged by hand with the repo's values, and `docker/` when the repo runs containers. Then apply the delete table in `SKILL.md` § Bootstrapping for what the repo does not have. A repo with no engines follows § Without a data core.
 5. Add the mapped workers. Record in `AGENTS.md` each old verb with what it became, so people find their commands, and each exception.
-6. Run `./ctl setup env`, `./ctl check`, `./ctl setup`, `./ctl gate`, then `verify`. Report the verb map, the verdict and each exit code.
+6. Run `mise trust`, `./ctl setup env`, `./ctl check`, `./ctl setup`, `./ctl gate`, then `verify`. Report the verb map, the verdict and each exit code.
 
 ## Extending the copied router
 
@@ -216,7 +216,10 @@ Rust example selects one engine watcher. Return no names for apps that need none
 helpers so a second launch cannot start a competing controller. Reused controllers
 remain owned by their original launcher; a later failed launch cannot stop them.
 Refuse a held lock whose owner cannot be verified. Recover abandoned metadata only
-under the lock. Owned controllers participate in `ctl stop` and startup cleanup.
+under the lock. Owned controllers participate in `ctl stop` and startup cleanup. A controller's
+probe must fail once the controller is gone, such as a request to its port, never a file it
+leaves behind: a start reads a passing probe as ready, so a stale marker returns before the new
+controller runs.
 
 `scripts/dev/rust-watch.ts` is the runnable Rust watcher example. Adapt
 `scripts/dev/rust-watch.config.ts` to declare source paths and command argument
